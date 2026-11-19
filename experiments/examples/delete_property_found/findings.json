@@ -1,0 +1,69 @@
+[
+  {
+    "type": "ambiguity",
+    "rule": "D4",
+    "status": "ambiguous",
+    "split": [
+      4,
+      4
+    ],
+    "readings": [
+      "The system must ensure that property records are retained for audit purposes when implementing soft deletion. [in logic: true => property_record_retained]",
+      "The system must ensure that property records are retained in the database for audit purposes when a property is successfully deleted. [in logic: property_deleted => property_record_retained]"
+    ],
+    "differs_when": {
+      "property_deleted": false,
+      "property_record_retained": false
+    },
+    "situation": "The property has not been successfully deleted from the system, and the property record does not still exist in the database for audit purposes.",
+    "title": "Ambiguous soft deletion scope",
+    "explanation": "Requirement D4 is ambiguous because it is unclear whether the system must retain property records for audit purposes only when soft deletion is implemented, or whenever a property is successfully deleted. In the situation where a property has not been successfully deleted and the record is not retained, the two interpretations of the requirement lead to different expectations for system behavior. Which did you mean?",
+    "option_a": "Keep the requirement as written, meaning the system must ensure property records are retained for audit purposes specifically when implementing soft deletion, regardless of whether a deletion action has occurred.",
+    "option_b": "Reword the requirement to state that the system must ensure property records are retained in the database for audit purposes whenever a property is successfully deleted."
+  },
+  {
+    "type": "conflict",
+    "rules": [
+      "D2",
+      "D4"
+    ],
+    "facts": [
+      "F1"
+    ],
+    "when": {
+      "deletion_confirmed": true,
+      "user_is_owner": true
+    },
+    "situation": "The user is the owner of the property and has confirmed the deletion action.",
+    "title": "Conflict between removal and retention",
+    "explanation": "Requirement D2 states that the system must remove the Property record when the owner confirms deletion, while Requirement D4 states that the system must retain Property records for audit purposes. These two requirements cannot both be obeyed in the situation where the owner confirms the deletion, assuming that a property record cannot be both removed and retained at the same time.",
+    "option_a": "Keeping the requirements as written means the system must simultaneously remove the record and retain it, which is impossible under the assumption that a record cannot be in both states at once.",
+    "option_b": "Change Requirement D2 to state that the system shall mark the Property record as deleted rather than removing it, ensuring the record is retained for audit purposes as required by D4."
+  },
+  {
+    "type": "gap",
+    "when": {
+      "deletion_requested": false,
+      "property_deleted": false,
+      "user_is_owner": false
+    },
+    "situation": "No deletion request has been submitted, the property has not been deleted, and the user making the request is not the owner of the property.",
+    "title": "Missing behavior for non-owner without request",
+    "explanation": "The requirements define actions for when a deletion is requested or attempted, but they do not specify what the system should do when a non-owner is interacting with a property without having submitted a deletion request. This gap appears in the situation where no deletion request exists, the property remains intact, and the user is not the owner.",
+    "option_a": "Keeping the requirements as written means the system's behavior in this specific state is undefined and may vary or be unhandled.",
+    "option_b": "Add a requirement stating that if a user who is not the owner views a property without requesting deletion, the system shall display the property details normally or restrict access based on standard viewing permissions."
+  },
+  {
+    "type": "gap",
+    "when": {
+      "deletion_confirmed": false,
+      "deletion_requested": false,
+      "property_deleted": false
+    },
+    "situation": "The user has not submitted a request to delete a property, the user has not confirmed the deletion action, and the property has not been successfully deleted from the system.",
+    "title": "Missing behavior for normal state",
+    "explanation": "The requirements define specific actions for when a deletion is requested, confirmed, or completed, but they do not specify what the system should do when none of these events have occurred. This gap appears in the situation where no deletion request has been made, no confirmation has been given, and no property has been deleted.",
+    "option_a": "Keeping the requirements as written means the system has no defined behavior for the standard state where no deletion process is active.",
+    "option_b": "Add a requirement stating that the system shall display the standard property details or list view when no deletion request is active."
+  }
+]

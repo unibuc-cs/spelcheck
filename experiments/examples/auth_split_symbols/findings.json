@@ -1,0 +1,99 @@
+[
+  {
+    "type": "ambiguity",
+    "rule": "R3",
+    "status": "ambiguous",
+    "split": [
+      5,
+      3
+    ],
+    "readings": [
+      "If the number of consecutive failed login attempts on an account reaches 5, the system must lock that account. [in logic: (= failed_attempt_count 5) => account_locked]",
+      "If the total number of consecutive failed login attempts for an account reaches 5, the account must be in a locked state. [in logic: (>= failed_attempt_count 5) => account_locked]"
+    ],
+    "differs_when": {
+      "account_locked": false,
+      "failed_attempt_count": 6
+    },
+    "situation": "The account is not currently in a locked state, and the total number of consecutive failed login attempts for the account is 6.",
+    "title": "Ambiguity in Locking Threshold",
+    "explanation": "Requirement R3 is ambiguous because it is unclear whether the account should be locked when the failed attempt count is exactly 5 or when it is 5 or more. In the situation where the count is 6 and the account is not locked, the two interpretations of the requirement lead to different conclusions about whether the system is behaving correctly. Which did you mean?",
+    "option_a": "Keep the requirement as written, implying that the account is only required to be locked when the count is exactly 5, which would allow the account to remain unlocked at 6 attempts.",
+    "option_b": "Reword R3 to state that the system locks the account when the number of failed attempts reaches or exceeds 5, ensuring the account is locked at 6 attempts."
+  },
+  {
+    "type": "conflict",
+    "rules": [
+      "R3",
+      "R5"
+    ],
+    "when": {
+      "account_is_admin": true,
+      "failed_attempt_count": 5
+    },
+    "situation": "The account has the administrator role, and the total number of consecutive failed login attempts for the account is 5.",
+    "title": "Conflict between lockout and admin exemption",
+    "explanation": "Requirement R3 states that the system must lock the account when the number of failed attempts reaches 5. However, Requirement R5 states that the system must not lock the account if it belongs to an administrator. In the situation where an administrator account has exactly 5 failed attempts, the system is forced to both lock and not lock the account, which is impossible.",
+    "option_a": "Keeping the requirements as written means the system will fail to operate correctly for administrator accounts that reach the failure limit, as it cannot simultaneously satisfy the lockout rule and the exemption rule.",
+    "option_b": "Modify Requirement R3 to explicitly exclude administrator accounts from the lockout condition, or modify Requirement R5 to specify that administrators are subject to a different security action instead of a lock."
+  },
+  {
+    "type": "conflict",
+    "rules": [
+      "R1",
+      "R4"
+    ],
+    "facts": [
+      "F2"
+    ],
+    "when": {
+      "account_locked": true,
+      "password_is_correct": true,
+      "user_submits_password": true
+    },
+    "situation": "The account is currently in a locked state, the submitted password matches the account's stored password, and a user has submitted a password for login.",
+    "title": "Conflict between correct password and locked account",
+    "explanation": "The requirements create a contradiction when a user enters the correct password for an account that is already locked. Requirement R1 states that the system must grant access when a correct password is submitted, while Requirement R4 states that the system must deny access when a password is submitted for a locked account. This conflict relies on the assumption that the system cannot both grant and deny access at the same time.",
+    "option_a": "Keeping the requirements as written means the system is forced to perform two mutually exclusive actions simultaneously: granting access because the password is correct and denying access because the account is locked.",
+    "option_b": "Modify Requirement R1 to state that the system grants access only if the password is correct AND the account is not locked, or modify Requirement R4 to specify that a correct password on a locked account should still result in denial, thereby establishing a clear priority."
+  },
+  {
+    "type": "gap",
+    "when": {
+      "account_is_admin": false,
+      "failed_attempt_count": 6,
+      "user_submits_password": false
+    },
+    "situation": "The account does not have the administrator role, the total number of consecutive failed login attempts for the account is 6, and no user has submitted a password for login.",
+    "title": "Undefined behavior for non-admin locked accounts",
+    "explanation": "The requirements specify that an account is locked when failed attempts reach 5 (R3) and that access is denied if a password is submitted for a locked account (R4). However, there is no requirement stating what the system must do when a non-administrator account has more than 5 failed attempts but no new password submission is currently occurring. This leaves the system's state or action undefined in this specific scenario.",
+    "option_a": "Keeping the requirements as written means the system's behavior is unspecified when a non-administrator account has exceeded the failure limit without an active login attempt.",
+    "option_b": "Add a requirement stating that the system maintains the locked status of a non-administrator account as long as the failed attempt count is 5 or higher, regardless of whether a new password is submitted."
+  },
+  {
+    "type": "gap",
+    "when": {
+      "account_is_admin": false,
+      "failed_attempt_count": 0,
+      "user_submits_password": false
+    },
+    "situation": "The account does not have the administrator role, the total number of consecutive failed login attempts for the account is 0, and no user has submitted a password for login.",
+    "title": "Missing behavior for idle non-admin account",
+    "explanation": "The requirements do not specify what the system must do when a non-administrator account has zero failed attempts and no password submission is occurring. This gap appears in the situation where the account is not an administrator, the failed attempt count is zero, and no password has been submitted.",
+    "option_a": "Keeping the requirements as written means the system's behavior in this specific idle state is undefined and not constrained by any rule.",
+    "option_b": "Add a requirement stating that when no password is submitted and the failed attempt count is zero, the system remains in a neutral state without granting or denying access."
+  },
+  {
+    "type": "gap",
+    "when": {
+      "account_is_admin": false,
+      "failed_attempt_count": 1,
+      "user_submits_password": false
+    },
+    "situation": "The account does not have the administrator role, the total number of consecutive failed login attempts for the account is 1, and no user has submitted a password for login.",
+    "title": "Undefined behavior for low failed attempts",
+    "explanation": "The requirements do not specify what the system must do when an account has exactly one failed attempt and no password is currently being submitted. This gap appears in the situation where the account is not an administrator, the failed attempt count is 1, and no user has submitted a password.",
+    "option_a": "Keeping the requirements as written means the system's behavior in this specific state is undefined and may vary or be untested.",
+    "option_b": "Add a requirement stating that the system maintains the current failed attempt count and does not change the account status when no password is submitted and the failed attempt count is less than 5."
+  }
+]

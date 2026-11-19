@@ -1,0 +1,66 @@
+[
+  {
+    "type": "conflict",
+    "rules": [
+      "R2",
+      "R3"
+    ],
+    "when": {
+      "inventory_available": false,
+      "order_submitted": true
+    },
+    "situation": "An order has been submitted by a customer, and the inventory for the ordered items is not available.",
+    "title": "Backorder Requirement Conflict",
+    "explanation": "The requirements contain a direct contradiction regarding how to handle orders when stock is low. In the situation where an order is submitted but inventory is unavailable, R2 requires the system to place the order on backorder, while R3 explicitly forbids the system from placing any order on backorder.",
+    "option_a": "Keeping the requirements as written means the system is logically unable to process any order where inventory is unavailable, as it is forced to perform an action that is simultaneously prohibited.",
+    "option_b": "Remove R3 or modify it to allow backorders for specific conditions, ensuring that R2's instruction to backorder unavailable items is not contradicted by a general prohibition."
+  },
+  {
+    "type": "conflict",
+    "rules": [
+      "R1",
+      "R5"
+    ],
+    "when": {
+      "inventory_available": true,
+      "order_canceled_and_refunded": true,
+      "order_submitted": true
+    },
+    "situation": "An order has been submitted by a customer, the inventory for the ordered items is available, and the order is in a state where it has been canceled and refunded.",
+    "title": "Conflict between fulfillment and refund status",
+    "explanation": "The requirements contain a direct contradiction regarding what happens when an order is submitted while inventory is available. R1 states that the system must fulfill the order in this case, but R5 states that the system must not fulfill an order that is in a canceled-and-refunded state. Since the situation describes an order that is both submitted with available inventory and already canceled-and-refunded, the system is forced to both fulfill and not fulfill the order simultaneously.",
+    "option_a": "Keeping the requirements as written means the system will fail or behave unpredictably whenever an order is submitted with available inventory but is already marked as canceled and refunded, as it cannot satisfy both R1 and R5.",
+    "option_b": "Modify R1 to explicitly exclude orders that are already in a canceled-and-refunded state, such as: 'WHEN an order is submitted AND inventory is available AND the order is not canceled-and-refunded, THE Order System SHALL fulfill the order.'"
+  },
+  {
+    "type": "gap",
+    "when": {
+      "order_canceled": false,
+      "order_canceled_and_refunded": false,
+      "order_submitted": false
+    },
+    "situation": "No order has been canceled, the order is not in a state where it has been canceled and refunded, and no order has been submitted by a customer.",
+    "title": "Undefined behavior for non-existent orders",
+    "explanation": "The requirements do not specify what the system must do when an order has not been submitted, has not been canceled, and is not in a canceled-and-refunded state. This gap appears in the situation where none of these order states are active.",
+    "option_a": "Keeping the requirements as written means the system has no defined behavior for situations where no order has been submitted or canceled.",
+    "option_b": "Add a requirement stating that the system shall do nothing or remain idle when no order has been submitted or canceled."
+  },
+  {
+    "type": "scenario",
+    "verdict": "accepted",
+    "rules": [
+      "R1"
+    ],
+    "when": {
+      "inventory_available": false,
+      "order_fulfilled": true,
+      "order_submitted": false
+    },
+    "situation": "The inventory for the ordered items is not available, the order system has fulfilled the order, and no order has been submitted by a customer.",
+    "surprise": 2,
+    "title": "Fulfillment without submission",
+    "explanation": "The requirements allow the system to fulfill an order even when no order has been submitted and inventory is unavailable. This defeats the purpose of R1, which ties fulfillment to a submitted order and available inventory, and contradicts the user story's intent that customers receive goods only after submitting valid orders.",
+    "option_a": "Keep the requirements, so the behaviour stays allowed.",
+    "option_b": "Add a requirement stating that the Order System SHALL NOT fulfill any order unless an order has been submitted and inventory is available."
+  }
+]

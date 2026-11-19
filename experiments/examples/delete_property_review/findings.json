@@ -1,0 +1,85 @@
+[
+  {
+    "type": "ambiguity",
+    "rule": "D4",
+    "status": "ambiguous",
+    "split": [
+      4,
+      4
+    ],
+    "readings": [
+      "The Platform must ensure that Property records are retained in the database while being hidden from the user interface to support soft deletion for audit purposes. [in logic: true => (and property_record_retained_in_db property_hidden_from_ui)]",
+      "When the deletion process for a Property is completed, the Property record must remain in the database and be hidden from the user interface. [in logic: property_deleted => (and property_record_retained_in_db property_hidden_from_ui)]"
+    ],
+    "differs_when": {
+      "property_deleted": false,
+      "property_hidden_from_ui": false,
+      "property_record_retained_in_db": false
+    },
+    "situation": "The deletion process for the Property has not been completed, the Property is visible in the user interface, and the Property record is not present in the database.",
+    "title": "Ambiguous Scope of Soft Deletion",
+    "explanation": "Requirement D4 is unclear about when the platform must retain records and hide them from the interface. One reading suggests this is a general rule that always applies, while the other suggests it only applies after a deletion is finished. In the situation where no deletion has occurred, the property is visible, and the record is missing, these two interpretations lead to different conclusions about whether the requirement is violated. Which did you mean?",
+    "option_a": "Keep the requirement as a general rule that Property records must always be retained in the database and hidden from the user interface, regardless of whether a deletion has occurred.",
+    "option_b": "Reword the requirement to state that only after a Property deletion is completed must the record be retained in the database and hidden from the user interface."
+  },
+  {
+    "type": "gap",
+    "when": {
+      "deletion_attempted": false,
+      "deletion_confirmed": false,
+      "deletion_initiated": false,
+      "property_deleted": false
+    },
+    "situation": "No Property Owner has attempted to delete a Property, the Property Owner has not confirmed the deletion, no Property Owner has initiated the property deletion process, and the deletion process for the Property has not been completed.",
+    "title": "Missing behavior for non-deletion state",
+    "explanation": "The requirements only define the system's behavior when a deletion is initiated, confirmed, or completed. They do not specify what the Platform must do when none of these deletion actions have occurred, leaving the system's state undefined in this scenario.",
+    "option_a": "Keeping the requirements as written means the Platform has no specified behavior or obligation when a Property Owner is not actively deleting a Property.",
+    "option_b": "Add a requirement stating that the Platform SHALL display the standard properties list or dashboard when no deletion process is active."
+  },
+  {
+    "type": "gap",
+    "when": {
+      "deletion_confirmed": false,
+      "deletion_initiated": false,
+      "property_belongs_to_user": true,
+      "property_deleted": false
+    },
+    "situation": "The Property being deleted is associated with the User Account of the actor, but no Property Owner has initiated the property deletion process, the Property Owner has not confirmed the deletion, and the deletion process for the Property has not been completed.",
+    "title": "Missing behavior for uninitiated deletion",
+    "explanation": "The requirements define actions for when a deletion is initiated, confirmed, or completed, but they do not specify what the system must do when a property belongs to a user and no deletion process has been started or finished. This gap appears in the situation where the property is validly owned by the user, yet no deletion has been initiated, confirmed, or completed.",
+    "option_a": "Keeping the requirements as written means the system has no defined behavior for a user who has a valid property but has not yet started or finished deleting it, leaving the system's response undefined in this state.",
+    "option_b": "Add a requirement stating that when a Property belongs to a User Account and no deletion process has been initiated, the Platform SHALL display the Property in the user interface and allow the Property Owner to initiate deletion."
+  },
+  {
+    "type": "review",
+    "kind": "contradiction",
+    "rules": [
+      "D2",
+      "D4"
+    ],
+    "rewrite": {
+      "rule": "D2",
+      "text": "WHEN a Property Owner confirms deletion, THE Platform SHALL mark the Property as deleted so that it is no longer visible in the user interface"
+    },
+    "title": "Removal vs Retention",
+    "explanation": "D2 states the Platform SHALL \"remove the Property record from the Platform\", while D4 states the Platform SHALL \"retain Property records in the database\". These requirements demand incompatible outcomes for the same action: the record cannot be both removed and retained.",
+    "option_a": "The system would fail to meet D4 because the record is removed, or fail D2 because the record is retained, making the requirement untestable as written.",
+    "option_b": "Rewrite D2 as: \"WHEN a Property Owner confirms deletion, THE Platform SHALL mark the Property as deleted so that it is no longer visible in the user interface\"",
+    "proven": false
+  },
+  {
+    "type": "review",
+    "kind": "wording",
+    "rules": [
+      "D4"
+    ],
+    "rewrite": {
+      "rule": "D4",
+      "text": "WHEN a Property is deleted, THE Platform SHALL ensure the Property data is retained for audit purposes and is not visible in the user interface"
+    },
+    "title": "Implementation Prescribed",
+    "explanation": "The requirement prescribes a specific implementation technique (\"implement soft deletion\") and internal storage state (\"retain Property records in the database\") rather than observable behavior. A tester cannot verify the internal database state or the specific technique used, only the visible effect.",
+    "option_a": "The system could use hard deletion or a different retention mechanism and still pass the test if the tester only checks the UI, but the requirement explicitly demands a specific internal implementation that is not observable.",
+    "option_b": "Rewrite D4 as: \"WHEN a Property is deleted, THE Platform SHALL ensure the Property data is retained for audit purposes and is not visible in the user interface\""
+  }
+]

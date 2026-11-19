@@ -1,0 +1,144 @@
+{
+  "symbols": [
+    {
+      "name": "deletion_requested",
+      "sort": "Bool",
+      "values": [],
+      "description": "The user has submitted a request to delete a property."
+    },
+    {
+      "name": "user_is_owner",
+      "sort": "Bool",
+      "values": [],
+      "description": "The user making the request is the owner of the property."
+    },
+    {
+      "name": "deletion_confirmed",
+      "sort": "Bool",
+      "values": [],
+      "description": "The user has confirmed the deletion action."
+    },
+    {
+      "name": "property_deleted",
+      "sort": "Bool",
+      "values": [],
+      "description": "The property has been successfully deleted from the system."
+    },
+    {
+      "name": "confirmation_prompt_displayed",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system displays a prompt asking the user to confirm the deletion."
+    },
+    {
+      "name": "property_record_removed",
+      "sort": "Bool",
+      "values": [],
+      "description": "The property record is no longer accessible or visible in the system."
+    },
+    {
+      "name": "property_record_retained",
+      "sort": "Bool",
+      "values": [],
+      "description": "The property record still exists in the database for audit purposes."
+    },
+    {
+      "name": "confirmation_message_displayed",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system displays a message confirming the deletion was successful."
+    },
+    {
+      "name": "redirected_to_property_list",
+      "sort": "Bool",
+      "values": [],
+      "description": "The user's view is redirected to the list of properties."
+    },
+    {
+      "name": "authorization_error_displayed",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system displays an error message indicating the user is not authorized to perform the action."
+    }
+  ],
+  "background": [
+    {
+      "id": "F1",
+      "text": "A property record cannot be both removed and retained at the same time.",
+      "formula": "(not (and property_record_removed property_record_retained))",
+      "support": "7/8"
+    }
+  ],
+  "rules": [
+    {
+      "id": "D1",
+      "text": "WHEN the owner requests deletion of a Property, THE System SHALL display a confirmation prompt.",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If the user is the owner and requests deletion of a property, the system must display a confirmation prompt.",
+      "antecedent": "(and user_is_owner deletion_requested)",
+      "consequent": "confirmation_prompt_displayed"
+    },
+    {
+      "id": "D2",
+      "text": "WHEN the owner confirms the deletion, THE System SHALL remove the Property record.",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "The system must ensure the property record is removed whenever the property owner has confirmed the deletion action.",
+      "antecedent": "(and user_is_owner deletion_confirmed)",
+      "consequent": "property_record_removed"
+    },
+    {
+      "id": "D3",
+      "text": "WHEN a Property is deleted, THE System SHALL display a confirmation message and redirect the owner to the property list.",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "When a property is deleted, the system must display a confirmation message and redirect the user to the property list.",
+      "antecedent": "property_deleted",
+      "consequent": "(and confirmation_message_displayed redirected_to_property_list)"
+    },
+    {
+      "id": "D4",
+      "text": "THE System SHALL implement soft deletion to retain Property records for audit purposes.",
+      "status": "ambiguous",
+      "clusters": [
+        4,
+        4
+      ],
+      "entropy": 0.693,
+      "reading": "The system must ensure that property records are retained for audit purposes when implementing soft deletion.",
+      "antecedent": "true",
+      "consequent": "property_record_retained",
+      "alternative": {
+        "reading": "The system must ensure that property records are retained in the database for audit purposes when a property is successfully deleted.",
+        "antecedent": "property_deleted",
+        "consequent": "property_record_retained"
+      },
+      "differs_when": {
+        "property_deleted": false,
+        "property_record_retained": false
+      }
+    },
+    {
+      "id": "D5",
+      "text": "WHEN a user who is not the owner attempts to delete a Property, THE System SHALL display an authorization error.",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "The system must display an authorization error whenever a user who is not the owner attempts to delete a property.",
+      "antecedent": "(and deletion_requested (not user_is_owner))",
+      "consequent": "authorization_error_displayed"
+    }
+  ]
+}

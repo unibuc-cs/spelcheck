@@ -1,0 +1,262 @@
+{
+  "symbols": [
+    {
+      "name": "password_submitted",
+      "sort": "Bool",
+      "values": [],
+      "description": "A user has submitted a password for login",
+      "event": true
+    },
+    {
+      "name": "password_correct",
+      "sort": "Bool",
+      "values": [],
+      "description": "The submitted password matches the stored password for the account",
+      "event": false
+    },
+    {
+      "name": "access_granted",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system grants access to the user",
+      "event": false
+    },
+    {
+      "name": "access_denied",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system denies access to the user",
+      "event": false
+    },
+    {
+      "name": "failed_attempts_count",
+      "sort": "Int",
+      "values": [],
+      "description": "The number of consecutive failed login attempts for the account",
+      "event": false
+    },
+    {
+      "name": "account_locked",
+      "sort": "Bool",
+      "values": [],
+      "description": "The account is currently in a locked state",
+      "event": false
+    },
+    {
+      "name": "account_is_admin",
+      "sort": "Bool",
+      "values": [],
+      "description": "The account belongs to an administrator",
+      "event": false
+    }
+  ],
+  "background": [
+    {
+      "id": "F1",
+      "text": "The number of consecutive failed login attempts cannot be negative.",
+      "formula": "(>= failed_attempts_count 0)",
+      "support": "7/8"
+    },
+    {
+      "id": "F2",
+      "text": "The system cannot grant access and deny access simultaneously.",
+      "formula": "(not (and access_granted access_denied))",
+      "support": "7/8"
+    }
+  ],
+  "rules": [
+    {
+      "id": "R1",
+      "text": "WHEN a user submits a correct password THEN the system grants access",
+      "status": "accepted",
+      "clusters": [
+        7
+      ],
+      "entropy": 0.0,
+      "reading": "In any situation where a user submits a password that is correct, the system must grant access to that user.",
+      "antecedent": "(and password_submitted password_correct)",
+      "consequent": "access_granted",
+      "probes": [
+        {
+          "reading": "If the user submits a password, then the system grants access only if the password is correct.",
+          "antecedent": "password_submitted",
+          "consequent": "(=> access_granted password_correct)",
+          "situations": [
+            {
+              "when": {
+                "access_granted": true,
+                "password_correct": false,
+                "password_submitted": true
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "access_granted": false,
+                "password_correct": true,
+                "password_submitted": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 6,
+            "other": 2,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R2",
+      "text": "WHEN a user submits an incorrect password THEN the system denies access",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a user submits a password that does not match the stored password, the system must deny access.",
+      "antecedent": "(and password_submitted (not password_correct))",
+      "consequent": "access_denied",
+      "probes": [
+        {
+          "reading": "If a user submits a password, the system denies access only if the password is incorrect.",
+          "antecedent": "password_submitted",
+          "consequent": "(=> access_denied (not password_correct))",
+          "situations": [
+            {
+              "when": {
+                "access_denied": true,
+                "password_correct": true,
+                "password_submitted": true
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "access_denied": false,
+                "password_correct": false,
+                "password_submitted": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 6,
+            "other": 0,
+            "either": 2
+          }
+        },
+        {
+          "reading": "The system denies access whenever the submitted password is incorrect, regardless of whether a submission event is explicitly recorded.",
+          "antecedent": "(not password_correct)",
+          "consequent": "access_denied",
+          "situations": [
+            {
+              "when": {
+                "access_denied": false,
+                "password_correct": false,
+                "password_submitted": false
+              },
+              "translation_says": "obeyed"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R3",
+      "text": "WHEN the number of failed attempts on an account reaches 5 THEN the system locks the account",
+      "status": "accepted",
+      "clusters": [
+        7,
+        1
+      ],
+      "entropy": 0.377,
+      "reading": "If the number of consecutive failed login attempts for an account equals 5, the system must place the account in a locked state.",
+      "antecedent": "(= failed_attempts_count 5)",
+      "consequent": "account_locked",
+      "probes": [
+        {
+          "reading": "If the number of consecutive failed login attempts for an account is at least 5, the system must place the account in a locked state.",
+          "antecedent": "(>= failed_attempts_count 5)",
+          "consequent": "account_locked",
+          "situations": [
+            {
+              "when": {
+                "account_locked": false,
+                "failed_attempts_count": 6
+              },
+              "translation_says": "obeyed"
+            }
+          ],
+          "answers": {
+            "translation": 1,
+            "other": 6,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R4",
+      "text": "WHEN a user submits a password for a locked account THEN the system denies access",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a user submits a password for an account that is currently locked, the system must deny access.",
+      "antecedent": "(and password_submitted account_locked)",
+      "consequent": "access_denied",
+      "probes": [
+        {
+          "reading": "If a user submits a password, the system denies access only if the account is locked.",
+          "antecedent": "password_submitted",
+          "consequent": "(=> access_denied account_locked)",
+          "situations": [
+            {
+              "when": {
+                "access_denied": true,
+                "account_locked": false,
+                "password_submitted": true
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "access_denied": false,
+                "account_locked": true,
+                "password_submitted": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R5",
+      "text": "WHEN the account belongs to an administrator THEN the system does not lock the account",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If the account belongs to an administrator, the account must not be in a locked state.",
+      "antecedent": "account_is_admin",
+      "consequent": "(not account_locked)",
+      "probes": []
+    }
+  ]
+}

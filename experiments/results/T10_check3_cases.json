@@ -1,0 +1,260 @@
+[
+ {
+  "case": "T8_specs#1",
+  "before": [],
+  "after": [],
+  "facts": [
+   {
+    "id": "F1",
+    "text": "If the property record is removed, it is not retained in the database.",
+    "formula": "(=> property_record_removed (not property_record_retained_in_database))",
+    "support": "8/8",
+    "check": {
+     "against": "D4",
+     "answers": {
+      "agrees": 0,
+      "contradicts": 8,
+      "unclear": 0
+     },
+     "replies": [
+      {
+       "reason": "The requirement explicitly states that records must be 'retained in the database' to support audit purposes, whereas the statement claims that if a record is removed, it is 'not retained,' which directly negates the core function of soft deletion described in the requirement.",
+       "answer": "contradicts"
+      },
+      {
+       "reason": "The requirement explicitly mandates that Property records be retained in the database (soft deletion), whereas the statement asserts that removed records are not retained, which directly conflicts with the mandatory retention for audit purposes.",
+       "answer": "contradicts"
+      },
+      {
+       "reason": "The requirement explicitly mandates that Property records be retained in the database for audit purposes, whereas the statement claims that removed records are not retained in the database, which directly contradicts the requirement.",
+       "answer": "contradicts"
+      },
+      {
+       "reason": "The requirement mandates that Property records must be 'retained in the database' even when they are deleted (via soft deletion). The statement claims that if a record is removed, it is 'not retained in the database,' which directly negates the core function of the soft deletion mechanism described in the requirement.",
+       "answer": "contradicts"
+      },
+      {
+       "reason": "The requirement explicitly mandates that Property records be retained in the database for audit purposes (soft deletion), whereas the statement claims that if a record is removed, it is not retained, which directly contradicts the requirement's definition of removal as a hidden state rather than a physical deletion.",
+       "answer": "contradicts"
+      },
+      {
+       "reason": "The requirement explicitly mandates that Property records must be retained in the database for audit purposes, whereas the statement claims that if a record is removed, it is not retained in the database. This contradicts the requirement's core instruction to keep the data in the database even when it is hidden or 'removed' from the user's perspective.",
+       "answer": "contradicts"
+      },
+      {
+       "reason": "The requirement explicitly states that soft deletion is used to 'retain Property records in the database,' which directly contradicts the statement that a removed record is 'not retained in the database.'",
+       "answer": "contradicts"
+      },
+      {
+       "reason": "The requirement explicitly states that soft deletion is implemented to 'retain Property records in the database'. The statement claims that if a record is removed, it is 'not retained', which directly opposes the core function of soft deletion described in the requirement.",
+       "answer": "contradicts"
+      }
+     ],
+     "verdict": "rejected"
+    }
+   },
+   {
+    "id": "F2",
+    "text": "If deletion is denied, the property is not successfully deleted.",
+    "formula": "(=> deletion_denied (not property_deleted))",
+    "support": "7/8"
+   },
+   {
+    "id": "F3",
+    "text": "If a property is successfully deleted, its record is removed from the Platform.",
+    "formula": "(=> property_deleted property_record_removed)",
+    "support": "6/8",
+    "check": {
+     "against": "D4",
+     "answers": {
+      "agrees": 0,
+      "contradicts": 8,
+      "unclear": 0
+     },
+     "replies": [
+      {
+       "reason": "The requirement explicitly states that the platform must 'retain Property records in the database' using soft deletion, which directly contradicts the statement that the record is 'removed from the Platform' upon deletion.",
+       "answer": "contradicts"
+      },
+      {
+       "reason": "The requirement explicitly mandates 'soft deletion,' which retains Property records in the database (only hiding them from the UI). The statement claims the record is 'removed from the Platform' upon deletion, which contradicts the retention of the record in the database.",
+       "answer": "contradicts"
+      },
+      {
+       "reason": "The requirement explicitly mandates 'soft deletion' to 'retain' records in the database, whereas the statement claims the record is 'removed' from the Platform, which directly contradicts the retention requirement.",
+       "answer": "contradicts"
+      },
+      {
+       "reason": "The requirement specifies 'soft deletion,' which means the record is retained in the database and only hidden from the user interface, whereas the statement claims the record is removed from the Platform entirely.",
+       "answer": "contradicts"
+      },
+      {
+       "reason": "The requirement explicitly states that records are retained in the database (soft deletion) while only being hidden from the user interface, which directly contradicts the statement that the record is removed from the Platform.",
+       "answer": "contradicts"
+      },
+      {
+       "reason": "The requirement explicitly states that records are retained in the database (soft deletion), whereas the statement claims the record is removed from the Platform, which contradicts the retention mandate.",
+       "answer": "contradicts"
+      },
+      {
+       "reason": "The requirement explicitly states that records are retained in the database for audit purposes, whereas the statement claims the record is removed from the Platform, which contradicts the concept of soft deletion.",
+       "answer": "contradicts"
+      },
+      {
+       "reason": "The requirement mandates that Property records be retained in the database upon deletion (soft deletion), which directly contradicts the statement that the record is removed from the Platform.",
+       "answer": "contradicts"
+      }
+     ],
+     "verdict": "rejected"
+    }
+   }
+  ]
+ },
+ {
+  "case": "T8_specs#3",
+  "before": [],
+  "after": [
+   [
+    "D2",
+    "D4"
+   ]
+  ],
+  "facts": [
+   {
+    "id": "F1",
+    "text": "If a property is hidden from the user interface, it is not visible in the user interface, which is implied by the definition, but more relevantly, if the property is successfully deleted, it is no longer owned by the user in the active sense, but 'property_owned_by_user' is a state. However, a stronger semantic fact is that if the deletion is denied, the property is not deleted.",
+    "formula": "(=> deletion_denied (not property_deleted))",
+    "support": "6/8"
+   },
+   {
+    "id": "F2",
+    "text": "If the property is successfully deleted, it is not retained in the database (in the active record sense).",
+    "formula": "(=> property_deleted (not property_record_retained_in_database))",
+    "support": "5/8",
+    "check": {
+     "against": "D4",
+     "answers": {
+      "agrees": 0,
+      "contradicts": 8,
+      "unclear": 0
+     },
+     "replies": [
+      {
+       "reason": "The requirement explicitly mandates that Property records must be retained in the database (via soft deletion), whereas the statement claims that if deleted, the record is not retained in the database. These two claims are mutually exclusive regarding the state of the database after deletion.",
+       "answer": "contradicts"
+      },
+      {
+       "reason": "The requirement mandates soft deletion, which explicitly requires retaining records in the database; the statement claims the record is not retained, directly contradicting the requirement.",
+       "answer": "contradicts"
+      },
+      {
+       "reason": "The requirement explicitly mandates that Property records be retained in the database (albeit hidden from the UI) to support audit purposes, which directly contradicts the statement that they are not retained in the database.",
+       "answer": "contradicts"
+      },
+      {
+       "reason": "The requirement explicitly states that the platform SHALL retain Property records in the database (via soft deletion), whereas the statement claims that records are not retained in the database upon deletion. These two conditions are mutually exclusive.",
+       "answer": "contradicts"
+      },
+      {
+       "reason": "The requirement explicitly mandates that Property records must be retained in the database for audit purposes via soft deletion, which directly contradicts the statement that records are not retained in the database upon successful deletion.",
+       "answer": "contradicts"
+      },
+      {
+       "reason": "The requirement explicitly mandates that Property records must be retained in the database for audit purposes when using soft deletion. The statement claims that upon successful deletion, the record is not retained in the database, which directly opposes the requirement's instruction to keep the record in the database (albeit hidden from the UI).",
+       "answer": "contradicts"
+      },
+      {
+       "reason": "The requirement explicitly mandates that records must be 'retained in the database' for audit purposes, which directly contradicts the statement claiming they are not retained.",
+       "answer": "contradicts"
+      },
+      {
+       "reason": "The requirement explicitly states that the platform must retain Property records in the database to support soft deletion, whereas the statement claims the records are not retained in the database upon successful deletion.",
+       "answer": "contradicts"
+      }
+     ],
+     "verdict": "rejected"
+    }
+   },
+   {
+    "id": "F3",
+    "text": "If a property is successfully deleted, it is not retained in the database (assuming 'retained in database' means available/active record, which contradicts 'removed from Platform' if 'removed' means hard delete or logical delete that makes it inaccessible. However, often 'retained in database' might mean soft delete. Let's look at the symbols again. 'property_record_removed' vs 'property_record_retained_in_database'. These sound like opposites. If a record is removed, it is not retained. If it is retained, it is not removed. This is a tautology of mutual exclusion if they represent the same state of the record's presence.",
+    "formula": "(=> property_record_removed (not property_record_retained_in_database))",
+    "support": "5/8"
+   }
+  ]
+ },
+ {
+  "case": "T8b_subset#2",
+  "before": [],
+  "after": [],
+  "facts": [
+   {
+    "id": "F1",
+    "text": "A property cannot be successfully deleted if the deletion request was denied.",
+    "formula": "(=> deletion_denied (not property_deleted))",
+    "support": "7/8"
+   },
+   {
+    "id": "F2",
+    "text": "If a property is successfully deleted, it must have been removed from the active data set.",
+    "formula": "(=> property_deleted property_record_removed)",
+    "support": "6/8"
+   },
+   {
+    "id": "F3",
+    "text": "A property cannot be both successfully deleted and retained in the database as an active record.",
+    "formula": "(not (and property_deleted property_record_retained_in_db))",
+    "support": "5/8",
+    "check": {
+     "against": "D4",
+     "answers": {
+      "agrees": 6,
+      "contradicts": 2,
+      "unclear": 0
+     },
+     "replies": [
+      {
+       "reason": "The requirement specifies 'soft deletion' where records are 'retained' and 'hidden' from the UI, which implies they are no longer 'active' in the functional sense. Therefore, a property that is successfully soft-deleted is not an 'active record,' making the statement that it cannot be both deleted and retained as active consistent with the requirement's definition of the deletion state.",
+       "answer": "agrees"
+      },
+      {
+       "reason": "The requirement specifies 'soft deletion' where records are 'retained' in the database but 'hidden' from the interface. This implies the records remain in the database in a state that allows for audit (typically marked as deleted/inactive), which inherently contradicts the idea of them being 'active' records, thus supporting the statement that they cannot be both successfully deleted (in the functional sense) and active.",
+       "answer": "agrees"
+      },
+      {
+       "reason": "The requirement explicitly mandates that Property records be retained in the database upon deletion, which directly contradicts the statement's claim that a property cannot be both deleted and retained in the database.",
+       "answer": "contradicts"
+      },
+      {
+       "reason": "The requirement mandates soft deletion, which explicitly retains records in the database (for audit) while hiding them from the user interface. The statement asserts that a property cannot be both successfully deleted (which soft deletion satisfies by hiding it) and retained as an *active* record. Since the requirement implies that soft-deleted records are no longer 'active' (they are hidden from the UI, distinguishing them from active records), the statement aligns with the standard definition of soft deletion where 'deleted' status precludes 'active' status, even if the row persists. However, looking closer at the phrasing \"retained in the database as an active record\", if \"active record\" simply means \"a record that exists in the database\", then a soft-deleted record is both deleted (logically) and retained (physically). But in database terminology, \"active\" usually contrasts with \"deleted\" or \"archived\". The requirement says it retains them *for audit purposes* while *hiding* them. This implies they are no longer active in the business sense. The statement says it *cannot* be both. This is consistent with the requirement's logic that deletion changes the state from active to inactive/deleted, even if the row remains. Therefore, the statement agrees with the requirement's intent that a deleted property is not an active one, despite being retained.",
+       "answer": "agrees"
+      },
+      {
+       "reason": "The requirement mandates soft deletion, which technically removes the record from the active user interface (satisfying the 'deleted' aspect for the user) while retaining it in the database (satisfying the 'retained' aspect). Since soft deletion allows a record to exist in the database while being hidden from the UI, a property can be considered 'deleted' (from the user's perspective) and 'retained' (in the database) simultaneously, contradicting the statement that it cannot be both.",
+       "answer": "contradicts"
+      },
+      {
+       "reason": "The requirement specifies that soft deletion retains records for audit purposes while hiding them from the UI, which implies the records remain in the database but are no longer 'active' (visible/usable) in the standard sense. The statement asserts a logical incompatibility between being 'successfully deleted' (in the context of the user action triggering the soft delete) and being 'retained as an active record.' Since soft deletion changes the state from active to inactive (hidden), a record cannot simultaneously be in a successfully deleted state (regarding user visibility) and an active state. Thus, the statement aligns with the mechanism of soft deletion where the 'active' status is lost upon deletion.",
+       "answer": "agrees"
+      },
+      {
+       "reason": "The requirement mandates that records are retained in the database (for audit purposes) while being hidden from the UI (soft deletion). The statement asserts that a property cannot be both deleted and retained as an *active* record. Since soft deletion typically changes a record's status to inactive or marked-for-deletion, the record is no longer 'active' in the logical sense, even if it physically remains in the database. Therefore, the system's behavior (retaining but deactivating/hiding) is consistent with the statement that it is not both deleted and *active*.",
+       "answer": "agrees"
+      },
+      {
+       "reason": "The requirement mandates that soft deletion retains records in the database while hiding them from the UI, which inherently implies the record is no longer 'active' or visible in the normal operational sense; therefore, a record cannot be both successfully deleted (rendered inactive/hidden) and retained as an active record, making the statement consistent with the defined behavior.",
+       "answer": "agrees"
+      }
+     ],
+     "verdict": "confirmed"
+    }
+   },
+   {
+    "id": "F4",
+    "text": "A property record cannot be both removed from the active data set and retained in the database at the same time.",
+    "formula": "(not (and property_record_removed property_record_retained_in_db))",
+    "support": "5/8"
+   }
+  ]
+ }
+]

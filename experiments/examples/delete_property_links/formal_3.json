@@ -1,0 +1,164 @@
+{
+  "symbols": [
+    {
+      "name": "deletion_initiated",
+      "sort": "Bool",
+      "values": [],
+      "description": "The Property Owner has initiated the property deletion process."
+    },
+    {
+      "name": "deletion_confirmed",
+      "sort": "Bool",
+      "values": [],
+      "description": "The Property Owner has confirmed the deletion."
+    },
+    {
+      "name": "deletion_attempted",
+      "sort": "Bool",
+      "values": [],
+      "description": "The Property Owner has attempted to delete a property."
+    },
+    {
+      "name": "property_deleted",
+      "sort": "Bool",
+      "values": [],
+      "description": "The Property has been successfully deleted from the Platform."
+    },
+    {
+      "name": "property_owned_by_user",
+      "sort": "Bool",
+      "values": [],
+      "description": "The Property belongs to the User Account of the Property Owner."
+    },
+    {
+      "name": "confirmation_prompt_displayed",
+      "sort": "Bool",
+      "values": [],
+      "description": "The Platform displays a prompt asking for confirmation before proceeding with deletion."
+    },
+    {
+      "name": "property_record_removed",
+      "sort": "Bool",
+      "values": [],
+      "description": "The Property record is removed from the Platform (logical deletion)."
+    },
+    {
+      "name": "property_record_retained_in_db",
+      "sort": "Bool",
+      "values": [],
+      "description": "The Property record is retained in the database for audit purposes."
+    },
+    {
+      "name": "property_hidden_from_ui",
+      "sort": "Bool",
+      "values": [],
+      "description": "The Property is hidden from the user interface."
+    },
+    {
+      "name": "confirmation_message_displayed",
+      "sort": "Bool",
+      "values": [],
+      "description": "The Platform displays a confirmation message indicating successful deletion."
+    },
+    {
+      "name": "redirected_to_properties_list",
+      "sort": "Bool",
+      "values": [],
+      "description": "The Platform redirects the user to the properties list page."
+    },
+    {
+      "name": "deletion_denied",
+      "sort": "Bool",
+      "values": [],
+      "description": "The Platform denies the deletion request."
+    },
+    {
+      "name": "authorization_error_displayed",
+      "sort": "Bool",
+      "values": [],
+      "description": "The Platform displays an authorization error message."
+    }
+  ],
+  "background": [
+    {
+      "id": "F1",
+      "text": "What D2 demands, in the terms of the other requirements: When the Property Owner confirms the deletion, the Property record must be removed from the Platform (represented by the record not being retained in the database).",
+      "formula": "(=> (and deletion_confirmed property_record_removed) (not property_record_retained_in_db))",
+      "support": "5/8",
+      "restates": "D2"
+    }
+  ],
+  "rules": [
+    {
+      "id": "D1",
+      "text": "WHEN a Property Owner initiates property deletion, THE Platform SHALL prompt for confirmation before proceeding",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "Whenever a Property Owner initiates the deletion of a property, the Platform must display a confirmation prompt before proceeding with the deletion.",
+      "antecedent": "deletion_initiated",
+      "consequent": "confirmation_prompt_displayed"
+    },
+    {
+      "id": "D2",
+      "text": "WHEN a Property Owner confirms deletion, THE Platform SHALL remove the Property record from the Platform",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "Whenever a property owner confirms the deletion of a property, the platform must remove the property record from the platform.",
+      "antecedent": "deletion_confirmed",
+      "consequent": "property_record_removed"
+    },
+    {
+      "id": "D3",
+      "text": "WHEN a Property is deleted, THE Platform SHALL display a confirmation message and redirect to the properties list",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "When a property has been successfully deleted, the platform must display a confirmation message and redirect the user to the properties list page.",
+      "antecedent": "property_deleted",
+      "consequent": "(and confirmation_message_displayed redirected_to_properties_list)"
+    },
+    {
+      "id": "D4",
+      "text": "THE Platform SHALL implement soft deletion to retain Property records in the database for audit purposes while hiding them from the user interface",
+      "status": "ambiguous",
+      "clusters": [
+        4,
+        4
+      ],
+      "entropy": 0.693,
+      "reading": "Whenever a Property is successfully deleted, the Platform must retain its record in the database for audit purposes and hide it from the user interface.",
+      "antecedent": "property_deleted",
+      "consequent": "(and property_record_retained_in_db property_hidden_from_ui)",
+      "alternative": {
+        "reading": "The requirement mandates that the platform uses soft deletion, meaning property records must be retained in the database for audit purposes while being hidden from the user interface.",
+        "antecedent": "true",
+        "consequent": "(and property_record_retained_in_db property_hidden_from_ui)"
+      },
+      "differs_when": {
+        "property_deleted": false,
+        "property_hidden_from_ui": false,
+        "property_record_retained_in_db": false
+      }
+    },
+    {
+      "id": "D5",
+      "text": "WHEN a Property Owner attempts to delete a Property that does not belong to their User Account, THE Platform SHALL deny the deletion and display an authorization error message",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a property owner attempts to delete a property that is not associated with their user account, the platform must deny the deletion request and display an authorization error message.",
+      "antecedent": "(and deletion_attempted (not property_owned_by_user))",
+      "consequent": "(and deletion_denied authorization_error_displayed)"
+    }
+  ]
+}

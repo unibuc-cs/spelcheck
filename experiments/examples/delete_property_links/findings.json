@@ -1,0 +1,160 @@
+[
+  {
+    "type": "ambiguity",
+    "rule": "D4",
+    "status": "ambiguous",
+    "split": [
+      5,
+      3
+    ],
+    "readings": [
+      "The platform must implement soft deletion by ensuring that when a property deletion is completed, the property record remains present in the database and is not visible in the user interface. [in logic: property_deleted => (and property_record_retained_in_db property_hidden_from_ui)]",
+      "The system must retain property records in the database and hide them from the user interface to implement soft deletion for audit purposes. [in logic: true => (and property_record_retained_in_db property_hidden_from_ui)]"
+    ],
+    "differs_when": {
+      "property_deleted": false,
+      "property_hidden_from_ui": false,
+      "property_record_retained_in_db": false
+    },
+    "model": 0,
+    "support": "3/3",
+    "situation": "The deletion process for the Property has not been completed, the Property is visible in the user interface, and the Property record is not present in the database.",
+    "title": "Ambiguous Scope of Soft Deletion",
+    "explanation": "Requirement D4 is ambiguous because it is unclear whether the platform must retain records and hide them from the interface only after a deletion is completed, or if it must always retain records and hide them from the interface regardless of the deletion status. This difference appears in the situation where no deletion has occurred, the property is visible, and the record is not in the database. Which did you mean?",
+    "option_a": "Keep the requirement as written, implying that the platform only needs to ensure records are retained and hidden from the interface once a property deletion is completed.",
+    "option_b": "Reword the requirement to state that the platform must always retain property records in the database and hide them from the user interface to support audit purposes, regardless of whether a deletion has been initiated or completed."
+  },
+  {
+    "type": "ambiguity",
+    "rule": "D2",
+    "status": "ambiguous",
+    "split": [
+      4,
+      4
+    ],
+    "readings": [
+      "If a Property Owner confirms the deletion of a property, the platform must remove the property record from the platform. [in logic: deletion_confirmed => (not property_record_in_database)]",
+      "When a Property Owner confirms the deletion of a property, the Platform must ensure that the property is successfully deleted. [in logic: deletion_confirmed => property_deleted]"
+    ],
+    "differs_when": {
+      "deletion_confirmed": true,
+      "property_deleted": true,
+      "property_record_in_database": true
+    },
+    "model": 1,
+    "support": "1/3",
+    "situation": "The Property Owner has confirmed the deletion, the Property has been successfully deleted from the Platform, and the Property record is retained in the database.",
+    "title": "Ambiguity in Deletion Definition",
+    "explanation": "Requirement D2 is unclear about what \"remove the Property record\" means. One reading requires that the record be physically erased from the database, while the other only requires that the property be considered deleted (which, per D4, allows the record to remain in the database). Which did you mean?",
+    "option_a": "Keep the requirement as written, implying that confirming deletion must physically erase the record from the database.",
+    "option_b": "Reword D2 to state that the Platform must mark the Property as deleted, allowing the record to remain in the database for audit purposes."
+  },
+  {
+    "type": "conflict",
+    "rules": [
+      "D2",
+      "D4"
+    ],
+    "when": {
+      "deletion_confirmed": true,
+      "property_deleted": true
+    },
+    "model": 1,
+    "support": "3/3",
+    "situation": "The Property Owner has confirmed the deletion, and the Property has been successfully deleted from the Platform.",
+    "title": "Conflict between removal and retention",
+    "explanation": "Requirement D2 states that the Platform must remove the Property record from the Platform once deletion is confirmed. However, Requirement D4 mandates that the Platform must retain Property records in the database for audit purposes. These two requirements cannot be satisfied simultaneously because a record cannot be both removed and retained in the same state.",
+    "option_a": "Keeping the requirements as written means the system is logically impossible to build because it must both delete and keep the same data.",
+    "option_b": "Change Requirement D2 to state that the Platform shall mark the Property as deleted rather than removing the record, aligning it with the soft deletion strategy in D4."
+  },
+  {
+    "type": "gap",
+    "when": {
+      "deletion_attempted": false,
+      "deletion_confirmed": false,
+      "deletion_initiated": false,
+      "property_deleted": false
+    },
+    "model": 0,
+    "situation": "No Property Owner has attempted to delete a Property, no Property Owner has confirmed the deletion, no Property Owner has initiated the property deletion process, and the deletion process for the Property has not been completed.",
+    "title": "Missing behavior for non-deletion state",
+    "explanation": "The requirements define specific actions only for scenarios where a deletion is initiated, confirmed, or completed. However, there is no requirement stating what the system must do when none of these deletion steps have occurred, leaving the system's behavior undefined for the standard state where no deletion is taking place.",
+    "option_a": "Keeping the requirements as written means the system has no defined behavior or obligation when a user is not actively trying to delete a property.",
+    "option_b": "Add a requirement stating that the Platform SHALL display the standard property details or list view when no deletion process has been initiated."
+  },
+  {
+    "type": "gap",
+    "when": {
+      "deletion_confirmed": false,
+      "deletion_initiated": false,
+      "property_belongs_to_user": true,
+      "property_deleted": false
+    },
+    "model": 0,
+    "situation": "The Property being deleted belongs to the User Account of the Property Owner, but no Property Owner has initiated the property deletion process, no Property Owner has confirmed the deletion, and the deletion process for the Property has not been completed.",
+    "title": "Undefined state for owned property",
+    "explanation": "The requirements define actions for initiating, confirming, or completing deletion, but they do not specify what the system must do when a property is owned by the user and no deletion action has been taken. This gap appears in the situation where the property belongs to the user, but the deletion process has not been initiated, confirmed, or completed.",
+    "option_a": "Keeping the requirements as written means the system has no defined behavior for a property that is owned by the user but is not currently undergoing a deletion process.",
+    "option_b": "Add a requirement stating that the Platform SHALL display the property in the user's list and allow the user to view or edit it when no deletion process has been initiated."
+  },
+  {
+    "type": "scenario",
+    "verdict": "accepted",
+    "rules": [
+      "D2"
+    ],
+    "when": {
+      "deletion_confirmed": false,
+      "property_record_removed": true
+    },
+    "model": 0,
+    "support": "3/3",
+    "situation": "A Property Owner has not confirmed the deletion, yet the Property record is removed from the Platform's active data set.",
+    "surprise": 3,
+    "title": "Deletion without confirmation",
+    "explanation": "Requirement D2 states that the Platform SHALL remove the Property record only WHEN a Property Owner confirms deletion. The consequence shows that the record is removed even though the confirmation did not happen. This directly violates the intent of D2 and D1, which require user confirmation before any removal occurs, making this a clear failure of the stated goal.",
+    "option_a": "Keep the requirements as they are, accepting that the system might delete properties without user confirmation.",
+    "option_b": "Modify Requirement D2 to explicitly state that the Property record SHALL NOT be removed unless the deletion has been confirmed by the Property Owner."
+  },
+  {
+    "type": "scenario",
+    "verdict": "accepted",
+    "rules": [
+      "D3"
+    ],
+    "when": {
+      "confirmation_message_displayed": true,
+      "property_deleted": false,
+      "redirected_to_properties_list": true
+    },
+    "model": 0,
+    "support": "3/3",
+    "situation": "The Platform displays a message confirming the deletion, the deletion process for the Property has not been completed, and the Platform redirects the user to the properties list view.",
+    "surprise": 2,
+    "title": "False Deletion Confirmation",
+    "explanation": "The requirements allow the system to show a success message and redirect the user even though the property deletion has not actually finished. This is likely not intended because D3 requires these actions only when a Property is deleted, and showing a success message for a failed or incomplete operation would mislead the user into thinking the property was removed when it was not.",
+    "option_a": "Keep the requirements, allowing the platform to display a confirmation and redirect even if the deletion process is not fully complete.",
+    "option_b": "Modify D3 to explicitly state that the confirmation message and redirect SHALL only occur after the deletion process has been successfully completed."
+  },
+  {
+    "type": "scenario",
+    "verdict": "accepted",
+    "rules": [
+      "D5"
+    ],
+    "when": {
+      "authorization_error_displayed": true,
+      "deletion_attempted": false,
+      "deletion_denied": true,
+      "property_belongs_to_user": false
+    },
+    "model": 0,
+    "support": "3/3",
+    "situation": "The Platform displays an error message indicating an authorization failure, no Property Owner has attempted to delete a Property, the Platform denies the deletion request, and the Property being deleted does not belong to the User Account of the Property Owner.",
+    "surprise": 2,
+    "title": "Spurious Authorization Error",
+    "explanation": "The requirements allow the system to deny a deletion and show an authorization error even when no deletion attempt has been made. This is likely not intended because D5 specifies that the error should only appear when a Property Owner attempts to delete a property that does not belong to them, implying a user action must trigger the check.",
+    "option_a": "Keep the requirements, allowing the system to display authorization errors and deny deletions without a preceding user attempt.",
+    "option_b": "Modify D5 to explicitly state that the authorization check and error display only occur after a valid deletion initiation by a Property Owner."
+  }
+]

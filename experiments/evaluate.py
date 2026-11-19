@@ -1,0 +1,347 @@
+"""evaluate.py: how good is the formal check on specs with known defects?
+
+    python -m experiments.evaluate --base-url http://localhost:18200/v1 --specs experiments/sets/eval2 --name E7_eval2
+    python -m experiments.evaluate --rescore experiments/results/E7_eval2.json
+    python -m experiments.evaluate --rescore experiments/results/E7_eval2.json --second-base-url http://localhost:18201/v1
+
+The first form asks the LLM. Every spec folder under --specs is formalized
+`--runs` times; each run makes `--symbol-sets` formal models of the spec (the
+first with the usual symbols, the others with varied ones). Everything is
+saved to experiments/results/<name>.json: the formal models with all raw answers, the
+expected findings and the prompts.
+
+The third form adds formalize step 7 to saved runs: a second model translates
+every rule of every saved formal model again, and the file is saved with its
+answers. (The two models then never need the GPUs at the same time.)
+
+All forms then score the saved runs with the solver and write
+experiments/results/<name>.md. No GPU is needed for that, so the same runs can be
+scored again after a change to checks.py, or under other settings.
+
+What is counted, from the expected.json next to each spec (see make_eval.py):
+
+    planted conflicts found    over all (expected conflict, run) pairs
+    unexpected conflicts       reported conflicts that were neither expected
+                               nor "allowed"; on a clean spec: false alarms
+    planted ambiguities found  over all (expected ambiguous rule, run) pairs
+    ambiguity flags on clean   rules flagged as ambiguous in the clean specs
+
+The score is given for several ways of running the check ("configurations"),
+each switching one part on or off. All are computed from the same LLM runs.
+"""
+
+import argparse
+import json
+from collections import Counter
+from concurrent.futures import ProcessPoolExecutor
+from datetime import datetime
+from pathlib import Path
+
+from speccheck import formalize as formalize_module
+from speccheck import probe as probe_module
+from speccheck.checks import analyze, combine
+from speccheck.formalize import formalize_sets, judge_second, second_reading
+from speccheck.llm import LLM
+from speccheck.logic import Vocabulary
+
+# How the check is run by default. Each configuration below changes some of it:
+#   sets         symbol sets used (the first n formal models of a run)
+#   rule         "any": a finding counts if found with at least one symbol set;
+#                "majority": only if found with more than half of them
+#   facts        use the assumed facts and links
+#   max_group    rules triggered together at most, when hunting conflicts
+#   questions    report the ambiguities found by questions (formalize step 6)
+#   link_checks  leave out the links and facts that step 6 rejected
+#   settle       share of the answers a translation needs to stand (step 6)
+#   doubtful     count the conflicts marked doubtful (False: set them aside)
+#   second       use the second reader (step 7); only if the runs have one
+DEFAULT = {"sets": 1, "rule": "any", "facts": True, "max_group": 3,
+           "questions": True, "link_checks": True, "doubtful": True, "settle": 0.5,
+           "second": False}
+
+CONFIGURATIONS = [
+    ("default (1 symbol set)",               {}),
+    ("doubtful conflicts set aside",         {"doubtful": False}),
+    ("without step 6 (no questions, nothing checked)", {"questions": False, "link_checks": False}),
+    ("without step 6, doubtful set aside",   {"questions": False, "link_checks": False, "doubtful": False}),
+    ("without checks of links and facts",    {"link_checks": False}),
+    ("translation needs 7 of 8 answers",     {"settle": 0.75}),
+    ("second reader",                        {"second": True}),
+    ("second reader, without step 6",        {"second": True, "questions": False, "link_checks": False}),
+    ("second reader, 7 of 8 answers",        {"second": True, "settle": 0.75}),
+    ("without assumed facts and links",      {"facts": False}),
+    ("pairs of rules only",                  {"max_group": 2}),
+    ("3 symbol sets, found with any",        {"sets": 3}),
+    ("3 symbol sets, found with most",       {"sets": 3, "rule": "majority"}),
+    ("5 symbol sets, found with any",        {"sets": 5}),
+    ("5 symbol sets, found with most",       {"sets": 5, "rule": "majority"}),
+]
+
+# Files that speccheck itself writes next to a spec; never the spec.
+OUTPUT_FILES = ("report.md", "refined.md")
+
+# Answers the second model gives per rule in step 7.
+SECOND_SAMPLES = 8
+
+
+def one_run(job: tuple) -> dict:
+    """Formalize one spec once, with several symbol sets.
+
+    job = (base_url, spec_text, symbol_sets).
+    Returns {"models": [...]} or {"error": ...}. Runs in a worker process.
+    """
+    base_url, spec_text, symbol_sets = job
+    try:
+        # keep_samples: the raw LLM answers are saved too, for later study.
+        return {"models": formalize_sets(LLM(base_url), spec_text, symbol_sets, keep_samples=True)}
+    except Exception as error:  # a failed run is a result too, not a reason to stop the batch
+        return {"error": str(error)}
+
+
+def collect(base_url: str, specs_root: Path, runs: int, symbol_sets: int) -> dict:
+    """Ask the LLM: formalize every spec under `specs_root`, `runs` times."""
+    llm = LLM(base_url)
+    specs = {}
+    for expected_file in sorted(specs_root.glob("*/expected.json")):
+        folder = expected_file.parent
+        spec_file = next(p for p in sorted(folder.glob("*.md")) if p.name not in OUTPUT_FILES)
+        specs[folder.name] = {"text": spec_file.read_text(encoding="utf-8"),
+                              **json.loads(expected_file.read_text())}
+
+    jobs = [name for name in specs for _ in range(runs)]
+    with ProcessPoolExecutor(max_workers=32) as pool:
+        results = list(pool.map(one_run, [(base_url, specs[name]["text"], symbol_sets) for name in jobs]))
+    return {
+        "model": llm.model,
+        "date": datetime.now().isoformat(timespec="seconds"),
+        "runs_per_spec": runs,
+        "symbol_sets": symbol_sets,
+        # The exact prompts, so the experiment can be understood after they change.
+        "prompts": {"read": formalize_module.READ_SYSTEM,
+                    "formalize": formalize_module.FORMALIZE_SYSTEM,
+                    "facts": formalize_module.FACTS_SYSTEM,
+                    "readings": probe_module.READINGS_SYSTEM,
+                    "question": probe_module.QUESTION_SYSTEM,
+                    "link": probe_module.LINK_SYSTEM,
+                    "fact": probe_module.FACT_SYSTEM},
+        "specs": specs,
+        "runs": [{"spec": name, **result} for name, result in zip(jobs, results)],
+    }
+
+
+def rejudge_second(data: dict) -> None:
+    """Redo the Z3 part of step 7 on the saved answers of the second model.
+
+    Like the checks, the judgement is redone each time saved runs are scored,
+    so a change to formalize.judge_second needs no GPU.
+    """
+    for run in data["runs"]:
+        for model in run.get("models", []):
+            vocab = Vocabulary(model["symbols"])
+            for rule in model["rules"]:
+                answers = rule.get("second", {}).get("samples")
+                if answers is not None:
+                    rule["second"] = {**judge_second(vocab, rule, answers, SECOND_SAMPLES),
+                                      "samples": answers}
+
+
+def second_one(job: tuple) -> dict:
+    """Formalize step 7 on one saved formal model. Runs in a worker process.
+
+    job = (base_url, formal model). Returns the model with "second" in its rules,
+    or {"error": ...}.
+    """
+    base_url, model = job
+    try:
+        second_reading(LLM(base_url), model, samples=SECOND_SAMPLES, keep_samples=True)
+        return model
+    except Exception as error:  # one failed model is a result, not a reason to stop
+        return {"error": str(error)}
+
+
+def add_second_readings(data: dict, base_url: str) -> None:
+    """Formalize step 7 on every saved formal model, with the model at `base_url`."""
+    models = [model for run in data["runs"] for model in run.get("models", [])]
+    with ProcessPoolExecutor(max_workers=32) as pool:
+        done = list(pool.map(second_one, [(base_url, model) for model in models]))
+    failed = 0
+    for model, result in zip(models, done):
+        if "error" in result:
+            failed += 1
+        else:
+            model.update(result)
+    data["second_model"] = LLM(base_url).model
+    data["second_failed"] = failed
+
+
+def reported(run: dict, config: dict) -> tuple[set, set]:
+    """What one run reports under one configuration.
+
+    Returns (conflicts, ambiguous rules). A conflict is a sorted tuple of rule
+    numbers (position in the document), an ambiguous rule is its number.
+    """
+    models = run["models"][:config["sets"]]
+    if not config["facts"]:
+        models = [{**model, "background": []} for model in models]
+    findings = combine([analyze(model, config["max_group"], questions=config["questions"],
+                                link_checks=config["link_checks"], settle=config["settle"],
+                                second=config["second"])
+                        for model in models])
+    number = {r["id"]: index for index, r in enumerate(models[0]["rules"], start=1)}
+
+    def counts(finding: dict) -> bool:
+        """Does this finding pass the configuration's rule ("any" / "majority")?"""
+        found = int(finding["support"].split("/")[0]) if "support" in finding else 1
+        return found * 2 > len(models) if config["rule"] == "majority" else True
+
+    def doubtful(finding: dict) -> bool:
+        return "doubted_by" in finding or "simultaneous_events" in finding
+
+    conflicts = {tuple(sorted(number[r] for r in f["rules"])) for f in findings
+                 if f["type"] == "conflict" and counts(f)
+                 and (config["doubtful"] or not doubtful(f))}
+    ambiguous = {number[f["rule"]] for f in findings if f["type"] == "ambiguity" and counts(f)}
+    return conflicts, ambiguous
+
+
+def tables(data: dict) -> str:
+    """Score all saved runs under every configuration; build the Markdown summary."""
+    def groups(spec: dict, key: str) -> set:
+        return {tuple(sorted(group)) for group in spec.get(key, [])}
+
+    def kind(name: str) -> str:
+        """The version of a spec, from its folder name: clean, direct, overlap, ambiguity."""
+        return name.rsplit("_", 1)[-1].rstrip("0123456789")
+
+    ok_runs = [run for run in data["runs"] if "models" in run]
+    summary = [
+        "| Configuration | Planted conflicts found | direct | overlap "
+        "| Clean runs with a false alarm | Unexpected conflicts | Planted ambiguities found "
+        "| Ambiguity flags on clean specs | Other ambiguity flags |",
+        "|---|---|---|---|---|---|---|---|---|",
+    ]
+    for label, change in CONFIGURATIONS:
+        config = {**DEFAULT, **change}
+        if config["sets"] > data.get("symbol_sets", 1):
+            continue  # the experiment did not make that many symbol sets
+        if config["second"] and "second_model" not in data:
+            continue  # no second reader was run on these runs
+        found, total = Counter(), Counter()   # planted conflicts, by kind of spec
+        false_alarm_runs = clean_runs = unexpected = 0
+        ambiguity_found = ambiguity_total = clean_flags = other_flags = 0
+        for run in ok_runs:
+            spec = data["specs"][run["spec"]]
+            expected, allowed = groups(spec, "conflicts"), groups(spec, "allowed")
+            conflicts, ambiguous = reported(run, config)
+            found[kind(run["spec"])] += len(expected & conflicts)
+            total[kind(run["spec"])] += len(expected)
+            extra = conflicts - expected - allowed
+            unexpected += len(extra)
+            wanted = set(spec.get("ambiguous", []))
+            ambiguity_found += len(wanted & ambiguous)
+            ambiguity_total += len(wanted)
+            other_flags += len(ambiguous - wanted)
+            if kind(run["spec"]) == "clean":
+                clean_runs += 1
+                false_alarm_runs += bool(extra)
+                clean_flags += len(ambiguous)
+        summary.append(
+            f"| {label} | {sum(found.values())}/{sum(total.values())} "
+            f"| {found['direct']}/{total['direct']} | {found['overlap']}/{total['overlap']} "
+            f"| {false_alarm_runs}/{clean_runs} | {unexpected} "
+            f"| {ambiguity_found}/{ambiguity_total} | {clean_flags} | {other_flags} |")
+
+    # Per spec, for the default configuration: what was expected, what came out.
+    details = ["| Spec | Runs | Expected conflicts found | Unexpected conflicts (rules: runs) "
+               "| Ambiguity flags (rule: runs) |",
+               "|---|---|---|---|---|"]
+    label, change = CONFIGURATIONS[0]
+    config = {**DEFAULT, **change}
+    for name, spec in data["specs"].items():
+        runs = [run for run in ok_runs if run["spec"] == name]
+        expected, allowed = groups(spec, "conflicts"), groups(spec, "allowed")
+        hits, extras, flags = Counter(), Counter(), Counter()
+        for run in runs:
+            conflicts, ambiguous = reported(run, config)
+            hits.update(expected & conflicts)
+            extras.update(conflicts - expected - allowed)
+            flags.update(ambiguous)
+        wanted = set(spec.get("ambiguous", []))
+        details.append(
+            f"| {name} | {len(runs)} | "
+            + (", ".join(f"{list(c)}: {hits[c]}/{len(runs)}" for c in sorted(expected)) or "none expected")
+            + " | " + (", ".join(f"{list(c)}: {n}" for c, n in sorted(extras.items())) or "none")
+            + " | " + (", ".join(f"{r}{' (planted)' if r in wanted else ''}: {n}"
+                                 for r, n in sorted(flags.items())) or "none") + " |")
+
+    # Planted ambiguities found by kind (boundary, and/or, only, if), for the
+    # configurations that change how ambiguity is decided. Needs the "kind"
+    # that make_eval.py writes into expected.json (eval3 on).
+    kinds = sorted({spec["kind"] for spec in data["specs"].values() if "kind" in spec})
+    by_kind = ["| Configuration | " + " | ".join(kinds) + " |", "|---|" + "---|" * len(kinds)]
+    for label_k, change in CONFIGURATIONS:
+        config = {**DEFAULT, **change}
+        if change and (not {"questions", "settle", "second"} & change.keys() or "doubtful" in change):
+            continue  # the same ambiguity findings as another row
+        if config["sets"] > data.get("symbol_sets", 1) or (config["second"] and "second_model" not in data):
+            continue
+        found, total = Counter(), Counter()
+        for run in ok_runs:
+            spec = data["specs"][run["spec"]]
+            if "kind" in spec:
+                _, ambiguous = reported(run, config)
+                found[spec["kind"]] += len(set(spec["ambiguous"]) & ambiguous)
+                total[spec["kind"]] += len(spec["ambiguous"])
+        by_kind.append(f"| {label_k} | " + " | ".join(f"{found[k]}/{total[k]}" for k in kinds) + " |")
+
+    failed = len(data["runs"]) - len(ok_runs)
+    return "\n".join([
+        f"# Evaluation ({data['runs_per_spec']} runs per spec, {data['symbol_sets']} symbol sets per run, "
+        f"model {data['model']}, {data['date']})",
+        "",
+        f"{len(data['specs'])} specs, {len(ok_runs)} runs scored" + (f", {failed} failed" if failed else "")
+        + (f"; second reader: {data['second_model']}" if "second_model" in data else "") + ".",
+        "",
+        "## By configuration",
+        "",
+        *summary,
+        "",
+        *(["## Planted ambiguities found, by kind", "", *by_kind, ""] if kinds else []),
+        f"## By spec ({label})",
+        "",
+        *details,
+    ]) + "\n"
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--base-url", help="ask the LLM at this OpenAI-compatible server")
+    parser.add_argument("--specs", type=Path, default=Path("experiments/sets/eval7"), help="folder with one sub-folder per spec")
+    parser.add_argument("--runs", type=int, default=3, help="repetitions per spec")
+    parser.add_argument("--symbol-sets", type=int, default=3, help="formal models made per run")
+    parser.add_argument("--name", default="evaluation", help="output name: experiments/results/<name>.json and .md")
+    parser.add_argument("--rescore", type=Path, help="score the runs saved in this .json again (no LLM)")
+    parser.add_argument("--second-base-url", help="with --rescore: add step 7 with the second model at this server")
+    args = parser.parse_args()
+
+    if args.rescore:
+        raw_file = args.rescore
+        data = json.loads(raw_file.read_text(encoding="utf-8"))
+        rejudge_second(data)
+        if args.second_base_url:
+            add_second_readings(data, args.second_base_url)
+            raw_file.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    elif args.base_url:
+        raw_file = Path("experiments/results") / f"{args.name}.json"
+        data = collect(args.base_url, args.specs, args.runs, args.symbol_sets)
+        raw_file.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    else:
+        parser.error("give --base-url (to run the evaluation) or --rescore (to score saved runs)")
+
+    report = tables(data)
+    raw_file.with_suffix(".md").write_text(report, encoding="utf-8")
+    print(report)
+
+
+if __name__ == "__main__":
+    main()

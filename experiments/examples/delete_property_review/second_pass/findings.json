@@ -1,0 +1,45 @@
+[
+  {
+    "type": "gap",
+    "when": {
+      "deletion_attempted": false,
+      "deletion_confirmed": false,
+      "deletion_initiated": false,
+      "property_deleted": false
+    },
+    "situation": "No Property Owner has attempted to delete a Property, the Property Owner has not confirmed the deletion, no Property Owner has initiated the property deletion process, and the Property has not been successfully deleted.",
+    "title": "Missing behavior for non-deletion states",
+    "explanation": "The requirements only define system actions when a deletion is initiated, confirmed, or completed. They do not specify what the system must do when none of these deletion steps have occurred, leaving the system's behavior undefined in this state.",
+    "option_a": "Keeping the requirements as written means the system has no defined behavior or obligation when a Property Owner is not in the process of deleting a Property.",
+    "option_b": "Add a requirement stating that when a Property Owner is not attempting to delete a Property, the system shall display the standard property details or list view without any deletion prompts or errors."
+  },
+  {
+    "type": "gap",
+    "when": {
+      "deletion_confirmed": false,
+      "deletion_initiated": false,
+      "property_belongs_to_owner": true,
+      "property_deleted": false
+    },
+    "situation": "The Property belongs to the User Account of the Property Owner attempting the deletion, but no Property Owner has initiated the property deletion process, the Property Owner has not confirmed the deletion, and the Property has not been successfully deleted.",
+    "title": "Missing behavior for uninitiated deletion",
+    "explanation": "The requirements define actions for when a deletion is initiated, confirmed, or attempted on a property that does not belong to the owner. However, they do not specify what the system must do when a property belongs to the owner but the deletion process has not been started or confirmed. This gap means the system's behavior in this specific state is undefined.",
+    "option_a": "Keeping the requirements as written means the system has no defined obligation to perform any specific action when a property belongs to the owner but no deletion has been initiated or confirmed.",
+    "option_b": "Add a requirement stating that when a property belongs to the owner and no deletion has been initiated, the system shall display the property in the user interface and allow the owner to initiate the deletion process."
+  },
+  {
+    "type": "review",
+    "kind": "wording",
+    "rules": [
+      "D4"
+    ],
+    "rewrite": {
+      "rule": "D4",
+      "text": "WHEN a Property is deleted, THE Platform SHALL retain the Property record in the database with a status indicating deletion, ensuring it is not visible in the user interface but remains accessible to authorized audit roles."
+    },
+    "title": "Vague audit retention",
+    "explanation": "The requirement states that data is \"retained for audit purposes\" but does not define what this means observably. A tester cannot verify if the data is actually retained or how long, nor can they distinguish between soft deletion and hard deletion based on this text alone.",
+    "option_a": "Keep as written, accepting that \"retained for audit purposes\" is a non-testable design goal rather than a specific behavioral constraint.",
+    "option_b": "Rewrite D4 as: \"WHEN a Property is deleted, THE Platform SHALL retain the Property record in the database with a status indicating deletion, ensuring it is not visible in the user interface but remains accessible to authorized audit roles.\""
+  }
+]

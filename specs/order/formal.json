@@ -1,0 +1,237 @@
+{
+  "symbols": [
+    {
+      "name": "order_submitted",
+      "sort": "Bool",
+      "values": [],
+      "description": "An order has been submitted by a customer.",
+      "event": true
+    },
+    {
+      "name": "inventory_available",
+      "sort": "Bool",
+      "values": [],
+      "description": "The inventory for the ordered items is available.",
+      "event": false
+    },
+    {
+      "name": "order_fulfilled",
+      "sort": "Bool",
+      "values": [],
+      "description": "The order system has fulfilled the order.",
+      "event": false
+    },
+    {
+      "name": "order_on_backorder",
+      "sort": "Bool",
+      "values": [],
+      "description": "The order system has placed the order on backorder.",
+      "event": false
+    },
+    {
+      "name": "order_canceled",
+      "sort": "Bool",
+      "values": [],
+      "description": "An order has been canceled.",
+      "event": true
+    },
+    {
+      "name": "payments_refunded",
+      "sort": "Bool",
+      "values": [],
+      "description": "All associated payments for the order have been refunded.",
+      "event": false
+    },
+    {
+      "name": "order_canceled_and_refunded",
+      "sort": "Bool",
+      "values": [],
+      "description": "The order is in a state where it has been canceled and refunded.",
+      "event": false
+    }
+  ],
+  "background": [
+    {
+      "id": "F1",
+      "text": "If an order is in the state where it has been canceled and refunded, then the order has been canceled.",
+      "formula": "(=> order_canceled_and_refunded order_canceled)",
+      "support": "8/8"
+    },
+    {
+      "id": "F2",
+      "text": "If an order is in the state where it has been canceled and refunded, then all associated payments for the order have been refunded.",
+      "formula": "(=> order_canceled_and_refunded payments_refunded)",
+      "support": "8/8"
+    },
+    {
+      "id": "F3",
+      "text": "An order cannot be both fulfilled and canceled.",
+      "formula": "(not (and order_fulfilled order_canceled))",
+      "support": "6/8"
+    },
+    {
+      "id": "F4",
+      "text": "An order cannot be both on backorder and canceled.",
+      "formula": "(not (and order_on_backorder order_canceled))",
+      "support": "6/8"
+    },
+    {
+      "id": "F5",
+      "text": "An order cannot be both fulfilled and on backorder.",
+      "formula": "(not (and order_fulfilled order_on_backorder))",
+      "support": "6/8"
+    }
+  ],
+  "rules": [
+    {
+      "id": "R1",
+      "text": "WHEN an order is submitted AND inventory is available, THE Order System SHALL fulfill the order.",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "Whenever an order is submitted and the required inventory is available, the order system must fulfill that order.",
+      "antecedent": "(and order_submitted inventory_available)",
+      "consequent": "order_fulfilled",
+      "probes": [
+        {
+          "reading": "The order system must fulfill the order only if the order is submitted and inventory is available, meaning fulfillment is permitted in other states but not required.",
+          "antecedent": "order_fulfilled",
+          "consequent": "(and order_submitted inventory_available)",
+          "situations": [
+            {
+              "when": {
+                "inventory_available": false,
+                "order_fulfilled": true,
+                "order_submitted": false
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "inventory_available": true,
+                "order_fulfilled": false,
+                "order_submitted": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R2",
+      "text": "WHEN an order is submitted AND inventory is unavailable, THE Order System SHALL place the order on backorder.",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "When a customer submits an order and the requested inventory is not available, the system must place that order on backorder.",
+      "antecedent": "(and order_submitted (not inventory_available))",
+      "consequent": "order_on_backorder",
+      "probes": [
+        {
+          "reading": "The system places the order on backorder only if the order is submitted and inventory is unavailable, meaning that if the order is on backorder, it implies that the order was submitted and inventory was unavailable.",
+          "antecedent": "order_on_backorder",
+          "consequent": "(and order_submitted (not inventory_available))",
+          "situations": [
+            {
+              "when": {
+                "inventory_available": false,
+                "order_on_backorder": true,
+                "order_submitted": false
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "inventory_available": false,
+                "order_on_backorder": false,
+                "order_submitted": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 7,
+            "other": 1,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R3",
+      "text": "THE Order System SHALL NOT place any order on backorder.",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "The system must ensure that no order is ever placed on backorder.",
+      "antecedent": "true",
+      "consequent": "(not order_on_backorder)",
+      "probes": []
+    },
+    {
+      "id": "R4",
+      "text": "WHEN an order is canceled, THE Order System SHALL refund all associated payments.",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "In any situation where an order is canceled, it must be the case that all associated payments for that order have been refunded.",
+      "antecedent": "order_canceled",
+      "consequent": "payments_refunded",
+      "probes": []
+    },
+    {
+      "id": "R5",
+      "text": "WHILE an order is in a canceled-and-refunded state, THE Order System SHALL NOT fulfill the order.",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If an order is in a canceled and refunded state, the order system must not fulfill that order.",
+      "antecedent": "order_canceled_and_refunded",
+      "consequent": "(not order_fulfilled)",
+      "probes": [
+        {
+          "reading": "The order system must not fulfill the order only if the order is in a canceled and refunded state.",
+          "antecedent": "order_fulfilled",
+          "consequent": "order_canceled_and_refunded",
+          "situations": [
+            {
+              "when": {
+                "order_canceled_and_refunded": false,
+                "order_fulfilled": true
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "order_canceled_and_refunded": true,
+                "order_fulfilled": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    }
+  ]
+}

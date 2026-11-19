@@ -1,0 +1,33 @@
+{
+  "symbols": [
+    {"name": "order_submitted", "sort": "Bool", "values": [], "description": "event: an order is submitted"},
+    {"name": "inventory_available", "sort": "Bool", "values": [], "description": "stock exists for the order"},
+    {"name": "order_canceled", "sort": "Bool", "values": [], "description": "event: the order is canceled"},
+    {"name": "canceled_and_refunded", "sort": "Bool", "values": [], "description": "state: the order was canceled and its payments refunded"},
+    {"name": "order_fulfilled", "sort": "Bool", "values": [], "description": "response: the system fulfills the order"},
+    {"name": "order_backordered", "sort": "Bool", "values": [], "description": "response: the system places the order on backorder"},
+    {"name": "payments_refunded", "sort": "Bool", "values": [], "description": "response: the system refunds all payments of the order"}
+  ],
+  "rules": [
+    {"id": "R1",
+     "text": "WHEN an order is submitted AND inventory is available, THE Order System SHALL fulfill the order.",
+     "antecedent": "(and order_submitted inventory_available)",
+     "consequent": "order_fulfilled"},
+    {"id": "R2",
+     "text": "WHEN an order is submitted AND inventory is unavailable, THE Order System SHALL place the order on backorder.",
+     "antecedent": "(and order_submitted (not inventory_available))",
+     "consequent": "order_backordered"},
+    {"id": "R3",
+     "text": "THE Order System SHALL NOT place any order on backorder.",
+     "antecedent": "true",
+     "consequent": "(not order_backordered)"},
+    {"id": "R4",
+     "text": "WHEN an order is canceled, THE Order System SHALL refund all associated payments.",
+     "antecedent": "order_canceled",
+     "consequent": "payments_refunded"},
+    {"id": "R5",
+     "text": "WHILE an order is in a canceled-and-refunded state, THE Order System SHALL NOT fulfill the order.",
+     "antecedent": "canceled_and_refunded",
+     "consequent": "(not order_fulfilled)"}
+  ]
+}

@@ -1,0 +1,145 @@
+{
+  "symbols": [
+    {
+      "name": "user_submits_password",
+      "sort": "Bool",
+      "values": [],
+      "description": "A user has submitted a password for login"
+    },
+    {
+      "name": "password_is_correct",
+      "sort": "Bool",
+      "values": [],
+      "description": "The submitted password matches the account's stored password"
+    },
+    {
+      "name": "password_is_incorrect",
+      "sort": "Bool",
+      "values": [],
+      "description": "The submitted password does not match the account's stored password"
+    },
+    {
+      "name": "access_granted",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system has granted the user access to the system"
+    },
+    {
+      "name": "access_denied",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system has denied the user access to the system"
+    },
+    {
+      "name": "failed_attempt_count",
+      "sort": "Int",
+      "values": [],
+      "description": "The total number of consecutive failed login attempts for the account"
+    },
+    {
+      "name": "account_locked",
+      "sort": "Bool",
+      "values": [],
+      "description": "The account is currently in a locked state"
+    },
+    {
+      "name": "account_is_admin",
+      "sort": "Bool",
+      "values": [],
+      "description": "The account has the administrator role"
+    }
+  ],
+  "background": [
+    {
+      "id": "F1",
+      "text": "The failed attempt count cannot be negative.",
+      "formula": "(>= failed_attempt_count 0)",
+      "support": "8/8"
+    },
+    {
+      "id": "F2",
+      "text": "Access cannot be both granted and denied.",
+      "formula": "(not (and access_granted access_denied))",
+      "support": "8/8"
+    },
+    {
+      "id": "F3",
+      "text": "A password cannot be both correct and incorrect.",
+      "formula": "(not (and password_is_correct password_is_incorrect))",
+      "support": "8/8"
+    }
+  ],
+  "rules": [
+    {
+      "id": "R1",
+      "text": "WHEN a user submits a correct password THEN the system grants access",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a user submits a password that is correct, the system must grant access to the user.",
+      "antecedent": "(and user_submits_password password_is_correct)",
+      "consequent": "access_granted"
+    },
+    {
+      "id": "R2",
+      "text": "WHEN a user submits an incorrect password THEN the system denies access",
+      "status": "accepted",
+      "clusters": [
+        7,
+        1
+      ],
+      "entropy": 0.377,
+      "reading": "When a user submits a password that is incorrect, the system must deny access to that user.",
+      "antecedent": "user_submits_password",
+      "consequent": "(=> password_is_incorrect access_denied)"
+    },
+    {
+      "id": "R3",
+      "text": "WHEN the number of failed attempts on an account reaches 5 THEN the system locks the account",
+      "status": "ambiguous",
+      "clusters": [
+        5,
+        3
+      ],
+      "entropy": 0.662,
+      "reading": "If the number of consecutive failed login attempts on an account reaches 5, the system must lock that account.",
+      "antecedent": "(= failed_attempt_count 5)",
+      "consequent": "account_locked",
+      "alternative": {
+        "reading": "If the total number of consecutive failed login attempts for an account reaches 5, the account must be in a locked state.",
+        "antecedent": "(>= failed_attempt_count 5)",
+        "consequent": "account_locked"
+      },
+      "differs_when": {
+        "account_locked": false,
+        "failed_attempt_count": 6
+      }
+    },
+    {
+      "id": "R4",
+      "text": "WHEN a user submits a password for a locked account THEN the system denies access",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "When a user attempts to log in to an account that is currently locked, the system must deny access.",
+      "antecedent": "(and user_submits_password account_locked)",
+      "consequent": "access_denied"
+    },
+    {
+      "id": "R5",
+      "text": "WHEN the account belongs to an administrator THEN the system does not lock the account",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If the account has the administrator role, the system must not be in a locked state.",
+      "antecedent": "account_is_admin",
+      "consequent": "(not account_locked)"
+    }
+  ]
+}

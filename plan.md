@@ -1,0 +1,692 @@
+# speccheck: how it works, and where we are
+
+- speccheck reads a requirements document in natural language and reports what
+  is wrong with it
+- it follows the formal part of [Kiro's requirements analysis](https://kiro.dev/blog/deep-spec-analysis/):
+  an LLM turns the text into logic → the Z3 solver checks the logic → the
+  results come back in plain language, with "A) keep as-is / B) change"
+
+| File | Read it for |
+|---|---|
+| [README.md](README.md) | start here: the idea, a worked example with real output, how to run it |
+| `plan.md` (this file) | where we are, what is next, and how each part works |
+| [research.md](research.md) | what we found, with the numbers |
+| [research_log.md](research_log.md) | the archive: every experiment and trial in detail. Not needed to understand the project |
+
+---
+
+## 1. Where we are
+
+| Goal | Status |
+|---|---|
+| **G1** A minimal working prototype of Kiro's formal analysis: spec, formal check, answer in plain language | **Done.** Conflicts, gaps, ambiguities and scenarios, as in Kiro's formal part. Both Kiro blog examples found by the solver (`delete_property`: 3 of 3 in the last runs; a wrong voted fact can still hide it). Ambiguities: about half with one model; with the optional second reader 30 and 32 of 36 (held-out `eval4/`, `eval7/`), at up to one extra question per spec |
+| **G2** Data-driven: any spec, any format | **Partly.** 45 base specs in two formats (Kiro EARS, OpenSpec), no change to code or prompts. Missing: a whole OpenSpec *project*, where a change is checked against the specs that already exist |
+| **G3** Code and documents a person can read | **Done** for the current state |
+| **G4** Research for a paper, on the local model | **Well under way.** 7 held-out tests (E5, E7 to E12): 61 to 100% of planted conflicts found; at most 1 false alarm in 18 clean runs with doubtful conflicts set aside (none in the last four). Still small: one main model, specs written by us |
+| **G5** Only the formal part | **Done.** An LLM review of the text was built, measured, and switched off |
+
+In short:
+- the pipeline works end to end, finds what Kiro's blog finds, and holds up on
+  specs it was not built on
+- likely artefacts (two events at once, situations the facts call impossible)
+  are marked *doubtful* → almost no false alarms left. The mark needs the
+  event each rule reacts to, which the read step names
+- missed conflicts come from the choice of symbols, mostly "remove" against "keep"
+- a second local model, as an independent reader, finds most ambiguities, at
+  the cost of more questions to the author
+- untouched: real OpenSpec projects with existing specs
+
+---
+
+## 2. What is next
+
+In this order. The first is the recommendation.
+
+1. **Check an OpenSpec change against the specs that already exist** (G2,
+   postponed by decision)
+   - closes G2; the most original part for a paper: Kiro, as documented,
+     reads one document
+   - a real OpenSpec project: `openspec/specs/<domain>/spec.md` (what the
+     system does now) + a change with ADDED / MODIFIED / REMOVED requirements
+   - the check: apply the change → formalize the merged spec → report the
+     findings that involve a new or modified requirement
+   - existing requirements: formalized once, cached
+2. **A larger evaluation** (G4)
+   - more runs per spec, another main model, the second reader on more sets
+   - all seven sets have been read → the next design needs an eighth
+     held-out set, written first
+3. **The choice of symbols** (G1): where the remaining misses come from
+   - "remove" against "keep" (10 of 18 runs found); two symbols for one
+     outcome left unlinked (research.md 4.2, 4.3)
+   - two prompt sentences were tried and dropped (T12, T14)
+   - a repair would have the LLM judge requirements against each other,
+     which this project leaves out
+
+Not planned: time ("then", "after", "until"). The model is one snapshot.
+
+---
+
+## 3. Terms
+
+Every term used later is defined here.
+
+| Term | Meaning |
+|---|---|
+| **requirement**, **rule** | One statement of what the system shall do, and when. It has an id such as `R2`. The code says "rule". |
+| **symbol** | A named variable for one observable fact, e.g. `inventory_available`. Its sort is Bool, Int, Real or Enum. |
+| **situation** | One value for every symbol: a snapshot of the system. There is no time, only one snapshot. |
+| **formula** | A logical expression over symbols, written in SMT-LIB: `(and order_submitted (not inventory_available))`. |
+| **antecedent**, **consequent** | The two halves of a rule in logic: *when* it applies, and *what* must hold then. The rule means `antecedent => consequent`. |
+| **translation** | One LLM answer that turns one rule into an antecedent and a consequent. |
+| **sample** | One of N independent LLM answers to the same question. N is 8 by default. |
+| **solver** | Z3. Given formulas, it answers "satisfiable" (and gives a situation) or "unsatisfiable" (no such situation exists). |
+| **witness** | A concrete situation shown to the user as evidence. Stored as `when`, e.g. `{"order_submitted": true}`. |
+| **assumed fact** | A statement that is true because of what the words mean: "access cannot be both granted and denied". The LLM proposes it; the spec does not state it. So it is an *assumption*, and it may only add findings, never remove one. |
+| **link** | An assumed fact of one kind: what one requirement demands, said with the outcomes of the other requirements ("removing the record means it is not retained"). |
+| **formal model** | One `formal.json`: the symbols, the assumed facts and the rules in logic. |
+| **symbol set** | The symbols of one formal model. The same document can be formalized several times, each time with its own symbol set. |
+| **question** | A concrete situation, chosen by Z3, about which the LLM is asked what ONE requirement says. Used to test translations and links (step 6, 5.7). |
+| **second reader** | Optional: a second local model, of another family, that translates every rule again; where its reading differs from the translation, the rule is reported as ambiguous (step 7, 5.8). |
+| **event** | A yes/no symbol for something that happens at one moment (a request, a click, an arrival). The read step marks each symbol as an event or not. |
+| **trigger** | The event a rule reacts to, named by the read step: "WHEN a visitor signs up ..." reacts to `visitor_signed_up`. A rule that reacts to a state ("WHILE ...") has none. |
+| **doubtful** | A mark on a proven conflict that is likely an artefact of the model (5.2). Doubtful conflicts are reported, marked, never removed. |
+| **finding** | One thing reported to the author. There are four types: |
+
+| Finding type | It says | Who decides |
+|---|---|---|
+| **conflict** | some requirements cannot all be obeyed in a situation | the solver |
+| **gap** | in a situation, no requirement applies | the solver |
+| **ambiguity** | one requirement has two readings | LLM samples (and, optionally, a second model's), compared by the solver; or the LLM's answers to questions |
+| **scenario** | a behaviour the requirements allow, or a situation they rule out, that the author may not have intended | the solver proves it; an LLM judge decides whether it is worth showing |
+
+---
+
+## 4. The pipeline
+
+```
+ requirements document      any format: Kiro EARS, OpenSpec, plain text
+        │
+        ▼
+┌───────────────── formalize.py ─────────────────────────┐
+│ 1 read     LLM x1          → rules, triggers, symbols  │──► llm.py ──► model server
+│ 2 sample   LLM xN per rule → antecedent / consequent   │
+│ 3 cluster  group the N samples by meaning              │──► logic.py (Z3)
+│            (Z3: does any situation tell two apart?)    │
+│            → accepted / ambiguous / rejected           │
+│ 4 facts    LLM xN          → domain facts              │
+│            keep the facts most of the N answers imply  │
+│            (Z3: does an answer imply the fact?)        │
+│ 5 links    LLM xN per rule with a private outcome      │
+│            → that rule in the other rules' terms       │
+│ 6 probe    Z3 picks situations, LLM x8 per question    │──► probe.py
+│            → do the words decide between two readings? │
+│            → do the words demand what a link says?     │
+│            → does a requirement agree with the facts   │
+│              that make it impossible to obey?          │
+│ 7 second   optional: a second model xN per rule        │──► second model server
+│            Z3: same meaning as the translation?        │
+└───────────────┬────────────────────────────────────────┘
+                ▼
+          formal.json        the ONLY input of the checks; readable, editable
+                │            (with --symbol-sets K: K of them, one per symbol set)
+                ▼
+┌───────────────── checks.py (Z3 only, no LLM) ──────────┐
+│ ambiguity : samples split, step 6 answers say the      │──► logic.py (Z3)
+│             words do not decide, or the second model   │
+│             reads it otherwise (settled)               │
+│ conflict  : force 1, 2 or 3 rules to apply,            │
+│             smallest clashing set                      │
+│             run 1: rules alone        (proven)         │
+│             run 2: + assumed facts    (adds only)      │
+│             marked doubtful: needs two events at once, │
+│             or the facts rule the situation out        │
+│ gap       : a situation where no rule applies          │
+│ scenario  : behaviours the rules allow or rule out     │
+│ combine   : K formal models → "found with k of K"      │
+└───────────────┬────────────────────────────────────────┘
+                ▼
+          findings           rule ids + a witness situation
+                │
+                ▼
+┌───────────────── explain.py ───────────────────────────┐
+│ explain  LLM x1 per defect → explanation, A) and B)    │──► llm.py
+│ judge    LLM x1 per scenario → keep the surprising     │
+│ render   → findings.json, report.md                    │
+└────────────────────────────────────────────────────────┘
+```
+
+The code, in the order to read it:
+
+| File | Lines | Job | Uses |
+|---|---|---|---|
+| `speccheck/llm.py` | 60 | One function: prompt + JSON schema in, N parsed answers out | the model server |
+| `speccheck/logic.py` | 220 | Symbols to Z3 variables; parses formulas; asks the solver | Z3 |
+| `speccheck/formalize.py` | 690 | Stage 1: text to `formal.json` (steps 1 to 5, then 6 and 7); `formalize_sets` for K symbol sets | `llm`, `logic`, `probe` |
+| `speccheck/probe.py` | 430 | Stage 1, step 6: three checks by questions about one requirement | `llm`, `logic` |
+| `speccheck/checks.py` | 520 | Stage 2: `formal.json` to findings; scenarios; `combine` for K formal models | `logic` |
+| `speccheck/explain.py` | 330 | Stage 3: findings to plain words; the scenario judge; builds `report.md` | `llm` |
+| `speccheck/cli.py` | 110 | Runs the three stages, writes the files | all |
+
+About half of each file is comments, docstrings and prompts.
+
+Around the package:
+
+| File | Job |
+|---|---|
+| `tests/` | 36 tests of everything that needs no LLM |
+| `experiments/make_eval.py` | writes the evaluation sets `eval` to `eval7` into `experiments/sets/` (clean specs and planted defects) |
+| `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
+| `experiments/evaluate.py` | runs the pipeline on a set of specs and scores it against the planted defects; adds the second reader to saved runs; re-scores saved runs without a GPU |
+| `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the main model and the second model on the cluster (section 8) |
+| `experiments/stability.py` | the earlier experiments E1 to E3: the same spec many times under several settings |
+| `experiments/fact_threshold.py` | redoes the vote on facts with other thresholds, on saved runs |
+| `speccheck/refine.py` | optional LLM review of the text, off by default (section 9) |
+
+**Who decides what**
+- the LLM: translates, proposes facts and links (stage 1); words the result,
+  scores how surprising a scenario is (stage 3)
+- Z3 alone: every conflict, gap and scenario (stage 2)
+- so a finding is a proof *about `formal.json`*. Whether `formal.json` says
+  what the author meant: the ambiguity check, the support counts and the
+  listed assumptions help to judge
+
+---
+
+## 5. How each decision is made
+
+Each rule *i* is `A_i => C_i` (antecedent, consequent).
+
+### 5.1 Is a requirement ambiguous? (`formalize.py`, steps 2 and 3)
+
+- the rule is translated N times
+- two translations *a* and *b* mean the same when no situation is allowed by
+  one and forbidden by the other:
+
+```
+(A_a => C_a)  differs from  (A_b => C_b)      unsatisfiable?
+```
+
+- our code puts the N translations in groups: each one joins the first group
+  whose first member Z3 proves it means the same as, or starts a new group
+- the spread of the groups (entropy) decides the status. With 8 samples:
+
+| Split | Status | Effect |
+|---|---|---|
+| 8, or 7/1 | accepted | the largest group is used |
+| 6/2, 5/3 | ambiguous | used; the second group is the other reading, and the question of 5.7 decides |
+| 4/2/2 and wider | rejected | left out of the checks; must be rewritten |
+
+- this finds where the model is unsure
+- a split is not final: the question of 5.7 decides between the two groups
+  (a split can be noise). Only a split no question could be built for is
+  reported as it is (`found_by: samples`)
+- it finds nothing where all 8 samples agree on one reading of ambiguous
+  words → the other two ways: the questions (5.7), the second reader (5.8)
+
+### 5.2 Do requirements conflict? (`checks.py`)
+
+- "can all rules hold together?" is useless: every implication holds when
+  nothing applies
+- so the check forces rules to apply. For every single rule, every pair and
+  every triple of rules `G`:
+
+```
+1. A_G                  satisfiable?    the situation can happen
+2. A_G and all rules    unsatisfiable?  nothing the system does would obey them all
+```
+
+- both hold → Z3 names the rules it needed for the contradiction (the "unsat
+  core", shrunk until no rule can be dropped); a situation of step 1 is the
+  witness
+- not a conflict: one rule alone forbids the situation (forcing "account
+  locked" for an administrator, against "never lock administrators")
+- dropped: a conflict that contains a smaller reported conflict
+
+**Doubtful**: two marks. A marked conflict stays in the report.
+
+- **Two events at the same moment**
+  - one snapshot lets any events coincide: "a visitor signs up" and "a
+    subscriber changes the address", with "send no email" against "send a
+    confirmation email"
+  - requirements are written for one event at a time → a conflict between
+    rules that react to two different events is marked
+  - the read step names, for each rule, the event it reacts to (its *trigger*):
+    ```
+    N1  "WHEN a visitor signs up ..."                 trigger: visitor_signed_up
+    N5  "WHEN a subscriber changes the address ..."   trigger: address_changed
+    conflict {N1, N5}: two different triggers  → doubtful
+    ```
+  - the trigger counts even when the translation leaves the event out: "the
+    doors fail to close for the third time" is often translated as the count
+    alone, `(= door_close_failures 3)`, which looks like a state (E9)
+  - a rule that reacts to a state ("WHILE ...") has no trigger
+  - formal models made before triggers were named: the events in the
+    antecedents are used instead
+- **A situation the facts call impossible**
+  - "at least 24 hours" and "less than 24 hours" as two yes/no symbols: both
+    can be true for the solver
+  - an assumed fact (5.3) says they exclude each other
+
+Result on the held-out `eval3/`: every marked conflict was a false alarm;
+setting them aside cut false alarms on clean runs from 9 to 1 of 18 (E8).
+
+### 5.3 Which facts are assumed, and how are they used?
+
+- two requirements can demand opposite things in different words: "grant
+  access" and "deny access" as two symbols → the solver sees no clash
+- an assumed fact connects them:
+
+```
+R1:  password_correct => access_granted   ─┐
+R4:  account_locked   => access_denied    ─┼─► unsatisfiable when both apply
+F2:  not (access_granted and              ─┘   → conflict {R1, R4}, depends on F2
+          access_denied)
+```
+
+**Choosing the facts** (`formalize.py`, step 4)
+- the LLM is asked N times for facts that hold "purely because of what the
+  symbols mean"
+- it sees the symbols only, not the requirements
+- a fact is kept when it follows from the facts of more than half of the N answers:
+
+```
+facts of answer k  and  not fact      unsatisfiable?     answer k agrees
+```
+
+- so "a and b exclude each other" and "a implies not b" count as the same vote
+
+**Using the facts** (`checks.py`): facts are guesses, so they may only add:
+
+```
+run 1   conflict search with the rules alone   → proven findings
+run 2   the same search with the facts added   → keep only conflicts that need a
+                                                 fact and are not explained by run 1
+```
+
+- a fact never removes or changes a finding of run 1
+- a conflict of run 2 names the facts it needed
+- one rule against the facts is not reported, only two or more rules (with
+  one snapshot, "WHEN the door is open, close it" contradicts "a closed door
+  is not open" by design)
+- gaps ignore the facts: a fact could only make a gap disappear
+
+**Links: a second source of facts** (`formalize.py`, step 5)
+- a symbol that only one rule uses hides meaning: "the record is removed", as
+  a symbol of its own, cannot clash with "the record is retained"
+- such a rule is translated N more times, and this time the model may use only
+  the rule's own condition and the *outcomes of the other rules*:
+
+```
+rule D2          confirmed => record_removed             (record_removed is private)
+asked again      "remove the Property record", with the other rules' outcomes
+7 of 8 answers   confirmed => (not record_retained)
+link (a fact)    (confirmed and record_removed) => (not record_retained)
+```
+
+- more than half of the answers agree on one meaning → an assumed fact with
+  its support, used like the others: add-only, named by every conflict that
+  needs it
+- "cannot be expressed" is a valid answer, and counts against a link
+- why this works where the read step does not: choosing symbols, the model
+  describes "removed" so that it fits the soft-deletion rule; asked to say D2
+  with the other rules' outcomes, it takes the words literally
+- a link can still be wrong ("a confirmation message" taken for "a
+  confirmation prompt") → each link is checked by a question (5.7) before it
+  is used
+- a link is kept even when the voted facts already imply it: a fact may be
+  rejected later (check 3)
+
+**Facts that contradict a requirement** (check 3, 5.7)
+- voted facts can be wrong in a way that hides conflicts: "a deleted property
+  has its record removed" + "a removed record is not retained" → D4 (soft
+  deletion: retain the records) is impossible to obey wherever it applies
+- a conflict needs two rules that clash, not one rule against the facts → every
+  conflict of D4 disappears
+- so such facts are put to the LLM with the requirement's words
+
+### 5.4 Is a situation uncovered? (`checks.py`)
+
+```
+not A_1 and ... and not A_n      satisfiable?
+```
+
+- the situation found is trimmed to the symbols that matter, reported,
+  excluded, and the question is asked again (at most 3 gaps)
+- rules that always apply, like "SHALL NOT backorder", do not count as coverage
+- example, the order spec: "no order submitted, none canceled" → no rule
+  applies, so nothing says what the system must do
+
+### 5.5 What do the requirements allow or rule out? (`checks.py`, `explain.py`)
+
+- a scenario is not a defect: it is a consequence of the rules that the
+  author may not have intended
+- gap or scenario? A gap is a situation no rule speaks about. A scenario is
+  something the rules do decide (allowed, or impossible), maybe not as meant:
+  in the order spec, "an order fulfilled that was never submitted" is allowed
+- the solver proves two kinds:
+
+```
+allowed     all rules  and  not A_i  and  C_i            satisfiable?
+            what rule i demands may also happen when rule i does not apply
+            ("the order is fulfilled although it was never submitted")
+
+ruled out   A_q and A_r  satisfiable,  but  A_q and A_r and C_r  unsatisfiable
+            rule q would apply in a situation that rule r alone makes impossible
+            ("a locked administrator account")
+```
+
+- one candidate per rule or pair; most are unremarkable
+- an LLM judge reads each one next to the document's goal and keeps the
+  surprising ones
+- the scenario itself is proven; the judge only decides whether to show it
+
+### 5.6 Does a finding depend on the choice of symbols? (`formalize.py`, `checks.py`)
+
+- the read step chooses the symbols, and everything follows from that choice
+- `--symbol-sets K`: the document is formalized K times, once as usual and
+  K-1 times with the read step at a higher temperature, so that it picks
+  other symbols
+- all K formal models must list the same rules
+
+```
+formal model 1 ─► findings ─┐
+formal model 2 ─► findings ─┼─► combine ─► each finding with "found with k of K"
+formal model K ─► findings ─┘
+```
+
+- findings are matched by what they are about: a conflict by its set of
+  rules, an ambiguity by its rule, a scenario by its kind and rules
+- gaps cannot be matched (a gap is a situation over one model's own symbols):
+  the gaps of the first model are kept
+
+### 5.7 Three checks by questions (`probe.py`, step 6)
+
+- all 8 samples can agree and still be wrong: one model tends to make the same
+  choice every time
+- so step 6 asks a different question: the LLM gets ONE requirement, on its
+  own, and ONE concrete situation that Z3 picks, or one statement
+- each question is asked 8 times; the answers are counted
+
+**Check 1: is the translation the only reading of the words?**
+
+```
+rule           "WHEN the number of failed attempts reaches 5 THEN lock the account"
+translation    (= failed_attempts 5) => account_locked     step 3: 8 of 8 samples
+other reading  (>= failed_attempts 5) => account_locked    proposed by the LLM
+situation      failed_attempts = 6, account_locked FALSE   picked by Z3
+               translation says: obeyed     other reading says: broken
+question       Do the words decide which reading is meant?  A / B / either
+```
+
+- 8 answers, half of them with the two readings swapped
+- the translation stands when it gets more than half of them; otherwise the
+  rule is reported as ambiguous
+- when the samples of step 3 split, their second group is the other reading
+- the experiments also score the stricter "7 of 8" (research.md 4.1)
+
+**Check 2: does the rule demand what its link says?**
+
+```
+link of D2     (confirmed and record_removed) => (not record_retained)      (5.3)
+situation      confirmed TRUE, record_retained TRUE
+               picked by Z3: D2 applies, and the link's claim is false
+question       D2, fully obeyed: could this situation still be true?
+               possible / impossible / unclear
+verdict        more than half say "impossible" → the link is used; otherwise not
+```
+
+**Check 3: does a requirement agree with the facts that contradict it?**
+
+```
+requirement    D4 "retain Property records in the database for audit purposes"
+voted facts    "a deleted property has its record removed"
+               "a removed record is not retained"
+               proven by Z3: together they make D4 impossible to obey
+question       for each of these facts: does D4 agree with it?
+               agrees / contradicts / unclear
+verdict        more than half say "contradicts" → the fact is left out
+```
+
+- for each requirement, Z3 is asked whether the voted facts make it impossible
+  to obey; if so, our code cuts the facts down to the smallest set that still
+  does it
+- "more than half" against a voted fact: it already has a majority behind it
+
+### 5.8 A second reader (`formalize.py`, step 7, optional)
+
+- one model's 8 samples agree with each other also where a reader would
+  hesitate: they come from one judgment
+- a second model, of another family, is an independent reader
+- it gets exactly the prompt of step 2 and answers 8 times; for each answer,
+  Z3 is asked whether it means the same as the translation, and our code
+  counts the ones that do:
+
+```
+rule           "WHEN a comment has been reported three times THEN hide it"
+translation    (= report_count 3) => comment_hidden     main model, 8 of 8 samples
+second model   (>= report_count 3) => comment_hidden    5 of its 8 answers
+               (= report_count 3) => comment_hidden     3 of its 8 answers
+verdict        3 of 8 mean the same: not more than half → ambiguous
+```
+
+- the translation stands only if more than half of the second model's answers
+  mean the same (the majority rule of facts, links and questions)
+- otherwise the rule is reported as ambiguous, with the second model's most
+  common other reading
+- the two readings are compared only where the events that the translation's
+  condition requires happen: one model may write "the delivery fails for the
+  second time" with the event `delivery_failed`, the other with the count
+  alone, and that is not another reading (T13)
+- held-out sets (E9, E12): 30 and 32 of 36 planted ambiguities found instead
+  of 14 and 17; 15 and 9 rules of clean specs flagged instead of 7 and 5
+- off by default: `--second-base-url`
+
+---
+
+## 6. The data between the pieces
+
+### `formal.json`: the spec as logic
+
+```json
+{
+  "symbols": [
+    {"name": "inventory_available", "sort": "Bool", "values": [],
+     "description": "The required inventory for the order is available."}
+  ],
+  "background": [
+    {"id": "F2", "text": "Access cannot be both granted and denied.",
+     "formula": "(not (and access_granted access_denied))", "support": "8/8"}
+  ],
+  "rules": [
+    {"id": "R2",
+     "text": "WHEN an order is submitted AND inventory is unavailable, THE Order System SHALL place the order on backorder.",
+     "reading": "a submitted order with no stock must be backordered",
+     "antecedent": "(and order_submitted (not inventory_available))",
+     "consequent": "order_on_backorder",
+     "status": "accepted", "clusters": [8], "entropy": 0.0}
+  ]
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `symbols[].sort` | `Bool`, `Int`, `Real` or `Enum`; `values` lists the members of an Enum |
+| `background` | the assumed facts; `support` = how many samples agree. A fact with `restates` is a link (step 5): it says what that rule demands in the other rules' terms; its `check` holds the answers of step 6. Editable by hand |
+| `rules[].status` | `accepted` (samples agree), `ambiguous` (two readings; the rule also carries `alternative` and `differs_when`), `rejected` (no stable reading; left out of the checks) |
+| `rules[].clusters` | how the samples split by meaning, e.g. `[5, 3]` |
+| `symbols[].event` | true for something that happens at one moment (5.2) |
+| `rules[].trigger` | the event the rule reacts to (5.2), or empty |
+| `rules[].probes` | step 6: each other reading, the situations asked about, and the answers |
+| `rules[].second` | step 7, if it ran: the second model's reading, its support ("7/8"), and whether it means the same as the translation |
+
+It is the only input of `checks.py`, so the solver stage can be re-run without a GPU.
+
+### `findings.json`: one entry per finding
+
+```json
+[
+  {"type": "conflict", "rules": ["R2", "R3"],
+   "when": {"order_submitted": true, "inventory_available": false}},
+  {"type": "conflict", "rules": ["R1", "R4"], "facts": ["F2"],
+   "when": {"account_locked": true, "password_is_correct": true}},
+  {"type": "gap",
+   "when": {"order_submitted": false, "order_canceled": false}},
+  {"type": "ambiguity", "rule": "R3", "status": "ambiguous", "split": [5, 3],
+   "readings": ["... [in logic: (= failed_attempts 5) => account_locked]",
+                "... [in logic: (>= failed_attempts 5) => account_locked]"],
+   "differs_when": {"account_locked": false, "failed_attempts": 6}}
+]
+```
+
+- A conflict with a `facts` list holds only if those assumed facts are true. A
+  conflict without one is proven from the rules alone. It is doubtful when it
+  has `simultaneous_events` (the events it needs at once) or `doubted_by` (the
+  facts that say its situation cannot happen).
+- An ambiguity has `found_by`: `samples` (5.1), `questions` (5.7) or `models` (5.8).
+- A scenario looks like `{"type": "scenario", "verdict": "accepted", "rules": ["R1"], "when": {...}}`
+  (`"rejected"` for a situation the rules rule out).
+- With several symbol sets every finding also has `support` ("3/5": found with 3
+  of 5 sets) and `model` (which formal model its witness is written in).
+- After stage 3 every finding also has `title`, `explanation`, `option_a`,
+  `option_b`.
+
+### `report.md`
+
+```
+# Requirements analysis: <name>
+5 requirements analysed: 2 conflict(s) (1 doubtful), 1 gap(s), 0 ambiguity(ies), 1 scenario(s) to confirm.
+
+ ## 1. Conflict (if the assumed facts hold, found with 3 of 3 symbol sets): <title>
+    explanation
+    A) Keep as-is: ...     B) Change: ...
+    *Proven:* the exact fact: rule ids, the witness situation, the assumed facts it needs
+```
+
+The remarks in brackets appear only when they apply; a doubtful conflict says
+"doubtful: needs two events at the same moment" or "doubtful: the assumed facts
+say this situation cannot happen".
+
+---
+
+## 7. How far to trust a finding
+
+| Finding | Trust it as |
+|---|---|
+| conflict, gap | a proof about `formal.json`. Wrong only if the translation is wrong |
+| conflict "if the assumed facts hold" | a proof that also needs the listed facts or links. Judge them |
+| conflict marked "doubtful" | a proof, but likely an artefact of the model (two events at once, or a situation the facts rule out). On `eval3/`, all 60 marked conflicts were false alarms |
+| ambiguity | a real question: the model's own translations disagree, the words did not decide between two readings it was shown, or a second model reads it otherwise. Expect about half of the real ambiguities to be found; with the second reader most, with about one extra question per spec |
+| scenario | a proven consequence of the rules. Whether it matters is the judge's opinion |
+| "found with k of K symbol sets" | the higher k, the less the finding depends on how the text was modelled. In the evaluation, findings with most sets were never wrong |
+
+---
+
+## 8. Where the model runs
+
+```
+Windows:  python -m speccheck spec.md --base-url http://localhost:18200/v1
+              │  ssh -L 18200:hpc-nodegpu01:18200 hpc-ctrl01
+              ▼
+SLURM:    experiments/slurm/serve.sbatch → vllm serve Qwen/Qwen3.8-27B-FP8   (2 GPUs)
+```
+
+- **One local model for the pipeline:** `Qwen/Qwen3.8-27B-FP8` on vLLM. Only the
+  optional second reader (step 7) calls another local model,
+  `thelamapi/next-70b`, which was already in the cluster's model cache. It
+  needs both GPUs, so it runs in its own job (`experiments/slurm/serve_second.sbatch`,
+  port 18201), after Qwen's, and the experiments add its answers to saved runs.
+- **2 GPUs:** the account's limit. `--data-parallel-size 2` gives two replicas
+  behind one address, so the Python code needs no load balancing.
+- **Shared quota:** other jobs of the account use the same 2 GPUs. Start the
+  server with a short limit (`sbatch --time=00:30:00 serve.sbatch`) and cancel it when done.
+- **Key:** a random API key is written to `~/speccheck/api_key` at each start;
+  the client reads it from `OPENAI_API_KEY`.
+- **Thinking mode off:** Qwen can write out its reasoning before answering. The
+  one call tried with it never reached an answer (research_log.md, T2).
+- **Startup switches:** the node's CUDA compiler is too old for kernels vLLM
+  compiles at startup; `serve.sbatch` switches those off and explains each one.
+- **Threads:** only LLM calls run in threads. Z3 is not thread-safe, so all
+  solver work happens in one thread per process.
+- **Not repeatable at temperature 0:** the batched server gives slightly
+  different answers to the same prompt (research_log.md, L10).
+
+---
+
+## 9. Compared with Kiro
+
+| Kiro | Here |
+|---|---|
+| Formal model: schema, implications, background assertions | the same three parts: symbols, rules, assumed facts |
+| Ambiguity from the entropy of sampled formalizations | the same |
+| Conflicts as minimal rule sets | the same, for conflicts triggered by up to three rules |
+| Background assertions kept by a frequency threshold | kept by majority vote, and only allowed to add findings; plus links (step 5) |
+| Completeness gaps | the same idea; at most 3 are reported |
+| Surprising accepted / rejected scenarios, picked by an LLM judge | the same; at most 3 are shown |
+| (not stated) | several symbol sets: each finding says with how many it was found |
+| (not stated) | optional second reader: a model of another family must confirm each translation |
+| Refinement: an LLM rewrites the criteria before formalization | not part of the pipeline. An optional review exists, off by default (below) |
+| Reads one `requirements.md` | reads one document |
+| (not stated) | one snapshot, no time: "then", "after", "until" are not modelled |
+
+**The optional review**
+- Kiro finds one of its two blog examples (the `delete_property`
+  contradiction) with its LLM refinement stage, not with the solver
+- a version of that stage: `speccheck/refine.py`, runs only with `--review`;
+  nothing else needs it
+- what we measured with it: research.md, section 5
+
+---
+
+## TODO
+
+Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
+
+- [x] **Step 1 — formal layer, no GPU**: `logic.py`, `checks.py`, hand-written tests
+- [x] **Step 2 — model serving**: `experiments/slurm/serve.sbatch`, `llm.py`
+- [x] **Step 3 — formalization**: `formalize.py` (read, sample, cluster)
+- [x] **Step 4 — report**: `explain.py`, `cli.py`, README with real output
+- [x] **Step 5 — batch experiments**: `experiments/stability.py`, third spec (OpenSpec format)
+- [x] **Step 6 — assumed domain facts**: sampled, voted, add-only; `experiments/fact_threshold.py`
+- [x] **Step 7 — LLM review of the text ("refinement")**: built and measured (E3),
+      then switched off by default: the focus is the formal part
+- [x] **Documentation pass**: README, plan and research log rewritten for reading
+- [x] **Step 8 — evaluation set the prompts have not seen**: `eval/` (21 specs from
+      `experiments/make_eval.py`), `experiments/evaluate.py`, experiment E4
+- [x] **Step 9 — several symbol sets**: `--symbol-sets K`; every finding says
+      "found with k of K"
+- [x] **Step 10 — the rest of Kiro's formal part**: conflicts of three rules;
+      scenarios with an LLM judge
+- [x] **Step 11 — the charitable choice of symbols**: links (formalize step 5).
+      `delete_property` 8 of 8; held-out recall 73% to 92% (E5)
+- [ ] **Step 12 (recommended next; postponed by decision) — check a change against the specs that already exist**
+  - [ ] a small OpenSpec project as test data: existing specs plus a change that
+        clashes with them
+  - [ ] read the project: `openspec/specs/<domain>/spec.md` and the ADDED /
+        MODIFIED / REMOVED delta of the change
+  - [ ] apply the delta, formalize the merged spec (existing requirements cached)
+  - [ ] report only findings that involve a new or modified requirement
+- [ ] **Step 13 — a larger evaluation**: more base specs, more runs, another main model
+- [x] **Step 14 — better ambiguity detection**: questions about concrete situations
+      (step 6, `probe.py`); held-out `eval2/` (E7)
+- [x] **Step 15 — two repairs**: conflicts marked doubtful; links checked by a question
+- [x] **Step 16 — two events at once, and ambiguity revisited**: events marked by the
+      read step, conflicts needing two events marked doubtful; the reading question
+      rebuilt (A / B / either); held-out `eval3/` (E8)
+- [x] **Step 17 — events written as states**: a counted happening gets an event symbol
+      and a count; the translation keeps the event (T8); held-out `eval4/` (E9)
+- [x] **Step 18 — a second reader for ambiguity**: optional step 7, a second local
+      model (`--second-base-url`); measured on `eval3/` (T9) and `eval4/` (E9)
+- [x] **Step 19 — repair `delete_property`**: facts that make a requirement impossible
+      to obey are checked against its words (check 3); links kept (T10)
+- [x] **Step 20 — failures as events**: the read step names each rule's trigger; the
+      two-event mark uses the triggers of the clashing rules (T11); held-out `eval5/` (E10)
+- [x] **Step 21 — states read as events**: a prompt sentence was tried and dropped
+      (T12); on `eval6/` states after WHEN were read as states in 12 of 12 runs (E11)
+- [x] **Step 22 — "remove" against "keep"**: decided to leave it as a known limit (D6);
+      measured again in E11
+- [x] **Step 23 — "remove" against "keep", one prompt sentence**: tried and dropped (T14);
+      measured again in E12 (10 of 18 runs found over E10 to E12)
+- [x] **Step 24 — fewer flags from the second reader**: compared only where the required
+      events happen (T13); held-out `eval7/` (E12)
+
+Section 2 says why, and in which order.
