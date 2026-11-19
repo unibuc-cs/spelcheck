@@ -1,10 +1,10 @@
 # speccheck: how it works, and where we are
 
-- speccheck reads a requirements document in natural language and reports what
-  is wrong with it
-- it follows the formal part of [Kiro's requirements analysis](https://kiro.dev/blog/deep-spec-analysis/):
-  an LLM turns the text into logic → the Z3 solver checks the logic → the
-  results come back in plain language, with "A) keep as-is / B) change"
+speccheck reads a requirements document written in natural language and
+reports what is wrong with it. It follows the formal part of
+[Kiro's requirements analysis](https://kiro.dev/blog/deep-spec-analysis/): an
+LLM turns the text into logic, the Z3 solver checks the logic, and the results
+come back in plain language, each with "A) keep as-is / B) change".
 
 | File | Read it for |
 |---|---|
@@ -26,44 +26,41 @@
 | **G4** Research for a paper, on the local model | **Well under way.** 7 held-out tests (E5, E7 to E12): 61 to 100% of planted conflicts found; at most 1 false alarm in 18 clean runs with doubtful conflicts set aside (none in the last four). Still small: one main model, specs written by us |
 | **G5** Only the formal part | **Done.** An LLM review of the text was built, measured, and switched off |
 
-In short:
-- the pipeline works end to end, finds what Kiro's blog finds, and holds up on
-  specs it was not built on
-- likely artefacts (two events at once, situations the facts call impossible)
-  are marked *doubtful* → almost no false alarms left. The mark needs the
-  event each rule reacts to, which the read step names
-- missed conflicts come from the choice of symbols, mostly "remove" against "keep"
-- a second local model, as an independent reader, finds most ambiguities, at
-  the cost of more questions to the author
-- untouched: real OpenSpec projects with existing specs
+In short: the pipeline works end to end, finds what Kiro's blog finds, and
+holds up on specs it was not built on. Conflicts that are likely artefacts
+(two events at once, or a situation the facts call impossible) are marked
+*doubtful*, and with those set aside almost no false alarms are left. The mark
+depends on knowing which event each rule reacts to, and the read step names it.
+
+The conflicts that are still missed come from the choice of symbols, mostly
+"remove" against "keep". A second local model, used as an independent reader,
+finds most of the ambiguities, at the cost of more questions to the author.
+Real OpenSpec projects, where specs already exist, have not been touched yet.
 
 ---
 
 ## 2. What is next
 
-In this order. The first is the recommendation.
+There are three candidates, in this order. The first is the one we recommend.
 
-1. **Check an OpenSpec change against the specs that already exist** (G2,
-   postponed by decision)
-   - closes G2; the most original part for a paper: Kiro, as documented,
-     reads one document
-   - a real OpenSpec project: `openspec/specs/<domain>/spec.md` (what the
-     system does now) + a change with ADDED / MODIFIED / REMOVED requirements
-   - the check: apply the change → formalize the merged spec → report the
-     findings that involve a new or modified requirement
-   - existing requirements: formalized once, cached
-2. **A larger evaluation** (G4)
-   - more runs per spec, another main model, the second reader on more sets
-   - all seven sets have been read → the next design needs an eighth
-     held-out set, written first
-3. **The choice of symbols** (G1): where the remaining misses come from
-   - "remove" against "keep" (10 of 18 runs found); two symbols for one
-     outcome left unlinked (research.md 4.2, 4.3)
-   - two prompt sentences were tried and dropped (T12, T14)
-   - a repair would have the LLM judge requirements against each other,
-     which this project leaves out
+1. **Check an OpenSpec change against the specs that already exist** (G2;
+   postponed by decision). This would close G2, and it is the most original
+   part for a paper, because Kiro, as documented, reads one document. A real
+   OpenSpec project has `openspec/specs/<domain>/spec.md` files, which say
+   what the system does now, and a change with ADDED / MODIFIED / REMOVED
+   requirements. The check would apply the change, formalize the merged spec,
+   and report only the findings that involve a new or modified requirement.
+   The existing requirements would be formalized once and cached.
+2. **A larger evaluation** (G4): more runs per spec, another main model, and
+   the second reader on more sets. All seven sets have been read, so the next
+   design needs an eighth held-out set, and it has to be written first.
+3. **The choice of symbols** (G1), which is where the remaining misses come
+   from: "remove" against "keep" (found in 10 of 18 runs), and two symbols for
+   one outcome that stay unlinked (research.md 4.2, 4.3). Two prompt sentences
+   were tried and dropped (T12, T14). A real repair would have the LLM judge
+   requirements against each other, which this project leaves out on purpose.
 
-Not planned: time ("then", "after", "until"). The model is one snapshot.
+Time ("then", "after", "until") is not planned. The model is one snapshot.
 
 ---
 
@@ -161,8 +158,8 @@ The code, in the order to read it:
 | File | Lines | Job | Uses |
 |---|---|---|---|
 | `speccheck/llm.py` | 60 | One function: prompt + JSON schema in, N parsed answers out | the model server |
-| `speccheck/logic.py` | 220 | Symbols to Z3 variables; parses formulas; asks the solver | Z3 |
-| `speccheck/formalize.py` | 690 | Stage 1: text to `formal.json` (steps 1 to 5, then 6 and 7); `formalize_sets` for K symbol sets | `llm`, `logic`, `probe` |
+| `speccheck/logic.py` | 250 | Symbols to Z3 variables; parses formulas; asks the solver, including the test "do these two rules mean the same?" | Z3 |
+| `speccheck/formalize.py` | 680 | Stage 1: text to `formal.json` (steps 1 to 5, then 6 and 7); `formalize_sets` for K symbol sets | `llm`, `logic`, `probe` |
 | `speccheck/probe.py` | 430 | Stage 1, step 6: three checks by questions about one requirement | `llm`, `logic` |
 | `speccheck/checks.py` | 520 | Stage 2: `formal.json` to findings; scenarios; `combine` for K formal models | `logic` |
 | `speccheck/explain.py` | 330 | Stage 3: findings to plain words; the scenario judge; builds `report.md` | `llm` |
@@ -222,7 +219,8 @@ Each rule *i* is `A_i => C_i` (antecedent, consequent).
   (a split can be noise). Only a split no question could be built for is
   reported as it is (`found_by: samples`)
 - it finds nothing where all 8 samples agree on one reading of ambiguous
-  words → the other two ways: the questions (5.7), the second reader (5.8)
+  words. That is what the other two ways are for: the questions (5.7) and the
+  second reader (5.8)
 
 ### 5.2 Do requirements conflict? (`checks.py`)
 
@@ -236,9 +234,9 @@ Each rule *i* is `A_i => C_i` (antecedent, consequent).
 2. A_G and all rules    unsatisfiable?  nothing the system does would obey them all
 ```
 
-- both hold → Z3 names the rules it needed for the contradiction (the "unsat
-  core", shrunk until no rule can be dropped); a situation of step 1 is the
-  witness
+- when both hold, Z3 names the rules it needed for the contradiction (the
+  "unsat core", shrunk until no rule can be dropped), and a situation of
+  step 1 is the witness
 - not a conflict: one rule alone forbids the situation (forcing "account
   locked" for an administrator, against "never lock administrators")
 - dropped: a conflict that contains a smaller reported conflict
@@ -249,7 +247,7 @@ Each rule *i* is `A_i => C_i` (antecedent, consequent).
   - one snapshot lets any events coincide: "a visitor signs up" and "a
     subscriber changes the address", with "send no email" against "send a
     confirmation email"
-  - requirements are written for one event at a time → a conflict between
+  - requirements are written for one event at a time, so a conflict between
     rules that react to two different events is marked
   - the read step names, for each rule, the event it reacts to (its *trigger*):
     ```
@@ -273,8 +271,8 @@ setting them aside cut false alarms on clean runs from 9 to 1 of 18 (E8).
 
 ### 5.3 Which facts are assumed, and how are they used?
 
-- two requirements can demand opposite things in different words: "grant
-  access" and "deny access" as two symbols → the solver sees no clash
+- two requirements can demand opposite things in different words: with "grant
+  access" and "deny access" as two symbols, the solver sees no clash
 - an assumed fact connects them:
 
 ```
@@ -324,25 +322,25 @@ asked again      "remove the Property record", with the other rules' outcomes
 link (a fact)    (confirmed and record_removed) => (not record_retained)
 ```
 
-- more than half of the answers agree on one meaning → an assumed fact with
-  its support, used like the others: add-only, named by every conflict that
-  needs it
+- when more than half of the answers agree on one meaning, it becomes an
+  assumed fact with its support, used like the others: add-only, and named by
+  every conflict that needs it
 - "cannot be expressed" is a valid answer, and counts against a link
 - why this works where the read step does not: choosing symbols, the model
   describes "removed" so that it fits the soft-deletion rule; asked to say D2
   with the other rules' outcomes, it takes the words literally
 - a link can still be wrong ("a confirmation message" taken for "a
-  confirmation prompt") → each link is checked by a question (5.7) before it
+  confirmation prompt"), so each link is checked by a question (5.7) before it
   is used
 - a link is kept even when the voted facts already imply it: a fact may be
   rejected later (check 3)
 
 **Facts that contradict a requirement** (check 3, 5.7)
-- voted facts can be wrong in a way that hides conflicts: "a deleted property
-  has its record removed" + "a removed record is not retained" → D4 (soft
-  deletion: retain the records) is impossible to obey wherever it applies
-- a conflict needs two rules that clash, not one rule against the facts → every
-  conflict of D4 disappears
+- voted facts can be wrong in a way that hides conflicts: with "a deleted
+  property has its record removed" and "a removed record is not retained", D4
+  (soft deletion: retain the records) is impossible to obey wherever it applies
+- a conflict needs two rules that clash, not one rule against the facts, so
+  every conflict of D4 disappears
 - so such facts are put to the LLM with the requirement's words
 
 ### 5.4 Is a situation uncovered? (`checks.py`)
@@ -354,7 +352,7 @@ not A_1 and ... and not A_n      satisfiable?
 - the situation found is trimmed to the symbols that matter, reported,
   excluded, and the question is asked again (at most 3 gaps)
 - rules that always apply, like "SHALL NOT backorder", do not count as coverage
-- example, the order spec: "no order submitted, none canceled" → no rule
+- example, the order spec: with "no order submitted, none canceled", no rule
   applies, so nothing says what the system must do
 
 ### 5.5 What do the requirements allow or rule out? (`checks.py`, `explain.py`)

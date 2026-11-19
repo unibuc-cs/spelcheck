@@ -1,13 +1,19 @@
 # speccheck: a minimal Kiro-style requirements checker
 
-**New here? Read [GUIDE.md](GUIDE.md) first:** the same ideas, one at a time,
-each from an example, with diagrams.
+**New here? Read [GUIDE.md](GUIDE.md) first.** It explains the same ideas one
+at a time, each from an example, with diagrams.
 
-- **In:** a requirements spec in plain language
-- **Out:** its **conflicts**, **gaps**, **ambiguities** and **scenarios**, in plain
-  language, each with "A) keep as-is / B) change"
-- **How:** an LLM turns the spec into logic, the Z3 solver checks the logic
-- It follows the formal part of [Kiro's requirements analysis](https://kiro.dev/blog/deep-spec-analysis/)
+speccheck reads a requirements document written in plain language and reports
+what is wrong with it: requirements that contradict each other (*conflicts*),
+situations that no requirement covers (*gaps*), sentences that can be read in
+two ways (*ambiguities*), and consequences the author may not have intended
+(*scenarios*). Every finding is given in plain language, with two choices:
+"A) keep as-is" or "B) change".
+
+It follows the formal part of
+[Kiro's requirements analysis](https://kiro.dev/blog/deep-spec-analysis/). A
+language model turns the spec into logic, the Z3 solver checks the logic, and
+the model puts the results back into words:
 
 ```
 spec text ──formalize.py──► formal.json ──checks.py──► findings.json ──explain.py──► report.md
@@ -16,172 +22,54 @@ spec text ──formalize.py──► formal.json ──checks.py──► findi
 
 ## The project in one minute
 
-**1. Translate** (LLM)
-- each requirement → `when <condition> then <demand>`
-- written with named facts, the *symbols*: `order_submitted`, `inventory_available`
+The model rewrites each requirement as "when *condition* then *demand*", using
+named facts such as `order_submitted` and `inventory_available`. These names
+are the *symbols*.
 
-**2. Prove** (Z3 solver, no LLM)
-- Z3 answers one kind of question: "is there a situation in which all these
-  formulas hold?" → yes, and one such situation; or no, proven. Our code asks
-  it many such questions
-- examples from the order spec below:
-  - *conflict*: the rules cannot all be obeyed → R2 "backorder it" vs R3 "never backorder"
-  - *gap*: no rule applies → nothing says what to do when no order is submitted
-  - *scenario*: allowed (or ruled out), but nobody wrote it → an order is fulfilled that was never submitted
+Z3 then does the proving, and no language model is involved in that. Z3 can
+answer one kind of question: "is there a situation in which all these formulas
+hold?" Either it shows such a situation, or it proves that none exists. Our
+code asks that question many times, looking for three kinds of situation. In
+the order spec used below:
 
-**3. Check that each rule has only one meaning**
-
-Example: "WHEN failed attempts reach 5, lock the account". Two possible
-meanings (*readings*), each a formula for Z3:
-- A: lock at exactly 5 failed attempts: `(=> (= failed_attempts 5) account_locked)`
-- B: lock at 5 or more: `(=> (>= failed_attempts 5) account_locked)`
-
-They differ at 6 attempts: A lets the account stay unlocked, B does not.
-
-1. **Find the readings.** The LLM translates the rule into logic 8 times; the
-   solver checks which translations mean the same:
-
-   ```
-   T1 and T2 mean the same  ⇔  (xor T1 T2) is unsatisfiable
-                                (no situation in which one holds and the other does not)
-   ```
-
-   - they split, e.g. 5 mean A and 3 mean B → A and B
-   - all (or 7 of 8) mean A → the LLM is asked "what else could these words
-     mean?" and writes each answer as a formula → B. An answer that means the
-     same as A (same test) is dropped
-2. **Ask about the case where they differ.** Z3 finds the situation:
-
-   ```
-   (and A (not B))    satisfiable, e.g. failed_attempts = 6, account_locked = false
-   (and (not A) B)    the other way round, if there is one (here: unsatisfiable)
-   ```
-
-   The LLM is asked 8 times: "6 failed attempts, account not locked. Do the
-   words say A, B, or either?"
-   - A gets more than half of the answers → the rule means A
-   - otherwise → *ambiguous*
-3. **Optional: a second LLM** translates the rule 8 times, S1 to S8. Each is
-   compared with A by the same test, `(xor A Si)` unsatisfiable. At most half
-   mean A → *ambiguous*.
-
-Step 2 is asked even when the 8 translations agree: 8 answers of one model
-often repeat the same choice.
-
-An ambiguous rule becomes a question for the author: "exactly 5, or 5 or
-more: which did you mean?"
-
-**4. Tell the solver what the words mean** (*assumed facts*)
-
-Example, `specs/auth_openspec`:
-- R1: "WHEN a user submits a correct password THEN the system grants access"
-- R4: "WHEN a user submits a password for a locked account THEN the system denies access"
-
-A person sees the clash: a correct password for a locked account. Z3 does not,
-because it sees only the formulas:
-
-```
-R1   (=> (and password_submitted password_correct) access_granted)
-R4   (=> (and password_submitted account_locked) access_denied)
-```
-
-For Z3, `access_granted` and `access_denied` are two unrelated yes/no values:
-both can be true, so both rules can be obeyed.
-
-1. **The LLM proposes facts, 8 times.** It sees only the symbols with their
-   meaning (`access_granted`: "The system grants access to the user"), not
-   the requirements, and lists facts that hold "purely because of what the
-   symbols mean". Each fact is a sentence plus a formula:
-
-   ```
-   F2   "The system cannot grant access and deny access simultaneously."
-        (not (and access_granted access_denied))
-   ```
-
-2. **Vote.** The 8 answers word the same fact differently, e.g.
-   `(=> access_granted (not access_denied))`. So an answer agrees with a fact
-   when Z3 proves that the fact follows from that answer's facts:
-
-   ```
-   (and <facts of answer k> (not F2))    unsatisfiable  →  answer k agrees
-   ```
-
-   F2: 7 of the 8 answers agree → kept (more than half are needed).
-3. **Search for conflicts twice**, in the situation where R1 and R4 both apply:
-
-   ```
-   situation   (and password_submitted password_correct account_locked)
-   search 1    situation + all rules           satisfiable   → no conflict
-   search 2    situation + all rules + facts   unsatisfiable → conflict {R1, R4}, needs F2
-   ```
-
-   Search 2 can only add conflicts: a wrong fact cannot hide a conflict proven
-   from the rules alone.
-4. **Show the fact to the author.** The conflict is marked "if the assumed
-   facts hold", and the report quotes the fact:
-
-   > This depends on assumptions that are not stated in the requirements:
-   > - F2: The system cannot grant access and deny access simultaneously.
-
-A second kind of assumed fact, the *link*, is explained [below](#assumed-facts-and-links).
-
-**5. Say how sure each finding is**
-
-The title of each finding says it (real titles):
-
-| Title says | Meaning | Example |
+| Finding | What it means | Example |
 |---|---|---|
-| nothing | proven from the rules alone | "Conflict: Backorder Requirement Conflict" (R2 vs R3, order spec) |
-| "if the assumed facts hold" | proven only with an assumed fact (point 4) | "Conflict (if the assumed facts hold): Conflict between correct password and locked account" |
-| "doubtful: ..." | proven, but probably an artefact of the formulas | the two cases below |
-| "found with k of K symbol sets" | optional: the spec was translated K times, each time with other symbols; k of them found it | "Conflict (found with 3 of 3 symbol sets): Conflict between removal and retention" |
+| conflict | the rules cannot all be obeyed | R2 "backorder it" against R3 "never backorder" |
+| gap | no rule applies | nothing says what to do when no order is submitted |
+| scenario | allowed (or ruled out), though nobody wrote it down | an order is fulfilled that was never submitted |
 
-*Doubtful* has two cases. The conflict stays in the report, marked.
+A proof is only as good as the translation it starts from, so most of the
+project deals with what can go wrong there:
 
-1. **Two events at the same moment.** A situation is one snapshot, so Z3 may
-   let two events happen at once. Requirements are written for one event at
-   a time. Example, a newsletter spec:
+| What goes wrong | What speccheck does about it | More |
+|---|---|---|
+| a sentence has two meanings, and the model picks one | it looks for a second reading and, if the words do not decide between them, reports an *ambiguity*: a question to the author | [Ambiguities](#ambiguities) |
+| two rules say opposite things in different words | it lets the model propose *assumed facts* ("access cannot be both granted and denied"), keeps those that a majority of answers agree on, and uses them only to find more conflicts | [Assumed facts and links](#assumed-facts-and-links) |
+| the logic has no time, so some proven conflicts are not real | it marks them *doubtful* instead of hiding them | [How sure is a finding](#how-sure-is-a-finding) |
+| the findings depend on the symbols the model chose | it can formalize the spec several times and say how often each finding came up | [Several symbol sets](#several-symbol-sets) |
 
-   ```
-   rule 1      "WHEN a visitor submits the signup form THEN the system sends no email ..."
-               trigger: visitor_signed_up
-   rule 2      "WHEN a subscriber changes the email address THEN the system sends a confirmation email"
-               trigger: address_changed
-   situation   visitor_signed_up = true, address_changed = true
-               → rule 1: no email, rule 2: an email → conflict
-   mark        the two rules react to two different events → doubtful
-   ```
+Where the project stands:
 
-   The *trigger*, the event a rule reacts to, is named by the LLM when it
-   reads the spec.
-2. **A situation the facts call impossible.** Example, a booking spec:
-   "cancels at least 24 hours before" → no fee; "less than 24 hours before"
-   → a late fee. Written as two yes/no symbols, both can be true for Z3:
-
-   ```
-   situation   at_least_24h = true, less_than_24h = true    → no fee and a late fee → conflict
-   fact        (not (and at_least_24h less_than_24h))        → this situation cannot happen
-   mark        doubtful: "the assumed facts say this situation cannot happen"
-   ```
-
-**Where it stands**
-- finds what the Kiro blog finds, on both of the blog's examples
-- on 7 sets of specs it was not built on: 61 to 100% of planted conflicts found,
-  at most 1 false alarm in 18 clean runs (doubtful conflicts set aside)
-- ambiguities: about half found; with the second model 30 to 32 of 36, at the
-  price of up to one extra question per spec
+- it finds what the Kiro blog finds, on both of the blog's examples;
+- on 7 sets of specs it was not built on, it found 61 to 100% of the conflicts
+  we had planted, with at most 1 false alarm in 18 clean runs (doubtful
+  conflicts set aside);
+- it finds about half of the planted ambiguities, and 30 to 32 of 36 with a
+  second model, at the price of up to one extra question per spec.
 
 | Read next | For |
 |---|---|
 | [GUIDE.md](GUIDE.md) | a guided tour for a first reading: every idea from an example, in small steps |
 | this file | a worked example with real output, the results, how to run it |
-| [plan.md](plan.md) | where we are, what is next, and how each part works |
+| [plan.md](plan.md) | where we are, what is next, and the exact rule behind each decision |
 | [research.md](research.md) | what we found, with the numbers |
 | [research_log.md](research_log.md) | the archive: every experiment in detail. Not needed to understand the project |
 
 Everything quoted below is real output, produced with Qwen3.8-27B-FP8 on vLLM.
 
-## A) The request: a spec
+## A worked example
+
+### The spec
 
 `specs/order/requirements.md` is the order-processing example from the Kiro blog:
 
@@ -193,23 +81,20 @@ R4: WHEN an order is canceled, THE Order System SHALL refund all associated paym
 R5: WHILE an order is in a canceled-and-refunded state, THE Order System SHALL NOT fulfill the order.
 ```
 
-## B) The formal check, and the answer in plain language
-
 ### Stage 1: the LLM writes the spec as logic (`formal.json`)
 
-**Symbols**: one variable for each fact the requirements talk about
+First come the symbols, one variable for each fact the requirements talk about:
 
 ```json
 {"name": "inventory_available", "sort": "Bool", "event": false,
  "description": "The inventory for the ordered items is available."}
 ```
 
-- `event: true`: something that happens at one moment (an order is submitted)
-- `event: false`: a state, like this one
+`event` says whether the symbol is something that happens at one moment (an
+order is submitted) or a state, like this one.
 
-**Rules**: each requirement, translated 8 times, independently, into
-- `antecedent`: when it applies
-- `consequent`: what must hold then
+Then come the rules. Each requirement is translated 8 times, independently,
+into an `antecedent` (when it applies) and a `consequent` (what must hold then):
 
 ```json
 {"id": "R2",
@@ -222,19 +107,18 @@ R5: WHILE an order is in a canceled-and-refunded state, THE Order System SHALL N
  "status": "accepted", "clusters": [8], "entropy": 0.0}
 ```
 
-- our code puts the 8 in groups that mean the same: two go together when Z3
-  proves that no situation tells them apart
-- `"clusters": [8]`: all 8 mean the same; a split such as `[5, 3]`: two readings
-- either way, the steps of point 3 at the top decide whether the rule is
-  *ambiguous*
+Our code puts the 8 translations into groups that mean the same. Two go into
+the same group when Z3 proves that no situation tells them apart.
+`"clusters": [8]` says that all 8 mean the same; a split such as `[5, 3]`
+would show two readings (see [Ambiguities](#ambiguities)).
 
-**Assumed facts**: true because of what the words mean, but not written in the spec
-- the LLM proposes them, 8 samples vote
-- used only to find *more* conflicts ([details below](#assumed-facts-and-links))
+The file also holds the assumed facts, which have
+[a section of their own](#assumed-facts-and-links).
 
 ### Stage 2: Z3 checks the logic (`findings.json`)
 
-No LLM here: our code asks Z3 for three kinds of situation. In the order spec:
+There is no LLM in this stage. Our code asks Z3 for three kinds of situation.
+In the order spec:
 
 ```
 conflict   situation:  an order is submitted, no stock
@@ -249,11 +133,11 @@ scenario   situation:  an order is fulfilled, but it was never submitted
                        (R1 says when to fulfill, not "only then")
 ```
 
-Gap or scenario?
-- **gap**: the spec says *nothing* about the situation
-- **scenario**: the spec *does* decide (allowed, or impossible), maybe not as the author meant
+A gap and a scenario are not the same thing. In a gap, the spec says nothing
+about the situation. In a scenario, the spec does decide (the situation is
+allowed, or it is impossible), perhaps not as the author meant.
 
-What `checks.py` writes (`when` is the situation Z3 found):
+This is what `checks.py` writes. The field `when` is the situation Z3 found:
 
 ```json
 {"type": "conflict", "rules": ["R2", "R3"],
@@ -266,15 +150,16 @@ What `checks.py` writes (`when` is the situation Z3 found):
  "when": {"inventory_available": false, "order_fulfilled": true, "order_submitted": false}}
 ```
 
-- conflicts: for every 1, 2 or 3 rules whose conditions can hold together, Z3
-  is asked whether they can hold while all rules are obeyed. If not, Z3 names
-  the rules it needed;
-  our code cuts them down to the smallest set that still clashes
-- the first three are the findings the Kiro blog reports for this spec
+To find conflicts, the check takes every rule, every pair and every group of
+three rules whose conditions can hold together, and asks Z3 whether all rules
+can be obeyed while those conditions hold. If they cannot, Z3 names the rules
+it needed for the contradiction, and our code cuts that list down to the
+smallest set that still clashes. The first three findings above are the ones
+the Kiro blog reports for this spec.
 
 ### Stage 3: the LLM says it in plain language (`report.md`)
 
-The LLM only rewords each proven finding. The conflict:
+The model only rewords each proven finding. This is the conflict:
 
 > **1. Conflict: Backorder Requirement Conflict**
 >
@@ -308,7 +193,8 @@ The gap:
 > - **B) Change:** Add a requirement stating that the system shall do nothing or
 >   remain idle when no order has been submitted or canceled.
 
-The scenario. The solver proved it; an LLM judge decided it is worth showing:
+And the scenario. The solver proved it, and an LLM judge decided that it is
+worth showing:
 
 > **4. Scenario, allowed: Fulfillment without submission**
 >
@@ -321,30 +207,90 @@ The scenario. The solver proved it; an LLM judge decided it is worth showing:
 >   fulfill any order unless an order has been submitted and inventory is
 >   available.
 
-Full report: [specs/order/report.md](specs/order/report.md).
+The full report is in [specs/order/report.md](specs/order/report.md).
+
+## Ambiguities
+
+Take the rule "WHEN failed attempts reach 5, lock the account". It has two
+possible meanings, or *readings*, and each is a formula for Z3:
+
+```
+A   lock at exactly 5 failed attempts    (=> (= failed_attempts 5) account_locked)
+B   lock at 5 or more                    (=> (>= failed_attempts 5) account_locked)
+```
+
+They differ at 6 attempts: A lets the account stay unlocked, B does not.
+speccheck has three ways to notice that a rule has two readings.
+
+1. **The translations split.** The LLM translates the rule 8 times, and our
+   code checks with Z3 which translations mean the same: T1 and T2 mean the
+   same when `(xor T1 T2)` is unsatisfiable, that is, when no situation makes
+   one hold and the other not. If 5 mean A and 3 mean B, we have both readings.
+2. **The words do not decide.** If all 8 (or 7 of 8) mean A, the LLM is asked
+   what else the words could mean, and writes each answer as a formula; that
+   gives B. Z3 then finds the situation where the two differ, here
+   `failed_attempts = 6, account_locked = false`, and the LLM is asked 8
+   times: "6 failed attempts, account not locked. Do the words say A, B, or
+   either?" If A gets more than half of the answers, the rule means A.
+   Otherwise it is ambiguous. This question is asked even when the 8
+   translations agree, because 8 answers of one model often repeat the same choice.
+3. **A second model reads it otherwise** (optional). A second LLM translates
+   the rule 8 times, and each translation is compared with A by the same test.
+   If at most half mean A, the rule is ambiguous.
+
+An ambiguous rule becomes a question for the author: "exactly 5, or 5 or more:
+which did you mean?" The guide goes through this with a diagram
+([GUIDE.md, section 3.1](GUIDE.md#31-does-a-rule-have-only-one-meaning)).
 
 ## Assumed facts and links
 
-The problem: the solver sees symbols, not words.
-- two requirements say opposite things in different words → two unrelated
-  symbols → no conflict
-- example, the Kiro blog's other spec, `specs/delete_property/requirements.md`:
+The solver sees symbols, not words. Here are two rules of `specs/auth_openspec`:
+
+```
+R1   "WHEN a user submits a correct password THEN the system grants access"
+     (=> (and password_submitted password_correct) access_granted)
+
+R4   "WHEN a user submits a password for a locked account THEN the system denies access"
+     (=> (and password_submitted account_locked) access_denied)
+```
+
+A person sees the clash at once: a correct password for a locked account. Z3
+does not, because for Z3 `access_granted` and `access_denied` are two
+unrelated yes/no values. Both can be true, so both rules can be obeyed. Two
+repairs bring the meaning back.
+
+**Voted facts.** The LLM is shown only the symbols with their meaning
+(`access_granted`: "The system grants access to the user"), not the
+requirements, and it lists facts that hold "purely because of what the symbols
+mean". It does this 8 times. Each fact is a sentence and a formula:
+
+```
+F2   "The system cannot grant access and deny access simultaneously."
+     (not (and access_granted access_denied))
+```
+
+The 8 answers word the same fact differently, for example
+`(=> access_granted (not access_denied))`. So an answer counts as agreeing
+with a fact when Z3 proves that the fact follows from that answer's facts:
+
+```
+(and <facts of answer k> (not F2))    unsatisfiable  →  answer k agrees
+```
+
+F2 has 7 of the 8 answers behind it. More than half are needed, so it is kept.
+
+**Links.** Sometimes a rule uses a symbol that no other rule uses, and then
+nothing can clash with it. This happens in the Kiro blog's other spec,
+`specs/delete_property/requirements.md`:
 
 ```
 D2: WHEN a Property Owner confirms deletion, THE Platform SHALL remove the Property record from the Platform
 D4: THE Platform SHALL implement soft deletion to retain Property records in the database for audit purposes while hiding them from the user interface
 ```
 
-- the LLM writes D2 with a symbol of its own, `property_record_removed`
-- nothing else uses it → D2 cannot clash with D4
-
-Two fixes bring the meaning back:
-- **Voted facts**: the LLM is asked 8 times which facts connect the symbols
-  ("access cannot be both granted and denied"); a fact is kept when Z3 proves
-  it follows from more than half of the answers
-- **Links**: a rule with a symbol nobody else uses is translated 8 more times,
-  using only the outcomes of the *other* rules. For D2, 8 of 8 answers say the
-  same thing:
+The LLM writes D2 with a symbol of its own, `property_record_removed`. Such a
+rule is translated 8 more times, using only the outcomes of the *other* rules.
+For D2, 8 of 8 answers say the same thing:
 
 ```json
 {"id": "F1", "restates": "D2", "support": "8/8",
@@ -352,21 +298,75 @@ Two fixes bring the meaning back:
  "formula": "(=> (and deletion_confirmed property_record_removed) (not property_record_retained_in_db))"}
 ```
 
-→ with this link, Z3 proves the conflict between D2 and D4.
+With this link, Z3 proves the conflict between D2 and D4.
 
-Facts and links are the LLM's guesses, so:
-- they only **add** findings: conflicts are searched with the rules alone
-  first, then with the facts; a fact never removes or changes a finding
-- every conflict that needs one says so ("if the assumed facts hold") and quotes it
-- a wrong one: delete it from `formal.json` and re-run with `--formal`
+Facts and links are the LLM's guesses, so they are handled with care:
+
+- **They only add findings.** Conflicts are searched twice: with the rules
+  alone, and then with the facts added. A fact never removes or changes a
+  finding of the first search, so a wrong fact cannot hide a conflict that is
+  proven from the rules alone.
+
+  ```
+  situation   (and password_submitted password_correct account_locked)
+  search 1    situation + all rules           satisfiable   → no conflict
+  search 2    situation + all rules + facts   unsatisfiable → conflict {R1, R4}, needs F2
+  ```
+
+- **A conflict that needs one says so** ("if the assumed facts hold"), and the
+  report quotes the fact:
+
+  > This depends on assumptions that are not stated in the requirements:
+  > - F2: The system cannot grant access and deny access simultaneously.
+
+- **A wrong one is easy to remove:** delete it from `formal.json` and run
+  again with `--formal`.
+
+## How sure is a finding
+
+The title of each finding says how far to trust it. These are real titles:
+
+| The title says | Meaning | Example |
+|---|---|---|
+| nothing more | proven from the rules alone | "Conflict: Backorder Requirement Conflict" (R2 against R3, order spec) |
+| "if the assumed facts hold" | proven only with an assumed fact | "Conflict (if the assumed facts hold): Conflict between correct password and locked account" |
+| "doubtful: ..." | proven, but probably an artefact of the formulas | the two cases below |
+| "found with k of K symbol sets" | optional: the spec was translated K times, each time with other symbols, and k of them found it | "Conflict (found with 3 of 3 symbol sets): Conflict between removal and retention" |
+
+A conflict is marked *doubtful* in two cases. It stays in the report, marked.
+
+The first case is two events at the same moment. A situation is one snapshot,
+so Z3 may let two events happen at once, while requirements are written for
+one event at a time. In a newsletter spec:
+
+```
+rule 1      "WHEN a visitor submits the signup form THEN the system sends no email ..."
+            trigger: visitor_signed_up
+rule 2      "WHEN a subscriber changes the email address THEN the system sends a confirmation email"
+            trigger: address_changed
+situation   visitor_signed_up = true, address_changed = true
+            → rule 1: no email, rule 2: an email → conflict
+mark        the two rules react to two different events → doubtful
+```
+
+The *trigger* is the event a rule reacts to. The LLM names it when it reads the spec.
+
+The second case is a situation that the assumed facts call impossible. In a
+booking spec, "cancels at least 24 hours before" means no fee, and "less than
+24 hours before" means a late fee. Written as two yes/no symbols, both can be
+true for Z3:
+
+```
+situation   at_least_24h = true, less_than_24h = true    → no fee and a late fee → conflict
+fact        (not (and at_least_24h less_than_24h))        → this situation cannot happen
+mark        doubtful: "the assumed facts say this situation cannot happen"
+```
 
 ## Several symbol sets
 
-- every finding depends on the symbols the LLM picks, and it does not always
-  pick the same ones
-- `--symbol-sets 3` formalizes the spec 3 times; each finding says with how many
-  of the 3 it was found
-- for `delete_property`:
+Every finding depends on the symbols the LLM picks, and it does not always
+pick the same ones. With `--symbol-sets 3` the spec is formalized 3 times, and
+each finding says with how many of the 3 it was found. For `delete_property`:
 
 > **3. Conflict (found with 3 of 3 symbol sets): Conflict between removal and retention**
 >
@@ -383,8 +383,8 @@ Facts and links are the LLM's guesses, so:
 >   the Property as deleted rather than removing the record, aligning it with
 >   the soft deletion strategy in D4.
 
-- one of the 3 symbol sets also split on D2 itself (4 against 4) → the
-  question the Kiro blog shows for this spec:
+One of the 3 symbol sets also split on D2 itself, 4 against 4. That gives the
+question the Kiro blog shows for this spec:
 
 > **2. Ambiguity (found with 1 of 3 symbol sets): Ambiguity in Deletion Definition**
 >
@@ -393,7 +393,8 @@ Facts and links are the LLM's guesses, so:
 > the other only requires that the property be considered deleted (which, per D4,
 > allows the record to remain in the database). Which did you mean?
 
-Saved run: [experiments/examples/delete_property_links](experiments/examples/delete_property_links).
+The saved run is in
+[experiments/examples/delete_property_links](experiments/examples/delete_property_links).
 
 ## Run it
 
@@ -401,16 +402,17 @@ Saved run: [experiments/examples/delete_property_links](experiments/examples/del
 uv sync          # on a "hardlink" error: set UV_LINK_MODE=copy and retry
 ```
 
-Then, inside the project's `.venv`:
+Then, inside the project's `.venv`.
 
-**Without a GPU**: the solver only, on a saved `formal.json` (no wording, no scenarios)
+**Without a GPU.** This runs the solver only, on a saved `formal.json`. The
+report has the proven facts, without wording and without scenarios.
 
 ```
 python -m speccheck specs/order/requirements.md --formal specs/order/formal.json --out out
 python -m pytest tests
 ```
 
-**With the LLM** (any OpenAI-compatible server)
+**With the LLM.** Any OpenAI-compatible server will do.
 
 ```
 # on the cluster, in ~/speccheck:   sbatch --time=00:30:00 serve.sbatch     (ready in about 3 minutes)
@@ -420,10 +422,10 @@ python -m speccheck path/to/your_spec.md --base-url http://localhost:18200/v1
 python -m speccheck path/to/your_spec.md --base-url http://localhost:18200/v1 --symbol-sets 3
 ```
 
-**With the second model** (optional, finds more ambiguities)
-- it needs the same 2 GPUs → its own job, after the first (plan.md, section 8)
-- with more GPUs: both servers at once, and `--second-base-url http://localhost:18201/v1`
-  on the command above
+**With the second model.** It is optional and finds more ambiguities. It needs
+the same 2 GPUs, so it runs as its own job after the first one (plan.md,
+section 8). With more GPUs both servers can run at once, and you add
+`--second-base-url http://localhost:18201/v1` to the command above.
 
 ```
 # on the cluster:   sbatch --time=00:40:00 serve_second.sbatch
@@ -431,7 +433,7 @@ ssh -N -L 18201:hpc-nodegpu01:18201 <user>@hpc-ctrl01.acc-ub.local
 python -m experiments.evaluate --rescore experiments/results/<run>.json --second-base-url http://localhost:18201/v1
 ```
 
-**Output**, next to the spec (or in `--out`):
+The output is written next to the spec, or into `--out`:
 
 | File | Content |
 |---|---|
@@ -439,12 +441,12 @@ python -m experiments.evaluate --rescore experiments/results/<run>.json --second
 | `findings.json` | what the solver proved, with its wording |
 | `report.md` | the same, in plain language (also printed) |
 
-- time: under a minute for a 5-rule spec, about a minute with 3 symbol sets
-- when done: cancel the server job, it holds the account's two GPUs
+A 5-rule spec takes under a minute, and about a minute with 3 symbol sets.
+When you are done, cancel the server job: it holds the account's two GPUs.
 
 ## It works on any spec
 
-Nothing in the code or the prompts is about orders.
+Nothing in the code or in the prompts is about orders.
 
 | Specs | Format | Used for |
 |---|---|---|
@@ -454,7 +456,7 @@ Nothing in the code or the prompts is about orders.
 
 ## How reliable is it
 
-Each line is a test on specs the prompts had not seen (3 runs per spec):
+Each line is a test on specs the prompts had not seen, with 3 runs per spec:
 
 | Test | Planted conflicts found | Clean runs with a false alarm | Planted ambiguities found |
 |---|---|---|---|
@@ -466,18 +468,21 @@ Each line is a test on specs the prompts had not seen (3 runs per spec):
 | `eval6/` (E11), doubtful conflicts set aside | 15 of 18 | 0 of 18 | 19 of 36 |
 | `eval7/` (E12), doubtful conflicts set aside | 13 of 18 | 0 of 18 | 17 of 36; 32 of 36 with the second model |
 
-- assumed facts and links carry a large part of the result: without them,
-  `eval3/` gives 10 of 21
-- doubtful conflicts: on `eval3/` and `eval4/` all were false alarms; on
+Some notes on these numbers:
+
+- Assumed facts and links carry a large part of the result. Without them,
+  `eval3/` gives 10 of 21.
+- On `eval3/` and `eval4/`, every doubtful conflict was a false alarm. On
   `eval5/` one planted conflict was marked too ("WHEN a member is suspended"
-  read as an event), so counting doubtful conflicts E10 finds 14 of 18
-- the second model: about twice the ambiguities found, and about twice the
-  flags on clean specs (7 → 15 on `eval4/`, 5 → 9 on `eval7/`, in 18 runs)
-- `delete_property`, the blog's second example: 3 of 3 in the last runs;
-  missed in 4 of 7 earlier runs, 3 times because of a wrong voted fact
-  (research.md 4.3)
-- the numbers are small: specs written by us, one main model.
-  Details: [research.md](research.md)
+  was read as an event), so with doubtful conflicts counted, E10 finds 14 of 18.
+- The second model finds about twice as many ambiguities, and raises about
+  twice as many flags on clean specs (7 → 15 on `eval4/`, 5 → 9 on `eval7/`,
+  in 18 runs).
+- `delete_property`, the blog's second example, was found in 3 of the last 3
+  runs. It was missed in 4 of 7 earlier runs, 3 times because of a wrong voted
+  fact (research.md 4.3).
+- The numbers are small: the specs were written by us, and there is one main
+  model. The details are in [research.md](research.md).
 
 ## Known limits
 
@@ -495,10 +500,10 @@ Each line is a test on specs the prompts had not seen (3 runs per spec):
 
 ## Optional: an LLM review of the text (off by default)
 
-- this project is the formal check only
-- Kiro also has an LLM stage that reads the text itself ("refinement")
-- a version of it: `speccheck/refine.py`, runs only with `--review`
-- what it found: research.md, section 5
+This project is the formal check only. Kiro also has an LLM stage that reads
+the text itself, which it calls "refinement". A version of it exists here in
+`speccheck/refine.py`, and it runs only with `--review`. What it found is in
+research.md, section 5.
 
 ## Files
 
