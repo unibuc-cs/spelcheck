@@ -85,18 +85,26 @@ R4   (=> (and password_submitted account_locked) access_denied)
 For Z3, `access_granted` and `access_denied` are two unrelated yes/no values:
 both can be true, so both rules can be obeyed.
 
-1. **The LLM writes what the words mean.** It is asked 8 times which facts
-   hold just because of what the symbols mean. Each fact is a sentence plus
-   a formula:
+1. **The LLM proposes facts, 8 times.** It sees only the symbols with their
+   meaning (`access_granted`: "The system grants access to the user"), not
+   the requirements, and lists facts that hold "purely because of what the
+   symbols mean". Each fact is a sentence plus a formula:
 
    ```
    F2   "The system cannot grant access and deny access simultaneously."
         (not (and access_granted access_denied))
    ```
 
-   F2 is kept: Z3 proves it follows from 7 of the 8 answers (more than half
-   are needed).
-2. **Search for conflicts twice**, in the situation where R1 and R4 both apply:
+2. **Vote.** The 8 answers word the same fact differently, e.g.
+   `(=> access_granted (not access_denied))`. So an answer agrees with a fact
+   when Z3 proves that the fact follows from that answer's facts:
+
+   ```
+   (and <facts of answer k> (not F2))    unsatisfiable  →  answer k agrees
+   ```
+
+   F2: 7 of the 8 answers agree → kept (more than half are needed).
+3. **Search for conflicts twice**, in the situation where R1 and R4 both apply:
 
    ```
    situation   (and password_submitted password_correct account_locked)
@@ -106,7 +114,7 @@ both can be true, so both rules can be obeyed.
 
    Search 2 can only add conflicts: a wrong fact cannot hide a conflict proven
    from the rules alone.
-3. **Show the fact to the author.** The conflict is marked "if the assumed
+4. **Show the fact to the author.** The conflict is marked "if the assumed
    facts hold", and the report quotes the fact:
 
    > This depends on assumptions that are not stated in the requirements:
