@@ -332,8 +332,7 @@ def _minimal_conflict(vocab: Vocabulary, situation: list, rules: list[Rule],
     to check with all switches on; if that fails it names the switches it needed
     for the contradiction (the "unsat core").
     """
-    solver = z3.Solver(ctx=vocab.ctx)
-    solver.add(*situation)
+    solver = vocab.solver(situation)
     # label -> formula. The ':' cannot appear in a spec symbol, so a switch never
     # clashes with one. Facts come first: they are then the first to be dropped
     # below, which gives the explanation that leans on the fewest assumptions.

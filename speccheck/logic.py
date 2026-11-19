@@ -3,7 +3,8 @@
 Everything Z3-specific that the other modules need lives here:
 
     Vocabulary   turns the "symbols" list of formal.json into Z3 variables,
-                 parses SMT-LIB text into Z3 formulas, and asks Z3 questions.
+                 parses SMT-LIB text into Z3 formulas, and asks Z3 questions
+                 (is this possible? does this follow? do these two mean the same?).
     Rule         one compiled requirement: antecedent => consequent.
 
 Nothing in this file knows about any particular spec. The symbols and the
@@ -154,7 +155,8 @@ class Vocabulary:
     # Z3 answers sat, unsat or unknown. The two methods below each commit to one
     # definite answer, so "unknown" can never be reported as a finding.
 
-    def _solver(self, formulas) -> z3.Solver:
+    def solver(self, formulas) -> z3.Solver:
+        """A Z3 solver that holds the given formulas. Every question goes through one."""
         solver = z3.Solver(ctx=self.ctx)
         solver.set("timeout", SOLVER_TIMEOUT_MS)
         solver.add(*formulas)
@@ -162,12 +164,12 @@ class Vocabulary:
 
     def model(self, formulas) -> z3.ModelRef | None:
         """Return a situation in which all formulas hold, or None if Z3 found none."""
-        solver = self._solver(formulas)
+        solver = self.solver(formulas)
         return solver.model() if solver.check() == z3.sat else None
 
     def impossible(self, formulas) -> bool:
         """True only when Z3 proved that the formulas can never hold together."""
-        return self._solver(formulas).check() == z3.unsat
+        return self.solver(formulas).check() == z3.unsat
 
     def implies(self, premises, conclusion) -> bool:
         """True only when Z3 proved that the conclusion follows from the premises.
@@ -175,6 +177,27 @@ class Vocabulary:
         "Follows" means: no situation makes all premises true and the conclusion false.
         """
         return self.impossible(list(premises) + [z3.Not(conclusion)])
+
+    # Two rules (translations of a requirement, for instance) are compared as
+    # whole formulas, antecedent => consequent. So two that only split the
+    # condition and the demand differently still count as the same.
+
+    def same_meaning(self, a: Rule, b: Rule, given=()) -> bool:
+        """True only when Z3 proved that no situation tells the two rules apart.
+
+        "Tells apart" means: one rule allows the situation and the other
+        forbids it. `given` is what every situation looked at must satisfy.
+        """
+        return self.impossible([z3.Xor(a.formula, b.formula), *given])
+
+    def difference(self, a: Rule, b: Rule, given=()) -> dict:
+        """A situation that one rule allows and the other forbids, as a witness.
+
+        Returns {} when there is none (the two mean the same where `given` holds).
+        """
+        model = self.model([z3.Xor(a.formula, b.formula), *given])
+        relevant = self.symbols_in(a.formula) | self.symbols_in(b.formula)
+        return self.witness(model, relevant) if model is not None else {}
 
     # ---------------------------------------------------------------- witnesses
     # A witness is a concrete situation shown to the user, stored in JSON as

@@ -255,18 +255,16 @@ def formalize(llm: LLM, spec_text: str, samples: int = 8, temperature: float = 0
     """
     rules, symbols = _read(llm, spec_text, read_temperature)
     vocab = Vocabulary(symbols)
-
-    def sample_one(rule: dict) -> list[dict]:
-        prompt = f"Symbols:\n{_symbol_list(symbols)}\n\nRequirement {rule['id']}:\n{rule['text']}"
-        return llm.ask(FORMALIZE_SYSTEM, prompt, FORMALIZE_SCHEMA, samples, temperature)
+    shown = _symbol_list(symbols)
 
     # Steps 2 and 4 ask the LLM. Everything is sent at once; the server batches
     # the calls across its GPUs. The facts question sees only the symbols, not
     # the requirements, so that it cannot simply repeat a requirement as a "fact".
     with ThreadPoolExecutor(max_workers=16) as pool:
-        fact_call = pool.submit(llm.ask, FACTS_SYSTEM, f"Symbols:\n{_symbol_list(symbols)}",
+        fact_call = pool.submit(llm.ask, FACTS_SYSTEM, f"Symbols:\n{shown}",
                                 FACTS_SCHEMA, samples, temperature)
-        answers_per_rule = list(pool.map(sample_one, rules))
+        answers_per_rule = list(pool.map(
+            lambda rule: _translate(llm, shown, rule, samples, temperature), rules))
         fact_answers = fact_call.result()
 
     # The Z3 work (step 3 and the vote of step 4) runs here, after the threads
@@ -280,14 +278,11 @@ def formalize(llm: LLM, spec_text: str, samples: int = 8, temperature: float = 0
     # instead (see _symbols_to_hide and _links).
     hidden = _symbols_to_hide(vocab, formal_rules)
     to_restate = [rule for rule in formal_rules if rule["id"] in hidden]
-
-    def restate_one(rule: dict) -> list[dict]:
-        prompt = (f"Symbols:\n{_symbol_list(symbols, hidden[rule['id']])}\n\n"
-                  f"Requirement {rule['id']}:\n{rule['text']}")
-        return llm.ask(FORMALIZE_SYSTEM + RESTATE_NOTE, prompt, FORMALIZE_SCHEMA, samples, temperature)
-
     with ThreadPoolExecutor(max_workers=16) as pool:  # LLM calls only, again
-        restatements = list(pool.map(restate_one, to_restate))
+        restatements = list(pool.map(
+            lambda rule: _translate(llm, _symbol_list(symbols, hidden[rule["id"]]), rule,
+                                    samples, temperature, FORMALIZE_SYSTEM + RESTATE_NOTE),
+            to_restate))
     background += _links(vocab, to_restate, hidden, restatements, samples, background)
 
     formal = {
@@ -299,7 +294,7 @@ def formalize(llm: LLM, spec_text: str, samples: int = 8, temperature: float = 0
     }
     # Step 6 (probe.py) adds "probes" to the rules, and a "check" to the links
     # and to the facts it tests.
-    question(llm, formal, vocab, _symbol_list(symbols), temperature, keep_samples)
+    question(llm, formal, vocab, shown, temperature, keep_samples)
     # Step 7 (optional) adds "second" to the rules.
     if second is not None:
         second_reading(second, formal, samples, temperature, keep_samples)
@@ -339,6 +334,20 @@ def formalize_sets(llm: LLM, spec_text: str, sets: int, samples: int = 8,
             rule["id"] = reference["id"]
         models.append(model)
     return models
+
+
+def _translate(llm: LLM, symbol_list: str, rule: dict, samples: int, temperature: float,
+               system: str = FORMALIZE_SYSTEM) -> list[dict]:
+    """Ask a model to translate one rule into logic, `samples` times.
+
+    This is the one question behind steps 2, 5 and 7. Step 5 shows fewer
+    symbols and adds RESTATE_NOTE to the instructions; step 7 puts the very
+    same question to the second model.
+
+    symbol_list  the symbols the model may use, as _symbol_list writes them
+    """
+    prompt = f"Symbols:\n{symbol_list}\n\nRequirement {rule['id']}:\n{rule['text']}"
+    return llm.ask(system, prompt, FORMALIZE_SCHEMA, samples, temperature)
 
 
 def _symbol_list(symbols: list[dict], hidden: set = frozenset()) -> str:
@@ -410,7 +419,7 @@ def _judge(vocab: Vocabulary, answers: list[dict]) -> dict:
     if status != "accepted":
         other_answer, other_rule = _simplest(clusters[1])
         result["alternative"] = other_answer
-        result["differs_when"] = _difference(vocab, best_rule, other_rule)
+        result["differs_when"] = vocab.difference(best_rule, other_rule)
     return result
 
 
@@ -434,7 +443,7 @@ def _group_by_meaning(vocab: Vocabulary, answers: list[dict], given: list = (),
         if allowed is not None and not allowed(compiled):
             continue
         for group in groups:
-            if _same_meaning(vocab, group[0][1], compiled, given):
+            if vocab.same_meaning(group[0][1], compiled, given):
                 group.append((answer, compiled))
                 break
         else:
@@ -445,27 +454,6 @@ def _group_by_meaning(vocab: Vocabulary, answers: list[dict], given: list = (),
 def _simplest(cluster: list[tuple[dict, Rule]]) -> tuple[dict, Rule]:
     """Pick the shortest formula of a cluster; they all mean the same anyway."""
     return min(cluster, key=lambda pair: len(pair[0]["antecedent"]) + len(pair[0]["consequent"]))
-
-
-def _disagreement(a: Rule, b: Rule) -> z3.BoolRef:
-    """Holds exactly in the situations that one translation allows and the other forbids.
-
-    The whole rule (antecedent => consequent) is compared, so two translations
-    that merely split condition and demand differently count as the same.
-    """
-    return z3.Xor(a.formula, b.formula)
-
-
-def _same_meaning(vocab: Vocabulary, a: Rule, b: Rule, given: list = ()) -> bool:
-    """True when Z3 proves that no situation (where `given` holds) tells the two apart."""
-    return vocab.impossible([_disagreement(a, b), *given])
-
-
-def _difference(vocab: Vocabulary, a: Rule, b: Rule, given: list = ()) -> dict:
-    """A concrete situation (where `given` holds) in which two translations disagree."""
-    model = vocab.model([_disagreement(a, b), *given])
-    relevant = vocab.symbols_in(a.formula) | vocab.symbols_in(b.formula)
-    return vocab.witness(model, relevant) if model is not None else {}
 
 
 # ---------------------------------------------------------- step 4: facts vote
@@ -637,15 +625,11 @@ def second_reading(llm: LLM, formal: dict, samples: int = 8, temperature: float 
     Adds rule["second"] to every rule that has a translation (see
     judge_second); checks.settled() turns "not confirmed" into an ambiguity.
     """
-    symbol_list = _symbol_list(formal["symbols"])
+    shown = _symbol_list(formal["symbols"])
     rules = [rule for rule in formal["rules"] if rule.get("status") != "rejected"]
-
-    def sample_one(rule: dict) -> list[dict]:
-        prompt = f"Symbols:\n{symbol_list}\n\nRequirement {rule['id']}:\n{rule['text']}"
-        return llm.ask(FORMALIZE_SYSTEM, prompt, FORMALIZE_SCHEMA, samples, temperature)
-
     with ThreadPoolExecutor(max_workers=16) as pool:  # LLM calls only; Z3 below
-        answers_per_rule = list(pool.map(sample_one, rules))
+        answers_per_rule = list(pool.map(
+            lambda rule: _translate(llm, shown, rule, samples, temperature), rules))
 
     vocab = Vocabulary(formal["symbols"])
     for rule, answers in zip(rules, answers_per_rule):
@@ -682,7 +666,7 @@ def judge_second(vocab: Vocabulary, rule: dict, answers: list[dict], asked: int)
 
     same, others = 0, []  # answers that mean the translation; groups of other readings
     for group in _group_by_meaning(vocab, answers, required):
-        if _same_meaning(vocab, translation, group[0][1], required):
+        if vocab.same_meaning(translation, group[0][1], required):
             same += len(group)
         else:
             others.append(group)
@@ -691,5 +675,5 @@ def judge_second(vocab: Vocabulary, rule: dict, answers: list[dict], asked: int)
     if others:
         answer, compiled = _simplest(max(others, key=len))
         second.update({key: answer[key] for key in ("reading", "antecedent", "consequent")})
-        second["differs_when"] = _difference(vocab, translation, compiled, required)
+        second["differs_when"] = vocab.difference(translation, compiled, required)
     return second

@@ -314,7 +314,7 @@ def _other_readings(vocab: Vocabulary, rule: dict, proposed: list[dict], facts: 
     is obeyed and the reading broken, and, if there is one, the other way round.
     """
     translation = vocab.rule(rule)
-    kept, kept_formulas = [], []
+    kept, kept_rules = [], []
     for reading in proposed:
         try:
             other = vocab.rule({"id": rule["id"], **reading})
@@ -322,9 +322,9 @@ def _other_readings(vocab: Vocabulary, rule: dict, proposed: list[dict], facts: 
             continue  # unknown symbol or malformed formula
         if same_symbols and not vocab.symbols_in(other.formula) <= vocab.symbols_in(translation.formula):
             continue  # a reading about other facts
-        if vocab.impossible([z3.Xor(translation.formula, other.formula)]):
+        if vocab.same_meaning(translation, other):
             continue  # means the same as the translation
-        if any(vocab.impossible([z3.Xor(other.formula, f)]) for f in kept_formulas):
+        if any(vocab.same_meaning(other, earlier) for earlier in kept_rules):
             continue  # means the same as a reading already kept
         relevant = vocab.symbols_in(translation.formula) | vocab.symbols_in(other.formula)
         situations = []
@@ -337,7 +337,7 @@ def _other_readings(vocab: Vocabulary, rule: dict, proposed: list[dict], facts: 
             if model is not None:
                 situations.append({"when": vocab.witness(model, relevant),
                                    "translation_says": "obeyed" if translation_obeyed else "broken"})
-        kept_formulas.append(other.formula)
+        kept_rules.append(other)
         kept.append({"reading": reading["reading"], "antecedent": reading["antecedent"],
                      "consequent": reading["consequent"], "situations": situations})
     return kept
