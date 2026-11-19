@@ -8,7 +8,8 @@
 
 | File | Read it for |
 |---|---|
-| [README.md](README.md) | start here: the idea, a worked example with real output, how to run it |
+| [GUIDE.md](GUIDE.md) | a first reading: a guided tour, every idea from an example, in small steps |
+| [README.md](README.md) | the idea, a worked example with real output, how to run it |
 | `plan.md` (this file) | where we are, what is next, and how each part works |
 | [research.md](research.md) | what we found, with the numbers |
 | [research_log.md](research_log.md) | the archive: every experiment and trial in detail. Not needed to understand the project |

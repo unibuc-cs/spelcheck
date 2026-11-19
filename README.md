@@ -1,5 +1,8 @@
 # speccheck: a minimal Kiro-style requirements checker
 
+**New here? Read [GUIDE.md](GUIDE.md) first:** the same ideas, one at a time,
+each from an example, with diagrams.
+
 - **In:** a requirements spec in plain language
 - **Out:** its **conflicts**, **gaps**, **ambiguities** and **scenarios**, in plain
   language, each with "A) keep as-is / B) change"
@@ -170,6 +173,7 @@ The title of each finding says it (real titles):
 
 | Read next | For |
 |---|---|
+| [GUIDE.md](GUIDE.md) | a guided tour for a first reading: every idea from an example, in small steps |
 | this file | a worked example with real output, the results, how to run it |
 | [plan.md](plan.md) | where we are, what is next, and how each part works |
 | [research.md](research.md) | what we found, with the numbers |
