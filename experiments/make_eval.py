@@ -1,6 +1,6 @@
-"""make_eval.py: writes the evaluation sets eval/ to eval7/. No LLM, no GPU.
+"""make_eval.py: writes the evaluation sets eval/ to eval8/ and size/. No LLM, no GPU.
 
-    python -m experiments.make_eval eval7      (only the sets named; all if none)
+    python -m experiments.make_eval eval8      (only the sets named; all if none)
 
 An evaluation set measures the formal check on specs that were NOT used to
 develop the prompts. Each set is held-out until its results are read to
@@ -12,8 +12,11 @@ design something; from then on it is development data:
     eval4/   written 2026-11-18. Held-out in E9; development data since.
     eval5/   written 2026-11-18. Held-out in E10; development data since.
     eval6/   written 2026-11-19. Held-out in E11; development data since.
-    eval7/   written 2026-11-19, after E11. The held-out set from E12 on: do
-             not tune anything on it.
+    eval7/   written 2026-11-19, after E11. Held-out in E12; development data since.
+    eval8/   written 2026-11-20, after E12 and T15. The held-out set from E13
+             on: do not tune anything on it.
+    size/    written 2026-11-20 with eval8/: one spec of 30 requirements, to
+             see what a larger document does. Not part of the eval8 numbers.
 
 Each set has six small specs (new domains; half Kiro EARS, half OpenSpec), each
 in several versions. The defects are planted by rule, so the expected answer is
@@ -27,6 +30,9 @@ known by construction:
                nobody reconciled). The clash needs both conditions to line up.
     ambiguity  one requirement reworded so that it has two readings
                (eval2 and eval3 have two such versions per spec).
+    gap        (eval8 on) one of two complementary requirements removed: "WHEN a
+               container is inserted AND it is on the list" stays, "... AND it
+               is not on the list" goes. Nothing then says what to do in that case.
 
 eval3 to eval6 have one conflict version per spec, and two kinds of
 ambiguity per spec, three specs per kind: a boundary, the scope of
@@ -42,6 +48,10 @@ Written per version: experiments/sets/<set>/<spec>_<version>/spec.md and expecte
     ambiguous  requirement numbers that must be flagged as ambiguous
     allowed    conflicts that are a fair consequence of a planted ambiguity:
                neither required nor counted as false alarms
+    gaps       (gap versions) requirement numbers: a gap must be reported in
+               which the event of that requirement happens
+    covered    (clean versions, eval8 on) requirement numbers whose event has
+               all its cases covered: a gap in which it happens is a false alarm
 """
 
 import json
@@ -49,8 +59,9 @@ import sys
 from pathlib import Path
 
 # Each spec: format, intro text, the clean requirements, and its variants.
-# A variant is (added or replaced requirements, expected.json content).
-# "add" appends a requirement; "replace" maps a requirement number to a new text.
+# A variant is (added, replaced or removed requirements, expected.json content).
+# "add" appends a requirement; "replace" maps a requirement number to a new
+# text; "remove" takes the requirement with that number out (eval8 on).
 SPECS = {
     "library": {
         "format": "ears",
@@ -975,9 +986,213 @@ SPECS7 = {
     },
 }
 
+# The eighth set (eval8), written on 2026-11-20 after E12 and T15 and before
+# step 26 (gaps in which an event happens; conflicts searched only among rules
+# that share symbols) was built. New in this set: every spec has a "gap"
+# version, in which one of two complementary requirements is removed, so that
+# gaps get an expected answer for the first time:
+#     gaps     in the gap version: a gap must be reported in which the event
+#              of this requirement happens (its other case is no longer covered)
+#     covered  in the clean version: both cases of this requirement's event
+#              are covered, so a gap in which that event happens is a false alarm
+# One conflict is "remove" against "keep" (clinic); the others are a blanket
+# prohibition, an opposite outcome on the same trigger, and three exceptions
+# written as states.
+SPECS8 = {
+    "recycling": {
+        "format": "openspec",
+        "intro": "Customers return empty bottles and cans to a machine and get their deposit back.",
+        "rules": [
+            ("Returns", "Accepted container", "WHEN a customer inserts a container AND the barcode of the container is on the deposit list THEN the system adds the deposit to the customer's total"),
+            ("Returns", "Unknown container", "WHEN a customer inserts a container AND the barcode of the container is not on the deposit list THEN the system gives the container back"),
+            ("Payout", "Voucher", "WHEN a customer presses the finish button THEN the system prints a voucher for the total"),
+            ("Payout", "Voucher redeemed", "WHEN a cashier scans a voucher AND the voucher has not been used THEN the system pays out the amount and marks the voucher as used"),
+            ("Service", "Bin almost full", "WHEN the fill level of the bin for crushed containers exceeds 90 percent THEN the system notifies the store staff"),
+        ],
+        "variants": {
+            "overlap": ({"add": ("Service", "Out of service", "WHEN the machine is out of service THEN the system adds no deposit to any total")},
+                        {"conflicts": [[1, 6]]}),
+            # boundary: at exactly 90 percent only, or from 90 percent on?
+            "ambiguity1": ({"replace": {5: ("Service", "Bin almost full", "WHEN the bin for crushed containers is 90 percent full THEN the system notifies the store staff")}},
+                           {"kind": "boundary", "ambiguous": [5]}),
+            # "only": must an unused voucher be paid out, or are used ones merely refused?
+            "ambiguity2": ({"replace": {4: ("Payout", "Voucher redeemed", "WHEN a cashier scans a voucher THEN the system pays out the amount and marks the voucher as used only if the voucher has not been used")}},
+                           {"kind": "only", "ambiguous": [4]}),
+            "gap": ({"remove": 2}, {"gaps": [1]}),
+        },
+        "covered": [1],
+    },
+    "tolls": {
+        "format": "ears",
+        "intro": "As a driver, I want to pay the motorway toll at the gate, so that I can continue my trip.",
+        "rules": [
+            "WHEN a vehicle arrives at the gate AND the vehicle has a valid toll tag, THE Toll System SHALL open the barrier and charge the tag account.",
+            "WHEN a vehicle arrives at the gate AND the vehicle has no valid toll tag, THE Toll System SHALL show the price and wait for payment.",
+            "WHEN a driver pays the toll at the gate, THE Toll System SHALL open the barrier and print a receipt.",
+            "WHEN a card payment is declined for the third time, THE Toll System SHALL call an attendant.",
+            "WHEN a vehicle leaves the gate, THE Toll System SHALL close the barrier.",
+        ],
+        "variants": {
+            "direct": ({"add": "THE Toll System SHALL NOT print any receipt."},
+                       {"conflicts": [[3, 6]]}),
+            # scope: (tag or pass) and lane not reserved, or tag or (pass and lane not reserved)?
+            "ambiguity1": ({"replace": {1: "WHEN a vehicle arrives at the gate AND the vehicle has a valid toll tag or a monthly pass and the lane is not reserved for trucks, THE Toll System SHALL open the barrier and charge the tag account."}},
+                           {"kind": "and/or", "ambiguous": [1], "allowed": [[1, 2]]}),
+            # "if": is the barrier always opened, or only for card payments?
+            "ambiguity2": ({"replace": {3: "WHEN a driver pays the toll at the gate, THE Toll System SHALL open the barrier and print a receipt if the payment is made by card."}},
+                           {"kind": "if", "ambiguous": [3]}),
+            "gap": ({"remove": 2}, {"gaps": [1]}),
+        },
+        "covered": [1],
+    },
+    "laundry": {
+        "format": "openspec",
+        "intro": "Residents book and pay for the washing machines in the shared laundry room.",
+        "rules": [
+            ("Booking", "Free slot", "WHEN a resident books a time slot AND the slot is free THEN the system reserves the slot for the resident"),
+            ("Booking", "Taken slot", "WHEN a resident books a time slot AND the slot is taken THEN the system offers the next free slot"),
+            ("Washing", "Start", "WHEN a resident starts a machine THEN the system charges the price of the programme to the resident's account"),
+            ("Booking", "Cancelling", "WHEN a resident cancels a booking more than one hour before the slot starts THEN the system frees the slot"),
+            ("Booking", "No-show", "WHEN a resident misses a booked slot for the third time in a month THEN the system notifies the caretaker"),
+        ],
+        "variants": {
+            "direct": ({"add": ("Booking", "Fixed bookings", "WHEN a resident cancels a booking more than one hour before the slot starts THEN the system keeps the slot reserved")},
+                       {"conflicts": [[4, 6]]}),
+            # boundary: exactly one hour before, or one hour or more?
+            "ambiguity1": ({"replace": {4: ("Booking", "Cancelling", "WHEN a resident cancels a booking one hour before the slot starts THEN the system frees the slot")}},
+                           {"kind": "boundary", "ambiguous": [4]}),
+            # scope: (free or caretaker) and room open, or free or (caretaker and room open)?
+            "ambiguity2": ({"replace": {1: ("Booking", "Free slot", "WHEN a resident books a time slot AND the slot is free or the resident is the caretaker and the laundry room is open THEN the system reserves the slot for the resident")}},
+                           {"kind": "and/or", "ambiguous": [1], "allowed": [[1, 2]]}),
+            "gap": ({"remove": 2}, {"gaps": [1]}),
+        },
+        "covered": [1],
+    },
+    "clinic": {
+        "format": "ears",
+        "intro": "As a patient, I want to book and manage my appointments online, so that I do not have to phone the clinic.",
+        "rules": [
+            "WHEN a patient requests an appointment AND the doctor has a free slot on the requested day, THE Clinic System SHALL book the slot and send a confirmation.",
+            "WHEN a patient requests an appointment AND the doctor has no free slot on the requested day, THE Clinic System SHALL offer the next free day.",
+            "WHEN a patient cancels an appointment, THE Clinic System SHALL delete the appointment and free the slot.",
+            "WHEN a patient misses an appointment for the second time in a year, THE Clinic System SHALL send the patient a warning letter.",
+            "WHEN a doctor reports sick, THE Clinic System SHALL cancel the doctor's appointments for that day and notify the patients.",
+        ],
+        "variants": {
+            "direct": ({"add": "THE Clinic System SHALL keep every appointment in the patient's record for five years."},
+                       {"conflicts": [[3, 6]]}),
+            # "only": must a free slot be booked, or are requests without one merely not booked?
+            "ambiguity1": ({"replace": {1: "WHEN a patient requests an appointment, THE Clinic System SHALL book the slot and send a confirmation only if the doctor has a free slot on the requested day."}},
+                           {"kind": "only", "ambiguous": [1]}),
+            # "if": are the appointments always cancelled, or only without a replacement doctor?
+            "ambiguity2": ({"replace": {5: "WHEN a doctor reports sick, THE Clinic System SHALL cancel the doctor's appointments for that day and notify the patients if no replacement doctor is available."}},
+                           {"kind": "if", "ambiguous": [5]}),
+            "gap": ({"remove": 2}, {"gaps": [1]}),
+        },
+        "covered": [1],
+    },
+    "donations": {
+        "format": "openspec",
+        "intro": "Supporters give money to a charity online, once or every month.",
+        "rules": [
+            ("Giving", "Card accepted", "WHEN a supporter makes a donation AND the card payment succeeds THEN the system records the donation and sends a thank-you email"),
+            ("Giving", "Card declined", "WHEN a supporter makes a donation AND the card payment fails THEN the system shows an error and records nothing"),
+            ("Monthly giving", "Monthly charge", "WHEN the first day of a month begins AND a supporter has a monthly donation THEN the system charges the supporter's card"),
+            ("Monthly giving", "Stop", "WHEN a supporter stops a monthly donation THEN the system ends the monthly donation and confirms by email"),
+            ("Receipts", "Tax receipt", "WHEN a year ends THEN the system sends a tax receipt by post to every supporter who gave more than 100 euros in that year"),
+        ],
+        "variants": {
+            "overlap": ({"add": ("Privacy", "Anonymous supporter", "WHEN a supporter has asked to stay anonymous THEN the system sends the supporter no email")},
+                        {"conflicts": [[1, 6], [4, 6]]}),
+            # scope: (monthly donation or pledge) and card not expired, or monthly donation or (pledge and card not expired)?
+            "ambiguity1": ({"replace": {3: ("Monthly giving", "Monthly charge", "WHEN the first day of a month begins AND a supporter has a monthly donation or a pledge and the supporter's card has not expired THEN the system charges the supporter's card")}},
+                           {"kind": "and/or", "ambiguous": [3]}),
+            # "only": must a successful payment be recorded, or are failed ones merely not recorded?
+            "ambiguity2": ({"replace": {1: ("Giving", "Card accepted", "WHEN a supporter makes a donation THEN the system records the donation and sends a thank-you email only if the card payment succeeds")}},
+                           {"kind": "only", "ambiguous": [1]}),
+            "gap": ({"remove": 2}, {"gaps": [1]}),
+        },
+        "covered": [1],
+    },
+    "meters": {
+        "format": "ears",
+        "intro": "As a household customer, I want my electricity use read and billed automatically, so that I do not have to send readings.",
+        "rules": [
+            "WHEN a meter sends a reading AND the reading is not lower than the previous one, THE Metering System SHALL store the reading.",
+            "WHEN a meter sends a reading AND the reading is lower than the previous one, THE Metering System SHALL reject the reading and flag the meter for inspection.",
+            "WHEN a billing period ends, THE Metering System SHALL create a bill from the stored readings.",
+            "WHEN a bill has been unpaid for more than 30 days, THE Metering System SHALL send a reminder to the customer.",
+            "WHEN a meter fails to send a reading for the third time in a row, THE Metering System SHALL send a technician.",
+        ],
+        "variants": {
+            "overlap": ({"add": "WHILE a customer is on a payment plan, THE Metering System SHALL NOT send reminders to the customer."},
+                        {"conflicts": [[4, 6]]}),
+            # boundary: on day 30 only, or from day 30 on?
+            "ambiguity1": ({"replace": {4: "WHEN a bill has been unpaid for 30 days, THE Metering System SHALL send a reminder to the customer."}},
+                           {"kind": "boundary", "ambiguous": [4]}),
+            # "if": is the reading always rejected, or only when the difference is large?
+            "ambiguity2": ({"replace": {2: "WHEN a meter sends a reading AND the reading is lower than the previous one, THE Metering System SHALL reject the reading and flag the meter for inspection if the difference is more than 10 kWh."}},
+                           {"kind": "if", "ambiguous": [2]}),
+            "gap": ({"remove": 2}, {"gaps": [1]}),
+        },
+        "covered": [1],
+    },
+}
+
+# A set of its own (size), written on 2026-11-20 together with eval8: one spec
+# of 30 requirements. All specs so far have 5 to 8. It shows what a larger
+# document does to the read step, to the solver stage and to the findings; it
+# is not part of the eval8 numbers.
+SPECS_SIZE = {
+    "campsite": {
+        "format": "ears",
+        "intro": "As a camper, I want to book a pitch and use the services of the campsite with my booking card, so that my stay runs smoothly.",
+        "rules": [
+            "WHEN a camper requests a pitch AND a pitch of the requested size is free for all requested nights, THE Campsite System SHALL reserve the pitch.",
+            "WHEN a camper requests a pitch AND no pitch of the requested size is free for all requested nights, THE Campsite System SHALL offer the nearest free dates.",
+            "WHEN a camper pays the deposit for a reserved pitch, THE Campsite System SHALL confirm the booking by email.",
+            "WHEN the deposit for a reserved pitch has been missing for more than 48 hours, THE Campsite System SHALL send the camper a reminder.",
+            "WHEN a camper cancels a booking more than 14 days before arrival, THE Campsite System SHALL refund the deposit.",
+            "WHEN a camper cancels a booking 14 days or less before arrival, THE Campsite System SHALL keep the deposit.",
+            "WHEN a camper arrives AND the booking is confirmed, THE Campsite System SHALL issue a booking card and show the way to the pitch.",
+            "WHEN a camper arrives AND the booking is not confirmed, THE Campsite System SHALL send the camper to the reception desk.",
+            "WHEN a camper holds a booking card to the barrier AND the card is valid, THE Campsite System SHALL open the barrier.",
+            "WHEN a camper holds a booking card to the barrier AND the card is not valid, THE Campsite System SHALL keep the barrier closed and show a message.",
+            "WHEN a vehicle has passed the barrier, THE Campsite System SHALL close the barrier.",
+            "WHEN a camper plugs a cable into the power post of the pitch AND the booking includes electricity, THE Campsite System SHALL switch on the power post.",
+            "WHEN a camper plugs a cable into the power post of the pitch AND the booking does not include electricity, THE Campsite System SHALL keep the power post off and offer the electricity option.",
+            "WHEN the power use of a pitch exceeds 10 amperes, THE Campsite System SHALL notify the camper and the site manager.",
+            "WHEN a camper buys shower tokens, THE Campsite System SHALL add the tokens to the booking card.",
+            "WHEN a camper holds a booking card to a shower AND the card has at least one token, THE Campsite System SHALL start the shower for five minutes and take one token.",
+            "WHEN a camper holds a booking card to a shower AND the card has no token, THE Campsite System SHALL show the price of a token.",
+            "WHEN a camper registers a dog, THE Campsite System SHALL add the dog fee to the bill.",
+            "WHEN a camper orders bread for the next morning before 18:00, THE Campsite System SHALL add the order to the bakery list.",
+            "WHEN a camper orders bread for the next morning at 18:00 or later, THE Campsite System SHALL refuse the order.",
+            "WHEN a camper reports a fault on the pitch, THE Campsite System SHALL create a task for the maintenance team.",
+            "WHEN a maintenance task has been open for more than 24 hours, THE Campsite System SHALL alert the site manager.",
+            "WHEN a camper asks to extend the stay AND the pitch is free for the extra nights, THE Campsite System SHALL extend the booking.",
+            "WHEN a camper asks to extend the stay AND the pitch is not free for the extra nights, THE Campsite System SHALL offer another pitch.",
+            "WHEN the departure day of a booking begins, THE Campsite System SHALL send the bill to the camper.",
+            "WHEN a camper pays the bill, THE Campsite System SHALL send a receipt and mark the booking as paid.",
+            "WHEN a camper leaves the campsite AND the bill is paid, THE Campsite System SHALL cancel the booking card.",
+            "WHEN a camper leaves the campsite AND the bill is not paid, THE Campsite System SHALL charge the open amount to the stored payment card.",
+            "WHEN a booking card is reported lost, THE Campsite System SHALL cancel the card and issue a new one.",
+            "WHEN a camper writes a review after the stay, THE Campsite System SHALL publish the review on the campsite page.",
+        ],
+        "variants": {
+            "direct": ({"add": "THE Campsite System SHALL NOT publish any review."},
+                       {"conflicts": [[30, 31]]}),
+            "overlap": ({"add": "WHILE a storm warning is active, THE Campsite System SHALL keep all power posts switched off."},
+                        {"conflicts": [[12, 31]]}),
+            "gap": ({"remove": 8}, {"gaps": [7]}),
+        },
+        "covered": [1, 5, 7, 9, 12, 16, 19, 23, 27],
+    },
+}
+
 # Folder -> the specs written into it.
 SETS = {"eval": SPECS, "eval2": SPECS2, "eval3": SPECS3, "eval4": SPECS4, "eval5": SPECS5,
-        "eval6": SPECS6, "eval7": SPECS7}
+        "eval6": SPECS6, "eval7": SPECS7, "eval8": SPECS8, "size": SPECS_SIZE}
 
 
 def document(name: str, spec: dict, rules: list) -> str:
@@ -1014,13 +1229,17 @@ def main() -> None:
         specs = SETS[folder_name]
         root = Path("experiments/sets") / folder_name
         for name, spec in specs.items():
-            versions = {"clean": ({}, {})} | spec["variants"]
+            # The clean version says which events have all their cases covered (eval8 on).
+            clean = {"covered": spec["covered"]} if "covered" in spec else {}
+            versions = {"clean": ({}, clean)} | spec["variants"]
             for version, (change, expected) in versions.items():
                 rules = list(spec["rules"])
                 for number, text in change.get("replace", {}).items():
                     rules[number - 1] = text
                 if "add" in change:
                     rules.append(change["add"])
+                if "remove" in change:
+                    del rules[change["remove"] - 1]
                 folder = root / f"{name}_{version}"
                 folder.mkdir(parents=True, exist_ok=True)
                 (folder / "spec.md").write_text(document(name, spec, rules), encoding="utf-8")
