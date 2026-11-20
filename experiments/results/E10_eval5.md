@@ -23,6 +23,13 @@
 | without step 6 (no questions, nothing checked) | 7/9 | 0/9 | 5/9 | 8/9 |
 | translation needs 7 of 8 answers | 8/9 | 3/9 | 4/9 | 5/9 |
 
+## Ambiguity flags and the other reading (default (1 symbol set))
+
+| Ambiguity flags | All | The other reading changes a conflict | Only a gap | Nothing |
+|---|---|---|---|---|
+| planted | 11 | 0 | 5 | 6 |
+| other | 7 | 0 | 3 | 4 |
+
 ## By spec (default (1 symbol set))
 
 | Spec | Runs | Expected conflicts found | Unexpected conflicts (rules: runs) | Ambiguity flags (rule: runs) |

@@ -13,7 +13,10 @@ Output: a list of findings, each a plain dict ready for findings.json:
 A conflict with a "facts" list holds only if those assumed facts are true; a
 conflict without one is proven from the requirements alone. A conflict that
 is likely a false alarm is kept but marked doubtful, with "doubted_by" (see
-find_conflicts) or "simultaneous_events" (see _simultaneous_events).
+find_conflicts) or "simultaneous_events" (see _simultaneous_events). A conflict
+or gap that is gone with the other reading of an ambiguous rule says so in
+"depends_on_reading", and the ambiguity lists what its other reading changes
+in "other_reading" (see _try_other_readings).
 
 Three entry points:
 
@@ -41,7 +44,8 @@ MAX_GAPS = 3
 
 
 def analyze(formal: dict, max_group: int = 3, questions: bool = True,
-            link_checks: bool = True, settle: float = SETTLE, second: bool = True) -> list[dict]:
+            link_checks: bool = True, settle: float = SETTLE, second: bool = True,
+            readings: bool = True) -> list[dict]:
     """Run every check on one formal.json and return all findings.
 
     max_group    how many rules may be triggered together when hunting conflicts
@@ -50,9 +54,12 @@ def analyze(formal: dict, max_group: int = 3, questions: bool = True,
     link_checks  leave out the links and facts that step 6 rejected
     settle       share of the answers a translation needs to stand (see settled)
     second       use the second reader of formalize step 7, if it ran (see settled)
+    readings     say which findings depend on the reading of an ambiguous rule
+                 (see _try_other_readings)
 
     The switches exist so that the experiments can score the same formal
-    models with and without steps 6 and 7.
+    models with and without steps 6 and 7, and can skip `readings` where only
+    the counts matter.
     """
     vocab = Vocabulary(formal["symbols"])
     # Each rule with the status that steps 6 and 7 give it (see settled).
@@ -65,11 +72,14 @@ def analyze(formal: dict, max_group: int = 3, questions: bool = True,
     # Rules without a stable formalization cannot be checked; they are reported
     # as ambiguities instead.
     rules = [vocab.rule(r) for r in decided if r.get("status") != "rejected"]
-    return (
-        find_ambiguities(decided)
-        + find_conflicts(vocab, rules, facts, max_group)
-        + find_gaps(vocab, rules)
-    )
+    ambiguities = find_ambiguities(decided)
+    conflicts = find_conflicts(vocab, rules, facts, max_group)
+    gaps = find_gaps(vocab, rules)
+    if readings:
+        _try_other_readings(vocab, decided, rules, facts, max_group, ambiguities, conflicts, gaps)
+        # The ambiguities whose answer changes another finding come first.
+        ambiguities.sort(key=lambda finding: not any(finding.get("other_reading", {}).values()))
+    return ambiguities + conflicts + gaps
 
 
 # ------------------------------------------------------------------- ambiguity
@@ -168,6 +178,75 @@ def find_ambiguities(rules: list[dict]) -> list[dict]:
             finding["second_support"] = rule["second"]["support"]
         findings.append(finding)
     return findings
+
+
+def _try_other_readings(vocab: Vocabulary, decided: list[dict], rules: list[Rule], facts: dict,
+                        max_group: int, ambiguities: list[dict], conflicts: list[dict],
+                        gaps: list[dict]) -> None:
+    """Say which findings depend on the reading chosen for an ambiguous rule.
+
+    An ambiguous rule has two readings, and the checks use the first one.
+    Which one the author meant is exactly what is not known. So each ambiguous
+    rule is tried once more with its other reading, one rule at a time, with
+    all other rules as they are. Example, a login spec:
+
+        R3   "WHEN the number of failed attempts reaches 5 THEN lock the account"
+             reading 1   (= failed_attempts 5)      the one the checks use
+             reading 2   (>= failed_attempts 5)
+        gap  "6 failed attempts, no password submitted": no rule applies
+             with reading 2, R3 applies there, so this gap depends on how R3 is read
+
+    Nothing is removed and no finding is added. The findings only get more
+    to say (they are changed in place):
+
+        conflict["depends_on_reading"]   the ambiguous rules with whose other
+        gap["depends_on_reading"]        reading this finding is gone
+        ambiguity["other_reading"]       what the rule's other reading changes:
+            {"removes": [[rule ids], ...],   conflicts that are gone
+             "adds": [[rule ids], ...],      conflicts that appear
+             "covers_gaps": 1}               gaps in which a rule then applies
+
+    decided  the rule dicts as settled() left them; `rules` are those of them
+             that the checks used, compiled.
+    """
+    reported = {frozenset(conflict["rules"]) for conflict in conflicts}
+    position = {rule["id"]: index for index, rule in enumerate(decided)}
+    finding_of = {finding["rule"]: finding for finding in ambiguities}
+
+    def in_document_order(groups) -> list[list[str]]:
+        return sorted(sorted(group, key=position.get) for group in groups)
+
+    for rule in decided:
+        other = rule.get("alternative", {})
+        if rule.get("status") != "ambiguous" or "antecedent" not in other:
+            continue
+        try:
+            reading = vocab.rule({"id": rule["id"], "trigger": rule.get("trigger"), **other})
+        except ValueError:
+            continue  # the other reading is not a formula over the symbols
+        variant = [reading if compiled.id == rule["id"] else compiled for compiled in rules]
+
+        found = {frozenset(conflict["rules"])
+                 for conflict in find_conflicts(vocab, variant, facts, max_group)}
+        for conflict in conflicts:
+            if frozenset(conflict["rules"]) not in found:
+                conflict.setdefault("depends_on_reading", []).append(rule["id"])
+
+        # A gap stays a gap when, in its situation, still no conditional rule
+        # can apply (rules that always apply do not count, as in find_gaps).
+        conditions = [compiled.antecedent for compiled in variant
+                      if not vocab.impossible([z3.Not(compiled.antecedent)])]
+        covered = [gap for gap in gaps
+                   if not conditions
+                   or not vocab.impossible(vocab.assignment(gap["when"]) + [z3.Or(conditions)])]
+        for gap in covered:
+            gap.setdefault("depends_on_reading", []).append(rule["id"])
+
+        finding_of[rule["id"]]["other_reading"] = {
+            "removes": in_document_order(reported - found),
+            "adds": in_document_order(found - reported),
+            "covers_gaps": len(covered),
+        }
 
 
 # -------------------------------------------------------------------- conflicts

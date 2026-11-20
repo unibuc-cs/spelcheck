@@ -25,6 +25,8 @@ What is counted, from the expected.json next to each spec (see make_eval.py):
                                nor "allowed"; on a clean spec: false alarms
     planted ambiguities found  over all (expected ambiguous rule, run) pairs
     ambiguity flags on clean   rules flagged as ambiguous in the clean specs
+    the other reading          for each flagged rule: does its other reading
+                               change a conflict or a gap? (reading_effects)
 
 The score is given for several ways of running the check ("configurations"),
 each switching one part on or off. All are computed from the same LLM runs.
@@ -183,9 +185,10 @@ def reported(run: dict, config: dict) -> tuple[set, set]:
     models = run["models"][:config["sets"]]
     if not config["facts"]:
         models = [{**model, "background": []} for model in models]
+    # readings=False: only the counts are needed here (see reading_effects).
     findings = combine([analyze(model, config["max_group"], questions=config["questions"],
                                 link_checks=config["link_checks"], settle=config["settle"],
-                                second=config["second"])
+                                second=config["second"], readings=False)
                         for model in models])
     number = {r["id"]: index for index, r in enumerate(models[0]["rules"], start=1)}
 
@@ -202,6 +205,36 @@ def reported(run: dict, config: dict) -> tuple[set, set]:
                  and (config["doubtful"] or not doubtful(f))}
     ambiguous = {number[f["rule"]] for f in findings if f["type"] == "ambiguity" and counts(f)}
     return conflicts, ambiguous
+
+
+def reading_effects(data: dict) -> list[str]:
+    """A table: how often does the other reading of a flagged rule change another finding?
+
+    For the default configuration and the first symbol set of every run. An
+    ambiguous rule is checked with its first reading; checks._try_other_readings
+    tries the other one and says what changes. Each flag is counted once, under
+    the strongest change: a conflict (one appears or is gone), else a gap (a
+    rule then applies in it), else nothing.
+    """
+    counts = Counter()  # (planted or not, what changes) -> flags
+    for run in data["runs"]:
+        if "models" not in run:
+            continue
+        model = run["models"][0]
+        number = {rule["id"]: index for index, rule in enumerate(model["rules"], start=1)}
+        planted = set(data["specs"][run["spec"]].get("ambiguous", []))
+        for finding in analyze(model, second=DEFAULT["second"]):
+            effect = finding.get("other_reading")
+            if effect is not None:
+                what = ("conflict" if effect["removes"] or effect["adds"]
+                        else "gap" if effect["covers_gaps"] else "nothing")
+                counts["planted" if number[finding["rule"]] in planted else "other", what] += 1
+    lines = ["| Ambiguity flags | All | The other reading changes a conflict | Only a gap | Nothing |",
+             "|---|---|---|---|---|"]
+    for who in ("planted", "other"):
+        changes = [counts[who, what] for what in ("conflict", "gap", "nothing")]
+        lines.append(f"| {who} | {sum(changes)} | " + " | ".join(map(str, changes)) + " |")
+    return lines
 
 
 def tables(data: dict) -> str:
@@ -307,6 +340,10 @@ def tables(data: dict) -> str:
         *summary,
         "",
         *(["## Planted ambiguities found, by kind", "", *by_kind, ""] if kinds else []),
+        f"## Ambiguity flags and the other reading ({label})",
+        "",
+        *reading_effects(data),
+        "",
         f"## By spec ({label})",
         "",
         *details,

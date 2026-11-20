@@ -1,10 +1,12 @@
-"""Tests for the questions of formalize step 6 (probe.py) and the marks on doubtful conflicts.
+"""Tests for the questions of formalize step 6 (probe.py), the marks on doubtful
+conflicts, and the findings that depend on the reading of an ambiguous rule.
 
 No LLM, no GPU: the LLM is replaced by a stand-in that answers by a fixed
 policy, so these tests check what the code does with the answers.
 """
 
 from speccheck.checks import analyze, settled
+from speccheck.explain import evidence, render
 from speccheck.logic import Vocabulary
 from speccheck.probe import FACT_SYSTEM, LINK_SYSTEM, QUESTION_SYSTEM, READINGS_SYSTEM, question
 
@@ -231,6 +233,87 @@ def test_a_split_in_the_samples_is_settled_by_the_words():
     assert [p["reading"] for p in formal["rules"][0]["probes"]] == ["14 days or more"]
     assert ambiguities(analyze(formal)) == []                       # the words decide: noise
     assert len(ambiguities(analyze(formal, questions=False))) == 1  # as the samples left it
+
+
+# ------------------------------------------- findings that depend on a reading
+
+
+def test_a_conflict_that_the_other_reading_adds_or_removes_is_named():
+    """L5 is ambiguous: a fine at exactly 14 days, or from 14 days on.
+
+    L6 says that a loan of 20 days has no fine. With "exactly 14" the two
+    never apply together; with "14 or more" they clash at 20 days. Whichever
+    reading the checks use, the report must say that the other one differs.
+    """
+    no_fine_at_20 = {"id": "L6", "text": "", "status": "accepted",
+                     "antecedent": "(= loan_days 20)", "consequent": "(not fine_added)"}
+
+    # The checks use "exactly 14": no conflict, but the other reading has one.
+    formal = formal_with_one_rule(status="ambiguous", alternative=AT_LEAST)
+    formal["rules"].append(no_fine_at_20)
+    findings = analyze(formal)
+    assert conflicts(findings) == []
+    (ambiguity,) = ambiguities(findings)
+    assert ambiguity["other_reading"]["adds"] == [["L5", "L6"]]
+    assert ambiguity["other_reading"]["removes"] == []
+    assert "a conflict between L5, L6 appears" in evidence(ambiguity, formal)
+
+    # The checks use "14 or more": the conflict is found, and marked.
+    exactly = {"reading": "exactly 14 days", "antecedent": "(= loan_days 14)", "consequent": "fine_added"}
+    formal = formal_with_one_rule(status="ambiguous", alternative=exactly)
+    formal["rules"][0].update(AT_LEAST)
+    formal["rules"].append(no_fine_at_20)
+    findings = analyze(formal)
+    (conflict,) = conflicts(findings)
+    assert conflict["depends_on_reading"] == ["L5"]
+    assert ambiguities(findings)[0]["other_reading"]["removes"] == [["L5", "L6"]]
+    assert "Conflict (depends on the reading of L5)" in render(findings, [formal], "loans")
+
+    # The experiments can switch this off: the findings are then as before.
+    plain = analyze(formal, readings=False)
+    assert "depends_on_reading" not in conflicts(plain)[0] and "other_reading" not in ambiguities(plain)[0]
+
+
+def test_a_gap_that_the_other_reading_covers_is_named():
+    """ "WHEN motion is detected at night, switch the lamp on": must it be night?
+
+    Reading 1 needs motion and night, so there are two gaps: "it is not
+    night" and "no motion". With reading 2 (motion is enough) a rule applies
+    when it is not night, so only that gap depends on the reading.
+    """
+    formal = {
+        "symbols": bools("motion", "night", "lamp_on", events=("motion",)),
+        "background": [],
+        "rules": [{"id": "A1", "text": "", "status": "ambiguous", "reading": "motion at night",
+                   "antecedent": "(and motion night)", "consequent": "lamp_on",
+                   "alternative": {"reading": "any motion", "antecedent": "motion",
+                                   "consequent": "lamp_on"}}],
+    }
+    findings = analyze(formal)
+    gaps = {tuple(f["when"].items()): f.get("depends_on_reading") for f in findings if f["type"] == "gap"}
+    assert gaps == {(("night", False),): ["A1"], (("motion", False),): None}
+    (ambiguity,) = ambiguities(findings)
+    assert ambiguity["other_reading"] == {"removes": [], "adds": [], "covers_gaps": 1}
+    assert "Gap (depends on the reading of A1)" in render(findings, [formal], "lamp")
+
+
+def test_ambiguities_that_change_another_finding_come_first():
+    """M1 is ambiguous too, but neither of its readings touches any other rule."""
+    formal = formal_with_one_rule(status="ambiguous", alternative=AT_LEAST)
+    formal["symbols"] += bools("third_visit", "badge", "email")
+    formal["rules"] = [
+        {"id": "M1", "text": "", "status": "ambiguous", "reading": "a badge",
+         "antecedent": "third_visit", "consequent": "badge",
+         "alternative": {"reading": "a badge and an email", "antecedent": "third_visit",
+                         "consequent": "(and badge email)"}},
+        *formal["rules"],
+        {"id": "L6", "text": "", "status": "accepted",
+         "antecedent": "(= loan_days 20)", "consequent": "(not fine_added)"},
+    ]
+    first, second = ambiguities(analyze(formal))
+    assert (first["rule"], second["rule"]) == ("L5", "M1")
+    assert second["other_reading"] == {"removes": [], "adds": [], "covers_gaps": 0}
+    assert "changes no conflict and no gap" in evidence(second, formal)
 
 
 # ---------------------------------------------------------------------- links

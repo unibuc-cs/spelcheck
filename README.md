@@ -242,6 +242,16 @@ An ambiguous rule becomes a question for the author: "exactly 5, or 5 or more:
 which did you mean?" The guide goes through this with a diagram
 ([GUIDE.md, section 3.1](GUIDE.md#31-does-a-rule-have-only-one-meaning)).
 
+Until the author answers, the checks use reading A, and some findings may
+exist only because of that choice. So each ambiguous rule is tried once more
+with its other reading, by the solver alone. A conflict or a gap that is gone
+with the other reading says so in its title, and the ambiguity lists what its
+other reading changes. In the login spec, the gap "6 failed attempts, no
+password submitted" exists only if R3 means "exactly 5":
+
+> *Proven:* No requirement says what the system must do in this situation: [...]
+> But R3 is ambiguous (see its finding), and with its other reading a requirement applies in this situation.
+
 ## Assumed facts and links
 
 The solver sees symbols, not words. Here are two rules of `specs/auth_openspec`:
@@ -331,6 +341,7 @@ The title of each finding says how far to trust it. These are real titles:
 | nothing more | proven from the rules alone | "Conflict: Backorder Requirement Conflict" (R2 against R3, order spec) |
 | "if the assumed facts hold" | proven only with an assumed fact | "Conflict (if the assumed facts hold): Conflict between correct password and locked account" |
 | "doubtful: ..." | proven, but probably an artefact of the formulas | the two cases below |
+| "depends on the reading of R3" | proven with the first reading of R3, which is ambiguous; gone with its other reading | "Gap (depends on the reading of R3)", the gap at 6 failed attempts in the login spec ([Ambiguities](#ambiguities)) |
 | "found with k of K symbol sets" | optional: the spec was translated K times, each time with other symbols, and k of them found it | "Conflict (found with 3 of 3 symbol sets): Conflict between removal and retention" |
 
 A conflict is marked *doubtful* in two cases. It stays in the report, marked.
@@ -513,12 +524,12 @@ research.md, section 5.
 | `speccheck/logic.py` | symbols to Z3 variables, formula parsing, solver questions |
 | `speccheck/formalize.py` | stage 1: read, sample, cluster, facts, links; several symbol sets |
 | `speccheck/probe.py` | stage 1, step 6: questions about concrete situations |
-| `speccheck/checks.py` | stage 2: conflicts, gaps, scenarios; merging several symbol sets |
+| `speccheck/checks.py` | stage 2: conflicts, gaps, scenarios; which findings depend on a reading; merging several symbol sets |
 | `speccheck/explain.py` | stage 3: wording, the scenario judge, the Markdown report |
 | `speccheck/cli.py` | runs the three stages |
 | `speccheck/refine.py` | optional LLM review, off by default |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the vLLM servers on the cluster: the main model, the second model |
-| `tests/` | 36 tests of everything that needs no LLM |
+| `tests/` | 39 tests of everything that needs no LLM |
 | `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval7`, and the script that writes them |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs and scores the evaluation; re-scores saved runs without a GPU |

@@ -8,10 +8,19 @@
 |---|---|---|---|---|---|---|---|---|
 | default (1 symbol set) | 31/36 | 14/18 | 17/18 | 0/18 | 3 | 17/36 | 9 | 57 |
 | doubtful conflicts set aside | 31/36 | 14/18 | 17/18 | 0/18 | 3 | 17/36 | 9 | 57 |
-| without step 6 (no questions, links unchecked) | 32/36 | 15/18 | 17/18 | 0/18 | 6 | 13/36 | 6 | 40 |
-| without link checks | 32/36 | 15/18 | 17/18 | 0/18 | 6 | 17/36 | 9 | 57 |
+| without step 6 (no questions, nothing checked) | 32/36 | 15/18 | 17/18 | 0/18 | 6 | 13/36 | 6 | 40 |
+| without step 6, doubtful set aside | 32/36 | 15/18 | 17/18 | 0/18 | 6 | 13/36 | 6 | 40 |
+| without checks of links and facts | 32/36 | 15/18 | 17/18 | 0/18 | 6 | 17/36 | 9 | 57 |
+| translation needs 7 of 8 answers | 31/36 | 14/18 | 17/18 | 0/18 | 3 | 17/36 | 9 | 57 |
 | without assumed facts and links | 18/36 | 6/18 | 12/18 | 0/18 | 0 | 17/36 | 9 | 57 |
 | pairs of rules only | 31/36 | 14/18 | 17/18 | 0/18 | 3 | 17/36 | 9 | 57 |
+
+## Ambiguity flags and the other reading (default (1 symbol set))
+
+| Ambiguity flags | All | The other reading changes a conflict | Only a gap | Nothing |
+|---|---|---|---|---|
+| planted | 12 | 0 | 2 | 10 |
+| other | 53 | 7 | 17 | 29 |
 
 ## By spec (default (1 symbol set))
 

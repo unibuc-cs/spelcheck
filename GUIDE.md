@@ -53,7 +53,7 @@ Three parties are at work, and it helps to keep them apart:
 |---|---|---|
 | the LLM | translates the text into logic (stage 1) and puts the results into words (stage 3) | yes |
 | Z3, the solver | proves every conflict, gap and scenario (stage 2) | no, not about the formulas it was given |
-| our Python code | decides which questions Z3 is asked, and does the counting and voting | it is ordinary code, with 36 tests |
+| our Python code | decides which questions Z3 is asked, and does the counting and voting | it is ordinary code, with 39 tests |
 
 That table holds the main idea of the whole project. Z3 never makes a mistake
 about the formulas it is given, but those formulas were written by a language
@@ -388,6 +388,15 @@ Whichever way finds it, the report does not give a verdict. It asks a question
 > the failed attempt count is exactly 5 or when it is 5 or more. [...] Which
 > did you mean?
 
+One consequence is easy to overlook. Until the author answers, the checks go
+on with reading A, so some of the other findings may exist only because of
+that choice. The solver therefore tries each ambiguous rule once more with
+its other reading. In this spec the report has a gap at "6 failed attempts, no
+password submitted". With reading B, R3 applies there and the gap is gone, so
+the gap is reported as "Gap (depends on the reading of R3)". The ambiguity
+itself lists what its other reading changes, and the ambiguities that change
+something are shown first.
+
 ### 3.2 Telling the solver what the words mean
 
 Here are two more rules from the same login spec:
@@ -565,6 +574,7 @@ how much weight the finding carries:
 | "Conflict: ..." | proven from the rules alone | a lot. It is wrong only if the translation is wrong |
 | "Conflict (if the assumed facts hold): ..." | proven only with a guessed fact, which the report quotes | read the quoted fact and judge it yourself |
 | "Conflict (doubtful: ...)" | proven, but it has the shape of the artefacts in 3.3 | little. In the evaluation nearly all of these were false alarms |
+| "... (depends on the reading of R3)" | proven with the first reading of R3, which is ambiguous; gone with its other reading | answer the question about R3 first |
 | "... (found with k of K symbol sets)" | k of the K formalizations found it | the higher k, the better |
 | "Ambiguity: ..." | not a proof, a question to the author | a fair question, though some are asked about clear rules |
 | "Gap: ..." | proven: no rule applies there | proven, but often trivial ("nothing is happening") |
@@ -711,10 +721,10 @@ that section 2 described:
 |---|---|---|
 | `speccheck/llm.py` | 60 | one function, `ask`: a prompt goes in, N answers come out as JSON |
 | `speccheck/logic.py` | 250 | `model` and `impossible`, the two questions for Z3 (1.2), and `same_meaning` |
-| `speccheck/checks.py` | 520 | `_search` forces rules to apply (2.3); `find_conflicts` runs the two searches (3.2); then `find_gaps` and `find_scenarios` |
+| `speccheck/checks.py` | 600 | `_search` forces rules to apply (2.3); `find_conflicts` runs the two searches (3.2); `_try_other_readings` (3.1); then `find_gaps` and `find_scenarios` |
 | `speccheck/formalize.py` | 680 | the seven steps of 3.5. The prompts at the top show what the LLM is asked |
 | `speccheck/probe.py` | 430 | the questions about concrete situations (3.1 and 3.2) |
-| `speccheck/explain.py` | 330 | `evidence` writes the *Proven* lines; the wording prompt is above it |
+| `speccheck/explain.py` | 350 | `evidence` writes the *Proven* lines; the wording prompt is above it |
 | `speccheck/cli.py` | 110 | the three stages, called one after the other |
 
 About half of each file is comments, docstrings and prompts.
@@ -724,7 +734,7 @@ The folders:
 ```
 speccheck/          the tool (the 7 files above; refine.py is the review that is switched off)
 specs/              3 small specs the prompts were developed on, with their saved output
-tests/              36 tests that need no LLM
+tests/              39 tests that need no LLM
 experiments/
   sets/             the 7 evaluation sets, eval to eval7 (171 spec versions)
   results/          every experiment: the raw data (.json) and its tables (.md)

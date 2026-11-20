@@ -167,10 +167,18 @@ def evidence(finding: dict, formal: dict) -> str:
             text += ("\nBut this situation needs these events to happen at the same moment: "
                      f"{', '.join(finding['simultaneous_events'])}. The requirements are "
                      "probably not meant for that, so the conflict may be a false alarm.")
+        # The conflict was found with the first reading of an ambiguous rule.
+        for rule_id in finding.get("depends_on_reading", []):
+            text += (f"\nBut {rule_id} is ambiguous (see its finding), and with its other "
+                     "reading these requirements do not clash.")
         return text
     if finding["type"] == "gap":
-        return (f"No requirement says what the system must do "
+        text = (f"No requirement says what the system must do "
                 f"in this situation:{situation(finding['when'])}")
+        for rule_id in finding.get("depends_on_reading", []):
+            text += (f"\nBut {rule_id} is ambiguous (see its finding), and with its other "
+                     "reading a requirement applies in this situation.")
+        return text
     if finding["type"] == "scenario" and finding["verdict"] == "accepted":
         rule = finding["rules"][0]
         return (f"The requirements allow this behaviour:{situation(finding['when'])}"
@@ -199,6 +207,15 @@ def evidence(finding: dict, formal: dict) -> str:
         text += f"\nReading {number}: {reading}"
     if finding["differs_when"]:
         text += f"\nThe readings differ in this situation:{situation(finding['differs_when'])}"
+    # What the answer to this question changes in the rest of the report.
+    effect = finding.get("other_reading")
+    if effect is not None:
+        changes = ([f"the conflict between {', '.join(group)} is gone" for group in effect["removes"]]
+                   + [f"a conflict between {', '.join(group)} appears" for group in effect["adds"]]
+                   + ([f"a requirement applies in {effect['covers_gaps']} of the gaps reported below"]
+                      if effect["covers_gaps"] else []))
+        text += ("\nWith reading 2 instead of reading 1: " + "; ".join(changes) + "." if changes
+                 else "\nChoosing reading 2 instead of reading 1 changes no conflict and no gap.")
     if finding["status"] == "rejected":
         text += "\nIt was left out of the conflict and gap checks and should be rewritten."
     return text
@@ -307,6 +324,8 @@ def render(findings: list[dict], models: list[dict], title: str) -> str:
             remarks.append("doubtful: the assumed facts say this situation cannot happen")
         if finding.get("simultaneous_events"):
             remarks.append("doubtful: needs two events at the same moment")
+        if finding.get("depends_on_reading"):
+            remarks.append(f"depends on the reading of {', '.join(finding['depends_on_reading'])}")
         if "support" in finding:  # several symbol sets were used
             found, total = finding["support"].split("/")
             remarks.append(f"found with {found} of {total} symbol sets")

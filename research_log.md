@@ -1471,6 +1471,90 @@ the second model's answers), table [experiments/results/E12_eval7.md](experiment
 
 ---
 
+## T15 — Findings that depend on the reading of an ambiguous rule, offline (2026-11-20)
+
+**What the report did not say.** An ambiguous rule is reported as a question to
+the author, but the checks go on with its first reading, and the conflicts
+and gaps found with it did not mention that. Example, `specs/auth_openspec`:
+
+```
+R3          "WHEN the number of failed attempts on an account reaches 5 THEN the system locks the account"
+reading 1   (= failed_attempts_count 5)     used by the checks (1 of 7 answers of step 6)
+reading 2   (>= failed_attempts_count 5)    6 of 7 answers
+gaps        failed_attempts_count = 6, 7, 8 with no password submitted
+            with reading 2, R3 applies in all three: they are gaps of reading 1 only
+```
+
+**Change (step 25).** After the checks, each ambiguous rule is tried once more
+with its other reading, one rule at a time, the other rules as they are
+(`checks._try_other_readings`, Z3 only). A conflict that is not found then,
+and a gap in which a rule then applies, get `depends_on_reading`. The
+ambiguity gets `other_reading`: the conflicts that are gone, the conflicts
+that appear, the number of gaps covered. Ambiguities that change another
+finding are listed first; the others say "changes no conflict and no gap".
+Nothing is removed, no finding is added, no prompt was changed.
+
+**Check.** What is found cannot change, so no held-out set is needed. E3 and
+E7 to E12 were scored with the code before and after: the same tables, apart
+from the new one below. 39 tests, 3 of them new.
+
+**How often does the other reading matter?** Default configuration, first
+symbol set, flags with two readings (a rejected rule has none). Each flag is
+counted once, under the strongest change:
+
+| Saved runs | Flags | Changes a conflict | Only a gap | Nothing |
+|---|---|---|---|---|
+| `eval2/` (E7) | 65 | 7 | 19 | 39 |
+| `eval3/` (E8) | 24 | 2 | 3 | 19 |
+| `eval4/` (E9) | 24 | 1 | 8 | 15 |
+| `eval5/` (E10) | 18 | 0 | 8 | 10 |
+| `eval6/` (E11) | 24 | 1 | 8 | 15 |
+| `eval7/` (E12) | 31 | 4 | 2 | 25 |
+| all | 186 | 15 | 48 | 123 |
+
+| Flags on | Flags | Changes a conflict | Only a gap | Nothing |
+|---|---|---|---|---|
+| rules with a planted ambiguity | 71 | 1 | 17 | 53 |
+| other rules | 115 | 14 | 31 | 70 |
+
+- One flag in three (63 of 186) changes another finding. For the other two
+  thirds the report now says that the choice changes nothing.
+- 15 flags change a conflict, 14 of them on rules where nothing was planted.
+  Such flags count as the price of ambiguity detection (research.md 4.1);
+  in these 14 the question decides whether a conflict exists.
+- A planted ambiguity almost never changes a conflict (1 of 71): the planted
+  versions reword one rule and plant no conflict.
+
+**Limits.** One rule at a time: a finding that needs the other reading of two
+rules is not seen. The wording prompt of stage 3 is unchanged; the title and
+the *Proven* lines carry the mark, and the model is given those lines, but
+whether its paragraph mentions the mark was not checked (no run with the LLM).
+
+**Three measurements made on the way.** They were made with one-off scripts on
+the saved runs, to see where the project could improve. The first two can be
+read off the saved tables; the scripts are not in the repository.
+
+- *Runs of one spec mostly agree.* The "By spec" tables of E5 and E7 to E12
+  (default configuration) hold 60 planted conflicts, each with 3 runs: 46 were
+  found in all 3 runs, 7 in 2, 1 in 1, 6 in none. So the unit that varies is
+  the planted conflict, not the run: "13 of 18" is 6 conflicts, 3 runs each.
+- *Every gap on `eval7/` is "nothing is happening".* 140 gaps in 72 runs
+  (first symbol set), at least one in every run, and in none of them an event
+  symbol is true. Asking for gaps in which an event happens gives a gap in 6
+  of the 18 clean runs (for example in `skipass`: a pass used at a second gate
+  five minutes or more after the first).
+- *The solver stage grows fast with the number of rules.* On k independent
+  copies of the order spec's formal model: 5 rules 0.1 s, 10 rules 0.4 s, 20
+  rules 4.8 s, 30 rules 24 s, 40 rules 60 s. All specs so far have 5 to 8 rules.
+
+**Raw data.** The tables of E7 to E12 in `experiments/results/` were written
+again with today's `evaluate.py` and now hold the table above for their set
+(`python -m experiments.evaluate --rescore experiments/results/E12_eval7.json`).
+Their counts did not change; those of E7 and E8 also show the rows and labels
+that were added to `evaluate.py` after they were first written.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

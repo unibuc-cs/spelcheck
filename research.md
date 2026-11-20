@@ -164,6 +164,24 @@ translation stands only if more than half of its answers mean the same
 - **A first rule** flagged only when the second model's majority reading
   differs. It added 2 of 36 (T9): it ignored exactly that hesitation.
 
+### 3.9 A finding says when it depends on an ambiguous rule (T15)
+
+The checks use the first reading of an ambiguous rule, so a conflict or a gap
+can exist only because of that choice. Each ambiguous rule is now tried once
+more with its other reading, by the solver alone (plan.md 5.9).
+
+- **What the report gains.** A conflict or gap that is gone with the other
+  reading is marked, and each ambiguity lists what its other reading changes.
+  In the login spec, the gaps at 6, 7 and 8 failed attempts exist only if
+  "reaches 5" means "exactly 5".
+- **How often it matters.** On the saved runs of `eval2/` to `eval7/`, of 186
+  flags with two readings, the other reading changes a conflict in 15, only a
+  gap in 48, and nothing in 123. Two flags in three can be shown as less
+  urgent; 14 of the 15 that change a conflict are on rules where nothing was
+  planted.
+- **What it costs.** Nothing in the counts: no finding is added or removed,
+  and every saved experiment scores as before.
+
 ---
 
 ## 4. What does not work yet
@@ -246,6 +264,8 @@ Planted ambiguities on the held-out `eval4/` (E9), 9 per kind:
 
 - **Scenarios** and **gaps** have no ground truth. Scenarios read sensibly on
   the development specs ("the order is fulfilled although it was never submitted").
+  The gaps say little: on `eval7/`, all 140 gaps reported in 72 runs are
+  situations in which no event happens (T15).
 - **Conflicts that need three rules** are searched; the one planted case
   (`eval2/` discounts) is also found through a pair whose situation triggers
   the third rule.
@@ -259,6 +279,12 @@ Seven evaluation sets with 42 base specs (171 versions), written by us; 63
 to 90 runs per experiment; one main model. Each held-out set was used once. One
 leak is known: a read-prompt example came from the domain of an `eval3/` spec
 (D4).
+
+The runs of one spec mostly agree, so the numbers rest on fewer cases than
+they seem to: of the 60 planted conflicts of the seven held-out tests, 46 were
+found in all 3 of their runs, 6 in none, and only 8 in some (T15). All specs
+have 5 to 8 rules; on larger ones the solver stage slows down quickly (60 s
+for 40 rules, T15).
 
 ---
 
@@ -308,7 +334,8 @@ prompts, so it can be scored again without a GPU.
 
 The trials on development data are T8 (counted events) and T9 (the second
 reader) before E9, T10 and T11 (wrong facts, triggers) before E10, T12
-(dropped) before E11, and T13 (offline) and T14 (dropped) before E12. Commands: `python -m experiments.evaluate --rescore
+(dropped) before E11, and T13 (offline) and T14 (dropped) before E12. T15
+(offline, after E12) marks the findings that depend on a reading (3.9). Commands: `python -m experiments.evaluate --rescore
 experiments/results/E9_eval4.json` (E4 to E9) and `python -m experiments.stability
 --rescore experiments/results/E3_refine.json` (E1 to E3).
 

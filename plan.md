@@ -35,6 +35,8 @@ depends on knowing which event each rule reacts to, and the read step names it.
 The conflicts that are still missed come from the choice of symbols, mostly
 "remove" against "keep". A second local model, used as an independent reader,
 finds most of the ambiguities, at the cost of more questions to the author.
+A finding that holds with only one reading of an ambiguous rule now says so,
+and each ambiguity says what its other reading would change (5.9).
 Real OpenSpec projects, where specs already exist, have not been touched yet.
 
 ---
@@ -59,6 +61,17 @@ There are three candidates, in this order. The first is the one we recommend.
    one outcome that stay unlinked (research.md 4.2, 4.3). Two prompt sentences
    were tried and dropped (T12, T14). A real repair would have the LLM judge
    requirements against each other, which this project leaves out on purpose.
+
+Three smaller candidates came out of measurements on the saved runs (T15).
+None of them is decided:
+
+- **Gaps that say something** (G1). On `eval7/` every reported gap is "nothing
+  is happening". Looking first for gaps in which an event happens, and
+  planting gaps in the next evaluation set, would make gaps a measured part.
+- **Counting planted conflicts, not runs** (G4). The runs of one spec mostly
+  agree, so more specs help more than more runs.
+- **Size** (G2). The solver stage takes 60 s for 40 rules, and all specs so
+  far have 5 to 8. This matters before step 1, where the document gets larger.
 
 Time ("then", "after", "until") is not planned. The model is one snapshot.
 
@@ -140,6 +153,8 @@ Every term used later is defined here.
 │             or the facts rule the situation out        │
 │ gap       : a situation where no rule applies          │
 │ scenario  : behaviours the rules allow or rule out     │
+│ readings  : each ambiguous rule once more, with its    │
+│             other reading: which findings change?      │
 │ combine   : K formal models → "found with k of K"      │
 └───────────────┬────────────────────────────────────────┘
                 ▼
@@ -161,8 +176,8 @@ The code, in the order to read it:
 | `speccheck/logic.py` | 250 | Symbols to Z3 variables; parses formulas; asks the solver, including the test "do these two rules mean the same?" | Z3 |
 | `speccheck/formalize.py` | 680 | Stage 1: text to `formal.json` (steps 1 to 5, then 6 and 7); `formalize_sets` for K symbol sets | `llm`, `logic`, `probe` |
 | `speccheck/probe.py` | 430 | Stage 1, step 6: three checks by questions about one requirement | `llm`, `logic` |
-| `speccheck/checks.py` | 520 | Stage 2: `formal.json` to findings; scenarios; `combine` for K formal models | `logic` |
-| `speccheck/explain.py` | 330 | Stage 3: findings to plain words; the scenario judge; builds `report.md` | `llm` |
+| `speccheck/checks.py` | 600 | Stage 2: `formal.json` to findings; which findings depend on a reading; scenarios; `combine` for K formal models | `logic` |
+| `speccheck/explain.py` | 350 | Stage 3: findings to plain words; the scenario judge; builds `report.md` | `llm` |
 | `speccheck/cli.py` | 110 | Runs the three stages, writes the files | all |
 
 About half of each file is comments, docstrings and prompts.
@@ -171,7 +186,7 @@ Around the package:
 
 | File | Job |
 |---|---|
-| `tests/` | 36 tests of everything that needs no LLM |
+| `tests/` | 39 tests of everything that needs no LLM |
 | `experiments/make_eval.py` | writes the evaluation sets `eval` to `eval7` into `experiments/sets/` (clean specs and planted defects) |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs the pipeline on a set of specs and scores it against the planted defects; adds the second reader to saved runs; re-scores saved runs without a GPU |
@@ -480,6 +495,39 @@ verdict        3 of 8 mean the same: not more than half → ambiguous
   of 14 and 17; 15 and 9 rules of clean specs flagged instead of 7 and 5
 - off by default: `--second-base-url`
 
+### 5.9 Which findings depend on the reading of an ambiguous rule? (`checks.py`)
+
+An ambiguous rule has two readings, and the checks use the first one. Which
+one the author meant is exactly what is not known, so a conflict or a gap may
+exist only because of that choice. The report has to say so, in the same way
+as it says "if the assumed facts hold".
+
+After the checks, each ambiguous rule is tried once more with its other
+reading, one rule at a time, with all the other rules as they are. Z3 only:
+
+```
+R3          "WHEN the number of failed attempts reaches 5 THEN lock the account"
+reading 1   (= failed_attempts 5)    used by the checks
+reading 2   (>= failed_attempts 5)
+
+gap         "6 failed attempts, no password submitted": no rule applies
+            with reading 2, R3 applies there
+            → the gap is reported as "depends on the reading of R3"
+```
+
+- a conflict that is not found with the other reading, and a gap in which a
+  rule applies with the other reading, are marked with the rule's id
+- the ambiguity itself lists what its other reading changes: the conflicts
+  that are gone, the conflicts that appear, and the number of gaps covered
+- ambiguities whose answer changes another finding are shown first. The
+  others say "changes no conflict and no gap", so the author can see that the
+  question is less urgent
+- nothing is removed and no finding is added, so the counts of the evaluation
+  are the same with and without this step
+- not covered: a finding that needs the other reading of two rules at once
+
+On the saved runs of `eval2/` to `eval7/`: research.md 3.9.
+
 ---
 
 ## 6. The data between the pieces
@@ -546,6 +594,10 @@ It is the only input of `checks.py`, so the solver stage can be re-run without a
   (`"rejected"` for a situation the rules rule out).
 - With several symbol sets every finding also has `support` ("3/5": found with 3
   of 5 sets) and `model` (which formal model its witness is written in).
+- A conflict or gap with `depends_on_reading` (a list of rule ids) is gone
+  with the other reading of those ambiguous rules. An ambiguity with two
+  readings has `other_reading`: `{"removes": [[rule ids]], "adds": [[rule ids]],
+  "covers_gaps": 1}`, what its other reading changes (5.9).
 - After stage 3 every finding also has `title`, `explanation`, `option_a`,
   `option_b`.
 
@@ -563,7 +615,8 @@ It is the only input of `checks.py`, so the solver stage can be re-run without a
 
 The remarks in brackets appear only when they apply; a doubtful conflict says
 "doubtful: needs two events at the same moment" or "doubtful: the assumed facts
-say this situation cannot happen".
+say this situation cannot happen". A conflict or gap that is gone with the
+other reading of an ambiguous rule says "depends on the reading of R3".
 
 ---
 
@@ -576,6 +629,7 @@ say this situation cannot happen".
 | conflict marked "doubtful" | a proof, but likely an artefact of the model (two events at once, or a situation the facts rule out). On `eval3/`, all 60 marked conflicts were false alarms |
 | ambiguity | a real question: the model's own translations disagree, the words did not decide between two readings it was shown, or a second model reads it otherwise. Expect about half of the real ambiguities to be found; with the second reader most, with about one extra question per spec |
 | scenario | a proven consequence of the rules. Whether it matters is the judge's opinion |
+| conflict or gap marked "depends on the reading of R3" | a proof that holds with the first reading of R3 only. R3 is ambiguous: answer its question first |
 | "found with k of K symbol sets" | the higher k, the less the finding depends on how the text was modelled. In the evaluation, findings with most sets were never wrong |
 
 ---
@@ -687,5 +741,8 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       measured again in E12 (10 of 18 runs found over E10 to E12)
 - [x] **Step 24 — fewer flags from the second reader**: compared only where the required
       events happen (T13); held-out `eval7/` (E12)
+- [x] **Step 25 — findings that depend on a reading**: each ambiguous rule is tried
+      once more with its other reading (Z3 only); conflicts and gaps that are gone say
+      so, each ambiguity lists what changes (5.9); measured on the saved runs (T15)
 
 Section 2 says why, and in which order.

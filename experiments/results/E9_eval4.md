@@ -29,6 +29,13 @@
 | second reader, without step 6 | 6/9 | 5/9 | 9/9 | 9/9 |
 | second reader, 7 of 8 answers | 6/9 | 6/9 | 9/9 | 9/9 |
 
+## Ambiguity flags and the other reading (default (1 symbol set))
+
+| Ambiguity flags | All | The other reading changes a conflict | Only a gap | Nothing |
+|---|---|---|---|---|
+| planted | 11 | 1 | 3 | 7 |
+| other | 13 | 0 | 5 | 8 |
+
 ## By spec (default (1 symbol set))
 
 | Spec | Runs | Expected conflicts found | Unexpected conflicts (rules: runs) | Ambiguity flags (rule: runs) |
