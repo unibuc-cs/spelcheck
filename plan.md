@@ -151,7 +151,8 @@ Every term used later is defined here.
 │             run 2: + assumed facts    (adds only)      │
 │             marked doubtful: needs two events at once, │
 │             or the facts rule the situation out        │
-│ gap       : a situation where no rule applies          │
+│ gap       : for each event, a situation where no rule  │
+│             applies; then one with no event            │
 │ scenario  : behaviours the rules allow or rule out     │
 │ readings  : each ambiguous rule once more, with its    │
 │             other reading: which findings change?      │
@@ -176,7 +177,7 @@ The code, in the order to read it:
 | `speccheck/logic.py` | 250 | Symbols to Z3 variables; parses formulas; asks the solver, including the test "do these two rules mean the same?" | Z3 |
 | `speccheck/formalize.py` | 680 | Stage 1: text to `formal.json` (steps 1 to 5, then 6 and 7); `formalize_sets` for K symbol sets | `llm`, `logic`, `probe` |
 | `speccheck/probe.py` | 430 | Stage 1, step 6: three checks by questions about one requirement | `llm`, `logic` |
-| `speccheck/checks.py` | 600 | Stage 2: `formal.json` to findings; which findings depend on a reading; scenarios; `combine` for K formal models | `logic` |
+| `speccheck/checks.py` | 690 | Stage 2: `formal.json` to findings; which findings depend on a reading; scenarios; `combine` for K formal models | `logic` |
 | `speccheck/explain.py` | 350 | Stage 3: findings to plain words; the scenario judge; builds `report.md` | `llm` |
 | `speccheck/cli.py` | 110 | Runs the three stages, writes the files | all |
 
@@ -186,8 +187,8 @@ Around the package:
 
 | File | Job |
 |---|---|
-| `tests/` | 39 tests of everything that needs no LLM |
-| `experiments/make_eval.py` | writes the evaluation sets `eval` to `eval7` into `experiments/sets/` (clean specs and planted defects) |
+| `tests/` | 42 tests of everything that needs no LLM |
+| `experiments/make_eval.py` | writes the evaluation sets `eval` to `eval8` and `size` into `experiments/sets/` (clean specs and planted defects) |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs the pipeline on a set of specs and scores it against the planted defects; adds the second reader to saved runs; re-scores saved runs without a GPU |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the main model and the second model on the cluster (section 8) |
@@ -255,6 +256,11 @@ Each rule *i* is `A_i => C_i` (antecedent, consequent).
 - not a conflict: one rule alone forbids the situation (forcing "account
   locked" for an administrator, against "never lock administrators")
 - dropped: a conflict that contains a smaller reported conflict
+- not tried together: rules that share no symbol, directly or through other
+  rules and the facts. They cannot contradict each other, so forcing them to
+  apply together could only find again what each shows alone. In a document
+  about one subject this changes nothing; in a document made of unrelated
+  parts it saves most of the work (research.md 3.10)
 
 **Doubtful**: two marks. A marked conflict stays in the report.
 
@@ -364,11 +370,32 @@ link (a fact)    (confirmed and record_removed) => (not record_retained)
 not A_1 and ... and not A_n      satisfiable?
 ```
 
-- the situation found is trimmed to the symbols that matter, reported,
-  excluded, and the question is asked again (at most 3 gaps)
+Nearly every spec has the gap "nothing is happening", and it says little. The
+gaps worth reading are those in which something happens. So when the rules
+react to events, the question is asked once for each event, with no other
+event at the same moment (requirements are written for one event at a time):
+
+```
+rules    "WHEN a courier scans a parcel AND a compartment is free THEN ..."
+         (the rule for "no compartment is free" is missing)
+event    parcel_scanned
+ask      parcel_scanned and no other event, and no rule applies:   satisfiable?
+gap      parcel_scanned TRUE, compartment_free FALSE
+```
+
+- at most one gap for each event some rule reacts to: the event named as a
+  rule's trigger, or used in a rule's condition
+- then one gap in which no event happens, marked "no event happens". For the
+  order spec this is the gap of the Kiro blog: "no order submitted, none
+  canceled"
+- the situation found is trimmed to the symbols that matter; the event stays
 - rules that always apply, like "SHALL NOT backorder", do not count as coverage
-- example, the order spec: with "no order submitted, none canceled", no rule
-  applies, so nothing says what the system must do
+- without events to go by (a formal model made before they were marked, or
+  rules that react to states only), the search is as it was: over all
+  situations, with the gap found excluded and the question asked again, at
+  most 3 gaps
+- the assumed facts are not used: a gap can still show a value that a fact
+  rules out
 
 ### 5.5 What do the requirements allow or rule out? (`checks.py`, `explain.py`)
 
@@ -598,6 +625,8 @@ It is the only input of `checks.py`, so the solver stage can be re-run without a
   with the other reading of those ambiguous rules. An ambiguity with two
   readings has `other_reading`: `{"removes": [[rule ids]], "adds": [[rule ids]],
   "covers_gaps": 1}`, what its other reading changes (5.9).
+- A gap has `event` (the event that happens in it) or `quiet: true` (no event
+  happens); a gap found by the search over all situations has neither (5.4).
 - After stage 3 every finding also has `title`, `explanation`, `option_a`,
   `option_b`.
 
@@ -625,6 +654,7 @@ other reading of an ambiguous rule says "depends on the reading of R3".
 | Finding | Trust it as |
 |---|---|
 | conflict, gap | a proof about `formal.json`. Wrong only if the translation is wrong |
+| gap marked "no event happens" | a proof, but it may only mean that the system waits. Nearly every spec has one |
 | conflict "if the assumed facts hold" | a proof that also needs the listed facts or links. Judge them |
 | conflict marked "doubtful" | a proof, but likely an artefact of the model (two events at once, or a situation the facts rule out). On `eval3/`, all 60 marked conflicts were false alarms |
 | ambiguity | a real question: the model's own translations disagree, the words did not decide between two readings it was shown, or a second model reads it otherwise. Expect about half of the real ambiguities to be found; with the second reader most, with about one extra question per spec |
@@ -673,7 +703,7 @@ SLURM:    experiments/slurm/serve.sbatch → vllm serve Qwen/Qwen3.8-27B-FP8   (
 | Ambiguity from the entropy of sampled formalizations | the same |
 | Conflicts as minimal rule sets | the same, for conflicts triggered by up to three rules |
 | Background assertions kept by a frequency threshold | kept by majority vote, and only allowed to add findings; plus links (step 5) |
-| Completeness gaps | the same idea; at most 3 are reported |
+| Completeness gaps | the same idea, asked once for each event, plus one gap with no event |
 | Surprising accepted / rejected scenarios, picked by an LLM judge | the same; at most 3 are shown |
 | (not stated) | several symbol sets: each finding says with how many it was found |
 | (not stated) | optional second reader: a model of another family must confirm each translation |
@@ -744,5 +774,8 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
 - [x] **Step 25 — findings that depend on a reading**: each ambiguous rule is tried
       once more with its other reading (Z3 only); conflicts and gaps that are gone say
       so, each ambiguity lists what changes (5.9); measured on the saved runs (T15)
+- [~] **Step 26 — gaps that say something, and size**: `eval8/` (with planted gaps) and a
+      30-requirement spec written first; a gap is looked for once for each event; conflicts
+      are searched only among rules that share symbols (D8). Run on `eval8/`: E13
 
 Section 2 says why, and in which order.

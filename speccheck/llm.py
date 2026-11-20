@@ -23,7 +23,7 @@ class LLM:
         self.model = model or self.client.models.list().data[0].id
 
     def ask(self, system: str, user: str, schema: dict,
-            samples: int = 1, temperature: float = 0.0) -> list[dict]:
+            samples: int = 1, temperature: float = 0.0, max_tokens: int = 4096) -> list[dict]:
         """Send one prompt and return the answers as parsed JSON objects.
 
         system       the task instructions (the same for every call of a stage)
@@ -34,6 +34,8 @@ class LLM:
         temperature  0 = the most likely answer; higher = more variety, which
                      is what the ambiguity check needs. (On a server that
                      batches requests, 0 is still not perfectly repeatable.)
+        max_tokens   the longest answer allowed. Only the read step of a long
+                     document needs more than the default.
 
         Returns up to `samples` dicts. An answer that is not valid JSON (for
         example cut off by the length limit) is dropped.
@@ -50,7 +52,7 @@ class LLM:
             },
             n=samples,
             temperature=temperature,
-            max_tokens=4096,
+            max_tokens=max_tokens,
         )
         answers = []
         for choice in response.choices:

@@ -1555,6 +1555,62 @@ that were added to `evaluate.py` after they were first written.
 
 ---
 
+## D8 — Decision: an eighth set with planted gaps, a long spec, and step 26 (2026-11-20)
+
+All seven sets have been read, and T15 showed two things to change: the gaps
+say nothing (all 140 on `eval7/` are "nothing is happening"), and the solver
+stage slows down fast with the number of rules. The order of work:
+
+**1. The sets were written first** (commit `5b4ad6a`, before any code of step 26).
+
+- `eval8/`: six new domains (recycling, tolls, laundry, clinic, donations,
+  meters), each clean, with one planted conflict (7 in all), two planted
+  ambiguities (12 in all, 3 of each kind), and, new, a *gap* version: one of
+  two complementary requirements is removed ("... AND the barcode is not on
+  the deposit list" goes, "... AND the barcode is on the deposit list" stays).
+- `size/`: one spec of 30 requirements (campsite), clean, with a planted
+  conflict of each kind and a gap version. It is not part of the `eval8/` numbers.
+
+**2. Then step 26, frozen with this entry, before any run on the new sets.**
+
+- *Gaps once for each event.* For every event some rule reacts to (its
+  trigger, or an event in its condition): is there a situation in which this
+  event happens, no other event does, and no rule applies? At most one gap
+  for each event, then one gap in which no event happens, marked. Without
+  events to go by, the search is as before (plan.md 5.4).
+- *Conflicts only among rules that share symbols*, directly or through other
+  rules and the facts (`checks._families`). Rules without a common symbol
+  cannot contradict each other.
+- *The read step may answer with 8192 tokens* instead of 4096: it copies every
+  requirement, so its answer grows with the document.
+
+No prompt was changed.
+
+**3. How a planted gap is scored, fixed before the run** (`evaluate.gap_scores`).
+A planted gap names the requirement whose other case was removed. It is found
+in a run when a reported gap is a situation in which the event of that
+requirement happens (the trigger the read step named, or an event in its
+condition). The same test on a clean spec, for the requirements whose two
+cases are both there, counts a false alarm. Both searches, the old one and the
+new one, are scored on the same runs.
+
+**Checks on development data** (no LLM):
+
+- The conflicts did not change: 1054 conflicts in the saved models of E5 and
+  E7 to E12 (each model checked three ways: as it is, without facts, with
+  pairs of rules only) have the same rules, the same marks and the same order
+  before and after. In 10 of them another, equally valid set of facts is
+  named, in 1 another example situation: Z3 returns a different proof when the
+  questions before it differ.
+- Gaps on the clean specs of `eval7/` (18 runs): 29 before, none with an
+  event; 24 after, 6 with an event.
+- Solver stage on k unrelated copies of the order spec: 40 rules 60 s before,
+  2.3 s after; 80 rules 12.5 s. A document about one subject is one family,
+  so there nothing is saved: the `size/` spec will show what that costs.
+- 42 tests, 3 of them new.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

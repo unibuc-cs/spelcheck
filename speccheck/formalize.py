@@ -54,6 +54,12 @@ from .probe import MAJORITY, question
 LOW_ENTROPY = 0.4
 HIGH_ENTROPY = 1.0
 
+# The read step copies every requirement word for word and lists every symbol,
+# so its answer grows with the document, and the usual limit of llm.ask may be
+# too short for a long one. An answer that is cut off is not valid JSON, and
+# the whole run fails.
+READ_MAX_TOKENS = 8192
+
 # ---------------------------------------------------------------- step 1: read
 
 READ_SYSTEM = """\
@@ -370,7 +376,8 @@ def _read(llm: LLM, spec_text: str, first_temperature: float) -> tuple[list[dict
     # If the symbol list of the first answer is broken (duplicate or illegal
     # names), ask again with more randomness to get a different one.
     for temperature in (first_temperature, 0.5, 0.9):
-        answers = llm.ask(READ_SYSTEM, spec_text, READ_SCHEMA, temperature=temperature)
+        answers = llm.ask(READ_SYSTEM, spec_text, READ_SCHEMA, temperature=temperature,
+                          max_tokens=READ_MAX_TOKENS)
         if not answers:
             error = "the model returned no valid JSON"
             continue

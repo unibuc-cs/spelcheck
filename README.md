@@ -133,6 +133,10 @@ scenario   situation:  an order is fulfilled, but it was never submitted
                        (R1 says when to fulfill, not "only then")
 ```
 
+A gap is looked for once for each event the rules react to ("an order is
+submitted and no rule applies"); here every event is covered, so the only gap
+is the one in which no event happens, and the report marks it as such.
+
 A gap and a scenario are not the same thing. In a gap, the spec says nothing
 about the situation. In a scenario, the spec does decide (the situation is
 allowed, or it is impossible), perhaps not as the author meant.
@@ -505,7 +509,7 @@ Some notes on these numbers:
 | Some proven conflicts are artefacts of the model | two events at the same moment ("a visitor signs up" while "a subscriber changes the address"); "at least 24 hours" and "less than 24 hours" as two symbols, both true. These are marked *doubtful* |
 | The *doubtful* mark needs the LLM to name the event each rule reacts to | a state taken for an event ("WHEN a member is suspended") marks a real conflict too |
 | "Remove" against "keep" is missed in about half of the cases | "delete the listing" vs "keep every listing for seven years" become unrelated symbols, or a number, and nothing connects them. The main cause of missed conflicts |
-| Gaps depend on the symbols | almost every spec gets the gap "nothing is happening", like the order spec |
+| Gaps depend on the symbols, and on the events the LLM marks | a gap is looked for once for each event; the gap in which no event happens, which almost every spec has, is marked as such |
 | One snapshot, no time | "then", "after" and "until" are not modelled |
 | One document | checking a change against specs that already exist is the next step (plan.md) |
 
@@ -529,7 +533,7 @@ research.md, section 5.
 | `speccheck/cli.py` | runs the three stages |
 | `speccheck/refine.py` | optional LLM review, off by default |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the vLLM servers on the cluster: the main model, the second model |
-| `tests/` | 39 tests of everything that needs no LLM |
+| `tests/` | 42 tests of everything that needs no LLM |
 | `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval7`, and the script that writes them |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs and scores the evaluation; re-scores saved runs without a GPU |

@@ -277,9 +277,9 @@ def test_a_conflict_that_the_other_reading_adds_or_removes_is_named():
 def test_a_gap_that_the_other_reading_covers_is_named():
     """ "WHEN motion is detected at night, switch the lamp on": must it be night?
 
-    Reading 1 needs motion and night, so there are two gaps: "it is not
-    night" and "no motion". With reading 2 (motion is enough) a rule applies
-    when it is not night, so only that gap depends on the reading.
+    Reading 1 needs motion and night, so there are two gaps: "motion, and it
+    is not night" and "no motion". With reading 2 (motion is enough) a rule
+    applies in the first, so only that gap depends on the reading.
     """
     formal = {
         "symbols": bools("motion", "night", "lamp_on", events=("motion",)),
@@ -291,7 +291,7 @@ def test_a_gap_that_the_other_reading_covers_is_named():
     }
     findings = analyze(formal)
     gaps = {tuple(f["when"].items()): f.get("depends_on_reading") for f in findings if f["type"] == "gap"}
-    assert gaps == {(("night", False),): ["A1"], (("motion", False),): None}
+    assert gaps == {(("motion", True), ("night", False)): ["A1"], (("motion", False),): None}
     (ambiguity,) = ambiguities(findings)
     assert ambiguity["other_reading"] == {"removes": [], "adds": [], "covers_gaps": 1}
     assert "Gap (depends on the reading of A1)" in render(findings, [formal], "lamp")

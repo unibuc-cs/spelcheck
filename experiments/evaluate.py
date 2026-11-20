@@ -27,6 +27,8 @@ What is counted, from the expected.json next to each spec (see make_eval.py):
     ambiguity flags on clean   rules flagged as ambiguous in the clean specs
     the other reading          for each flagged rule: does its other reading
                                change a conflict or a gap? (reading_effects)
+    planted gaps found         over all (expected gap, run) pairs; and the gaps
+                               reported on clean specs (gap_scores)
 
 The score is given for several ways of running the check ("configurations"),
 each switching one part on or off. All are computed from the same LLM runs.
@@ -41,7 +43,7 @@ from pathlib import Path
 
 from speccheck import formalize as formalize_module
 from speccheck import probe as probe_module
-from speccheck.checks import analyze, combine
+from speccheck.checks import analyze, combine, find_gaps, settled
 from speccheck.formalize import formalize_sets, judge_second, second_reading
 from speccheck.llm import LLM
 from speccheck.logic import Vocabulary
@@ -237,6 +239,66 @@ def reading_effects(data: dict) -> list[str]:
     return lines
 
 
+def gap_scores(data: dict) -> list[str]:
+    """A table: are the planted gaps found, and what else is reported as a gap?
+
+    For the default configuration and the first symbol set of every run. The
+    gaps are searched twice: over all situations, as before step 26, and once
+    for each event (checks.find_gaps), so that the two can be compared on the
+    same runs.
+
+    A planted gap names a requirement by its number: its other case was
+    removed from the spec (make_eval.py, "gap" versions). It counts as found
+    when a reported gap is a situation in which the event of that requirement
+    happens: the event the read step named as its trigger, or an event in its
+    condition. The same test on the "covered" requirements of a clean spec
+    gives the false alarms: there both cases are covered.
+    """
+    def events_of(model: dict, vocab: Vocabulary, number: int) -> set:
+        """The events requirement `number` (position in the document) reacts to."""
+        if number > len(model["rules"]):
+            return set()
+        rule = model["rules"][number - 1]
+        events = {rule.get("trigger")} & vocab.events
+        try:
+            events |= vocab.symbols_in(vocab.parse(rule.get("antecedent", "true"))) & vocab.events
+        except ValueError:
+            pass
+        return events
+
+    lines = ["| Gap search | Planted gaps found | Clean runs with a gap on a covered event "
+             "| Gaps on clean specs, with an event | Gaps on clean specs, all |",
+             "|---|---|---|---|---|"]
+    for label, by_event in (("over all situations (as before step 26)", False),
+                            ("once for each event", True)):
+        found = planted = alarms = covered_runs = with_event = on_clean = 0
+        for run in data["runs"]:
+            if "models" not in run:
+                continue
+            spec, model = data["specs"][run["spec"]], run["models"][0]
+            vocab = Vocabulary(model["symbols"])
+            decided = [settled(rule, DEFAULT["settle"], DEFAULT["questions"], DEFAULT["second"])
+                       for rule in model["rules"]]
+            gaps = find_gaps(vocab, [vocab.rule(rule) for rule in decided
+                                     if rule.get("status") != "rejected"], by_event)
+
+            def happens_in_a_gap(number: int) -> bool:
+                return any(gap["when"].get(event) is True
+                           for gap in gaps for event in events_of(model, vocab, number))
+
+            planted += len(spec.get("gaps", []))
+            found += sum(happens_in_a_gap(number) for number in spec.get("gaps", []))
+            if run["spec"].endswith("_clean"):
+                on_clean += len(gaps)
+                with_event += sum(any(gap["when"].get(event) is True for event in vocab.events)
+                                  for gap in gaps)
+                if "covered" in spec:
+                    covered_runs += 1
+                    alarms += any(happens_in_a_gap(number) for number in spec["covered"])
+        lines.append(f"| {label} | {found}/{planted} | {alarms}/{covered_runs} | {with_event} | {on_clean} |")
+    return lines
+
+
 def tables(data: dict) -> str:
     """Score all saved runs under every configuration; build the Markdown summary."""
     def groups(spec: dict, key: str) -> set:
@@ -343,6 +405,10 @@ def tables(data: dict) -> str:
         f"## Ambiguity flags and the other reading ({label})",
         "",
         *reading_effects(data),
+        "",
+        f"## Gaps ({label})",
+        "",
+        *gap_scores(data),
         "",
         f"## By spec ({label})",
         "",

@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from speccheck.checks import analyze, combine, find_scenarios
+from speccheck.checks import _families, analyze, combine, find_gaps, find_scenarios
 from speccheck.formalize import _agreed_facts, _links, _symbols_to_hide
 from speccheck.logic import Vocabulary
 
@@ -322,3 +322,68 @@ def test_a_rule_restated_without_its_private_symbol_becomes_a_link():
     assert [f for f in analyze(formal) if f["type"] == "conflict"] == [
         {"type": "conflict", "rules": ["D2", "D4"], "facts": ["F1"], "when": {"confirmed": True}},
     ]
+
+
+def lockers(with_the_full_locker_rule: bool) -> dict:
+    """A courier scans a parcel; a recipient enters a pickup code. Both are events."""
+    rules = [
+        {"id": "P1", "antecedent": "(and parcel_scanned compartment_free)", "consequent": "compartment_opened"},
+        {"id": "P2", "antecedent": "(and parcel_scanned (not compartment_free))", "consequent": "other_locker_shown"},
+        {"id": "P3", "antecedent": "code_entered", "consequent": "compartment_opened"},
+    ]
+    if not with_the_full_locker_rule:
+        del rules[1]
+    return {
+        "symbols": [{"name": name, "sort": "Bool", "values": [], "description": "",
+                     "event": name in ("parcel_scanned", "code_entered")}
+                    for name in ("parcel_scanned", "compartment_free", "code_entered",
+                                 "compartment_opened", "other_locker_shown")],
+        "rules": rules,
+    }
+
+
+def test_a_gap_is_looked_for_once_for_each_event():
+    """Without the rule for a full locker, scanning a parcel has an uncovered case.
+
+    The gap is reported for that event. Entering a code is always covered.
+    The gap in which no event happens comes last, marked as quiet.
+    """
+    gaps = [f for f in analyze(lockers(with_the_full_locker_rule=False)) if f["type"] == "gap"]
+    assert gaps == [
+        {"type": "gap", "event": "parcel_scanned",
+         "when": {"code_entered": False, "compartment_free": False, "parcel_scanned": True}},
+        {"type": "gap", "when": {"code_entered": False, "parcel_scanned": False}, "quiet": True},
+    ]
+
+    # With both cases of the scan covered, only the quiet gap is left.
+    gaps = [f for f in analyze(lockers(with_the_full_locker_rule=True)) if f["type"] == "gap"]
+    assert gaps == [{"type": "gap", "when": {"code_entered": False, "parcel_scanned": False}, "quiet": True}]
+
+
+def test_the_gap_search_over_all_situations_is_still_there():
+    """The experiments compare: by_event=False searches as before, in any situation."""
+    formal = lockers(with_the_full_locker_rule=False)
+    vocab = Vocabulary(formal["symbols"])
+    gaps = find_gaps(vocab, [vocab.rule(rule) for rule in formal["rules"]], by_event=False)
+    assert 1 <= len(gaps) <= 3 and all("event" not in gap and "quiet" not in gap for gap in gaps)
+
+
+def test_rules_with_nothing_in_common_are_not_tried_together():
+    """Two unrelated parts in one document: the conflicts are those of each part."""
+    symbols = [{"name": name, "sort": "Bool", "values": [], "description": ""}
+               for name in ("order", "stock", "backorder", "page_printed", "counter_raised")]
+    rules = [
+        {"id": "R2", "antecedent": "(and order (not stock))", "consequent": "backorder"},
+        {"id": "R3", "antecedent": "true", "consequent": "(not backorder)"},
+        {"id": "P1", "antecedent": "page_printed", "consequent": "counter_raised"},
+    ]
+    vocab = Vocabulary(symbols)
+    compiled = [vocab.rule(rule) for rule in rules]
+    r2, r3, p1 = (_families(vocab, compiled, {})[id(rule)] for rule in compiled)
+    assert r2 == r3 != p1
+    # A fact that connects the two parts makes them one family.
+    linked = _families(vocab, compiled, {"F1": vocab.parse("(=> counter_raised stock)")})
+    assert len(set(linked.values())) == 1
+
+    conflicts = [f for f in analyze({"symbols": symbols, "rules": rules}) if f["type"] == "conflict"]
+    assert conflicts == [{"type": "conflict", "rules": ["R2", "R3"], "when": {"order": True, "stock": False}}]

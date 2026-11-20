@@ -305,12 +305,15 @@ def _search(vocab: Vocabulary, rules: list[Rule], facts: dict, max_group: int,
     # Groups of rule ids already known to trigger a conflict. Any bigger group
     # containing one of them would only rediscover the same conflict.
     known_triggers: list[set] = []
+    family = _families(vocab, rules, facts)
 
     for size in range(1, max_group + 1):
         for group in itertools.combinations(rules, size):
             ids = {rule.id for rule in group}
             if any(trigger <= ids for trigger in known_triggers):
                 continue
+            if len({family[id(rule)] for rule in group}) > 1:
+                continue  # rules with no symbol in common cannot clash (see _families)
 
             # Question 1: a situation where every rule of the group applies
             # (and which the facts allow).
@@ -373,6 +376,48 @@ def _search(vocab: Vocabulary, rules: list[Rule], facts: dict, max_group: int,
             seen.add(culprits)
             kept.append(finding)
     return kept
+
+
+def _families(vocab: Vocabulary, rules: list[Rule], facts: dict) -> dict[int, int]:
+    """Sort the rules into families that share symbols.
+
+    Two rules are in one family when they have a symbol in common, directly
+    or through other rules and the given facts:
+
+        R1   order_submitted => order_fulfilled          family 0
+        R5   order_canceled  => (not order_fulfilled)    family 0: shares order_fulfilled
+        P1   page_printed    => counter_raised           family 1: nothing in common
+
+    Rules of two families cannot contradict each other: the solver can obey
+    each family without looking at the other. Forcing rules of two families
+    to apply together can therefore only find again what one family shows
+    alone, and _search skips such groups. A document about one subject is
+    usually one family. A document made of unrelated parts (several specs
+    checked together) is not, and there this saves most of the work.
+
+    Returns id(rule) -> the number of its family. The key is the Python
+    object, not the rule's own id: those come from the LLM and may repeat.
+    """
+    head: dict[str, str] = {}  # symbol -> a symbol nearer to the one that names its family
+
+    def name_of(symbol: str) -> str:
+        while head.setdefault(symbol, symbol) != symbol:
+            symbol = head[symbol]
+        return symbol
+
+    for formula in [rule.formula for rule in rules] + list(facts.values()):
+        symbols = sorted(vocab.symbols_in(formula))
+        for other in symbols[1:]:
+            head[name_of(other)] = name_of(symbols[0])
+
+    numbers: dict[str, int] = {}
+    families = {}
+    for rule in rules:
+        symbols = sorted(vocab.symbols_in(rule.formula))
+        # A rule without any symbol ("true => true") is a family of its own.
+        name = name_of(symbols[0]) if symbols else f"rule {id(rule)}"
+        families[id(rule)] = numbers.setdefault(name, len(numbers))
+    return families
 
 
 def _simultaneous_events(vocab: Vocabulary, forced: list) -> list[str]:
@@ -449,12 +494,30 @@ def _minimal_conflict(vocab: Vocabulary, situation: list, rules: list[Rule],
 # ------------------------------------------------------------------------- gaps
 
 
-def find_gaps(vocab: Vocabulary, rules: list[Rule]) -> list[dict]:
+def find_gaps(vocab: Vocabulary, rules: list[Rule], by_event: bool = True) -> list[dict]:
     """Find situations in which no rule says what the system must do.
 
     A situation is uncovered when every conditional rule's antecedent is false.
     Rules that always apply (e.g. "SHALL NOT place any order on backorder") are
     constraints, not responses to a situation, so they do not count as coverage.
+
+    Nearly every spec has the gap "nothing is happening", and it says little.
+    The useful gaps are those in which something happens. So when the rules
+    react to events (formalize step 1 marks them), the question is asked once
+    for each event, with no other event at the same moment:
+
+        rules    "WHEN a courier scans a parcel AND a compartment is free THEN ..."
+                 (the rule for "no compartment is free" is missing)
+        event    parcel_scanned
+        gap      parcel_scanned TRUE, compartment_free FALSE: no rule applies
+                 -> {"type": "gap", "event": "parcel_scanned", "when": {...}}
+
+    That gives at most one gap for each event. After them comes one gap in
+    which no event happens, marked "quiet": True.
+
+    Without events to go by (a formal model made before they were marked, or
+    rules that react to states only), and with by_event=False (the experiments
+    compare the two), the search is over all situations, at most MAX_GAPS gaps.
 
     The assumed domain facts are not used here: a fact can only declare
     situations impossible, so it could only make a gap disappear.
@@ -471,27 +534,50 @@ def find_gaps(vocab: Vocabulary, rules: list[Rule]) -> list[dict]:
     # Only symbols used in some antecedent can decide whether a rule fires.
     relevant = set().union(*(vocab.symbols_in(antecedent) for antecedent in antecedents))
 
+    def search(given: list, limit: int, keep: frozenset = frozenset()) -> list[dict]:
+        """Up to `limit` different gaps among the situations in which `given` holds.
+
+        keep  symbols that stay in the situation shown: the event that happens,
+              or, for the gap without an event, the events that do not
+        """
+        found = []
+        already_found = []  # formulas excluding the gaps found so far
+        while len(found) < limit:
+            situation = vocab.model(nothing_fires + given + already_found)
+            if situation is None:
+                break  # every (remaining) situation triggers at least one rule
+            when = vocab.witness(situation, relevant | keep)
+
+            # Generalize the example. Z3 returned one exact situation, but usually
+            # only a few symbols matter. Drop a symbol if, with the others fixed,
+            # no value of it could make any rule fire.
+            for name in list(when):
+                rest = {k: v for k, v in when.items() if k != name}
+                if name not in keep and vocab.impossible(vocab.assignment(rest) + [z3.Or(antecedents)]):
+                    when = rest
+
+            found.append({"type": "gap", "when": when})
+            if not when:
+                break  # no symbol matters: no rule can ever fire, nothing more to find
+            # Exclude this whole family of situations and look for a different gap.
+            already_found.append(z3.Not(z3.And(vocab.assignment(when))))
+        return found
+
+    # The events some rule reacts to: named as its trigger, or used in its condition.
+    reacted_to = sorted({rule.trigger for rule in conditional if rule.trigger}
+                        | (vocab.events & relevant))
+    if not by_event or not reacted_to:
+        return search([], MAX_GAPS)
+
+    happens = {name: vocab.variables[name] for name in sorted(vocab.events)}
     findings = []
-    already_reported = []  # formulas excluding the gaps found so far
-    while len(findings) < MAX_GAPS:
-        situation = vocab.model(nothing_fires + already_reported)
-        if situation is None:
-            break  # every (remaining) situation triggers at least one rule
-        when = vocab.witness(situation, relevant)
-
-        # Generalize the example. Z3 returned one exact situation, but usually
-        # only a few symbols matter. Drop a symbol if, with the others fixed,
-        # no value of it could make any rule fire.
-        for name in list(when):
-            rest = {k: v for k, v in when.items() if k != name}
-            if vocab.impossible(vocab.assignment(rest) + [z3.Or(antecedents)]):
-                when = rest
-
-        findings.append({"type": "gap", "when": when})
-        if not when:
-            break  # no symbol matters: no rule can ever fire, nothing more to find
-        # Exclude this whole family of situations and look for a different gap.
-        already_reported.append(z3.Not(z3.And(vocab.assignment(when))))
+    for event in reacted_to:
+        alone = [happens[event]] + [z3.Not(other) for name, other in happens.items() if name != event]
+        for gap in search(alone, 1, keep=frozenset([event])):
+            findings.append({"type": "gap", "event": event, "when": gap["when"]})
+    nothing_happens = [z3.Not(event) for event in happens.values()]
+    for gap in search(nothing_happens, 1, keep=frozenset(vocab.events & relevant)):
+        findings.append({**gap, "quiet": True})
     return findings
 
 

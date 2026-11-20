@@ -175,6 +175,9 @@ def evidence(finding: dict, formal: dict) -> str:
     if finding["type"] == "gap":
         text = (f"No requirement says what the system must do "
                 f"in this situation:{situation(finding['when'])}")
+        if finding.get("quiet"):
+            text += ("\nNo event happens in this situation, so this may only mean that "
+                     "the system waits.")
         for rule_id in finding.get("depends_on_reading", []):
             text += (f"\nBut {rule_id} is ambiguous (see its finding), and with its other "
                      "reading a requirement applies in this situation.")
@@ -324,6 +327,8 @@ def render(findings: list[dict], models: list[dict], title: str) -> str:
             remarks.append("doubtful: the assumed facts say this situation cannot happen")
         if finding.get("simultaneous_events"):
             remarks.append("doubtful: needs two events at the same moment")
+        if finding.get("quiet"):
+            remarks.append("no event happens")
         if finding.get("depends_on_reading"):
             remarks.append(f"depends on the reading of {', '.join(finding['depends_on_reading'])}")
         if "support" in finding:  # several symbol sets were used
