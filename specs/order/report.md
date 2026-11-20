@@ -6,8 +6,8 @@
 
 The requirements contain a direct contradiction regarding how to handle orders when stock is low. In the situation where an order is submitted but inventory is unavailable, R2 requires the system to place the order on backorder, while R3 explicitly forbids the system from placing any order on backorder.
 
-- **A) Keep as-is:** Keeping the requirements as written means the system is logically unable to process any order where inventory is unavailable, as it is forced to perform an action that is simultaneously prohibited.
-- **B) Change:** Remove R3 or modify it to allow backorders for specific conditions, ensuring that R2's instruction to backorder unavailable items is not contradicted by a general prohibition.
+- **A) Keep as-is:** Keeping the requirements as written means the system is logically trapped and cannot legally process any order where inventory is unavailable, as it must simultaneously do and not do the same action.
+- **B) Change:** Remove R3 entirely, or modify R3 to state that the system shall not place orders on backorder only under specific conditions that do not overlap with the scenario in R2.
 
 *Proven:* Requirements R2, R3 cannot all be obeyed in this situation:
 - FALSE: inventory_available (The inventory for the ordered items is available.)
@@ -25,23 +25,24 @@ The requirements contain a direct contradiction regarding what happens when an o
 - TRUE: order_canceled_and_refunded (The order is in a state where it has been canceled and refunded.)
 - TRUE: order_submitted (An order has been submitted by a customer.)
 
-## 3. Gap: Undefined behavior for non-existent orders
+## 3. Gap (no event happens): Undefined System Behavior
 
-The requirements do not specify what the system must do when an order has not been submitted, has not been canceled, and is not in a canceled-and-refunded state. This gap appears in the situation where none of these order states are active.
+The requirements do not specify what the Order System must do when no order has been submitted, canceled, or refunded. This gap appears in the situation where none of these events have occurred, leaving the system's behavior undefined.
 
-- **A) Keep as-is:** Keeping the requirements as written means the system has no defined behavior for situations where no order has been submitted or canceled.
-- **B) Change:** Add a requirement stating that the system shall do nothing or remain idle when no order has been submitted or canceled.
+- **A) Keep as-is:** Keeping the requirements as written means the system has no defined action to take when no orders are submitted, canceled, or refunded.
+- **B) Change:** Add a requirement stating that the Order System SHALL remain in an idle state when no orders are submitted, canceled, or refunded.
 
 *Proven:* No requirement says what the system must do in this situation:
 - FALSE: order_canceled (An order has been canceled.)
 - FALSE: order_canceled_and_refunded (The order is in a state where it has been canceled and refunded.)
 - FALSE: order_submitted (An order has been submitted by a customer.)
+No event happens in this situation, so this may only mean that the system waits.
 
 ## 4. Scenario, allowed: Fulfillment without submission
 
-The requirements allow the system to fulfill an order even when no order has been submitted and inventory is unavailable. This defeats the purpose of R1, which ties fulfillment to a submitted order and available inventory, and contradicts the user story's intent that customers receive goods only after submitting valid orders.
+The requirements allow the system to fulfill an order even when no order has been submitted and inventory is unavailable. This defeats the purpose of R1, which ties fulfillment to a submitted order and available inventory, and contradicts the user story's expectation that processing follows submission.
 
-- **A) Keep as-is:** Keep the requirements, so the behaviour stays allowed.
+- **A) Keep as-is:** Keep the requirements, allowing the system to fulfill orders without a prior submission or available inventory.
 - **B) Change:** Add a requirement stating that the Order System SHALL NOT fulfill any order unless an order has been submitted and inventory is available.
 
 *Proven:* The requirements allow this behaviour:

@@ -35,6 +35,8 @@ section 5; its terms are defined in section 3.
   | `eval5/` | 6 domains, 24 versions | 6 conflicts, 12 ambiguities | E10 | development data |
   | `eval6/` | 6 domains, 24 versions | 6 conflicts, 12 ambiguities | E11 | development data |
   | `eval7/` | 6 domains, 24 versions | 6 conflicts, 12 ambiguities | E12 | development data |
+  | `eval8/` | 6 domains, 30 versions | 7 conflicts, 12 ambiguities, 6 gaps | E13 | development data |
+  | `size/` | 1 spec of 30 requirements, 4 versions | 2 conflicts, 1 gap | E13 | development data |
 
 - **A run** = the pipeline once on one spec. The LLM gives different answers
   on different runs, so every number below is "in how many runs".
@@ -59,9 +61,10 @@ The order spec gives the blog's two conflicts and its gap in every run we made
 | E10, `eval5/` | 11 of 18 (61%) | 0 of 18 |
 | E11, `eval6/` | 15 of 18 (83%) | 0 of 18 |
 | E12, `eval7/` | 13 of 18 (72%) | 0 of 18 |
+| E13, `eval8/` | 18 of 21 (86%) | 0 of 18 |
 
 From E8 on, conflicts marked doubtful (3.7) are set aside. Counted, they give
-false alarms in 9 (E8), 6 (E9), 11 (E10), 8 (E11) and 0 (E12) of 18 clean runs: those specs have
+false alarms in 9 (E8), 6 (E9), 11 (E10), 8 (E11), 0 (E12) and 4 (E13) of 18 clean runs: those specs have
 many events, and events cause the false alarms that the mark is for. In E10
 the mark also hit a planted conflict (4.2); counted, E10 finds 14 of 18.
 
@@ -105,11 +108,11 @@ which the LLM's translation into logic can go wrong, and each was measured.
   40 runs (E3). **The question decides the reading.**
 - `delete_property`: 1 of 40 runs before, 8 of 8 after (E5).
 
-### 3.4 Facts and links carry a large part of the result (E5, E7 to E9, E12)
+### 3.4 Facts and links carry a large part of the result (E5, E7 to E9, E12, E13)
 
 The same runs, scored without and with them: 27 → 44 of 48 (`eval/`),
 18 → 31 of 36 (`eval2/`), 10 → 15 of 21 (`eval3/`), 18 → 21 of 21 (`eval4/`),
-3 → 13 of 18 (`eval7/`).
+3 → 13 of 18 (`eval7/`), 9 → 18 of 21 (`eval8/`).
 
 ### 3.5 Several symbol sets tell how sure a finding is (E4, E5)
 
@@ -182,6 +185,37 @@ more with its other reading, by the solver alone (plan.md 5.9).
 - **What it costs.** Nothing in the counts: no finding is added or removed,
   and every saved experiment scores as before.
 
+### 3.10 Gaps are asked once for each event (D8, E13)
+
+The gap search over all situations returns variations of "nothing is
+happening". Since step 26 the question is asked once for each event some rule
+reacts to: this event happens, no other does, and no rule applies? One gap
+with no event is kept, marked (plan.md 5.4).
+
+- **Planted gaps, held-out:** 0 of 18 found by the search over all
+  situations, 18 of 18 by the search for each event, on the same runs of
+  `eval8/`. The planted gap of the 30-requirement spec: 0 of 3 and 3 of 3.
+- **False alarms:** in 4 of 18 clean runs a gap is reported on an event whose
+  two cases are both covered. One cause: "the slot is free" and "the slot is
+  taken" as two symbols, so "neither" is a situation for the solver (4.2).
+- **What else it reports on clean specs:** 21 gaps in 18 runs, all cases the
+  specs do leave open. 12 are counted events ("a payment is declined, and it
+  is not the third time"); 6 are cases we had left out without noticing
+  (cancelling less than an hour ahead, a voucher that was already used).
+
+### 3.11 Rules that share no symbol are not tried together (D8, E13)
+
+Rules without a common symbol, directly or through other rules and the facts,
+cannot contradict each other, so the conflict search skips such groups. The
+conflicts do not change: 1054 on the saved models keep their rules and marks.
+
+- **A 30-requirement spec** takes 26 to 34 s in the solver stage before, 0.4
+  to 0.9 s after: its rules fall into 16 to 18 families. All 6 planted
+  conflicts are found, the clean version has none (doubtful ones set aside),
+  and every run read the right number of requirements (E13).
+- **One spec is thin evidence.** A document whose rules all meet in a few
+  symbols is one family, and nothing is saved there.
+
 ---
 
 ## 4. What does not work yet
@@ -251,21 +285,23 @@ Planted ambiguities on the held-out `eval4/` (E9), 9 per kind:
   saved failing runs it rejected the wrong fact twice, but once also a right
   one, and it kept a wrong one worded with a hedge; it recovered the conflict
   in one (T10). In E10 it never fired.
-- **"Remove" against "keep" is found in 10 of 18 runs** (E10 to E12): 3 of 3
-  in `backup`, `lab` and `skipass`, 1 of 3 in `photos`, 0 of 3 in `messages`
-  and `auctions`. When it is missed, either the link read "remove" otherwise
+- **"Remove" against "keep" is found in 10 of 21 runs** (E10 to E13): 3 of 3
+  in `backup`, `lab` and `skipass`, 1 of 3 in `photos`, 0 of 3 in `messages`,
+  `auctions` and `clinic`. When it is missed, either the link read "remove" otherwise
   ("removes the message" as "not delivered", which the words allow, E10), or
   "keep for seven years" became a number, `listing_retention_years = 7`,
-  with nothing to clash with "deleted" (E11, E12). A prompt sentence calling
+  with nothing to clash with "deleted" (E11, E12). In `clinic` the translations
+  of "keep every appointment in the patient's record for five years"
+  scattered, and the rule was rejected in 3 of 3 runs (E13). A prompt sentence calling
   "remove" and "keep" opposites made it worse and was dropped (T14).
 - A wrong fact can also make a conflict (`printing_overlap`, E9).
 
 ### 4.4 Not measured
 
-- **Scenarios** and **gaps** have no ground truth. Scenarios read sensibly on
-  the development specs ("the order is fulfilled although it was never submitted").
-  The gaps say little: on `eval7/`, all 140 gaps reported in 72 runs are
-  situations in which no event happens (T15).
+- **Scenarios** have no ground truth. They read sensibly on the development
+  specs ("the order is fulfilled although it was never submitted"). Gaps have
+  one since `eval8/` (3.10), for one kind of planted gap only: one of two
+  complementary requirements removed.
 - **Conflicts that need three rules** are searched; the one planted case
   (`eval2/` discounts) is also found through a pair whose situation triggers
   the third rule.
@@ -275,16 +311,16 @@ Planted ambiguities on the held-out `eval4/` (E9), 9 per kind:
 
 ### 4.5 The evaluation is small
 
-Seven evaluation sets with 42 base specs (171 versions), written by us; 63
-to 90 runs per experiment; one main model. Each held-out set was used once. One
+Eight evaluation sets with 48 base specs (201 versions) and one longer spec,
+written by us; 63 to 90 runs per experiment; one main model. Each held-out set was used once. One
 leak is known: a read-prompt example came from the domain of an `eval3/` spec
 (D4).
 
 The runs of one spec mostly agree, so the numbers rest on fewer cases than
-they seem to: of the 60 planted conflicts of the seven held-out tests, 46 were
-found in all 3 of their runs, 6 in none, and only 8 in some (T15). All specs
-have 5 to 8 rules; on larger ones the solver stage slows down quickly (60 s
-for 40 rules, T15).
+they seem to: of the 67 planted conflicts of the eight held-out tests, 52 were
+found in all 3 of their runs, 7 in none, and only 8 in some (T15, E13). All
+specs but one have 5 to 8 rules; the one spec of 30 requirements went well
+(3.11), which says little about longer or denser documents.
 
 ---
 
@@ -331,11 +367,13 @@ prompts, so it can be scored again without a GPU.
 | E10 | `eval5/`, held-out, with triggers and check 3 | 72 runs | Counted failures are events in 72 of 72 runs; 0 false alarms; 11 of 18 conflicts (14 counting doubtful ones) (3.7, 4.2, 4.3) |
 | E11 | `eval6/`, held-out, the design of E10 again | 72 runs | 15 of 18 conflicts, none marked; 0 false alarms; the 3 misses are "remove" against "keep" (4.3) |
 | E12 | `eval7/`, held-out, with the second reader's comparison of T13 | 72 runs | 13 of 18 conflicts; 0 false alarms; ambiguities 17 → 32 of 36 with the second reader (3.8) |
+| E13 | `eval8/`, held-out, with gaps asked for each event; and one spec of 30 requirements | 90 + 12 runs | 18 of 21 conflicts, 0 false alarms; planted gaps 0 → 18 of 18; the long spec: 6 of 6 conflicts, solver stage 30 s → under 1 s (3.10, 3.11) |
 
 The trials on development data are T8 (counted events) and T9 (the second
 reader) before E9, T10 and T11 (wrong facts, triggers) before E10, T12
 (dropped) before E11, and T13 (offline) and T14 (dropped) before E12. T15
-(offline, after E12) marks the findings that depend on a reading (3.9). Commands: `python -m experiments.evaluate --rescore
+(offline, after E12) marks the findings that depend on a reading (3.9), and T16
+runs the development specs with the design of E13. Commands: `python -m experiments.evaluate --rescore
 experiments/results/E9_eval4.json` (E4 to E9) and `python -m experiments.stability
 --rescore experiments/results/E3_refine.json` (E1 to E3).
 

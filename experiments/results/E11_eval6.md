@@ -27,8 +27,15 @@
 
 | Ambiguity flags | All | The other reading changes a conflict | Only a gap | Nothing |
 |---|---|---|---|---|
-| planted | 15 | 0 | 4 | 11 |
-| other | 9 | 1 | 4 | 4 |
+| planted | 15 | 0 | 5 | 10 |
+| other | 9 | 1 | 5 | 3 |
+
+## Gaps (default (1 symbol set))
+
+| Gap search | Planted gaps found | Clean runs with a gap on a covered event | Gaps on clean specs, with an event | Gaps on clean specs, all |
+|---|---|---|---|---|
+| over all situations (as before step 26) | 0/0 | 0/0 | 0 | 50 |
+| once for each event | 0/0 | 0/0 | 31 | 49 |
 
 ## By spec (default (1 symbol set))
 

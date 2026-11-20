@@ -51,7 +51,7 @@ project deals with what can go wrong there:
 Where the project stands:
 
 - it finds what the Kiro blog finds, on both of the blog's examples;
-- on 7 sets of specs it was not built on, it found 61 to 100% of the conflicts
+- on 8 sets of specs it was not built on, it found 61 to 100% of the conflicts
   we had planted, with at most 1 false alarm in 18 clean runs (doubtful
   conflicts set aside);
 - it finds about half of the planted ambiguities, and 30 to 32 of 36 with a
@@ -148,7 +148,7 @@ This is what `checks.py` writes. The field `when` is the situation Z3 found:
  "when": {"inventory_available": false, "order_submitted": true}}
 {"type": "conflict", "rules": ["R1", "R5"],
  "when": {"inventory_available": true, "order_canceled_and_refunded": true, "order_submitted": true}}
-{"type": "gap",
+{"type": "gap", "quiet": true,
  "when": {"order_canceled": false, "order_canceled_and_refunded": false, "order_submitted": false}}
 {"type": "scenario", "verdict": "accepted", "rules": ["R1"],
  "when": {"inventory_available": false, "order_fulfilled": true, "order_submitted": false}}
@@ -167,35 +167,37 @@ The model only rewords each proven finding. This is the conflict:
 
 > **1. Conflict: Backorder Requirement Conflict**
 >
-> The requirements contain a direct contradiction regarding how to handle orders
-> when stock is low. In the situation where an order is submitted but inventory
-> is unavailable, R2 requires the system to place the order on backorder, while
-> R3 explicitly forbids the system from placing any order on backorder.
+> The requirements contain a direct contradiction regarding how to handle
+> orders when stock is low. In the situation where an order is submitted but
+> inventory is unavailable, R2 requires the system to place the order on
+> backorder, while R3 explicitly forbids the system from placing any order on
+> backorder.
 >
 > - **A) Keep as-is:** Keeping the requirements as written means the system is
->   logically unable to process any order where inventory is unavailable, as it
->   is forced to perform an action that is simultaneously prohibited.
-> - **B) Change:** Remove R3 or modify it to allow backorders for specific
->   conditions, ensuring that R2's instruction to backorder unavailable items is
->   not contradicted by a general prohibition.
+>   logically trapped and cannot legally process any order where inventory is
+>   unavailable, as it must simultaneously do and not do the same action.
+> - **B) Change:** Remove R3 entirely, or modify R3 to state that the system
+>   shall not place orders on backorder only under specific conditions that do
+>   not overlap with the scenario in R2.
 >
 > *Proven:* Requirements R2, R3 cannot all be obeyed in this situation:
 > - FALSE: inventory_available (The inventory for the ordered items is available.)
 > - TRUE: order_submitted (An order has been submitted by a customer.)
 
-The gap:
+The gap. No event happens in it, and the title says so:
 
-> **3. Gap: Undefined behavior for non-existent orders**
+> **3. Gap (no event happens): Undefined System Behavior**
 >
-> The requirements do not specify what the system must do when an order has not
-> been submitted, has not been canceled, and is not in a canceled-and-refunded
-> state. [...]
+> The requirements do not specify what the Order System must do when no order
+> has been submitted, canceled, or refunded. This gap appears in the situation
+> where none of these events have occurred, leaving the system's behavior
+> undefined.
 >
 > - **A) Keep as-is:** Keeping the requirements as written means the system has
->   no defined behavior for situations where no order has been submitted or
->   canceled.
-> - **B) Change:** Add a requirement stating that the system shall do nothing or
->   remain idle when no order has been submitted or canceled.
+>   no defined action to take when no orders are submitted, canceled, or
+>   refunded.
+> - **B) Change:** Add a requirement stating that the Order System SHALL remain
+>   in an idle state when no orders are submitted, canceled, or refunded.
 
 And the scenario. The solver proved it, and an LLM judge decided that it is
 worth showing:
@@ -204,9 +206,11 @@ worth showing:
 >
 > The requirements allow the system to fulfill an order even when no order has
 > been submitted and inventory is unavailable. This defeats the purpose of R1,
-> which ties fulfillment to a submitted order and available inventory [...]
+> which ties fulfillment to a submitted order and available inventory, and
+> contradicts the user story's expectation that processing follows submission.
 >
-> - **A) Keep as-is:** Keep the requirements, so the behaviour stays allowed.
+> - **A) Keep as-is:** Keep the requirements, allowing the system to fulfill
+>   orders without a prior submission or available inventory.
 > - **B) Change:** Add a requirement stating that the Order System SHALL NOT
 >   fulfill any order unless an order has been submitted and inventory is
 >   available.
@@ -254,7 +258,10 @@ other reading changes. In the login spec, the gap "6 failed attempts, no
 password submitted" exists only if R3 means "exactly 5":
 
 > *Proven:* No requirement says what the system must do in this situation: [...]
-> But R3 is ambiguous (see its finding), and with its other reading a requirement applies in this situation.
+> But R3 is ambiguous (see its finding). With its other reading a requirement
+> applies in this situation. That reading: If the number of consecutive failed
+> login attempts for an account is at least 5, the system must place the
+> account in a locked state.
 
 ## Assumed facts and links
 
@@ -345,7 +352,7 @@ The title of each finding says how far to trust it. These are real titles:
 | nothing more | proven from the rules alone | "Conflict: Backorder Requirement Conflict" (R2 against R3, order spec) |
 | "if the assumed facts hold" | proven only with an assumed fact | "Conflict (if the assumed facts hold): Conflict between correct password and locked account" |
 | "doubtful: ..." | proven, but probably an artefact of the formulas | the two cases below |
-| "depends on the reading of R3" | proven with the first reading of R3, which is ambiguous; gone with its other reading | "Gap (depends on the reading of R3)", the gap at 6 failed attempts in the login spec ([Ambiguities](#ambiguities)) |
+| "depends on the reading of R3" | proven with the first reading of R3, which is ambiguous; gone with its other reading | "Gap (no event happens, depends on the reading of R3)", the gap at 6 failed attempts in the login spec ([Ambiguities](#ambiguities)) |
 | "found with k of K symbol sets" | optional: the spec was translated K times, each time with other symbols, and k of them found it | "Conflict (found with 3 of 3 symbol sets): Conflict between removal and retention" |
 
 A conflict is marked *doubtful* in two cases. It stays in the report, marked.
@@ -467,7 +474,7 @@ Nothing in the code or in the prompts is about orders.
 |---|---|---|
 | `specs/order`, `specs/delete_property` | Kiro EARS | the two examples of the Kiro blog |
 | `specs/auth_openspec` | OpenSpec (`### Requirement` / `#### Scenario`) | another format; two conflicts we planted |
-| `experiments/sets/`: `eval` to `eval7` (171 specs) | both | 42 specs in new domains, each clean and with planted defects. Each set was written before it was used, as a test the prompts had not seen |
+| `experiments/sets/`: `eval` to `eval8` (201 specs) | both | 48 specs in new domains, each clean and with planted defects. Each set was written before it was used, as a test the prompts had not seen |
 
 ## How reliable is it
 
@@ -482,6 +489,7 @@ Each line is a test on specs the prompts had not seen, with 3 runs per spec:
 | `eval5/` (E10), doubtful conflicts set aside | 11 of 18 | 0 of 18 | 15 of 36 |
 | `eval6/` (E11), doubtful conflicts set aside | 15 of 18 | 0 of 18 | 19 of 36 |
 | `eval7/` (E12), doubtful conflicts set aside | 13 of 18 | 0 of 18 | 17 of 36; 32 of 36 with the second model |
+| `eval8/` (E13), doubtful conflicts set aside | 18 of 21 | 0 of 18 | 20 of 36 |
 
 Some notes on these numbers:
 
@@ -496,6 +504,14 @@ Some notes on these numbers:
 - `delete_property`, the blog's second example, was found in 3 of the last 3
   runs. It was missed in 4 of 7 earlier runs, 3 times because of a wrong voted
   fact (research.md 4.3).
+- Gaps were measured for the first time on `eval8/`, where one of two
+  complementary requirements was removed: all 18 planted gaps were found. On
+  the clean specs, 4 of 18 runs reported a gap that is not one, each time
+  because two complementary conditions had become two symbols ("the slot is
+  free", "the slot is taken").
+- One spec of 30 requirements (`experiments/sets/size`) went as well as the
+  small ones: 6 of 6 planted conflicts, none on the clean version, and under
+  a second in the solver stage. That is one spec, not a study of size.
 - The numbers are small: the specs were written by us, and there is one main
   model. The details are in [research.md](research.md).
 
@@ -534,7 +550,7 @@ research.md, section 5.
 | `speccheck/refine.py` | optional LLM review, off by default |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the vLLM servers on the cluster: the main model, the second model |
 | `tests/` | 42 tests of everything that needs no LLM |
-| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval7`, and the script that writes them |
+| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval8` and `size`, and the script that writes them |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs and scores the evaluation; re-scores saved runs without a GPU |
 | `experiments/stability.py`, `fact_threshold.py` | the earlier experiments |

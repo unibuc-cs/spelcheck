@@ -168,9 +168,9 @@ def evidence(finding: dict, formal: dict) -> str:
                      f"{', '.join(finding['simultaneous_events'])}. The requirements are "
                      "probably not meant for that, so the conflict may be a false alarm.")
         # The conflict was found with the first reading of an ambiguous rule.
-        for rule_id in finding.get("depends_on_reading", []):
-            text += (f"\nBut {rule_id} is ambiguous (see its finding), and with its other "
-                     "reading these requirements do not clash.")
+        for rule_id, reading in finding.get("depends_on_reading", {}).items():
+            text += (f"\nBut {rule_id} is ambiguous (see its finding). With its other reading "
+                     f"these requirements do not clash. That reading: {reading}")
         return text
     if finding["type"] == "gap":
         text = (f"No requirement says what the system must do "
@@ -178,9 +178,9 @@ def evidence(finding: dict, formal: dict) -> str:
         if finding.get("quiet"):
             text += ("\nNo event happens in this situation, so this may only mean that "
                      "the system waits.")
-        for rule_id in finding.get("depends_on_reading", []):
-            text += (f"\nBut {rule_id} is ambiguous (see its finding), and with its other "
-                     "reading a requirement applies in this situation.")
+        for rule_id, reading in finding.get("depends_on_reading", {}).items():
+            text += (f"\nBut {rule_id} is ambiguous (see its finding). With its other reading "
+                     f"a requirement applies in this situation. That reading: {reading}")
         return text
     if finding["type"] == "scenario" and finding["verdict"] == "accepted":
         rule = finding["rules"][0]

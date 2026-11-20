@@ -20,10 +20,10 @@ come back in plain language, each with "A) keep as-is / B) change".
 
 | Goal | Status |
 |---|---|
-| **G1** A minimal working prototype of Kiro's formal analysis: spec, formal check, answer in plain language | **Done.** Conflicts, gaps, ambiguities and scenarios, as in Kiro's formal part. Both Kiro blog examples found by the solver (`delete_property`: 3 of 3 in the last runs; a wrong voted fact can still hide it). Ambiguities: about half with one model; with the optional second reader 30 and 32 of 36 (held-out `eval4/`, `eval7/`), at up to one extra question per spec |
-| **G2** Data-driven: any spec, any format | **Partly.** 45 base specs in two formats (Kiro EARS, OpenSpec), no change to code or prompts. Missing: a whole OpenSpec *project*, where a change is checked against the specs that already exist |
+| **G1** A minimal working prototype of Kiro's formal analysis: spec, formal check, answer in plain language | **Done.** Conflicts, gaps, ambiguities and scenarios, as in Kiro's formal part. Gaps are asked once for each event, and all 18 planted gaps of `eval8/` were found. Both Kiro blog examples found by the solver (`delete_property`: 3 of 3 in the last runs; a wrong voted fact can still hide it). Ambiguities: about half with one model; with the optional second reader 30 and 32 of 36 (held-out `eval4/`, `eval7/`), at up to one extra question per spec |
+| **G2** Data-driven: any spec, any format | **Partly.** 51 base specs in two formats (Kiro EARS, OpenSpec), no change to code or prompts; one spec of 30 requirements went as well as the small ones (E13). Missing: a whole OpenSpec *project*, where a change is checked against the specs that already exist |
 | **G3** Code and documents a person can read | **Done** for the current state |
-| **G4** Research for a paper, on the local model | **Well under way.** 7 held-out tests (E5, E7 to E12): 61 to 100% of planted conflicts found; at most 1 false alarm in 18 clean runs with doubtful conflicts set aside (none in the last four). Still small: one main model, specs written by us |
+| **G4** Research for a paper, on the local model | **Well under way.** 8 held-out tests (E5, E7 to E13): 61 to 100% of planted conflicts found; at most 1 false alarm in 18 clean runs with doubtful conflicts set aside (none in the last five). Gaps measured for the first time (E13). Still small: one main model, specs written by us |
 | **G5** Only the formal part | **Done.** An LLM review of the text was built, measured, and switched off |
 
 In short: the pipeline works end to end, finds what Kiro's blog finds, and
@@ -53,25 +53,35 @@ There are three candidates, in this order. The first is the one we recommend.
    requirements. The check would apply the change, formalize the merged spec,
    and report only the findings that involve a new or modified requirement.
    The existing requirements would be formalized once and cached.
-2. **A larger evaluation** (G4): more runs per spec, another main model, and
-   the second reader on more sets. All seven sets have been read, so the next
-   design needs an eighth held-out set, and it has to be written first.
-3. **The choice of symbols** (G1), which is where the remaining misses come
-   from: "remove" against "keep" (found in 10 of 18 runs), and two symbols for
-   one outcome that stay unlinked (research.md 4.2, 4.3). Two prompt sentences
-   were tried and dropped (T12, T14). A real repair would have the LLM judge
-   requirements against each other, which this project leaves out on purpose.
+2. **A larger evaluation** (G4): another main model, the second reader on
+   more sets, specs we did not write, and results counted per planted
+   conflict (the runs of one spec mostly agree, so more specs help more than
+   more runs). All eight sets have been read, so the next design needs a
+   ninth held-out set, and it has to be written first.
+3. **The choice of symbols** (G1), which is where the remaining misses and
+   false alarms come from:
+   - "remove" against "keep" (found in 10 of 21 runs), and two symbols for
+     one outcome that stay unlinked (research.md 4.2, 4.3). Two prompt
+     sentences were tried and dropped (T12, T14). A real repair would have
+     the LLM judge requirements against each other, which this project
+     leaves out on purpose.
+   - two symbols for complementary conditions ("the slot is free", "the slot
+     is taken"). They give doubtful conflicts, and since step 26 also the
+     false alarms of the gap search (4 of 18 clean runs, E13). A gap could be
+     marked doubtful when the assumed facts rule its situation out, as
+     conflicts are.
 
-Three smaller candidates came out of measurements on the saved runs (T15).
-None of them is decided:
+Two small things are open after step 26 (E13):
 
-- **Gaps that say something** (G1). On `eval7/` every reported gap is "nothing
-  is happening". Looking first for gaps in which an event happens, and
-  planting gaps in the next evaluation set, would make gaps a measured part.
-- **Counting planted conflicts, not runs** (G4). The runs of one spec mostly
-  agree, so more specs help more than more runs.
-- **Size** (G2). The solver stage takes 60 s for 40 rules, and all specs so
-  far have 5 to 8. This matters before step 1, where the document gets larger.
+- **The wording of a finding that depends on a reading.** The model now names
+  the two readings correctly, but in the one report we looked at it wrote the
+  gap as if it were the ambiguity, and ended with "Which did you mean?". One
+  sentence in the wording prompt would probably settle it; it needs a run
+  with the LLM to check.
+- **Size beyond one spec.** The 30-requirement spec fell into 16 to 18
+  families of rules, which is why its solver stage took under a second. A
+  document whose rules all meet in a few symbols would still take about 30
+  seconds at that size, and more beyond it.
 
 Time ("then", "after", "until") is not planned. The model is one snapshot.
 
@@ -621,8 +631,8 @@ It is the only input of `checks.py`, so the solver stage can be re-run without a
   (`"rejected"` for a situation the rules rule out).
 - With several symbol sets every finding also has `support` ("3/5": found with 3
   of 5 sets) and `model` (which formal model its witness is written in).
-- A conflict or gap with `depends_on_reading` (a list of rule ids) is gone
-  with the other reading of those ambiguous rules. An ambiguity with two
+- A conflict or gap with `depends_on_reading` (rule id → that rule's other
+  reading, in words) is gone with the other reading of those ambiguous rules. An ambiguity with two
   readings has `other_reading`: `{"removes": [[rule ids]], "adds": [[rule ids]],
   "covers_gaps": 1}`, what its other reading changes (5.9).
 - A gap has `event` (the event that happens in it) or `quiet: true` (no event
@@ -774,8 +784,9 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
 - [x] **Step 25 — findings that depend on a reading**: each ambiguous rule is tried
       once more with its other reading (Z3 only); conflicts and gaps that are gone say
       so, each ambiguity lists what changes (5.9); measured on the saved runs (T15)
-- [~] **Step 26 — gaps that say something, and size**: `eval8/` (with planted gaps) and a
+- [x] **Step 26 — gaps that say something, and size**: `eval8/` (with planted gaps) and a
       30-requirement spec written first; a gap is looked for once for each event; conflicts
-      are searched only among rules that share symbols (D8). Run on `eval8/`: E13
+      are searched only among rules that share symbols (D8); held-out `eval8/`: planted gaps
+      0 → 18 of 18, conflicts 18 of 21, the long spec 6 of 6 (E13)
 
 Section 2 says why, and in which order.

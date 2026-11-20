@@ -36,6 +36,13 @@
 | planted | 11 | 1 | 3 | 7 |
 | other | 13 | 0 | 5 | 8 |
 
+## Gaps (default (1 symbol set))
+
+| Gap search | Planted gaps found | Clean runs with a gap on a covered event | Gaps on clean specs, with an event | Gaps on clean specs, all |
+|---|---|---|---|---|
+| over all situations (as before step 26) | 0/0 | 0/0 | 0 | 54 |
+| once for each event | 0/0 | 0/0 | 27 | 45 |
+
 ## By spec (default (1 symbol set))
 
 | Spec | Runs | Expected conflicts found | Unexpected conflicts (rules: runs) | Ambiguity flags (rule: runs) |

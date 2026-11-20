@@ -13,10 +13,11 @@ design something; from then on it is development data:
     eval5/   written 2026-11-18. Held-out in E10; development data since.
     eval6/   written 2026-11-19. Held-out in E11; development data since.
     eval7/   written 2026-11-19, after E11. Held-out in E12; development data since.
-    eval8/   written 2026-11-20, after E12 and T15. The held-out set from E13
-             on: do not tune anything on it.
+    eval8/   written 2026-11-20, after E12 and T15. Held-out in E13; development
+             data since.
     size/    written 2026-11-20 with eval8/: one spec of 30 requirements, to
              see what a larger document does. Not part of the eval8 numbers.
+             Read in E13; development data since.
 
 Each set has six small specs (new domains; half Kiro EARS, half OpenSpec), each
 in several versions. The defects are planted by rule, so the expected answer is

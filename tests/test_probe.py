@@ -265,7 +265,7 @@ def test_a_conflict_that_the_other_reading_adds_or_removes_is_named():
     formal["rules"].append(no_fine_at_20)
     findings = analyze(formal)
     (conflict,) = conflicts(findings)
-    assert conflict["depends_on_reading"] == ["L5"]
+    assert conflict["depends_on_reading"] == {"L5": "exactly 14 days"}
     assert ambiguities(findings)[0]["other_reading"]["removes"] == [["L5", "L6"]]
     assert "Conflict (depends on the reading of L5)" in render(findings, [formal], "loans")
 
@@ -291,7 +291,7 @@ def test_a_gap_that_the_other_reading_covers_is_named():
     }
     findings = analyze(formal)
     gaps = {tuple(f["when"].items()): f.get("depends_on_reading") for f in findings if f["type"] == "gap"}
-    assert gaps == {(("motion", True), ("night", False)): ["A1"], (("motion", False),): None}
+    assert gaps == {(("motion", True), ("night", False)): {"A1": "any motion"}, (("motion", False),): None}
     (ambiguity,) = ambiguities(findings)
     assert ambiguity["other_reading"] == {"removes": [], "adds": [], "covers_gaps": 1}
     assert "Gap (depends on the reading of A1)" in render(findings, [formal], "lamp")

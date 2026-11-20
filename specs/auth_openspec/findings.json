@@ -21,11 +21,16 @@
       "other": 6,
       "either": 0
     },
+    "other_reading": {
+      "removes": [],
+      "adds": [],
+      "covers_gaps": 1
+    },
     "situation": "The account is not currently in a locked state, and the number of consecutive failed login attempts for the account is 6.",
     "title": "Ambiguity in lock threshold",
-    "explanation": "Requirement R3 is unclear about whether the account should be locked when the failed attempt count is exactly 5 or when it is 5 or more. In the situation where the count is 6 and the account is not locked, the two interpretations lead to different conclusions about whether the system has failed to meet the requirement. Which did you mean?",
-    "option_a": "Keep the requirement as written, implying that the account is only required to be locked when the count is exactly 5, so a count of 6 does not necessarily trigger a lock.",
-    "option_b": "Reword R3 to state that the system locks the account when the number of failed attempts reaches or exceeds 5, ensuring that a count of 6 always results in a locked account."
+    "explanation": "Requirement R3 states that the system locks an account when the number of failed attempts reaches 5, but it is unclear if this applies only when the count is exactly 5 or whenever it is 5 or more. In the situation where an account has 6 failed attempts but is not locked, the two interpretations lead to different conclusions about whether the requirement is being met. Which did you mean?",
+    "option_a": "Keep the requirement as written, implying that the account is only required to be locked when the failed attempt count is exactly 5.",
+    "option_b": "Reword R3 to explicitly state that the system locks the account when the number of failed attempts is 5 or more."
   },
   {
     "type": "conflict",
@@ -39,9 +44,9 @@
     },
     "situation": "The account belongs to an administrator, and the number of failed attempts on the account has reached 5.",
     "title": "Administrator Account Lock Conflict",
-    "explanation": "There is a direct contradiction between the rule that locks accounts after five failed attempts and the rule that prevents administrator accounts from being locked. In the situation where an administrator's account has reached five failed attempts, the system is required to both lock the account and not lock the account, which is impossible.",
+    "explanation": "There is a direct contradiction between the rule that locks an account after five failed attempts and the rule that prevents administrator accounts from being locked. In the situation where an administrator's account has reached five failed attempts, the system is required to both lock the account and keep it unlocked, which is impossible.",
     "option_a": "Keeping the requirements as written means the system will fail to operate correctly when an administrator makes five failed login attempts, as it cannot simultaneously satisfy the locking and non-locking conditions.",
-    "option_b": "Modify R3 to explicitly exclude administrator accounts from the locking rule, or modify R5 to specify that administrators are subject to a different security measure instead of being exempt from locking."
+    "option_b": "Modify R3 to explicitly exclude administrator accounts from the locking rule, stating that the system locks the account only if the number of failed attempts reaches 5 and the account does not belong to an administrator."
   },
   {
     "type": "conflict",
@@ -70,37 +75,15 @@
       "failed_attempts_count": 6,
       "password_submitted": false
     },
+    "quiet": true,
+    "depends_on_reading": {
+      "R3": "If the number of consecutive failed login attempts for an account is at least 5, the system must place the account in a locked state."
+    },
     "situation": "The account does not belong to an administrator, the number of consecutive failed login attempts for the account is 6, and no user has submitted a password for login.",
-    "title": "Undefined state after lockout",
-    "explanation": "The requirements define what happens when the failed attempt count reaches 5 (R3) and what happens when a password is submitted to a locked account (R4). However, they do not specify the system's behavior or state when the failed attempt count is 6 and no new password is currently being submitted. This leaves a gap in the specification for the state of the account after it has already been locked.",
-    "option_a": "Keeping the requirements as written means the system's behavior in this specific state is undefined, potentially leading to inconsistent implementation or unexpected behavior.",
-    "option_b": "Add a requirement stating that once an account is locked, it remains in a locked state until an administrator manually unlocks it, regardless of the current failed attempt count."
-  },
-  {
-    "type": "gap",
-    "when": {
-      "account_is_admin": false,
-      "failed_attempts_count": 0,
-      "password_submitted": false
-    },
-    "situation": "The account does not belong to an administrator, the number of consecutive failed login attempts is 0, and no user has submitted a password for login.",
-    "title": "Undefined System Behavior",
-    "explanation": "The requirements do not specify what the system must do when a user has not submitted a password, the account is not an administrator, and there are no failed attempts. This gap appears in the situation where no password is submitted, the account is not an administrator, and the failed attempt count is zero.",
-    "option_a": "Keeping the requirements as written means the system's behavior in this specific state is undefined and not governed by any rule.",
-    "option_b": "Add a requirement stating that when no password is submitted, the system shall remain in its current state or display a login prompt."
-  },
-  {
-    "type": "gap",
-    "when": {
-      "account_is_admin": false,
-      "failed_attempts_count": -1,
-      "password_submitted": false
-    },
-    "situation": "The account does not belong to an administrator, the number of consecutive failed login attempts for the account is -1, and no user has submitted a password for login.",
-    "title": "Undefined behavior for negative attempt count",
-    "explanation": "The requirements do not specify what the system must do when the number of consecutive failed login attempts is negative. This situation arises when the account is not an administrator, the failed attempt count is -1, and no password has been submitted.",
-    "option_a": "Keeping the requirements as written means the system's behavior is undefined if the failed attempt count ever becomes negative.",
-    "option_b": "Add a requirement stating that the system must reset the failed attempt count to zero if it is ever detected to be negative."
+    "title": "Ambiguous Locking Threshold",
+    "explanation": "Requirement R3 is ambiguous regarding when an account is locked. One reading is that the system locks the account only when the number of failed attempts reaches exactly 5, while the other reading is that the system must lock the account whenever the number of failed attempts is at least 5. In the situation where the count is 6, the second reading requires the account to be locked, whereas the first reading leaves the system's state undefined because the count is no longer exactly 5. Which did you mean?",
+    "option_a": "Keep the requirement as written, implying the account is locked only when the count is exactly 5, leaving the state undefined for counts greater than 5.",
+    "option_b": "Reword R3 to state that the system locks the account when the number of failed attempts is 5 or more."
   },
   {
     "type": "scenario",
@@ -116,9 +99,9 @@
     "situation": "A user has submitted a password for login, the submitted password does not match the stored password for the account, and the system grants access to the user.",
     "surprise": 3,
     "title": "Access granted with wrong password",
-    "explanation": "The requirements allow the system to grant access even when the submitted password is incorrect. This directly defeats the purpose of password authentication, which is to ensure that only users with the correct credentials can log in.",
-    "option_a": "Keep the requirements, so the behaviour of granting access with an incorrect password remains allowed.",
-    "option_b": "Modify the requirements to explicitly state that the system SHALL deny access whenever the submitted password is incorrect, regardless of other conditions."
+    "explanation": "The requirements state that the system must deny access when a user submits an incorrect password (R2). However, the logic allows a situation where the password is incorrect, yet access is still granted. This directly defeats the purpose of password authentication and account security.",
+    "option_a": "Keep the requirements, accepting that the system might grant access even when the password is wrong.",
+    "option_b": "Add a requirement stating that the system SHALL NOT grant access unless the submitted password matches the stored password."
   },
   {
     "type": "scenario",
@@ -134,9 +117,9 @@
     "situation": "The system denies access to the user, the submitted password does not match the stored password for the account, and no user has submitted a password for login.",
     "surprise": 2,
     "title": "Denial without login attempt",
-    "explanation": "The requirements allow the system to deny access even when no password has been submitted and the password is not correct. This is odd because the login requirement (R2) specifically ties denial to the submission of an incorrect password, implying that denial should only occur in the context of a login attempt.",
-    "option_a": "Keep the requirements, allowing the system to deny access even without a password submission.",
-    "option_b": "Modify R2 to explicitly state that access is denied only when a user submits an incorrect password, ensuring denial is tied to a login attempt."
+    "explanation": "The requirements allow the system to deny access even when no password has been submitted and the password is not correct. This is odd because the login requirement (R2) only mandates denial when an incorrect password is submitted, yet the system can deny access in a state where no submission occurred, which may defeat the purpose of a clear login flow.",
+    "option_a": "Keep the requirements, so the behaviour stays allowed.",
+    "option_b": "Add a requirement that the system only denies access when a password has been submitted, to forbid denial without a login attempt."
   },
   {
     "type": "scenario",
@@ -152,8 +135,8 @@
     "situation": "The system denies access to the user, the account is not in a locked state, and no user has submitted a password for login.",
     "surprise": 2,
     "title": "Denial without login attempt",
-    "explanation": "The requirements allow the system to deny access even when no password has been submitted and the account is not locked. This is likely not intended because access denial is specified as a response to specific login events (incorrect password or locked account), not as a default state or an action taken without user interaction.",
-    "option_a": "Keep the requirements, allowing the system to deny access in states where no password was submitted and the account is not locked.",
-    "option_b": "Add a requirement stating that the system SHALL NOT deny access unless a password has been submitted or the account is locked."
+    "explanation": "The requirements state that access is denied when a user submits an incorrect password (R2) or when submitting a password for a locked account (R4). However, the logic allows for a state where access is denied even though no password was submitted and the account is not locked. This defeats the purpose of the login specification, which implies that access decisions are tied to authentication attempts or lockout status, not arbitrary denials.",
+    "option_a": "Keep the requirements, allowing the system to deny access for reasons not explicitly defined in the login or lockout scenarios.",
+    "option_b": "Add a requirement stating that the system SHALL grant access if no password has been submitted and the account is not locked, or clarify that access denial only occurs in response to a submitted password."
   }
 ]

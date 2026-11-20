@@ -1611,6 +1611,142 @@ new one, are scored on the same runs.
 
 ---
 
+## E13 — The held-out set `eval8/`, and the 30-requirement spec (2026-11-20)
+
+**Setup.** The design of step 26, frozen in D8 (commit `78f107d`). `eval8/`: 30
+spec versions, 3 runs each, 1 symbol set: 90 runs, none failed. `size/`: 4
+versions of one 30-requirement spec, 3 runs each: 12 runs, none failed. One
+server job of 31 minutes (the 90 runs took 16 minutes, the 12 long ones
+together with T16 below 13 minutes). No second reader in this session.
+
+### `eval8/`
+
+| Configuration | Planted conflicts found | direct | overlap | Clean runs with a false alarm | Unexpected conflicts | Planted ambiguities found | Flags on clean specs | Other flags |
+|---|---|---|---|---|---|---|---|---|
+| default | 18/21 | 6/9 | 12/12 | 4/18 | 37 | 20/36 | 3 | 11 |
+| doubtful conflicts set aside | 18/21 | 6/9 | 12/12 | 0/18 | 0 | 20/36 | 3 | 11 |
+| without step 6 | 18/21 | 6/9 | 12/12 | 8/18 | 56 | 13/36 | 4 | 20 |
+| translation needs 7 of 8 answers | 18/21 | 6/9 | 12/12 | 4/18 | 37 | 23/36 | 9 | 40 |
+| without assumed facts and links | 9/21 | 3/9 | 6/12 | 1/18 | 7 | 20/36 | 3 | 11 |
+
+**Conflicts.** 18 of 21, and with doubtful conflicts set aside not one
+unexpected conflict in 90 runs. All 37 unexpected conflicts were marked
+doubtful (in `tolls`, "open the barrier" when a driver pays against "close the
+barrier" when a vehicle leaves: two events). The one planted conflict that was
+missed, in 3 of 3 runs, is the "remove" against "keep" of this set:
+
+```
+C3   "WHEN a patient cancels an appointment, ... SHALL delete the appointment and free the slot."
+     appointment_cancelled => (and appointment_deleted slot_freed)              accepted
+C6   "THE Clinic System SHALL keep every appointment in the patient's record for five years."
+     (< years_since_appointment 5) => appointment_record_retained               run 1
+     true => (and appointment_in_record (<= years_since_appointment 5))         run 2
+     true => (=> (< years_since_appointment 5) appointment_in_record)           run 3
+     rejected in all three runs: its 8 translations scatter over what "for five years" is
+```
+
+C6 is reported, as a rule that has to be rewritten, but it takes no part in
+the conflict search. "Remove" against "keep" is now found in 10 of 21 runs
+(E10 to E13).
+
+**Ambiguities.** 20 of 36 with 3 flags on clean specs. By kind: "if" 8 of 9,
+"only" 8 of 9, "and"/"or" 3 of 9, a boundary 1 of 9 ("is 90 percent full",
+"one hour before the slot starts", "has been unpaid for 30 days": the model
+reads all three one way).
+
+| | and/or | boundary | if | only |
+|---|---|---|---|---|
+| default | 3/9 | 1/9 | 8/9 | 8/9 |
+| without step 6 (sampling only) | 0/9 | 2/9 | 2/9 | 9/9 |
+| translation needs 7 of 8 answers | 5/9 | 1/9 | 9/9 | 8/9 |
+
+**Gaps: the first numbers.** Both searches were scored on the same 90 runs:
+
+| Gap search | Planted gaps found | Clean runs with a gap on a covered event | Gaps on clean specs, with an event | Gaps on clean specs, all |
+|---|---|---|---|---|
+| over all situations (as before step 26) | 0/18 | 0/18 | 0 | 52 |
+| once for each event | 18/18 | 4/18 | 25 | 43 |
+
+- The search over all situations finds none of the planted gaps: its three
+  gaps are variations of "nothing is happening". Asked once for each event,
+  all 18 are found.
+- The 4 false alarms have one cause, the one that also gives doubtful
+  conflicts: two symbols for complementary conditions. In `laundry` (3 of 3
+  runs) "the slot is free" and "the slot is taken" became `slot_is_free` and
+  `slot_is_taken`, and the gap is "a resident books a slot that is neither
+  free nor taken"; in `donations` (1 of 3) the same with "the payment
+  succeeds" and "the payment fails".
+- The other 21 gaps with an event on clean specs are cases the specs really
+  leave open. 12 are counted events ("a card payment is declined, and it is
+  not the third time"). 3 are "the first day of a month begins, and the
+  supporter has no monthly donation". 6 are cases a reviewer would ask about,
+  which we had left out without noticing: cancelling a booking one hour or
+  less before the slot (`laundry`), and scanning a voucher that was already
+  used (`recycling`).
+
+**Ambiguity flags and the other reading** (T15's table on this set): of 20
+flags with two readings, none changes a conflict, 11 a gap (10 of them on
+planted rules), 9 nothing. More flags change a gap than in T15, because gaps
+with an event exist now.
+
+### `size/`: one spec of 30 requirements
+
+| | Result |
+|---|---|
+| read step | all 12 runs list the right number of requirements (30, 31 or 29), with 66 to 69 symbols, 18 of them events |
+| planted conflicts | 6 of 6: the direct one from the rules alone, the overlap with an assumed fact |
+| clean spec | no conflict in 3 of 3 runs with doubtful ones set aside (one doubtful conflict in each run) |
+| planted gap | 3 of 3 (0 of 3 with the search over all situations) |
+| gaps on the clean spec | only the one with no event (9 gaps with the old search) |
+| ambiguity flags on the clean spec | 7 in 3 runs, rejected rules included |
+| solver stage, for one model | 26 to 34 s with the code before step 26, 0.4 to 0.9 s after |
+
+The speed-up was not expected for one document about one subject. The 30
+requirements fall into 16 to 18 families: booking, the barrier, the power
+posts, the showers and the bill hardly share a symbol. One spec in one domain
+is thin evidence; a document whose rules all meet in a few symbols would
+still take the 30 seconds.
+
+### T16: the development specs, 3 runs each
+
+`order`: both conflicts in 3 of 3. `delete_property`: the blog's conflict in 3
+of 3. `auth_openspec`: 3 of 3 and 2 of 3. No unexpected conflict with doubtful
+ones set aside.
+
+### The wording of the new marks
+
+The three saved formal models in `specs/` were worded again with the current
+checks (two server jobs of two minutes each), and the reports in `specs/` are
+now these.
+
+- *"No event happens."* The title says "Gap (no event happens)", and the model
+  writes the gap as before ("... when no order has been submitted, canceled,
+  or refunded").
+- *"Depends on the reading of R3"*, first try. The fact sheet said only "R3 is
+  ambiguous, and with its other reading a requirement applies". The model
+  mentioned the dependence but made up what the two readings are ("whether
+  the lock is a one-time event or a persistent state").
+- *Second try.* The fact sheet now quotes the other reading
+  (`depends_on_reading` holds it for each rule). The model then names both
+  readings correctly ("exactly 5" and "at least 5"). But it wrote the gap as
+  if it were the ambiguity: the title became "Ambiguous Locking Threshold"
+  and the paragraph ends with "Which did you mean?", which the prompt allows
+  for ambiguities only.
+
+One report, one sample. The wording prompt was not changed; a sentence for
+this case is the obvious next thing to try, on the development specs.
+
+**Raw data.** [experiments/results/E13_eval8.json](experiments/results/E13_eval8.json),
+[E13_size.json](experiments/results/E13_size.json),
+[T16_specs.json](experiments/results/T16_specs.json), each with its table (`.md`).
+`eval8/` and `size/` have now been read: they are development data. The tables
+of E7 to E12 were written again and now hold the gap table for their set; in
+all of `eval3/` to `eval7/` the search over all situations returned no gap
+with an event. T15's table in them now counts the gaps of the new search, so
+a few flags moved from "nothing" to "only a gap".
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

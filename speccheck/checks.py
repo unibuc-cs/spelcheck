@@ -200,7 +200,9 @@ def _try_other_readings(vocab: Vocabulary, decided: list[dict], rules: list[Rule
     to say (they are changed in place):
 
         conflict["depends_on_reading"]   the ambiguous rules with whose other
-        gap["depends_on_reading"]        reading this finding is gone
+        gap["depends_on_reading"]        reading this finding is gone, each with
+                                         that other reading in words:
+                                         {"R3": "lock at 5 or more failed attempts"}
         ambiguity["other_reading"]       what the rule's other reading changes:
             {"removes": [[rule ids], ...],   conflicts that are gone
              "adds": [[rule ids], ...],      conflicts that appear
@@ -230,7 +232,7 @@ def _try_other_readings(vocab: Vocabulary, decided: list[dict], rules: list[Rule
                  for conflict in find_conflicts(vocab, variant, facts, max_group)}
         for conflict in conflicts:
             if frozenset(conflict["rules"]) not in found:
-                conflict.setdefault("depends_on_reading", []).append(rule["id"])
+                conflict.setdefault("depends_on_reading", {})[rule["id"]] = other.get("reading", "")
 
         # A gap stays a gap when, in its situation, still no conditional rule
         # can apply (rules that always apply do not count, as in find_gaps).
@@ -240,7 +242,7 @@ def _try_other_readings(vocab: Vocabulary, decided: list[dict], rules: list[Rule
                    if not conditions
                    or not vocab.impossible(vocab.assignment(gap["when"]) + [z3.Or(conditions)])]
         for gap in covered:
-            gap.setdefault("depends_on_reading", []).append(rule["id"])
+            gap.setdefault("depends_on_reading", {})[rule["id"]] = other.get("reading", "")
 
         finding_of[rule["id"]]["other_reading"] = {
             "removes": in_document_order(reported - found),

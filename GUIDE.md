@@ -62,7 +62,7 @@ of the code, deals with one question: can we trust the translation, and when
 we cannot, do we say so clearly?
 
 To give an idea of the size: about 2,400 lines of Python, half of them comments
-and prompts, one local model (Qwen, 27B), and results measured on 171 versions
+and prompts, one local model (Qwen, 27B), and results measured on 201 versions
 of small specs. The results are in part 5.
 
 ---
@@ -262,7 +262,7 @@ choices: keep the text as it is, or make one specific change.
 > R3 explicitly forbids the system from placing any order on backorder.
 >
 > - **A) Keep as-is:** [...]
-> - **B) Change:** Remove R3 or modify it [...]
+> - **B) Change:** Remove R3 entirely, or modify R3 [...]
 >
 > *Proven:* Requirements R2, R3 cannot all be obeyed in this situation:
 > - FALSE: inventory_available
@@ -390,16 +390,16 @@ Whichever way finds it, the report does not give a verdict. It asks a question
 
 > **1. Ambiguity: Ambiguity in lock threshold**
 >
-> Requirement R3 is unclear about whether the account should be locked when
-> the failed attempt count is exactly 5 or when it is 5 or more. [...] Which
-> did you mean?
+> Requirement R3 states that the system locks an account when the number of
+> failed attempts reaches 5, but it is unclear if this applies only when the
+> count is exactly 5 or whenever it is 5 or more. [...] Which did you mean?
 
 One consequence is easy to overlook. Until the author answers, the checks go
 on with reading A, so some of the other findings may exist only because of
 that choice. The solver therefore tries each ambiguous rule once more with
 its other reading. In this spec the report has a gap at "6 failed attempts, no
 password submitted". With reading B, R3 applies there and the gap is gone, so
-the gap is reported as "Gap (depends on the reading of R3)". The ambiguity
+the title of that gap ends with "depends on the reading of R3". The ambiguity
 itself lists what its other reading changes, and the ambiguities that change
 something are shown first.
 
@@ -620,12 +620,14 @@ It is tempting to tune the prompts until the test specs come out right, and
 then the result means nothing. So each set of specs is written before a design
 change and used once, like an exam. After its results have been read it only
 counts as practice material, and the next change needs a new set. That is why
-there are seven sets, `eval` to `eval7`: seven rounds, each with a fresh exam.
+there are eight sets, `eval` to `eval8`: eight rounds, each with a fresh exam.
+The last one also has planted gaps: one of two complementary requirements is
+removed, so that nothing says what to do in the other case.
 
 ### 5.2 The results
 
 ```
-planted conflicts found, on 7 sets the design had not seen
+planted conflicts found, on 8 sets the design had not seen
 
 eval    44/48   ██████████████████░░   92%
 eval2   31/36   █████████████████░░░   86%
@@ -634,6 +636,7 @@ eval4   21/21   ████████████████████  10
 eval5   11/18   ████████████░░░░░░░░   61%
 eval6   15/18   █████████████████░░░   83%
 eval7   13/18   ██████████████░░░░░░   72%
+eval8   18/21   █████████████████░░░   86%
 ```
 
 | Question | Answer |
@@ -642,9 +645,11 @@ eval7   13/18   ██████████████░░░░░░   7
 | Kiro's second example (`delete_property`) | found in 3 of the last 3 runs. It was the hard one: 1 of 40 before links existed, and it broke twice after changes to the prompts |
 | planted conflicts | 61% to 100% found (the chart above) |
 | false alarms | at most 1 in 18 clean runs, when doubtful conflicts are set aside |
-| planted ambiguities, one model | about half (14 to 19 of 36) |
+| planted ambiguities, one model | about half (14 to 20 of 36) |
 | planted ambiguities, with the second model | 30 and 32 of 36, at the price of up to one extra question per spec |
-| how much assumed facts and links matter | a great deal: without them `eval7` gives 3 of 18, with them 13 |
+| how much assumed facts and links matter | a great deal: without them `eval8` gives 9 of 21, with them 18 |
+| planted gaps (measured on `eval8` only) | 18 of 18 found, now that the question is asked once for each event; before, 0 of 18. In 4 of 18 clean runs a gap was reported that is not one |
+| a spec of 30 requirements | 6 of 6 planted conflicts, none on the clean version, under a second in the solver stage. One spec only |
 
 ### 5.3 The goals
 
@@ -662,7 +667,7 @@ The project has five goals. This is where each one stands:
 
 | Limit | Example |
 |---|---|
-| "remove" against "keep" is missed in about half of the cases | "delete the listing" against "keep every listing for seven years": the second becomes a number, `retention_years = 7`, and nothing clashes with "deleted". This is the main cause of missed conflicts |
+| "remove" against "keep" is missed in about half of the cases (found in 10 of 21 runs) | "delete the listing" against "keep every listing for seven years": the second becomes a number, `retention_years = 7`, and nothing clashes with "deleted". This is the main cause of missed conflicts |
 | one model finds only half of the ambiguities | it is confident where a person would stop and ask |
 | a fact or a link can be wrong, even with a majority behind it | which is why the report quotes every one that a conflict depends on |
 | there is no time | "then", "after" and "until" are not modelled: the logic is one snapshot |
@@ -686,8 +691,8 @@ The full list is in research.md, section 5.
 1. **Check a change against the specs that already exist.** A real OpenSpec
    project has existing specs and a change on top of them. This is the
    recommended next step, and it was postponed on purpose.
-2. **A larger evaluation**, with more runs and another main model. All seven
-   sets have been used, so an eighth has to be written first.
+2. **A larger evaluation**, with another main model and specs we did not
+   write. All eight sets have been used, so a ninth has to be written first.
 3. **The choice of symbols**, which is where the remaining misses come from.
 
 ---
@@ -743,7 +748,7 @@ speccheck/          the tool (the 7 files above; refine.py is the review that is
 specs/              3 small specs the prompts were developed on, with their saved output
 tests/              42 tests that need no LLM
 experiments/
-  sets/             the 7 evaluation sets, eval to eval7 (171 spec versions)
+  sets/             the 8 evaluation sets, eval to eval8 (201 spec versions), and one long spec
   results/          every experiment: the raw data (.json) and its tables (.md)
   examples/         saved runs that the documents quote
   evaluate.py       runs the pipeline on a set and scores it
