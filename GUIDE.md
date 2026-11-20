@@ -1,14 +1,10 @@
 # speccheck: a guided tour
 
-If you are new to this project, start here. The README is dense. This guide
-goes through the same ideas slowly, one at a time, and every idea starts from
-an example. It takes about half an hour, and at the end it tells you what to
-open next.
 
 | Part | What it covers |
 |---|---|
 | [0](#0-the-whole-project-on-one-screen) | the whole project on one screen |
-| [1](#1-two-things-to-learn-first) | how to read a formula, and what the Z3 solver does |
+| [1](#1-background) | how to read a formula, and what the Z3 solver does |
 | [2](#2-the-basic-pipeline-on-one-small-spec) | the basic pipeline, followed on a spec of five rules |
 | [3](#3-four-ways-the-translation-goes-wrong-and-the-four-repairs) | the four things that go wrong, and the repair for each |
 | [4](#4-how-sure-is-a-finding) | how much to trust a finding |
@@ -49,11 +45,11 @@ flowchart LR
 
 Three parties are at work, and it helps to keep them apart:
 
-| Who | What it does | Can it be wrong? |
-|---|---|---|
-| the LLM | translates the text into logic (stage 1) and puts the results into words (stage 3) | yes |
+| Who | What it does | Can it be wrong?                        |
+|---|---|-----------------------------------------|
+| the LLM | translates the text into logic (stage 1) and puts the results into words (stage 3) | yes                                     |
 | Z3, the solver | proves every conflict, gap and scenario (stage 2) | no, not about the formulas it was given |
-| our Python code | decides which questions Z3 is asked, and does the counting and voting | it is ordinary code, with 42 tests |
+| our Python code | decides which questions Z3 is asked, and does the counting and voting | code with tests, not formally proven :) |
 
 That table holds the main idea of the whole project. Z3 never makes a mistake
 about the formulas it is given, but those formulas were written by a language
@@ -61,16 +57,13 @@ model, and a language model does make mistakes. So most of the work, and most
 of the code, deals with one question: can we trust the translation, and when
 we cannot, do we say so clearly?
 
-To give an idea of the size: about 2,400 lines of Python, half of them comments
-and prompts, one local model (Qwen, 27B), and results measured on 201 versions
+To give an idea of the size: about 2,400 lines of Python now, half of them comments
+and prompts, one local model (Qwen3.8, 27B), and results measured on 201 versions
 of small specs. The results are in part 5.
 
 ---
 
-## 1. Two things to learn first
-
-Everything later is written in formulas, and talks about what the solver
-"proves". Both are simple once you have seen them, so we start there.
+## 1. Background
 
 ### 1.1 How to read a formula
 
@@ -610,6 +603,25 @@ experiments/sets/eval4/lockers_overlap     one rule added: "WHEN the locker is i
 experiments/sets/eval4/lockers_ambiguity1  rule 5 reworded from "for more than 72 hours"
                                            to "is still in its compartment after 72 hours"
 ```
+
+Each set has six such specs, in domains no earlier set used: `eval4` has
+lockers, an elevator, irrigation, attendance, printing and delivery. Half are
+written in Kiro's EARS style and half in the OpenSpec style. Every spec comes
+in three to five versions. A version is the clean spec with one change:
+
+| Version | What is changed | What the tool must report |
+|---|---|---|
+| `clean` | nothing | no conflict |
+| `direct` | one rule added that plainly contradicts an existing one | that conflict |
+| `overlap` | one rule added that clashes with an existing one only when both conditions hold | that conflict |
+| `ambiguity1`, `ambiguity2` | one rule reworded so that it has two readings | that rule, as ambiguous |
+| `gap` (only in `eval8`) | one of two complementary rules removed | a gap for the case left open |
+
+Each version is a folder with two files: `spec.md`, which the tool reads, and
+`expected.json`, which holds the answer. For `lockers_overlap` it says
+`{"conflicts": [[1, 6], [3, 6]]}`; the numbers are positions of rules in the
+document. That makes 21 to 30 folders per set, and 201 in the eight sets
+together.
 
 A conflict reported on a clean spec is a *false alarm*. And because the model
 answers a little differently each time, every spec is run three times, and all
