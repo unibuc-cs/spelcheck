@@ -268,9 +268,11 @@ def formalize(llm: LLM, spec_text: str, samples: int = 8, temperature: float = 0
     vocab = Vocabulary(symbols)
     shown = _symbol_list(symbols)
 
-    # Steps 2 and 4 ask the LLM. Everything is sent at once; the server batches
-    # the calls across its GPUs. The facts question sees only the symbols, not
-    # the requirements, so that it cannot simply repeat a requirement as a "fact".
+    # Steps 2 and 4 ask the LLM. Each call asks for `samples` (8) answers. The
+    # threads only wait for replies, so that up to 16 requests (128 answers, the
+    # server's --max-num-seqs) are open at once; the server writes them together
+    # on its GPUs. The facts question sees only the symbols, not the
+    # requirements, so that it cannot simply repeat a requirement as a "fact".
     with ThreadPoolExecutor(max_workers=16) as pool:
         fact_call = pool.submit(llm.ask, FACTS_SYSTEM, f"Symbols:\n{shown}",
                                 FACTS_SCHEMA, samples, temperature)
