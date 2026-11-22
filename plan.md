@@ -88,6 +88,21 @@ Two small things are open after step 26 (E13):
   has a window of only 6144 tokens, which a long symbol list may already
   exceed.
 
+Being run now (2026-11-22, step 27 and 28 in the TODO):
+
+- **A spec of 100 requirements** (`experiments/sets/size2`, E14): does the
+  read step fit in its new limit, and what happens to the findings and the
+  time at that size?
+- **The temperature of the 8 answers** (T17). Every sample in the pipeline
+  (translations, fact lists, links, questions) is drawn at 0.7, a value that
+  was only ever compared with 1.0 (E1). T17 runs `eval8/` at 0.3 and 0.5, and
+  at 0.7 again on the same day, with one symbol set, and compares the ablation
+  tables. A lower temperature makes the 8 answers more alike: fewer flags on
+  clear rules, but also fewer real ambiguities found, and perhaps fewer
+  facts and links. `eval8/` is development data, so a value that looks
+  better is adopted only after a held-out `eval9/`, written first. The read
+  step's 0.7 for extra symbol sets (`SET_TEMPERATURE`) is not part of T17.
+
 Time ("then", "after", "until") is not planned. The model is one snapshot.
 
 ---
@@ -800,6 +815,10 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       30-requirement spec written first; a gap is looked for once for each event; conflicts
       are searched only among rules that share symbols (D8); held-out `eval8/`: planted gaps
       0 → 18 of 18, conflicts 18 of 21, the long spec 6 of 6 (E13)
+- [~] **Step 27 — long documents**: read answer limit 8192 → 24576 tokens; a
+      100-requirement spec (`size2/`) written first; run E14
+- [~] **Step 28 — the temperature of the samples**: `evaluate.py --temperature`;
+      T17 on `eval8/` at 0.3, 0.5 and 0.7, with ablation tables
 - [x] **Documentation pass 2**: GUIDE.md reviewed point by point and rewritten (a new
       2.4 on gaps and scenarios; the ambiguity check, voted facts and links as steps on
       one real example), then shortened from 1112 to 893 lines; README.md reworded in the

@@ -6,7 +6,9 @@
 
 The first form asks the LLM. Every spec folder under --specs is formalized
 `--runs` times; each run makes `--symbol-sets` formal models of the spec (the
-first with the usual symbols, the others with varied ones). Everything is
+first with the usual symbols, the others with varied ones). `--temperature`
+is the variety of the 8 answers per rule, fact list, link and question
+(default 0.7); the read step of the first symbol set stays at 0. Everything is
 saved to experiments/results/<name>.json: the formal models with all raw answers, the
 expected findings and the prompts.
 
@@ -91,18 +93,19 @@ SECOND_SAMPLES = 8
 def one_run(job: tuple) -> dict:
     """Formalize one spec once, with several symbol sets.
 
-    job = (base_url, spec_text, symbol_sets).
+    job = (base_url, spec_text, symbol_sets, temperature).
     Returns {"models": [...]} or {"error": ...}. Runs in a worker process.
     """
-    base_url, spec_text, symbol_sets = job
+    base_url, spec_text, symbol_sets, temperature = job
     try:
         # keep_samples: the raw LLM answers are saved too, for later study.
-        return {"models": formalize_sets(LLM(base_url), spec_text, symbol_sets, keep_samples=True)}
+        return {"models": formalize_sets(LLM(base_url), spec_text, symbol_sets,
+                                         temperature=temperature, keep_samples=True)}
     except Exception as error:  # a failed run is a result too, not a reason to stop the batch
         return {"error": str(error)}
 
 
-def collect(base_url: str, specs_root: Path, runs: int, symbol_sets: int) -> dict:
+def collect(base_url: str, specs_root: Path, runs: int, symbol_sets: int, temperature: float) -> dict:
     """Ask the LLM: formalize every spec under `specs_root`, `runs` times."""
     llm = LLM(base_url)
     specs = {}
@@ -114,12 +117,14 @@ def collect(base_url: str, specs_root: Path, runs: int, symbol_sets: int) -> dic
 
     jobs = [name for name in specs for _ in range(runs)]
     with ProcessPoolExecutor(max_workers=32) as pool:
-        results = list(pool.map(one_run, [(base_url, specs[name]["text"], symbol_sets) for name in jobs]))
+        results = list(pool.map(one_run, [(base_url, specs[name]["text"], symbol_sets, temperature)
+                                          for name in jobs]))
     return {
         "model": llm.model,
         "date": datetime.now().isoformat(timespec="seconds"),
         "runs_per_spec": runs,
         "symbol_sets": symbol_sets,
+        "temperature": temperature,
         # The exact prompts, so the experiment can be understood after they change.
         "prompts": {"read": formalize_module.READ_SYSTEM,
                     "formalize": formalize_module.FORMALIZE_SYSTEM,
@@ -391,8 +396,9 @@ def tables(data: dict) -> str:
 
     failed = len(data["runs"]) - len(ok_runs)
     return "\n".join([
+        # Files written before the option existed were all made at 0.7.
         f"# Evaluation ({data['runs_per_spec']} runs per spec, {data['symbol_sets']} symbol sets per run, "
-        f"model {data['model']}, {data['date']})",
+        f"temperature {data.get('temperature', 0.7)}, model {data['model']}, {data['date']})",
         "",
         f"{len(data['specs'])} specs, {len(ok_runs)} runs scored" + (f", {failed} failed" if failed else "")
         + (f"; second reader: {data['second_model']}" if "second_model" in data else "") + ".",
@@ -422,6 +428,8 @@ def main() -> None:
     parser.add_argument("--specs", type=Path, default=Path("experiments/sets/eval7"), help="folder with one sub-folder per spec")
     parser.add_argument("--runs", type=int, default=3, help="repetitions per spec")
     parser.add_argument("--symbol-sets", type=int, default=3, help="formal models made per run")
+    parser.add_argument("--temperature", type=float, default=0.7,
+                        help="variety of the 8 answers per rule, fact list, link and question")
     parser.add_argument("--name", default="evaluation", help="output name: experiments/results/<name>.json and .md")
     parser.add_argument("--rescore", type=Path, help="score the runs saved in this .json again (no LLM)")
     parser.add_argument("--second-base-url", help="with --rescore: add step 7 with the second model at this server")
@@ -436,7 +444,7 @@ def main() -> None:
             raw_file.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     elif args.base_url:
         raw_file = Path("experiments/results") / f"{args.name}.json"
-        data = collect(args.base_url, args.specs, args.runs, args.symbol_sets)
+        data = collect(args.base_url, args.specs, args.runs, args.symbol_sets, args.temperature)
         raw_file.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     else:
         parser.error("give --base-url (to run the evaluation) or --rescore (to score saved runs)")
