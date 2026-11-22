@@ -61,7 +61,7 @@ There are three candidates, in this order. The first is the one we recommend.
 3. **The choice of symbols** (G1), which is where the remaining misses and
    false alarms come from:
    - "remove" against "keep" (found in 10 of 21 runs), and two symbols for
-     one outcome that stay unlinked (research.md 4.2, 4.3). Two prompt
+     one outcome that stay unlinked (research.md 4.2). Two prompt
      sentences were tried and dropped (T12, T14). A real repair would have
      the LLM judge requirements against each other, which this project
      leaves out on purpose.
@@ -270,7 +270,7 @@ Each rule *i* is `A_i => C_i` (antecedent, consequent).
   rules and the facts. They cannot contradict each other, so forcing them to
   apply together could only find again what each shows alone. In a document
   about one subject this changes nothing; in a document made of unrelated
-  parts it saves most of the work (research.md 3.10)
+  parts it saves most of the work (research.md 3.11)
 
 **Doubtful**: two marks. A marked conflict stays in the report.
 
