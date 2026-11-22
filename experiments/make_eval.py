@@ -1141,7 +1141,7 @@ SPECS8 = {
 }
 
 # A set of its own (size), written on 2026-11-20 together with eval8: one spec
-# of 30 requirements. All specs so far have 5 to 8. It shows what a larger
+# of 30 requirements. All specs so far have 4 to 6. It shows what a larger
 # document does to the read step, to the solver stage and to the findings; it
 # is not part of the eval8 numbers.
 SPECS_SIZE = {
@@ -1191,9 +1191,144 @@ SPECS_SIZE = {
     },
 }
 
+# A second set for size (size2), written on 2026-11-22 before the run that
+# tests the larger answer limit of the read step (READ_MAX_TOKENS 8192 ->
+# 24576): one spec of 100 requirements, a ferry line. The read answer for 30
+# requirements was about 4,000 to 5,000 tokens, so 100 requirements do not fit
+# in 8192. The versions are those of `size`: clean, a direct conflict, an
+# overlap conflict, a gap. The 20 events in "covered" have both of their cases
+# written, so a gap for one of them on the clean spec is a false gap.
+SPECS_SIZE2 = {
+    "ferry": {
+        "format": "ears",
+        "intro": "As a passenger of the ferry line, I want to book crossings, bring my vehicle and my pet, and use the services on board, so that my journey runs smoothly.",
+        "rules": [
+            # booking (1-13)
+            "WHEN a passenger requests a crossing AND seats are available on the chosen sailing, THE Ferry System SHALL reserve a seat for the passenger.",
+            "WHEN a passenger requests a crossing AND seats are not available on the chosen sailing, THE Ferry System SHALL offer the next sailing with available seats.",
+            "WHEN a passenger pays for a reserved seat, THE Ferry System SHALL send an e-ticket by email.",
+            "WHEN a reserved seat has been unpaid for more than 30 minutes, THE Ferry System SHALL release the seat.",
+            "WHEN a passenger cancels a ticket more than 24 hours before departure, THE Ferry System SHALL refund the full fare.",
+            "WHEN a passenger cancels a ticket 24 hours or less before departure, THE Ferry System SHALL refund half of the fare.",
+            "WHEN a passenger moves a ticket to another sailing AND seats are available on the new sailing, THE Ferry System SHALL change the ticket to the new sailing.",
+            "WHEN a passenger moves a ticket to another sailing AND seats are not available on the new sailing, THE Ferry System SHALL leave the ticket on its sailing and show a message.",
+            "WHEN a passenger asks for a printed ticket at the port office, THE Ferry System SHALL print the ticket.",
+            "WHEN a passenger books a crossing for a child under 4 years, THE Ferry System SHALL issue a free child ticket.",
+            "WHEN a group booking of more than 10 passengers is paid, THE Ferry System SHALL apply a group discount of 10 percent.",
+            "WHEN a passenger enters a discount code AND the code is valid, THE Ferry System SHALL reduce the fare by the amount of the code.",
+            "WHEN a passenger enters a discount code AND the code is not valid, THE Ferry System SHALL show an error message.",
+            # vehicles (14-25)
+            "WHEN a passenger adds a vehicle to a booking AND space is available on the car deck, THE Ferry System SHALL reserve a vehicle space.",
+            "WHEN a passenger adds a vehicle to a booking AND space is not available on the car deck, THE Ferry System SHALL put the vehicle on the waiting list.",
+            "WHEN a passenger adds a vehicle that is taller than 2 metres, THE Ferry System SHALL charge the high-vehicle fare.",
+            "WHEN a vehicle arrives at the check-in lane AND its number plate matches a booking, THE Ferry System SHALL assign the vehicle to a boarding lane.",
+            "WHEN a vehicle arrives at the check-in lane AND its number plate does not match a booking, THE Ferry System SHALL send the driver to the port office.",
+            "WHEN a vehicle is assigned to a boarding lane, THE Ferry System SHALL print a lane card for the driver.",
+            "WHEN a driver declares dangerous goods at check-in, THE Ferry System SHALL notify the officer of the watch.",
+            "WHEN a booked vehicle has not checked in 30 minutes before departure, THE Ferry System SHALL release its vehicle space.",
+            "WHEN a vehicle space is released AND a vehicle is on the waiting list, THE Ferry System SHALL offer the space to the first vehicle on the waiting list.",
+            "WHEN a vehicle space is released AND no vehicle is on the waiting list, THE Ferry System SHALL return the space to open sale.",
+            "WHEN loading of the car deck begins, THE Ferry System SHALL call the boarding lanes in the order of check-in.",
+            "WHEN a vehicle is unloaded at the arrival port, THE Ferry System SHALL mark the vehicle booking as completed.",
+            # foot passengers (26-33)
+            "WHEN a passenger scans an e-ticket at the gate AND the ticket is valid for the next sailing, THE Ferry System SHALL open the gate.",
+            "WHEN a passenger scans an e-ticket at the gate AND the ticket is not valid for the next sailing, THE Ferry System SHALL keep the gate closed and show the sailing the ticket is valid for.",
+            "WHEN boarding of foot passengers begins, THE Ferry System SHALL announce the boarding in the terminal.",
+            "WHEN boarding closes, THE Ferry System SHALL send the number of boarded passengers to the captain.",
+            "WHEN boarding closes AND a ticket holder has not boarded, THE Ferry System SHALL mark the ticket as a no-show.",
+            "WHEN a passenger requests boarding assistance while booking, THE Ferry System SHALL book a wheelchair escort for the sailing.",
+            "WHEN a passenger with booked assistance arrives at the terminal, THE Ferry System SHALL notify the assistance team.",
+            "WHEN a passenger with priority boarding arrives at the terminal, THE Ferry System SHALL direct the passenger to the priority lane.",
+            # cabins (34-42)
+            "WHEN a passenger books a cabin AND a cabin of the requested class is available, THE Ferry System SHALL reserve the cabin.",
+            "WHEN a passenger books a cabin AND a cabin of the requested class is not available, THE Ferry System SHALL offer a cabin of another class.",
+            "WHEN a passenger with a cabin booking boards the ship, THE Ferry System SHALL send the cabin number and the door code by text message.",
+            "WHEN a passenger enters a door code at a cabin AND the code is correct, THE Ferry System SHALL unlock the cabin door.",
+            "WHEN a passenger enters a door code at a cabin AND the code is not correct, THE Ferry System SHALL keep the cabin door locked.",
+            "WHEN a passenger reports a fault in a cabin, THE Ferry System SHALL create a task for the housekeeping team.",
+            "WHEN a housekeeping task has been open for more than 2 hours, THE Ferry System SHALL alert the purser.",
+            "WHEN the ship is 30 minutes from the arrival port, THE Ferry System SHALL remind the cabin passengers to leave their cabins.",
+            "WHEN a passenger orders a wake-up call, THE Ferry System SHALL ring the cabin phone at the requested time.",
+            # restaurant and shop (43-56)
+            "WHEN a passenger orders a meal in the restaurant AND the meal is in stock, THE Ferry System SHALL send the order to the kitchen.",
+            "WHEN a passenger orders a meal in the restaurant AND the meal is not in stock, THE Ferry System SHALL show the dishes that are in stock.",
+            "WHEN the kitchen marks an order as ready, THE Ferry System SHALL show the order number on the restaurant screen.",
+            "WHEN a passenger reserves a restaurant table AND a table is free at the requested time, THE Ferry System SHALL confirm the reservation.",
+            "WHEN a passenger reserves a restaurant table AND no table is free at the requested time, THE Ferry System SHALL offer the nearest time with a free table.",
+            "WHEN a passenger charges a shop purchase to the cabin, THE Ferry System SHALL add the amount to the cabin bill.",
+            "WHEN a passenger pays in the shop by bank card AND the payment is approved, THE Ferry System SHALL print a receipt.",
+            "WHEN a passenger pays in the shop by bank card AND the payment is not approved, THE Ferry System SHALL cancel the sale and show a message.",
+            "WHEN a passenger buys alcohol in the shop, THE Ferry System SHALL ask the cashier to check the passenger's age.",
+            "WHEN the ship enters the waters of the arrival country, THE Ferry System SHALL switch the shop prices to the tax rate of the arrival country.",
+            "WHEN the stock of a product in the shop falls below 5 units, THE Ferry System SHALL add the product to the restocking list.",
+            "WHEN the shop closes, THE Ferry System SHALL send the day's sales to the head office.",
+            "WHEN a passenger orders room service AND the passenger has a cabin, THE Ferry System SHALL deliver the order to the cabin.",
+            "WHEN a passenger orders room service AND the passenger does not have a cabin, THE Ferry System SHALL refuse the order and suggest the restaurant.",
+            # Wi-Fi and entertainment (57-65)
+            "WHEN a passenger connects to the onboard Wi-Fi, THE Ferry System SHALL show the login page.",
+            "WHEN a passenger buys a Wi-Fi pass, THE Ferry System SHALL send the pass code by text message.",
+            "WHEN a passenger logs in to the Wi-Fi AND the passenger has a valid Wi-Fi pass, THE Ferry System SHALL give internet access until the end of the crossing.",
+            "WHEN a passenger logs in to the Wi-Fi AND the passenger does not have a valid Wi-Fi pass, THE Ferry System SHALL offer a free 15-minute session.",
+            "WHEN a passenger books a cinema seat AND seats are left for the film, THE Ferry System SHALL reserve the cinema seat.",
+            "WHEN a passenger books a cinema seat AND no seats are left for the film, THE Ferry System SHALL show the next showing of the film.",
+            "WHEN a film is 10 minutes from its start, THE Ferry System SHALL announce the film on the cabin screens.",
+            "WHEN a parent registers a child for the kids' club, THE Ferry System SHALL give the parent a pager.",
+            "WHEN the kids' club calls a parent, THE Ferry System SHALL make the parent's pager vibrate.",
+            # pets (66-71)
+            "WHEN a passenger adds a pet to a booking AND a kennel is available, THE Ferry System SHALL reserve a kennel.",
+            "WHEN a passenger adds a pet to a booking AND a kennel is not available, THE Ferry System SHALL offer a pet-friendly cabin.",
+            "WHEN a passenger adds a pet to a booking, THE Ferry System SHALL add the pet fee to the fare.",
+            "WHEN a passenger with a pet checks in AND the pet's vaccination record is valid, THE Ferry System SHALL issue a pet tag.",
+            "WHEN a passenger with a pet checks in AND the pet's vaccination record is not valid, THE Ferry System SHALL refuse the pet and notify the port office.",
+            "WHEN the ship has docked at the arrival port, THE Ferry System SHALL tell the passengers with kennels that they can collect their pets.",
+            # weather and delays (72-78)
+            "WHEN the weather service issues a storm warning for a route, THE Ferry System SHALL notify the operations manager.",
+            "WHEN the operator cancels a sailing, THE Ferry System SHALL notify all booked passengers by text message.",
+            "WHEN the operator cancels a sailing, THE Ferry System SHALL offer every booked passenger a free rebooking or a full refund.",
+            "WHEN a sailing is delayed by more than 60 minutes, THE Ferry System SHALL give each passenger a meal voucher.",
+            "WHEN a sailing is delayed by more than 120 minutes, THE Ferry System SHALL give each passenger a travel voucher worth 25 percent of the fare.",
+            "WHEN a delay of a sailing is announced, THE Ferry System SHALL update the departure board.",
+            "WHEN a passenger asks for a delay certificate, THE Ferry System SHALL email a certificate that states the delay.",
+            # accounts and loyalty (79-88)
+            "WHEN a customer creates an account, THE Ferry System SHALL send a welcome email.",
+            "WHEN a customer with an account completes a crossing, THE Ferry System SHALL add loyalty points for the fare paid.",
+            "WHEN a customer completes the tenth crossing of a calendar year, THE Ferry System SHALL upgrade the customer to silver status.",
+            "WHEN a silver customer books a crossing, THE Ferry System SHALL give the customer priority boarding.",
+            "WHEN a customer pays with loyalty points AND the points cover the fare, THE Ferry System SHALL take the points and issue the ticket.",
+            "WHEN a customer pays with loyalty points AND the points do not cover the fare, THE Ferry System SHALL ask the customer to pay the difference by card.",
+            "WHEN a customer changes the email address of the account, THE Ferry System SHALL send a confirmation link to the new address.",
+            "WHEN a customer enters a wrong password for the third time in a row, THE Ferry System SHALL lock the account for 15 minutes.",
+            "WHEN a customer subscribes to the newsletter, THE Ferry System SHALL send a confirmation email.",
+            "WHEN a customer unsubscribes from the newsletter, THE Ferry System SHALL confirm the unsubscription by email.",
+            # lost property, safety, crew (89-96)
+            "WHEN a crew member registers a found item, THE Ferry System SHALL record the description of the item and the sailing.",
+            "WHEN a passenger reports a lost item AND a matching found item is registered, THE Ferry System SHALL tell the passenger where to collect it.",
+            "WHEN a passenger reports a lost item AND no matching found item is registered, THE Ferry System SHALL record the report and send a reply within 3 days.",
+            "WHEN a found item has been unclaimed for more than 90 days, THE Ferry System SHALL hand the item over to a charity.",
+            "WHEN a crew member presses the man-overboard button, THE Ferry System SHALL sound the alarm on the bridge and record the ship's position.",
+            "WHEN a fire detector raises an alarm, THE Ferry System SHALL show the location of the detector on the bridge panel.",
+            "WHEN a crew member starts a shift, THE Ferry System SHALL record the start time.",
+            "WHEN a crew member has worked more than 12 hours in one shift, THE Ferry System SHALL alert the chief officer.",
+            # after the crossing (97-100)
+            "WHEN the ship has docked at the arrival port, THE Ferry System SHALL announce that passengers may leave the ship.",
+            "WHEN a passenger leaves the ship, THE Ferry System SHALL mark the ticket as used.",
+            "WHEN a passenger asks for an invoice, THE Ferry System SHALL email an invoice with the company's tax number.",
+            "WHEN a passenger writes a review after the crossing, THE Ferry System SHALL publish the review on the route page.",
+        ],
+        "variants": {
+            "direct": ({"add": "THE Ferry System SHALL NOT print tickets."},
+                       {"conflicts": [[9, 101]]}),
+            "overlap": ({"add": "WHILE a security alert is active in the terminal, THE Ferry System SHALL keep all gates closed."},
+                        {"conflicts": [[26, 101]]}),
+            "gap": ({"remove": 18}, {"gaps": [17]}),
+        },
+        "covered": [1, 5, 7, 12, 14, 17, 22, 26, 34, 37, 43, 46, 49, 55, 59, 61, 66, 69, 83, 90],
+    },
+}
+
 # Folder -> the specs written into it.
 SETS = {"eval": SPECS, "eval2": SPECS2, "eval3": SPECS3, "eval4": SPECS4, "eval5": SPECS5,
-        "eval6": SPECS6, "eval7": SPECS7, "eval8": SPECS8, "size": SPECS_SIZE}
+        "eval6": SPECS6, "eval7": SPECS7, "eval8": SPECS8, "size": SPECS_SIZE, "size2": SPECS_SIZE2}
 
 
 def document(name: str, spec: dict, rules: list) -> str:

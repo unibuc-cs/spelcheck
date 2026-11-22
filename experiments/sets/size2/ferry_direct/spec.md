@@ -1,0 +1,109 @@
+# Requirements: Ferry
+
+## Requirement 1
+
+**User Story:** As a passenger of the ferry line, I want to book crossings, bring my vehicle and my pet, and use the services on board, so that my journey runs smoothly.
+
+### Acceptance Criteria
+
+- F1: WHEN a passenger requests a crossing AND seats are available on the chosen sailing, THE Ferry System SHALL reserve a seat for the passenger.
+- F2: WHEN a passenger requests a crossing AND seats are not available on the chosen sailing, THE Ferry System SHALL offer the next sailing with available seats.
+- F3: WHEN a passenger pays for a reserved seat, THE Ferry System SHALL send an e-ticket by email.
+- F4: WHEN a reserved seat has been unpaid for more than 30 minutes, THE Ferry System SHALL release the seat.
+- F5: WHEN a passenger cancels a ticket more than 24 hours before departure, THE Ferry System SHALL refund the full fare.
+- F6: WHEN a passenger cancels a ticket 24 hours or less before departure, THE Ferry System SHALL refund half of the fare.
+- F7: WHEN a passenger moves a ticket to another sailing AND seats are available on the new sailing, THE Ferry System SHALL change the ticket to the new sailing.
+- F8: WHEN a passenger moves a ticket to another sailing AND seats are not available on the new sailing, THE Ferry System SHALL leave the ticket on its sailing and show a message.
+- F9: WHEN a passenger asks for a printed ticket at the port office, THE Ferry System SHALL print the ticket.
+- F10: WHEN a passenger books a crossing for a child under 4 years, THE Ferry System SHALL issue a free child ticket.
+- F11: WHEN a group booking of more than 10 passengers is paid, THE Ferry System SHALL apply a group discount of 10 percent.
+- F12: WHEN a passenger enters a discount code AND the code is valid, THE Ferry System SHALL reduce the fare by the amount of the code.
+- F13: WHEN a passenger enters a discount code AND the code is not valid, THE Ferry System SHALL show an error message.
+- F14: WHEN a passenger adds a vehicle to a booking AND space is available on the car deck, THE Ferry System SHALL reserve a vehicle space.
+- F15: WHEN a passenger adds a vehicle to a booking AND space is not available on the car deck, THE Ferry System SHALL put the vehicle on the waiting list.
+- F16: WHEN a passenger adds a vehicle that is taller than 2 metres, THE Ferry System SHALL charge the high-vehicle fare.
+- F17: WHEN a vehicle arrives at the check-in lane AND its number plate matches a booking, THE Ferry System SHALL assign the vehicle to a boarding lane.
+- F18: WHEN a vehicle arrives at the check-in lane AND its number plate does not match a booking, THE Ferry System SHALL send the driver to the port office.
+- F19: WHEN a vehicle is assigned to a boarding lane, THE Ferry System SHALL print a lane card for the driver.
+- F20: WHEN a driver declares dangerous goods at check-in, THE Ferry System SHALL notify the officer of the watch.
+- F21: WHEN a booked vehicle has not checked in 30 minutes before departure, THE Ferry System SHALL release its vehicle space.
+- F22: WHEN a vehicle space is released AND a vehicle is on the waiting list, THE Ferry System SHALL offer the space to the first vehicle on the waiting list.
+- F23: WHEN a vehicle space is released AND no vehicle is on the waiting list, THE Ferry System SHALL return the space to open sale.
+- F24: WHEN loading of the car deck begins, THE Ferry System SHALL call the boarding lanes in the order of check-in.
+- F25: WHEN a vehicle is unloaded at the arrival port, THE Ferry System SHALL mark the vehicle booking as completed.
+- F26: WHEN a passenger scans an e-ticket at the gate AND the ticket is valid for the next sailing, THE Ferry System SHALL open the gate.
+- F27: WHEN a passenger scans an e-ticket at the gate AND the ticket is not valid for the next sailing, THE Ferry System SHALL keep the gate closed and show the sailing the ticket is valid for.
+- F28: WHEN boarding of foot passengers begins, THE Ferry System SHALL announce the boarding in the terminal.
+- F29: WHEN boarding closes, THE Ferry System SHALL send the number of boarded passengers to the captain.
+- F30: WHEN boarding closes AND a ticket holder has not boarded, THE Ferry System SHALL mark the ticket as a no-show.
+- F31: WHEN a passenger requests boarding assistance while booking, THE Ferry System SHALL book a wheelchair escort for the sailing.
+- F32: WHEN a passenger with booked assistance arrives at the terminal, THE Ferry System SHALL notify the assistance team.
+- F33: WHEN a passenger with priority boarding arrives at the terminal, THE Ferry System SHALL direct the passenger to the priority lane.
+- F34: WHEN a passenger books a cabin AND a cabin of the requested class is available, THE Ferry System SHALL reserve the cabin.
+- F35: WHEN a passenger books a cabin AND a cabin of the requested class is not available, THE Ferry System SHALL offer a cabin of another class.
+- F36: WHEN a passenger with a cabin booking boards the ship, THE Ferry System SHALL send the cabin number and the door code by text message.
+- F37: WHEN a passenger enters a door code at a cabin AND the code is correct, THE Ferry System SHALL unlock the cabin door.
+- F38: WHEN a passenger enters a door code at a cabin AND the code is not correct, THE Ferry System SHALL keep the cabin door locked.
+- F39: WHEN a passenger reports a fault in a cabin, THE Ferry System SHALL create a task for the housekeeping team.
+- F40: WHEN a housekeeping task has been open for more than 2 hours, THE Ferry System SHALL alert the purser.
+- F41: WHEN the ship is 30 minutes from the arrival port, THE Ferry System SHALL remind the cabin passengers to leave their cabins.
+- F42: WHEN a passenger orders a wake-up call, THE Ferry System SHALL ring the cabin phone at the requested time.
+- F43: WHEN a passenger orders a meal in the restaurant AND the meal is in stock, THE Ferry System SHALL send the order to the kitchen.
+- F44: WHEN a passenger orders a meal in the restaurant AND the meal is not in stock, THE Ferry System SHALL show the dishes that are in stock.
+- F45: WHEN the kitchen marks an order as ready, THE Ferry System SHALL show the order number on the restaurant screen.
+- F46: WHEN a passenger reserves a restaurant table AND a table is free at the requested time, THE Ferry System SHALL confirm the reservation.
+- F47: WHEN a passenger reserves a restaurant table AND no table is free at the requested time, THE Ferry System SHALL offer the nearest time with a free table.
+- F48: WHEN a passenger charges a shop purchase to the cabin, THE Ferry System SHALL add the amount to the cabin bill.
+- F49: WHEN a passenger pays in the shop by bank card AND the payment is approved, THE Ferry System SHALL print a receipt.
+- F50: WHEN a passenger pays in the shop by bank card AND the payment is not approved, THE Ferry System SHALL cancel the sale and show a message.
+- F51: WHEN a passenger buys alcohol in the shop, THE Ferry System SHALL ask the cashier to check the passenger's age.
+- F52: WHEN the ship enters the waters of the arrival country, THE Ferry System SHALL switch the shop prices to the tax rate of the arrival country.
+- F53: WHEN the stock of a product in the shop falls below 5 units, THE Ferry System SHALL add the product to the restocking list.
+- F54: WHEN the shop closes, THE Ferry System SHALL send the day's sales to the head office.
+- F55: WHEN a passenger orders room service AND the passenger has a cabin, THE Ferry System SHALL deliver the order to the cabin.
+- F56: WHEN a passenger orders room service AND the passenger does not have a cabin, THE Ferry System SHALL refuse the order and suggest the restaurant.
+- F57: WHEN a passenger connects to the onboard Wi-Fi, THE Ferry System SHALL show the login page.
+- F58: WHEN a passenger buys a Wi-Fi pass, THE Ferry System SHALL send the pass code by text message.
+- F59: WHEN a passenger logs in to the Wi-Fi AND the passenger has a valid Wi-Fi pass, THE Ferry System SHALL give internet access until the end of the crossing.
+- F60: WHEN a passenger logs in to the Wi-Fi AND the passenger does not have a valid Wi-Fi pass, THE Ferry System SHALL offer a free 15-minute session.
+- F61: WHEN a passenger books a cinema seat AND seats are left for the film, THE Ferry System SHALL reserve the cinema seat.
+- F62: WHEN a passenger books a cinema seat AND no seats are left for the film, THE Ferry System SHALL show the next showing of the film.
+- F63: WHEN a film is 10 minutes from its start, THE Ferry System SHALL announce the film on the cabin screens.
+- F64: WHEN a parent registers a child for the kids' club, THE Ferry System SHALL give the parent a pager.
+- F65: WHEN the kids' club calls a parent, THE Ferry System SHALL make the parent's pager vibrate.
+- F66: WHEN a passenger adds a pet to a booking AND a kennel is available, THE Ferry System SHALL reserve a kennel.
+- F67: WHEN a passenger adds a pet to a booking AND a kennel is not available, THE Ferry System SHALL offer a pet-friendly cabin.
+- F68: WHEN a passenger adds a pet to a booking, THE Ferry System SHALL add the pet fee to the fare.
+- F69: WHEN a passenger with a pet checks in AND the pet's vaccination record is valid, THE Ferry System SHALL issue a pet tag.
+- F70: WHEN a passenger with a pet checks in AND the pet's vaccination record is not valid, THE Ferry System SHALL refuse the pet and notify the port office.
+- F71: WHEN the ship has docked at the arrival port, THE Ferry System SHALL tell the passengers with kennels that they can collect their pets.
+- F72: WHEN the weather service issues a storm warning for a route, THE Ferry System SHALL notify the operations manager.
+- F73: WHEN the operator cancels a sailing, THE Ferry System SHALL notify all booked passengers by text message.
+- F74: WHEN the operator cancels a sailing, THE Ferry System SHALL offer every booked passenger a free rebooking or a full refund.
+- F75: WHEN a sailing is delayed by more than 60 minutes, THE Ferry System SHALL give each passenger a meal voucher.
+- F76: WHEN a sailing is delayed by more than 120 minutes, THE Ferry System SHALL give each passenger a travel voucher worth 25 percent of the fare.
+- F77: WHEN a delay of a sailing is announced, THE Ferry System SHALL update the departure board.
+- F78: WHEN a passenger asks for a delay certificate, THE Ferry System SHALL email a certificate that states the delay.
+- F79: WHEN a customer creates an account, THE Ferry System SHALL send a welcome email.
+- F80: WHEN a customer with an account completes a crossing, THE Ferry System SHALL add loyalty points for the fare paid.
+- F81: WHEN a customer completes the tenth crossing of a calendar year, THE Ferry System SHALL upgrade the customer to silver status.
+- F82: WHEN a silver customer books a crossing, THE Ferry System SHALL give the customer priority boarding.
+- F83: WHEN a customer pays with loyalty points AND the points cover the fare, THE Ferry System SHALL take the points and issue the ticket.
+- F84: WHEN a customer pays with loyalty points AND the points do not cover the fare, THE Ferry System SHALL ask the customer to pay the difference by card.
+- F85: WHEN a customer changes the email address of the account, THE Ferry System SHALL send a confirmation link to the new address.
+- F86: WHEN a customer enters a wrong password for the third time in a row, THE Ferry System SHALL lock the account for 15 minutes.
+- F87: WHEN a customer subscribes to the newsletter, THE Ferry System SHALL send a confirmation email.
+- F88: WHEN a customer unsubscribes from the newsletter, THE Ferry System SHALL confirm the unsubscription by email.
+- F89: WHEN a crew member registers a found item, THE Ferry System SHALL record the description of the item and the sailing.
+- F90: WHEN a passenger reports a lost item AND a matching found item is registered, THE Ferry System SHALL tell the passenger where to collect it.
+- F91: WHEN a passenger reports a lost item AND no matching found item is registered, THE Ferry System SHALL record the report and send a reply within 3 days.
+- F92: WHEN a found item has been unclaimed for more than 90 days, THE Ferry System SHALL hand the item over to a charity.
+- F93: WHEN a crew member presses the man-overboard button, THE Ferry System SHALL sound the alarm on the bridge and record the ship's position.
+- F94: WHEN a fire detector raises an alarm, THE Ferry System SHALL show the location of the detector on the bridge panel.
+- F95: WHEN a crew member starts a shift, THE Ferry System SHALL record the start time.
+- F96: WHEN a crew member has worked more than 12 hours in one shift, THE Ferry System SHALL alert the chief officer.
+- F97: WHEN the ship has docked at the arrival port, THE Ferry System SHALL announce that passengers may leave the ship.
+- F98: WHEN a passenger leaves the ship, THE Ferry System SHALL mark the ticket as used.
+- F99: WHEN a passenger asks for an invoice, THE Ferry System SHALL email an invoice with the company's tax number.
+- F100: WHEN a passenger writes a review after the crossing, THE Ferry System SHALL publish the review on the route page.
+- F101: THE Ferry System SHALL NOT print tickets.
