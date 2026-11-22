@@ -178,71 +178,74 @@ situation, and each kind becomes a finding:
 There is a fourth kind of finding, the *ambiguity*. It works differently, and
 section 3.1 explains it.
 
-### 2.3 Why the conflict check forces rules to apply
+### 2.3 How a conflict is found
 
-This is the first idea that takes a moment to get.
+The obvious question for Z3 is "is there a situation in which all five rules
+hold?". It does not work. Z3 answers yes, and shows the situation in which no
+order is submitted and none is canceled. The four rules that have a condition
+demand nothing there (the umbrella on a sunny day, from 1.1), and R3 is obeyed
+because nothing is on backorder. All five rules hold, and we have learned
+nothing about R2 and R3.
 
-The obvious question to ask Z3 would be "can all five rules hold together?".
-It answers yes, and shows this situation:
+So we do not let Z3 pick the situation. We fix it ourselves, with the "when"
+part of a rule, and ask two questions:
 
-```
-order_submitted = false, order_canceled = false, everything else false
-```
+| | What Z3 is given | Z3 answers | What that tells us |
+|---|---|---|---|
+| question 1 | only the "when" part of R2: `(and order_submitted (not inventory_available))` | yes | this situation can happen |
+| question 2 | the same "when" part, and all five rules | no | in this situation the rules cannot all be obeyed: a **conflict** |
 
-Nothing is happening, so every "if ... then" rule is obeyed, exactly as with
-the umbrella on a sunny day. The answer is correct, and it tells us nothing.
+Adding the "when" part of a rule to the question is called *forcing the rule
+to apply*. The answer to question 2 is "no" because, once an order is
+submitted and there is no stock, R2 demands the backorder and R3 forbids it.
 
-So the check does something else. It takes a rule (then every pair of rules,
-then every group of three), *forces* it to apply, and asks whether all the
-rules can still be obeyed:
+Our code asks these two questions for every rule on its own, for every pair of
+rules and for every group of three. For a pair, both "when" parts are added.
+Question 1 then drops the pairs that can never apply together, such as R1 and
+R2: stock cannot be available and unavailable at once. The report names only
+the rules that the clash needs, here R2 and R3, and not all five.
 
-```
-1. can R2 apply?                       (and order_submitted (not inventory_available))
-   Z3: yes                             so the situation can happen
+### 2.4 How a gap and a scenario are found
 
-2. in that situation, can all          the situation, together with R1 ... R5
-   rules be obeyed?
-   Z3: no, proven                      a CONFLICT
-```
+**A gap** is a situation in which something happens and no rule says what to
+do. Our code takes each *event*, which is something that happens at one
+moment, such as "an order is submitted". For each event it asks Z3: is there a
+situation in which this event happens and the "when" part of every rule is
+false?
 
-Why is the answer "no"? Once an order is submitted and there is no stock, the
-only thing left to decide is whether the order goes on backorder, and both
-choices break a rule:
-
-| `order_on_backorder` | R2 "backorder it" | R3 "never backorder" |
+| Question to Z3 | Answer | Why |
 |---|---|---|
-| true | obeyed | **broken** |
-| false | **broken** | obeyed |
+| an order is submitted, and no rule applies? | no | with stock R1 applies, without stock R2 applies |
+| an order is canceled, and no rule applies? | no | R4 applies |
+| no event happens, and no rule applies? | yes | nothing happened, so no rule was asked for anything |
 
-Z3 also reports which rules it needed to reach the contradiction, here R2 and
-R3. Our code then tries to drop each of them in turn, so that the set it
-reports is as small as it can be.
+R3 is left out of this check. It has no "when" part: it forbids something in
+every situation and reacts to nothing, so it never says what to do.
 
-The other two findings come from the same kind of question:
+The order spec has only the last gap. The report marks it "no event happens",
+because it is rarely a problem: when nothing happens, a system normally just
+waits. A spec with R1 and without R2 would have a real gap: "an order is
+submitted, inventory is not available, and no rule applies".
+
+**A scenario** is a situation that the rules allow, although the author may
+not have meant to allow it. For each rule we ask Z3: is there a situation in
+which all rules hold, this rule does *not* apply, and what it demands happens
+anyway? For R1 the answer is yes:
 
 ```
-gap        a situation where NO rule applies
-           (and (not A1) (not A2) (not A4) (not A5))        A = antecedent; R3 always
-           Z3: yes, for example order_submitted = false,    applies, so it is left out
-                                order_canceled = false, ...
-
-scenario   all rules hold, R1 does NOT apply, and R1's outcome happens anyway
-           Z3: yes, for example order_fulfilled = true, order_submitted = false
-           It is allowed because R1 says "when", not "only when".
+order_fulfilled = true, order_submitted = false     an order is fulfilled although none was submitted
 ```
 
-The gap search is in fact a little more careful than this. A gap in which
-nothing happens says little, so the question is asked once for each event:
-"an order is submitted, and no rule applies?" In the order spec every event is
-covered, so the only gap left is the one with no event, and the report marks
-it "no event happens".
+The rules allow this because R1 says "when an order is submitted, fulfill
+it", and not "fulfill an order only when one was submitted". The tool cannot
+know whether that matters, so it shows the situation and the author decides.
+The reverse also exists: a situation that the rules make impossible, which the
+report shows as "ruled out".
 
-Gaps and scenarios are easy to confuse. A gap is a situation the spec says
-nothing about. A scenario is something the spec does decide, by allowing it or
-by making it impossible, and the question for the author is whether that was
-intended.
+Gaps and scenarios are easy to confuse. In a gap the spec says nothing. In a
+scenario the spec does decide, and the question is whether that was intended.
 
-### 2.4 Stage 3: the LLM rewords
+### 2.5 Stage 3: the LLM rewords
 
 The findings are facts about formulas, which nobody wants to read. So the model
 is asked to say each one in the words of the requirements, and to offer two
@@ -266,7 +269,7 @@ proven and that it may only reword it. And under each explanation the report
 prints the lines marked *Proven*, which are the exact facts from Z3, so you
 can compare the wording with what was actually shown.
 
-### 2.5 Try it now
+### 2.6 Try it now
 
 You do not need a GPU for this. The repository contains a saved `formal.json`
 for the order spec, so the solver stage can run without the model. The report
@@ -331,14 +334,52 @@ different systems from it:
 ```
 reading A   exactly 5      (=> (= failed_attempts 5)  account_locked)
 reading B   5 or more      (=> (>= failed_attempts 5) account_locked)
-
-They differ at 6 failed attempts with the account not locked (Z3 finds this case):
-    A: fine, the rule says nothing about 6          B: broken
 ```
 
-Left alone, the model picks one of these readings and says nothing. What we
-want is for the tool to notice that there are two, and to ask the author. It
-has three ways to notice, and each one catches cases the one before misses.
+The two readings disagree in one situation only: 6 failed attempts, and the
+account *not* locked. Reading A is obeyed there, because it says nothing about
+6 attempts. Reading B is broken, because it demands the lock. Both parts of
+the situation are needed: at 5 attempts the two readings agree, and a locked
+account obeys both.
+
+Left alone, the model picks one reading and says nothing. The tool has three
+ways to notice that there are two.
+
+1. **Sample.** The model translates the rule eight times, independently, and
+   our code puts the translations that mean the same into one group. Two
+   translations mean the same when Z3 proves that no situation tells them
+   apart (the first row of the table in 1.2). If two or three of the eight
+   form a second group, that group is a second reading. If the eight scatter
+   widely (4/2/2, for example), the rule is rejected and has to be rewritten.
+   The weakness of sampling is that one model tends to make the same choice
+   every time. Here the eight split seven to one, which counts as agreement.
+
+2. **Ask about a concrete case.** If sampling gave no second reading, the
+   model is asked what else the words could mean. Here it proposes reading B.
+   Z3 then finds the situation in which the two readings disagree, the one
+   above, and the model is asked about it eight times:
+
+   ```
+   Requirement   WHEN the number of failed attempts on an account reaches 5
+                 THEN the system locks the account
+   Situation     the number of failed attempts is 6; the account is not locked
+   Reading A     exactly 5: the requirement is obeyed in this situation
+   Reading B     5 or more: the requirement is broken in this situation
+   Question      do the words of the requirement support A, B, or either?
+   ```
+
+   Our translation stands only if it gets more than half of the answers. Here
+   "exactly 5" got one answer and "5 or more" got six, so the rule is reported
+   as ambiguous. This step is in `probe.py`.
+
+3. **A second model (optional).** A model from another family translates the
+   same rule eight times, and our code counts, with Z3, how many of these
+   translations mean the same as ours. If half or fewer do, the rule is
+   reported as ambiguous. The idea: two different readers translate a clear
+   sentence the same way, so when they differ, the sentence is probably the
+   reason.
+
+The three ways together, as a diagram:
 
 ```mermaid
 flowchart TD
@@ -355,31 +396,8 @@ flowchart TD
     Q3 -- "yes, or not used" --> OK["ACCEPTED<br/>one meaning"]
 ```
 
-*The first way is to sample.* The model translates the rule eight times,
-independently, and our code puts the eight translations into groups that mean
-the same. Two translations go into the same group when Z3 proves that no
-situation tells them apart, which is the first row of the table in 1.2. If the
-eight split into two camps, we have found two readings. The weakness is that
-one model tends to make the same choice every time. In the saved run of this
-spec the eight translations split seven to one, which counts as agreement.
-
-*The second way is to ask about a concrete case.* The model is asked what else
-the words could mean, and it comes up with reading B. Z3 then finds a
-situation in which A and B differ: six failed attempts, account not locked.
-Now the model is shown the rule, both readings and that one situation, eight
-times, and is asked whether the words support A, B, or either. Our translation
-stands only if it gets more than half of the answers. In the saved run, A got
-one answer and B got six, so the rule was reported as ambiguous. This step
-lives in `probe.py`.
-
-*The third way is optional: a second model.* A model from a different family
-translates the rule eight times as well. If no more than half of its
-translations mean the same as ours, the rule is reported as ambiguous. Where
-the words really are unclear, a second reader hesitates or picks the other
-reading, and that is exactly the signal we are after.
-
-Whichever way finds it, the report does not give a verdict. It asks a question
-(this is real output):
+The report does not give a verdict on an ambiguity. It asks a question (this
+is real output):
 
 > **1. Ambiguity: Ambiguity in lock threshold**
 >
@@ -387,14 +405,12 @@ Whichever way finds it, the report does not give a verdict. It asks a question
 > failed attempts reaches 5, but it is unclear if this applies only when the
 > count is exactly 5 or whenever it is 5 or more. [...] Which did you mean?
 
-One consequence is easy to overlook. Until the author answers, the checks go
-on with reading A, so some of the other findings may exist only because of
-that choice. The solver therefore tries each ambiguous rule once more with
-its other reading. In this spec the report has a gap at "6 failed attempts, no
-password submitted". With reading B, R3 applies there and the gap is gone, so
-the title of that gap ends with "depends on the reading of R3". The ambiguity
-itself lists what its other reading changes, and the ambiguities that change
-something are shown first.
+Until the author answers, the checks go on with reading A, so another finding
+may exist only because of that choice. The solver therefore tries each
+ambiguous rule once more with its other reading. In this spec the report has a
+gap at "6 failed attempts, no password submitted". With reading B, R3 applies
+there and the gap is gone, so the title of that gap ends with "depends on the
+reading of R3".
 
 ### 3.2 Telling the solver what the words mean
 
@@ -423,79 +439,106 @@ such facts, with some care.
 
 #### Voted facts
 
-The model is shown only the list of symbols with their descriptions. It does
-not see the requirements, so it cannot dress up a requirement as a fact. It is
-asked for statements that are true purely because of what the symbols mean,
-and it is asked eight times. One of its answers:
+A *voted fact* is a piece of common sense that the model proposes and that
+most of its answers agree on. It is made in four steps:
 
-```
-F2   "The system cannot grant access and deny access simultaneously."
-     (not (and access_granted access_denied))
-```
+1. **The model is asked eight times** to list the statements that are always
+   true because of what the symbols mean. It sees only the symbols and their
+   descriptions, not the requirements, so it cannot pass off a requirement as
+   a fact.
+2. **Each of the eight answers is a list of facts**, and every fact is a
+   sentence with its formula. For example: "The system cannot simultaneously
+   grant and deny access", `(not (and access_granted access_denied))`. An
+   empty list is a valid answer too.
+3. **The answers vote.** Every fact in every answer is a candidate. An answer
+   votes for a candidate when Z3 proves that the candidate follows from the
+   facts in that answer (the second row of the table in 1.2). So answers that
+   say the same thing in different words vote for the same candidate.
+4. **Our code keeps a candidate that has more than half of the eight votes.**
+   It is then called an *assumed fact*, and it is saved in `formal.json` with
+   its votes.
 
-Then the eight answers vote. They rarely use the same words (another answer
-says "if access is granted, it is not denied"), so the vote is done by logic
-and not by comparing text: an answer supports F2 when Z3 proves that F2
-follows from the facts in that answer. Seven of the eight answers supported
-F2. A fact needs more than half, so F2 was kept.
+This is the vote in one run of the login spec:
 
-Finally, the conflict search runs twice:
+| Candidate | Votes | Kept? |
+|---|---|---|
+| access cannot be granted and denied at once | 6 of 8 | yes |
+| the number of failed attempts is not negative | 6 of 8 | yes |
+| a locked account grants no access | 1 of 8 | no. It says what the system should do, not what the words mean |
 
-```mermaid
-flowchart TD
-    S["situation: R1 and R4 both apply<br/>correct password, locked account"] --> A{"search 1<br/>rules alone:<br/>can all be obeyed?"}
-    A -- "no" --> C1["CONFLICT<br/>proven from the rules alone"]
-    A -- "yes" --> B{"search 2<br/>rules + assumed facts:<br/>can all be obeyed?"}
-    B -- "no" --> C2["CONFLICT<br/>if the assumed facts hold<br/>the report quotes F2"]
-    B -- "yes" --> N["no conflict"]
-```
+In the run saved in `specs/auth_openspec/`, the first two have 7 of 8 votes.
 
-The order of the two searches is the important part, and it comes from a
-mistake made early in the project. In one experiment, seven of eight answers
-agreed that "an order cannot be both fulfilled and canceled". That sounds
-reasonable, but it is a business rule, not a fact about what the words mean.
-At that time facts were treated as plain truths, and this one made a real
-conflict in the order spec disappear. Since then the first search never sees
-the facts at all. A fact can add a conflict, and the report then says "if the
-assumed facts hold" and quotes the fact. It can never take a conflict away.
+#### How the conflict search uses a fact
+
+The conflict search of 2.3 forces pairs of rules to apply, and one pair is R1
+and R4. Their two "when" parts together give the situation from above: a user
+submits the correct password for a locked account. In it, as in every
+situation it builds, the search asks its question twice:
+
+| | What Z3 is given | Z3 answers | Result |
+|---|---|---|---|
+| search 1 | the situation and the rules | yes, with `access_granted = true` and `access_denied = true` | no conflict from the rules alone |
+| search 2 | the situation, the rules and the assumed facts | no: access cannot be granted and denied at once | a **conflict**. The report says "if the assumed facts hold" and quotes the fact |
+
+Search 1 never sees the facts, so a fact can add a conflict and can never hide
+one. We learned this the hard way. Early in the project, seven of eight
+answers agreed that "an order cannot be both fulfilled and canceled". That is
+a business rule, not a fact about what the words mean, and at the time it made
+a real conflict in the order spec disappear.
 
 #### Links
 
-Voted facts do not solve every case. In the second example of the Kiro blog
-(`specs/delete_property`), one rule says the platform shall "remove the
-Property record" and another says it shall "retain Property records in the
-database":
+Voted facts do not solve every case. The second example of the Kiro blog
+(`specs/delete_property`) has these two requirements:
 
 ```
-D2:  deletion_confirmed ──► property_record_removed          no other rule uses this symbol
-                                 │
-                                 │  link, 8 of 8 answers: "removed" means "not retained"
-                                 ▼
-D4:  (its condition) ─────► property_record_retained_in_db   the clash, now visible to Z3
+D2   "WHEN a Property Owner confirms deletion, THE Platform SHALL remove the
+      Property record from the Platform"
+     (=> deletion_confirmed property_record_removed)
+
+D4   "THE Platform SHALL implement soft deletion to retain Property records in
+      the database for audit purposes while hiding them from the user interface"
+     (=> property_deleted (and property_record_retained_in_db property_hidden_from_ui))
 ```
 
-The model gave "removed" a symbol of its own, which no other rule uses, and
-described it kindly, as something like "removed from the active data". With
-that description, no fact connects it to "retained".
+D2 removes the record and D4 keeps it. Z3 does not see the clash, because
+`property_record_removed` and `property_record_retained_in_db` are two
+unrelated symbols: a record can be removed and retained at once. No fact was
+voted to connect them, because the symbols alone do not settle it: a record
+"removed from the Platform" could still be in the database.
 
-The repair is to ask a different question. A rule whose outcome uses a symbol
-that no other rule uses is translated eight more times, and this time the
-model may use only the outcomes of the other rules. Made to say "remove the
-record" in those terms, all eight answers said the same thing: the record is
-not retained in the database. That agreed meaning becomes a *link*. A link is
-an assumed fact like the others and is treated the same way: it can only add
-conflicts, and a conflict that needs it says so.
+A *link* takes the connection from the text of D2 instead. It is made in four
+steps:
 
-A link is still a guess, so it is tested before it is used. The model gets one
-more question, eight times: "requirement D2 is fully obeyed, and the record is
-still in the database. Is that possible?" The link goes in only if most
-answers say "impossible".
+1. **Our code picks D2**, because what D2 demands is written with a symbol
+   that no other rule uses, `property_record_removed`.
+2. **The model translates D2 again, eight times, without that symbol.** It may
+   use only the symbols of D2's own "when" part and the symbols with which
+   the other rules say what they demand, such as
+   `property_record_retained_in_db` from D4. It may also answer that these
+   symbols cannot express D2.
+3. **Our code groups the eight answers by meaning**, as in 3.1. Here all eight
+   said the same: `(=> deletion_confirmed (not property_record_retained_in_db))`,
+   "when the owner confirms the deletion, the record is not retained in the
+   database". A meaning with more than half of the answers becomes the link.
+4. **The link is tested before it is used**, because "remove" could still
+   mean "hide". The model is shown the text of D2 and the one situation that
+   would prove the link wrong: the owner has confirmed the deletion, and the
+   record is still in the database. It is asked eight times whether this
+   could be true in a system that does everything D2 demands. The link is
+   kept only if more than half of the answers say "impossible". For D2 all
+   eight did.
+
+A link is used like a voted fact, only in search 2. With it, Z3 sees that D2
+means "not retained" where D4 says "retained", and the conflict between D2 and
+D4 is found. The report says "if the assumed facts hold" and quotes the link,
+so the reader can judge whether "remove" really means that.
 
 ### 3.3 Marking the conflicts that are probably not real
 
-The formulas describe one snapshot of the system. They have no notion of time,
-no "before" and no "after". This produces conflicts that are correct as logic
-and meaningless in practice. They come in two shapes.
+The formulas describe one snapshot of the system, with no "before" and no
+"after". This produces conflicts that are correct as logic and meaningless in
+practice. They come in two shapes.
 
 The first shape is two events in the same instant. Take a newsletter spec:
 
@@ -507,11 +550,11 @@ situation   visitor_signed_up = true, address_changed = true
             "no email" against "an email": a conflict
 ```
 
-Z3 is free to let both events happen in the same snapshot, and then the two
-rules clash. But nobody writes requirements for two unrelated events in the
-same instant. So when the model reads the spec, it also names the event each
-rule reacts to, which we call the rule's *trigger*. A conflict between rules
-that have two different triggers is marked as doubtful.
+Z3 is free to let both events happen in one snapshot, but nobody writes
+requirements for two unrelated events in the same instant. So when the model
+reads the spec, it also names the event each rule reacts to, the rule's
+*trigger*. A conflict between rules with different triggers is marked as
+doubtful.
 
 The second shape is a situation that cannot happen. Take a booking spec:
 
@@ -523,12 +566,12 @@ fact        (not (and at_least_24h less_than_24h))        this situation cannot 
 ```
 
 The two conditions became two separate yes/no symbols, so Z3 can make both
-true. An assumed fact says they exclude each other, and a conflict whose
-situation the facts rule out is marked as doubtful too.
+true. A conflict whose situation the assumed facts rule out is marked as
+doubtful too.
 
 In both cases the conflict stays in the report, with the word "doubtful" and
-the reason. We mark instead of deleting because the mark is itself a guess: in
-the evaluation it also landed, a few times, on real conflicts that we had
+the reason. It is marked and not deleted because the mark is itself a guess:
+in the evaluation it also landed, a few times, on real conflicts that we had
 planted.
 
 ### 3.4 Do the findings depend on the symbols?
@@ -546,9 +589,9 @@ finding says how many of the three found it:
 
 In the evaluation, the findings that most symbol sets agreed on were never wrong.
 
-### 3.5 Stage 1 again, now that you know why
+### 3.5 Recap
 
-Stage 1 has seven steps, all in `formalize.py`. In a pipeline diagram they
+Seven steps, all in `formalize.py`. In a pipeline diagram above they
 look arbitrary. Now each one has a reason:
 
 | Step | What happens | Why it is there |
@@ -576,9 +619,9 @@ how much weight the finding carries:
 | "... (depends on the reading of R3)" | proven with the first reading of R3, which is ambiguous; gone with its other reading | answer the question about R3 first |
 | "... (found with k of K symbol sets)" | k of the K formalizations found it | the higher k, the better |
 | "Ambiguity: ..." | not a proof, a question to the author | a fair question, though some are asked about clear rules |
-| "Gap: ..." | proven: an event happens and no rule applies | proven. Ask whether that case was left out on purpose |
-| "Gap (no event happens): ..." | proven: nothing happens and no rule applies | proven, but it may only mean that the system waits |
-| "Scenario, allowed / ruled out: ..." | proven; an LLM judge only chose which ones to show | proven. Whether it matters is an opinion |
+| "Gap: ..." | proven: an event happens and no rule applies | certain. Ask yourself whether that case was left out on purpose |
+| "Gap (no event happens): ..." | proven: nothing happens, and no rule applies (2.4) | certain, but rarely something to fix. Almost every spec has this gap, so it is shown once, after the other gaps |
+| "Scenario, allowed: ..." or "Scenario, ruled out: ..." | proven: the rules allow this situation, or make it impossible (2.4) | the proof is certain. Which scenarios are shown is the model's choice, and whether one is a problem is for you, the author, to decide |
 
 If you keep one thing from this part: a finding is a proof about
 `formal.json`, not a proof about what the author meant. When a finding looks
@@ -604,10 +647,8 @@ experiments/sets/eval4/lockers_ambiguity1  rule 5 reworded from "for more than 7
                                            to "is still in its compartment after 72 hours"
 ```
 
-Each set has six such specs, in domains no earlier set used: `eval4` has
-lockers, an elevator, irrigation, attendance, printing and delivery. Half are
-written in Kiro's EARS style and half in the OpenSpec style. Every spec comes
-in three to five versions. A version is the clean spec with one change:
+A set has six specs on six subjects, half in Kiro's EARS style and half in the
+OpenSpec style. Every spec comes in three to five versions:
 
 | Version | What is changed | What the tool must report |
 |---|---|---|
@@ -619,22 +660,18 @@ in three to five versions. A version is the clean spec with one change:
 
 Each version is a folder with two files: `spec.md`, which the tool reads, and
 `expected.json`, which holds the answer. For `lockers_overlap` it says
-`{"conflicts": [[1, 6], [3, 6]]}`; the numbers are positions of rules in the
-document. That makes 21 to 30 folders per set, and 201 in the eight sets
-together.
+`{"conflicts": [[1, 6], [3, 6]]}`: rule 6 clashes with rule 1 and with rule 3.
+There are eight sets, `eval` to `eval8`, with 201 versions in all.
 
-A conflict reported on a clean spec is a *false alarm*. And because the model
-answers a little differently each time, every spec is run three times, and all
-the numbers are counts of runs.
+Two more terms. A conflict reported on a clean spec is a *false alarm*. And
+because the model answers a little differently each time, every version is run
+three times, so all the numbers are counts of runs.
 
-One more term comes up everywhere in the research notes: the *held-out set*.
-It is tempting to tune the prompts until the test specs come out right, and
-then the result means nothing. So each set of specs is written before a design
-change and used once, like an exam. After its results have been read it only
-counts as practice material, and the next change needs a new set. That is why
-there are eight sets, `eval` to `eval8`: eight rounds, each with a fresh exam.
-The last one also has planted gaps: one of two complementary requirements is
-removed, so that nothing says what to do in the other case.
+Why eight sets? It is tempting to tune the prompts until the test specs come
+out right, and then the result means nothing. So each set is written before a
+design change and used once, like an exam. The research notes call it a
+*held-out set*. After its results have been read it only counts as practice
+material, and the next change needs a new set.
 
 ### 5.2 The results
 
@@ -654,36 +691,76 @@ eval8   18/21   █████████████████░░░   8
 | Question | Answer |
 |---|---|
 | Kiro's first example (`order`) | its 2 conflicts and its gap were found in 190 of 190 runs |
-| Kiro's second example (`delete_property`) | found in 3 of the last 3 runs. It was the hard one: 1 of 40 before links existed, and it broke twice after changes to the prompts |
+| Kiro's second example (`delete_property`) | found in 3 of the last 3 runs. It was the hard one: 1 of 40 before links existed |
 | planted conflicts | 61% to 100% found (the chart above) |
 | false alarms | at most 1 in 18 clean runs, when doubtful conflicts are set aside |
 | planted ambiguities, one model | about half (14 to 20 of 36) |
 | planted ambiguities, with the second model | 30 and 32 of 36, at the price of up to one extra question per spec |
 | how much assumed facts and links matter | a great deal: without them `eval8` gives 9 of 21, with them 18 |
-| planted gaps (measured on `eval8` only) | 18 of 18 found, now that the question is asked once for each event; before, 0 of 18. In 4 of 18 clean runs a gap was reported that is not one |
-| a spec of 30 requirements | 6 of 6 planted conflicts, none on the clean version, under a second in the solver stage. One spec only |
+| planted gaps (`eval8` only) | 18 of 18 found, now that the question is asked once for each event; before, 0 of 18 |
+| false gaps (`eval8`) | in 4 of 18 runs on clean specs. Explained below |
+| a longer spec, 30 requirements | it went as well as the small ones. Explained below |
+
+**The false gaps.** A clean spec in `eval8` covers both cases of an event, for
+example "a resident books a time slot AND the slot is free" and "... AND the
+slot is taken". Nothing is left open, so a gap for that event is a false
+alarm. The tool reported one in 4 of the 18 runs on clean specs, always for
+the same reason: the model had made two symbols, `slot_is_free` and
+`slot_is_taken`, and to Z3 a slot can then be neither free nor taken. With one
+symbol, and "taken" written as `(not slot_is_free)`, the false gap does not
+appear.
+
+**A longer spec.** All the specs counted above have at most six requirements.
+To see what a longer document does, we wrote one spec of 30 requirements,
+about a campsite: `experiments/sets/size/campsite_clean`, with the versions
+`campsite_direct`, `campsite_overlap` and `campsite_gap` next to it. Each was
+run three times. The two planted conflicts were found in 6 of 6 runs and the
+planted gap in 3 of 3, the clean version gave no conflict (doubtful ones set
+aside), and the solver stage took under a second. So the tool is not limited
+to small specs. But this is one document: a first sign, not a measurement, and
+specs of hundreds of requirements have not been tried.
 
 ### 5.3 The goals
 
 The project has five goals. This is where each one stands:
 
-| Goal | Status |
-|---|---|
+| Goal                                                      | Status |
+|-----------------------------------------------------------|---|
 | G1: a minimal working prototype of Kiro's formal analysis | done |
-| G2: it works on any spec, in any format | partly: 2 formats and 45 specs. A whole OpenSpec project is still missing (see 5.6) |
-| G3: code and documents a person can read | done for the current state |
-| G4: research for a paper, on a local model | well under way; the evaluation is still small |
-| G5: only the formal part | done: an LLM review of the text was built, measured, and switched off |
+| G2: it works on any spec, in any format                   | partly: 2 formats and 51 specs. A whole OpenSpec project is still missing (see 5.6) |
+| G3: only the formal part                                  | done: an LLM review of the text was built, measured, and switched off |
 
 ### 5.4 What does not work yet
 
 | Limit | Example |
 |---|---|
-| "remove" against "keep" is missed in about half of the cases (found in 10 of 21 runs) | "delete the listing" against "keep every listing for seven years": the second becomes a number, `retention_years = 7`, and nothing clashes with "deleted". This is the main cause of missed conflicts |
+| "remove" against "keep" is missed in about half of the cases (found in 10 of 21 runs) | "delete the listing" against "keep every listing for seven years". This is the main cause of missed conflicts, and it is explained below the table |
 | one model finds only half of the ambiguities | it is confident where a person would stop and ask |
 | a fact or a link can be wrong, even with a majority behind it | which is why the report quotes every one that a conflict depends on |
 | there is no time | "then", "after" and "until" are not modelled: the logic is one snapshot |
 | the evaluation is small | the specs were written by us, and there is one main model |
+
+**"Remove" against "keep", on a real case.** One of the planted conflicts
+(`experiments/sets/eval6/auctions_direct`) is between these two requirements.
+Under each is the translation the model gave it:
+
+```
+A4   "WHEN a seller withdraws an item, THE Auction System SHALL delete the listing
+      and notify the bidders."
+     (=> item_withdrawn (and listing_deleted bidders_notified))
+
+A6   "THE Auction System SHALL keep every listing for seven years for tax audits."
+     (= listing_retention_years 7)
+```
+
+A person sees the clash: a listing that is deleted on withdrawal is not kept
+for seven years. Z3 cannot see it, because the model wrote the two rules about
+two unrelated things. `listing_deleted` is a yes/no fact about a listing, and
+`listing_retention_years` is a number, a setting of the system. Both can hold
+at once (the listing is deleted, the setting is 7), so no conflict is found.
+The link step of 3.2 does not help either: asked to say "delete the listing"
+with the symbols of the other rules, the model has only the number of years to
+work with, and it answers that this cannot be expressed.
 
 ### 5.5 What we tried and dropped
 
@@ -694,7 +771,35 @@ them explain decisions you will meet in the code:
 |---|---|
 | treating facts as plain truths | a wrong fact with 7 of 8 votes hid a real conflict, so facts may now only add findings |
 | an LLM review of the text (`refine.py`) | it finds `delete_property` every time and misses two conflicts that the solver finds. It is a judgement and not a proof, so it is switched off (`--review`): this project is about the formal check |
-| fixing "remove" against "keep" with one more sentence in the prompt | it made things worse, so the problem is left as a documented limit |
+| fixing "remove" against "keep" with one more sentence in the prompt | no conflict was gained and a rule was lost. The details are below the table |
+
+**The sentence we tried for "remove" against "keep".** The symbols are picked
+by the first prompt, `READ_SYSTEM` in `formalize.py`. It already contains this
+sentence:
+
+> Opposites share one symbol too: "unavailable" is "not available".
+
+We added one more, right after it:
+
+> Removing something and keeping it are such opposites: "delete the email" and
+> "keep every email for a year" are both about email_stored (plus the email's
+> age for "a year").
+
+The hope was that A4 and A6 from 5.4 would then be written about one fact,
+whether the listing is stored. Two things happened instead:
+
+- A4 kept its own symbol, `listing_deleted`, so the conflict was still missed
+  in 3 of 3 runs.
+- A6 was now written about a stored listing and its age, but its eight
+  translations disagreed: `(=> (< listing_age_years 7) listing_stored)`,
+  `(and listing_stored (>= listing_age_years 7))` and others. A rule whose
+  translations scatter like that is rejected (3.1) and takes no part in any
+  check.
+
+So nothing was gained and a rule was lost, and the sentence was taken out
+again. This is experiment T14 in research_log.md. A real repair would need the
+model to compare two requirements and judge whether they clash. That is an LLM
+judgement and not a proof, which this project leaves out on purpose.
 
 The full list is in research.md, section 5.
 
@@ -711,7 +816,7 @@ The full list is in research.md, section 5.
 
 ## 6. What to open next
 
-Start by running the commands of 2.5. Then open one spec in its four forms,
+Start by running the commands of 2.6. Then open one spec in its four forms,
 side by side, and follow a single rule through them:
 
 ```
@@ -745,7 +850,7 @@ that section 2 described:
 |---|---|---|
 | `speccheck/llm.py` | 60 | one function, `ask`: a prompt goes in, N answers come out as JSON |
 | `speccheck/logic.py` | 250 | `model` and `impossible`, the two questions for Z3 (1.2), and `same_meaning` |
-| `speccheck/checks.py` | 690 | `_search` forces rules to apply (2.3); `find_conflicts` runs the two searches (3.2); `_try_other_readings` (3.1); then `find_gaps` and `find_scenarios` |
+| `speccheck/checks.py` | 690 | `_search` forces rules to apply (2.3); `find_conflicts` runs the two searches (3.2); `_try_other_readings` (3.1); then `find_gaps` and `find_scenarios` (2.4) |
 | `speccheck/formalize.py` | 680 | the seven steps of 3.5. The prompts at the top show what the LLM is asked |
 | `speccheck/probe.py` | 430 | the questions about concrete situations (3.1 and 3.2) |
 | `speccheck/explain.py` | 350 | `evidence` writes the *Proven* lines; the wording prompt is above it |

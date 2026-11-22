@@ -133,9 +133,11 @@ scenario   situation:  an order is fulfilled, but it was never submitted
                        (R1 says when to fulfill, not "only then")
 ```
 
-A gap is looked for once for each event the rules react to ("an order is
-submitted and no rule applies"); here every event is covered, so the only gap
-is the one in which no event happens, and the report marks it as such.
+A gap is looked for once for each event the rules react to: "is there a
+situation in which an order is submitted and no rule applies?" Here every
+event is covered. The only gap left is the one in which nothing happens at
+all. That one is rarely something to fix, because a system normally just waits
+then, and the report marks it "no event happens".
 
 A gap and a scenario are not the same thing. In a gap, the spec says nothing
 about the situation. In a scenario, the spec does decide (the situation is
@@ -280,25 +282,27 @@ does not, because for Z3 `access_granted` and `access_denied` are two
 unrelated yes/no values. Both can be true, so both rules can be obeyed. Two
 repairs bring the meaning back.
 
-**Voted facts.** The LLM is shown only the symbols with their meaning
-(`access_granted`: "The system grants access to the user"), not the
-requirements, and it lists facts that hold "purely because of what the symbols
-mean". It does this 8 times. Each fact is a sentence and a formula:
+**Voted facts.** The LLM is asked 8 times to list the facts that hold "purely
+because of what the symbols mean". It is shown only the symbols with their
+meaning (`access_granted`: "The system grants access to the user"), not the
+requirements. Each answer is a list of facts, and each fact is a sentence and
+a formula:
 
 ```
 F2   "The system cannot grant access and deny access simultaneously."
      (not (and access_granted access_denied))
 ```
 
-The 8 answers word the same fact differently, for example
-`(=> access_granted (not access_denied))`. So an answer counts as agreeing
-with a fact when Z3 proves that the fact follows from that answer's facts:
+Then the 8 answers vote on every fact that any of them proposed. They word the
+same fact differently, for example `(=> access_granted (not access_denied))`,
+so an answer votes for a fact when Z3 proves that the fact follows from that
+answer's own facts:
 
 ```
-(and <facts of answer k> (not F2))    unsatisfiable  →  answer k agrees
+(and <facts of answer k> (not F2))    unsatisfiable  →  answer k votes for F2
 ```
 
-F2 has 7 of the 8 answers behind it. More than half are needed, so it is kept.
+F2 has 7 of the 8 votes. More than half are needed, so it is kept.
 
 **Links.** Sometimes a rule uses a symbol that no other rule uses, and then
 nothing can clash with it. This happens in the Kiro blog's other spec,
@@ -309,9 +313,12 @@ D2: WHEN a Property Owner confirms deletion, THE Platform SHALL remove the Prope
 D4: THE Platform SHALL implement soft deletion to retain Property records in the database for audit purposes while hiding them from the user interface
 ```
 
-The LLM writes D2 with a symbol of its own, `property_record_removed`. Such a
-rule is translated 8 more times, using only the outcomes of the *other* rules.
-For D2, 8 of 8 answers say the same thing:
+The LLM writes D2 with a symbol of its own, `property_record_removed`, and D4
+with `property_record_retained_in_db`. For Z3 the two are unrelated, so a
+record can be removed and retained at once. So D2 is translated 8 more times,
+and this time the LLM may not use D2's own symbol. It may use only the symbols
+with which the *other* rules say what they demand. For D2, 8 of 8 answers say
+"not retained in the database", and that becomes the *link*:
 
 ```json
 {"id": "F1", "restates": "D2", "support": "8/8",
@@ -319,7 +326,11 @@ For D2, 8 of 8 answers say the same thing:
  "formula": "(=> (and deletion_confirmed property_record_removed) (not property_record_retained_in_db))"}
 ```
 
-With this link, Z3 proves the conflict between D2 and D4.
+A link is tested before it is used. The LLM is asked 8 times whether the
+record could still be in the database in a system that does everything D2
+demands, and more than half of the answers must say "impossible". With this
+link, Z3 proves the conflict between D2 and D4. The steps are in
+[GUIDE.md, section 3.2](GUIDE.md#32-telling-the-solver-what-the-words-mean).
 
 Facts and links are the LLM's guesses, so they are handled with care:
 
@@ -474,7 +485,7 @@ Nothing in the code or in the prompts is about orders.
 |---|---|---|
 | `specs/order`, `specs/delete_property` | Kiro EARS | the two examples of the Kiro blog |
 | `specs/auth_openspec` | OpenSpec (`### Requirement` / `#### Scenario`) | another format; two conflicts we planted |
-| `experiments/sets/`: `eval` to `eval8` (201 specs) | both | 48 specs in new domains, each clean and with planted defects. Each set was written before it was used, as a test the prompts had not seen |
+| `experiments/sets/`: `eval` to `eval8` | both | 48 specs in new domains. Each has a clean version and versions with one planted defect, 201 versions in all. Each set was written before it was used, as a test the prompts had not seen |
 
 ## How reliable is it
 
@@ -504,14 +515,20 @@ Some notes on these numbers:
 - `delete_property`, the blog's second example, was found in 3 of the last 3
   runs. It was missed in 4 of 7 earlier runs, 3 times because of a wrong voted
   fact (research.md 4.3).
-- Gaps were measured for the first time on `eval8/`, where one of two
-  complementary requirements was removed: all 18 planted gaps were found. On
-  the clean specs, 4 of 18 runs reported a gap that is not one, each time
-  because two complementary conditions had become two symbols ("the slot is
-  free", "the slot is taken").
-- One spec of 30 requirements (`experiments/sets/size`) went as well as the
-  small ones: 6 of 6 planted conflicts, none on the clean version, and under
-  a second in the solver stage. That is one spec, not a study of size.
+- Gaps were measured for the first time on `eval8/`. A clean spec there has
+  two complementary requirements, such as "... AND the slot is free" and
+  "... AND the slot is taken", and its gap version has only one of them. All
+  18 planted gaps were found. On the clean specs, where both cases are
+  covered, 4 of 18 runs still reported a gap. Each time the model had made
+  two symbols, `slot_is_free` and `slot_is_taken`, and for Z3 a slot can then
+  be neither.
+- All these specs have at most six requirements. To see what a longer document
+  does, we wrote one spec of 30 requirements, in
+  `experiments/sets/size/campsite_clean`, with three defect versions next to
+  it. It went as well as the small ones: the planted conflicts were found in
+  6 of 6 runs, the clean version gave no conflict, and the solver stage took
+  under a second. This is one document, so it is a first sign and not a
+  measurement.
 - The numbers are small: the specs were written by us, and there is one main
   model. The details are in [research.md](research.md).
 
@@ -519,13 +536,13 @@ Some notes on these numbers:
 
 | Limit | What it means |
 |---|---|
-| A finding is a proof about `formal.json`, not about your intent | the LLM mistranslates → the solver proves the wrong thing |
+| A finding is a proof about `formal.json`, not about your intent | if the LLM mistranslates a rule, the solver proves something about the wrong formula |
 | One model finds about half of the ambiguities | it is confident about readings a person would ask about. A second model finds most, and flags about one more clear rule per spec |
 | An assumed fact or link can be wrong, even with a majority | the report quotes every one a conflict depends on, so you can judge |
 | Some proven conflicts are artefacts of the model | two events at the same moment ("a visitor signs up" while "a subscriber changes the address"); "at least 24 hours" and "less than 24 hours" as two symbols, both true. These are marked *doubtful* |
 | The *doubtful* mark needs the LLM to name the event each rule reacts to | a state taken for an event ("WHEN a member is suspended") marks a real conflict too |
-| "Remove" against "keep" is missed in about half of the cases | "delete the listing" vs "keep every listing for seven years" become unrelated symbols, or a number, and nothing connects them. The main cause of missed conflicts |
-| Gaps depend on the symbols, and on the events the LLM marks | a gap is looked for once for each event; the gap in which no event happens, which almost every spec has, is marked as such |
+| "Remove" against "keep" is missed in about half of the cases | "delete the listing" becomes a yes/no symbol, `listing_deleted`, and "keep every listing for seven years" becomes a number of years. For Z3 nothing connects the two, so both rules can be obeyed. The main cause of missed conflicts (GUIDE.md, section 5.4) |
+| Gaps depend on the symbols, and on the events the LLM marks | "free" and "taken" as two symbols give a false gap. The gap in which no event happens, which almost every spec has, is marked as such and is rarely something to fix |
 | One snapshot, no time | "then", "after" and "until" are not modelled |
 | One document | checking a change against specs that already exist is the next step (plan.md) |
 
