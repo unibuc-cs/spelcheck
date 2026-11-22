@@ -18,7 +18,11 @@ class LLM:
         # base_url  e.g. "http://localhost:18200/v1"
         # The key comes from the OPENAI_API_KEY environment variable. Servers
         # started without a key accept any value, hence the "none" default.
-        self.client = OpenAI(base_url=base_url, api_key=os.environ.get("OPENAI_API_KEY", "none"))
+        # timeout: the read step of a long document may write some 15,000
+        # tokens, which on a busy server can take longer than the client's
+        # default of 10 minutes; the client would then send the request again.
+        self.client = OpenAI(base_url=base_url, api_key=os.environ.get("OPENAI_API_KEY", "none"),
+                             timeout=1800)
         # If no model name is given, use the (first) model the server offers.
         self.model = model or self.client.models.list().data[0].id
 

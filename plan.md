@@ -81,7 +81,12 @@ Two small things are open after step 26 (E13):
 - **Size beyond one spec.** The 30-requirement spec fell into 16 to 18
   families of rules, which is why its solver stage took under a second. A
   document whose rules all meet in a few symbols would still take about 30
-  seconds at that size, and more beyond it.
+  seconds at that size, and more beyond it. The read step may now answer with
+  24576 tokens instead of 8192, enough for about 150 requirements (the 30
+  requirements took 4,000 to 5,000); the server's window of 32768 tokens is the
+  real bound. Not yet tried on a spec that long. The second reader's server
+  has a window of only 6144 tokens, which a long symbol list may already
+  exceed.
 
 Time ("then", "after", "until") is not planned. The model is one snapshot.
 

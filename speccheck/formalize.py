@@ -55,10 +55,16 @@ LOW_ENTROPY = 0.4
 HIGH_ENTROPY = 1.0
 
 # The read step copies every requirement word for word and lists every symbol,
-# so its answer grows with the document, and the usual limit of llm.ask may be
-# too short for a long one. An answer that is cut off is not valid JSON, and
-# the whole run fails.
-READ_MAX_TOKENS = 8192
+# so its answer grows with the document. For the 30-requirement spec in
+# experiments/sets/size it is about 15,000 characters, roughly 4,000 to 5,000
+# tokens: some 150 tokens per requirement. An answer that is cut off is not
+# valid JSON, and the whole run fails.
+# The server sets the upper bound: the prompt and the answer together must fit
+# in its context window (--max-model-len 32768 in experiments/slurm/serve.sbatch),
+# and vLLM refuses a request that asks for more. 24576 leaves 8192 tokens for
+# the prompt (the instructions and the document), and is enough for about 150
+# requirements. On a server with a smaller window, lower it.
+READ_MAX_TOKENS = 24576
 
 # ---------------------------------------------------------------- step 1: read
 

@@ -10,6 +10,10 @@
 # and point speccheck at http://localhost:18200/v1 with OPENAI_API_KEY set to
 # the content of ~/speccheck/api_key.
 #
+# A second server on the same node needs its own port, and then writes its key
+# to ~/speccheck/api_key_<port>:
+#     sbatch --export=ALL,PORT=18210 serve.sbatch
+#
 #SBATCH --job-name=speccheck-qwen
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:2
@@ -19,7 +23,7 @@
 #SBATCH --output=serve_%j.log
 
 MODEL=Qwen/Qwen3.8-27B-FP8
-PORT=18200
+PORT=${PORT:-18200}
 
 # The environment that already has vLLM installed.
 source "$HOME/.venv/bin/activate"
@@ -43,7 +47,9 @@ export HF_HUB_OFFLINE=1
 # through the environment (not the command line) so it does not show up in `ps`.
 umask 077
 export VLLM_API_KEY=$(python -c "import secrets; print(secrets.token_hex(16))")
-echo "$VLLM_API_KEY" > "$HOME/speccheck/api_key"
+KEY_FILE="$HOME/speccheck/api_key"
+[ "$PORT" = 18200 ] || KEY_FILE="$HOME/speccheck/api_key_$PORT"
+echo "$VLLM_API_KEY" > "$KEY_FILE"
 
 # --data-parallel-size      one full copy of the model per GPU; vLLM spreads requests over them
 # --max-num-seqs            requests handled at once per replica. The default (1024) is more
