@@ -22,7 +22,7 @@ come back in plain language, each with "A) keep as-is / B) change".
 |---|---|
 | **G1** A minimal working prototype of Kiro's formal analysis: spec, formal check, answer in plain language | **Done.** Conflicts, gaps, ambiguities and scenarios, as in Kiro's formal part. Gaps are asked once for each event, and all 18 planted gaps of `eval8/` were found. Both Kiro blog examples found by the solver (`delete_property`: 3 of 3 in the last runs; a wrong voted fact can still hide it). Ambiguities: about half with one model; with the optional second reader 30 and 32 of 36 (held-out `eval4/`, `eval7/`), at up to one extra question per spec |
 | **G2** Data-driven: any spec, any format | **Partly.** 51 base specs in two formats (Kiro EARS, OpenSpec), no change to code or prompts; one spec of 30 requirements went as well as the small ones (E13). Missing: a whole OpenSpec *project*, where a change is checked against the specs that already exist |
-| **G3** Code and documents a person can read | **Done** for the current state |
+| **G3** Code and documents a person can read | **Done** for the current state. GUIDE.md and README.md were revised after a point-by-point review (2026-11-22): each mechanism is a short list of steps on one real example |
 | **G4** Research for a paper, on the local model | **Well under way.** 8 held-out tests (E5, E7 to E13): 61 to 100% of planted conflicts found; at most 1 false alarm in 18 clean runs with doubtful conflicts set aside (none in the last five). Gaps measured for the first time (E13). Still small: one main model, specs written by us |
 | **G5** Only the formal part | **Done.** An LLM review of the text was built, measured, and switched off |
 
@@ -317,11 +317,15 @@ F2:  not (access_granted and              ─┘   → conflict {R1, R4}, depend
 - the LLM is asked N times for facts that hold "purely because of what the
   symbols mean"
 - it sees the symbols only, not the requirements
-- a fact is kept when it follows from the facts of more than half of the N answers:
+- every fact in every answer is a candidate, and the N answers vote on it:
+  answer k votes for a candidate when the candidate follows from answer k's
+  own facts
 
 ```
-facts of answer k  and  not fact      unsatisfiable?     answer k agrees
+facts of answer k  and  not candidate      unsatisfiable?     answer k votes for it
 ```
+
+- a candidate with the votes of more than half of the N answers is kept
 
 - so "a and b exclude each other" and "a implies not b" count as the same vote
 
@@ -349,7 +353,7 @@ run 2   the same search with the facts added   → keep only conflicts that need
 ```
 rule D2          confirmed => record_removed             (record_removed is private)
 asked again      "remove the Property record", with the other rules' outcomes
-7 of 8 answers   confirmed => (not record_retained)
+8 of 8 answers   confirmed => (not record_retained)         (experiments/examples/delete_property_links)
 link (a fact)    (confirmed and record_removed) => (not record_retained)
 ```
 
@@ -380,8 +384,10 @@ link (a fact)    (confirmed and record_removed) => (not record_retained)
 not A_1 and ... and not A_n      satisfiable?
 ```
 
-Nearly every spec has the gap "nothing is happening", and it says little. The
-gaps worth reading are those in which something happens. So when the rules
+Nearly every spec has a gap in which nothing happens at all. No rule applies
+there because nothing happened, and a system normally just waits, so this gap
+is rarely something to fix. The gaps worth reading are those in which
+something happens. So when the rules
 react to events, the question is asked once for each event, with no other
 event at the same moment (requirements are written for one event at a time):
 
@@ -454,8 +460,9 @@ formal model K ─► findings ─┘
 
 - all 8 samples can agree and still be wrong: one model tends to make the same
   choice every time
-- so step 6 asks a different question: the LLM gets ONE requirement, on its
-  own, and ONE concrete situation that Z3 picks, or one statement
+- so step 6 does not ask for more translations. The LLM gets ONE requirement,
+  on its own, and ONE concrete situation that Z3 picks, or one statement, and
+  says what the words of the requirement decide about it
 - each question is asked 8 times; the answers are counted
 
 **Check 1: is the translation the only reading of the words?**
@@ -505,8 +512,8 @@ verdict        more than half say "contradicts" → the fact is left out
 
 ### 5.8 A second reader (`formalize.py`, step 7, optional)
 
-- one model's 8 samples agree with each other also where a reader would
-  hesitate: they come from one judgment
+- one model's 8 samples can agree with each other even on a rule that two
+  people would read in two ways, because they all come from the same model
 - a second model, of another family, is an independent reader
 - it gets exactly the prompt of step 2 and answers 8 times; for each answer,
   Z3 is asked whether it means the same as the translation, and our code
@@ -668,7 +675,7 @@ other reading of an ambiguous rule says "depends on the reading of R3".
 | conflict "if the assumed facts hold" | a proof that also needs the listed facts or links. Judge them |
 | conflict marked "doubtful" | a proof, but likely an artefact of the model (two events at once, or a situation the facts rule out). On `eval3/`, all 60 marked conflicts were false alarms |
 | ambiguity | a real question: the model's own translations disagree, the words did not decide between two readings it was shown, or a second model reads it otherwise. Expect about half of the real ambiguities to be found; with the second reader most, with about one extra question per spec |
-| scenario | a proven consequence of the rules. Whether it matters is the judge's opinion |
+| scenario | a proven consequence of the rules. Which scenarios are shown is chosen by an LLM judge; whether one is a problem is for the author to decide |
 | conflict or gap marked "depends on the reading of R3" | a proof that holds with the first reading of R3 only. R3 is ambiguous: answer its question first |
 | "found with k of K symbol sets" | the higher k, the less the finding depends on how the text was modelled. In the evaluation, findings with most sets were never wrong |
 
@@ -788,5 +795,9 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       30-requirement spec written first; a gap is looked for once for each event; conflicts
       are searched only among rules that share symbols (D8); held-out `eval8/`: planted gaps
       0 → 18 of 18, conflicts 18 of 21, the long spec 6 of 6 (E13)
+- [x] **Documentation pass 2**: GUIDE.md reviewed point by point and rewritten (a new
+      2.4 on gaps and scenarios; the ambiguity check, voted facts and links as steps on
+      one real example), then shortened from 1112 to 893 lines; README.md reworded in the
+      same places; plan.md 5.3, 5.4, 5.7, 5.8 and 7 in the same words
 
 Section 2 says why, and in which order.
