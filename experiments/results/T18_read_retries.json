@@ -1,0 +1,831 @@
+{
+ "model": "Qwen/Qwen3.8-27B-FP8",
+ "summary": {
+  "specs": 204,
+  "first answer unusable": 0,
+  "usable retries of 8, per temperature": {
+   "0.2": [],
+   "0.3": [],
+   "0.5": [],
+   "0.9": []
+  }
+ },
+ "results": [
+  {
+   "spec": "experiments/sets/eval/booking_ambiguity/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval/booking_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval/booking_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval/booking_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval/library_ambiguity/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval/library_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval/library_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval/library_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval/parking_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval/parking_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval/parking_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval/thermostat_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval/thermostat_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval/thermostat_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval/upload_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval/upload_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval/upload_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval/vending_ambiguity/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval/vending_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval/vending_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval/vending_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/discounts_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/discounts_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/discounts_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/discounts_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/discounts_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/exam_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/exam_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/exam_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/exam_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/exam_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/newsletter_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/newsletter_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/newsletter_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/newsletter_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/newsletter_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/pharmacy_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/pharmacy_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/pharmacy_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/pharmacy_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/pharmacy_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/rental_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/rental_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/rental_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/rental_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/rental_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/transfer_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/transfer_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/transfer_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/transfer_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval2/transfer_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval3/claims_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval3/claims_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval3/claims_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval3/claims_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval3/doors_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval3/doors_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval3/doors_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval3/doors_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval3/gym_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval3/gym_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval3/gym_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval3/gym_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval3/helpdesk_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval3/helpdesk_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval3/helpdesk_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval3/helpdesk_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval3/moderation_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval3/moderation_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval3/moderation_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval3/moderation_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval3/streaming_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval3/streaming_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval3/streaming_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval3/streaming_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval4/attendance_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval4/attendance_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval4/attendance_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval4/attendance_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval4/delivery_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval4/delivery_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval4/delivery_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval4/delivery_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval4/elevator_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval4/elevator_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval4/elevator_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval4/elevator_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval4/irrigation_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval4/irrigation_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval4/irrigation_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval4/irrigation_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval4/lockers_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval4/lockers_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval4/lockers_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval4/lockers_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval4/printing_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval4/printing_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval4/printing_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval4/printing_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval5/backup_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval5/backup_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval5/backup_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval5/backup_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval5/cards_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval5/cards_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval5/cards_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval5/cards_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval5/hotel_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval5/hotel_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval5/hotel_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval5/hotel_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval5/messages_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval5/messages_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval5/messages_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval5/messages_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval5/oven_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval5/oven_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval5/oven_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval5/oven_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval5/polls_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval5/polls_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval5/polls_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval5/polls_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval6/auctions_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval6/auctions_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval6/auctions_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval6/auctions_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval6/bikes_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval6/bikes_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval6/bikes_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval6/bikes_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval6/carwash_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval6/carwash_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval6/carwash_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval6/carwash_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval6/charging_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval6/charging_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval6/charging_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval6/charging_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval6/tickets_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval6/tickets_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval6/tickets_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval6/tickets_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval6/warehouse_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval6/warehouse_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval6/warehouse_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval6/warehouse_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval7/canteen_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval7/canteen_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval7/canteen_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval7/canteen_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval7/fleet_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval7/fleet_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval7/fleet_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval7/fleet_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval7/lab_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval7/lab_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval7/lab_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval7/lab_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval7/photos_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval7/photos_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval7/photos_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval7/photos_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval7/skipass_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval7/skipass_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval7/skipass_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval7/skipass_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval7/taxi_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval7/taxi_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval7/taxi_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval7/taxi_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/clinic_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/clinic_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/clinic_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/clinic_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/clinic_gap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/donations_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/donations_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/donations_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/donations_gap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/donations_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/laundry_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/laundry_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/laundry_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/laundry_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/laundry_gap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/meters_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/meters_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/meters_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/meters_gap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/meters_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/recycling_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/recycling_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/recycling_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/recycling_gap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/recycling_overlap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/tolls_ambiguity1/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/tolls_ambiguity2/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/tolls_clean/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/tolls_direct/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "experiments/sets/eval8/tolls_gap/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "specs/auth_openspec/spec.md",
+   "first": "ok"
+  },
+  {
+   "spec": "specs/delete_property/requirements.md",
+   "first": "ok"
+  },
+  {
+   "spec": "specs/order/requirements.md",
+   "first": "ok"
+  }
+ ]
+}

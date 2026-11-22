@@ -699,7 +699,7 @@ eval8   18/21   █████████████████░░░   8
 | how much assumed facts and links matter | a great deal: without them `eval8` gives 9 of 21, with them 18 |
 | planted gaps (`eval8` only) | 18 of 18 found, now that the question is asked once for each event; before, 0 of 18 |
 | false gaps (`eval8`) | in 4 of 18 runs on clean specs. Explained below |
-| a longer spec, 30 requirements | it went as well as the small ones. Explained below |
+| longer specs, 30 and 100 requirements | they went as well as the small ones. Explained below |
 
 **The false gaps.** A clean spec in `eval8` covers both cases of an event, for
 example "a resident books a time slot AND the slot is free" and "... AND the
@@ -710,15 +710,23 @@ the same reason: the model had made two symbols, `slot_is_free` and
 symbol, and "taken" written as `(not slot_is_free)`, the false gap does not
 appear.
 
-**A longer spec.** All the specs counted above have at most six requirements.
-To see what a longer document does, we wrote one spec of 30 requirements,
-about a campsite: `experiments/sets/size/campsite_clean`, with the versions
-`campsite_direct`, `campsite_overlap` and `campsite_gap` next to it. Each was
-run three times. The two planted conflicts were found in 6 of 6 runs and the
-planted gap in 3 of 3, the clean version gave no conflict (doubtful ones set
-aside), and the solver stage took under a second. So the tool is not limited
-to small specs. But this is one document: a first sign, not a measurement, and
-specs of hundreds of requirements have not been tried.
+**Longer specs.** All the specs counted above have at most six requirements.
+To see what a longer document does, we wrote two more, each in four versions
+(clean, direct, overlap, gap) and run three times:
+
+| | 30 requirements, a campsite (`experiments/sets/size`) | 100 requirements, a ferry line (`experiments/sets/size2`) |
+|---|---|---|
+| planted conflicts | 6 of 6 | 6 of 6 |
+| planted gap | 3 of 3 | 3 of 3 |
+| clean version | no conflict | one false alarm in 3 runs |
+| solver stage, one run | under a second | 35 seconds |
+
+At 100 requirements the read step's answer, which copies every requirement
+and lists every symbol, is about 16,800 tokens. The model is allowed 24,576,
+enough for about 140 requirements; beyond that the read step would fail. And
+the optional second model cannot be used yet on a spec this long: its server
+has too little room for a prompt with some 200 symbols. These are two
+documents, so a first sign, not a measurement.
 
 ### 5.3 The goals
 
@@ -865,7 +873,7 @@ speccheck/          the tool (the 7 files above; refine.py is the review that is
 specs/              3 small specs the prompts were developed on, with their saved output
 tests/              42 tests that need no LLM
 experiments/
-  sets/             the 8 evaluation sets, eval to eval8 (201 spec versions), and one long spec
+  sets/             the 8 evaluation sets, eval to eval8 (201 spec versions), and two long specs
   results/          every experiment: the raw data (.json) and its tables (.md)
   examples/         saved runs that the documents quote
   evaluate.py       runs the pipeline on a set and scores it

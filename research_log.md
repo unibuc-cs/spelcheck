@@ -1747,6 +1747,182 @@ a few flags moved from "nothing" to "only a gap".
 
 ---
 
+## E14 — One spec of 100 requirements, with a longer read answer (2026-11-22)
+
+**Question.** The read step copies every requirement and lists every symbol,
+so its answer grows with the document. For 30 requirements it was 4,000 to
+5,000 tokens, against a limit of 8192. Does a document of 100 requirements fit
+with a higher limit, and what happens to the findings and the time?
+
+**Setup.** `size2/` was written first (commit `6f4e350`): a ferry line of 100
+requirements in four versions, clean, direct, overlap and gap; 20 events have
+both of their cases written ("covered"). Then the design of step 27 (commit
+`00b253c`): the read answer may have 24576 tokens instead of 8192, and the LLM
+client waits up to 30 minutes instead of 10. Nothing else changed since E13.
+3 runs per version, 1 symbol set: 12 runs, none failed. Two servers with the
+same model, vLLM 0.31.0 and flags: a cluster job with 2 GPUs (clean, direct)
+and the workstation's GPUs 0 and 1 (overlap, gap). A second cluster job stayed
+pending with `QOSGrpGRES`: the account may hold 2 GPUs at a time. The two
+halves took 29 and 40 minutes; T17 ran on the workstation server from minute 12.
+
+**The read answer.** A probe asked the read step for `ferry_clean` at
+temperature 0, once with each limit:
+
+| Limit | Finished | Answer tokens | Characters | Time |
+|---|---|---|---|---|
+| 8192 | no: cut off at the limit | 8192 | 28,999 | 141 s |
+| 24576 | yes | 16,799 | 58,906 | 1,501 s |
+
+- The prompt is 3,765 tokens, so prompt and answer take 20,564 of the server's
+  32,768. The answer is about 170 tokens per requirement, more than the 150
+  estimated from 30 requirements: the limit of 24576 holds about 140
+  requirements, and the window about 150.
+- With the old limit, every run on this spec fails: the answer is not valid
+  JSON. With the new one, all 12 runs listed the right number of requirements
+  (100, 101 or 99), with 203 to 207 symbols, 66 of them events.
+- The long call took 25 minutes because the server was busy (E14's other half
+  and T17): about 11 tokens a second, against 58 for the first call. The old
+  client timeout of 10 minutes would have cut it and sent it again.
+
+**Results.**
+
+| | Result |
+|---|---|
+| planted conflicts | 6 of 6 (direct 3 of 3, overlap 3 of 3); without assumed facts and links 3 of 6 (overlap 0 of 3) |
+| clean spec | a false alarm in 1 of 3 runs, not marked doubtful; the same conflict in 1 run of `ferry_direct` |
+| planted gap | 3 of 3 (0 of 3 with the search over all situations) |
+| gaps on the 20 covered events of the clean spec | none in 3 runs |
+| other gaps with an event on the clean spec | 12 in 3 runs, cases the spec does leave open |
+| rejected rules | F21 in 12 of 12 runs; 0 to 1 other rule per run |
+| ambiguity flags | 4 on the clean spec in 3 runs, 24 on the other versions |
+| solver stage, one model of 101 rules | 35 s (under 1 s for 30 requirements) |
+| one full CLI run with the wording (`ferry_direct`) | 620 s, on the busy cluster server |
+
+- *The false alarm.* F1 "WHEN a passenger requests a crossing AND seats are
+  available ... reserve a seat" against F4 "WHEN a reserved seat has been
+  unpaid for more than 30 minutes ... release the seat", with the assumed fact
+  that a seat is not reserved and released at once. F4 was read as a state,
+  with no trigger, so the two-event mark did not apply. With one snapshot and
+  one `seat_reserved` for every seat, a new booking and an old unpaid one are
+  the same seat: an artefact of time and of identity, not a defect.
+- *F21 is rejected in every run.* "WHEN a booked vehicle has not checked in 30
+  minutes before departure" scattered over `(<= minutes_before_departure 30)`,
+  `(= ... 30)` and `(>= ... 30)`. The sentence is unclear (we wrote it), and
+  the tool asks for it to be rewritten.
+- *Other gaps.* "A customer enters a wrong password for the fourth time", "a
+  group booking of 10 or fewer is paid", "a passenger without assistance or
+  priority boarding arrives at the terminal": cases we left open.
+
+**What does not scale yet.**
+
+- *The second reader.* A translation prompt with the 206 symbols has 4,234
+  tokens. The second model's server allows 6,144 for prompt and answer, and
+  the answer may take 4,096, so every request would be refused. The answers
+  themselves are about 60 tokens (61 in the probe): a lower answer limit for
+  translations would make room.
+- *The report.* A gap lists every other event as FALSE: about 70 lines per gap
+  at this size, which buries the few facts that matter.
+- *The solver stage* grows from under 1 s to 35 s for one model, and scoring
+  the 12 runs under all configurations of `evaluate.py` took more than 10
+  minutes on the laptop.
+
+**Raw data.** [experiments/results/E14_size2.json](experiments/results/E14_size2.json)
+(both halves in one file; `servers` says which ran where) and its table,
+[E14_read_probe.json](experiments/results/E14_read_probe.json), and the full
+CLI run in [experiments/examples/size2_ferry_direct](experiments/examples/size2_ferry_direct).
+
+---
+
+## T17 — The temperature of the samples: 0.3, 0.5 and 0.7 (2026-11-22)
+
+**Question.** Every sample of the pipeline is drawn at 0.7: the 8
+translations of a rule, the 8 fact lists, the 8 restatements of a link, the 8
+answers to each question. 0.7 was only ever compared with 1.0 (E1). Is a
+lower value better?
+
+**Setup.** `eval8/` (development data), 3 runs per version, 1 symbol set, 90
+runs per temperature, none failed; `evaluate.py --temperature` (commit
+`52eefe3`). The read step stays at temperature 0, so the symbols are drawn as
+before. 0.5 and then 0.7 ran on the workstation server, 0.3 on a new cluster
+job, all on the same day and with the same model and flags. E13 (two days
+earlier, the same design for specs of this size) is a second run at 0.7, which
+shows how much two runs at the same temperature differ. During T17 the middle
+retry temperature of the read step went from 0.5 to 0.3; a retry only happens
+when the first read fails, which T18 found for 0 of 204 specs.
+
+| Temperature | Planted conflicts | Clean runs with a false alarm (doubtful set aside) | Unexpected conflicts (all doubtful) | Planted ambiguities | Flags on clean specs | Other flags | Planted gaps | False gaps on covered events |
+|---|---|---|---|---|---|---|---|---|
+| 0.3 | 18/21 | 0/18 | 40 | 13/36 | 2 | 15 | 18/18 | 5/18 |
+| 0.5 | 18/21 | 0/18 | 41 | 14/36 | 3 | 15 | 18/18 | 3/18 |
+| 0.7 | 18/21 | 0/18 | 37 | 14/36 | 4 | 18 | 18/18 | 4/18 |
+| 0.7 (E13) | 18/21 | 0/18 | 37 | 20/36 | 3 | 11 | 18/18 | 4/18 |
+
+The ablations, planted ambiguities found (flags on clean specs, other flags):
+
+| Temperature | default | sampling only (without step 6) | translation needs 7 of 8 answers | without assumed facts and links: conflicts |
+|---|---|---|---|---|
+| 0.3 | 13/36 (2, 15) | 11/36 (1, 10) | 18/36 (5, 31) | 9/21 |
+| 0.5 | 14/36 (3, 15) | 13/36 (3, 16) | 19/36 (4, 29) | 9/21 |
+| 0.7 | 14/36 (4, 18) | 15/36 (3, 21) | 25/36 (13, 42) | 9/21 |
+| 0.7 (E13) | 20/36 (3, 11) | 13/36 (4, 20) | 23/36 (9, 40) | 9/21 |
+
+Planted ambiguities by kind, default configuration:
+
+| Temperature | and/or | boundary | if | only |
+|---|---|---|---|---|
+| 0.3 | 1/9 | 1/9 | 8/9 | 3/9 |
+| 0.5 | 1/9 | 0/9 | 7/9 | 6/9 |
+| 0.7 | 0/9 | 1/9 | 5/9 | 8/9 |
+| 0.7 (E13) | 3/9 | 1/9 | 8/9 | 8/9 |
+
+**What it shows.**
+
+1. *Conflicts and gaps do not depend on the temperature* between 0.3 and 0.7:
+   18 of 21 planted conflicts, 18 of 18 planted gaps and no false alarm with
+   doubtful ones set aside, at every value. As in E1, the symbols decide the
+   conflicts, and they come from the read step at temperature 0. The facts and
+   links matter as much at 0.3 as at 0.7 (9 of 21 without them, everywhere).
+2. *For ambiguities, two runs at 0.7 differ more than the temperatures do:* 14
+   and 20 of 36. Only two trends are larger than that noise. Ambiguities of
+   "only" fall from 8 of 9 (both runs at 0.7) to 6 at 0.5 and 3 at 0.3: these
+   are found when the 8 translations split, and at a low temperature they
+   split less. With "translation needs 7 of 8 answers" the finds are 23 and
+   25 at 0.7, 19 at 0.5 and 18 at 0.3, with fewer flags elsewhere (40 and 42
+   against 29 and 31): the same trade of finds for flags as always.
+3. *Flags on clean specs* are 2, 3 and 4 in 18 runs: fewer at 0.3, but by one
+   or two flags, within the noise.
+
+**Decision.** The temperature stays 0.7. A lower one gains nothing measurable
+for conflicts, gaps or false alarms, and loses the ambiguities of "only".
+Nothing is adopted, so no held-out set is needed.
+
+**Raw data.** [experiments/results/T17_eval8_t03.json](experiments/results/T17_eval8_t03.json),
+[T17_eval8_t05.json](experiments/results/T17_eval8_t05.json),
+[T17_eval8_t07.json](experiments/results/T17_eval8_t07.json), each with its table.
+
+---
+
+## T18 — How often is the first read answer unusable? (2026-11-22, probe)
+
+**Question.** The read step asks at temperature 0 and, if the answer is
+unusable, asks again at 0.5 and then 0.9. The values date from the first
+commit and were never measured. Are they ever used?
+
+**Setup.** Every version of `eval/` to `eval8/` and the three development
+specs, 204 in all, read once at temperature 0 on the cluster server. For an
+unusable answer (no valid JSON, or symbols that `Vocabulary` refuses), 8 more
+answers at 0.2, 0.3, 0.5 and 0.9 would be counted.
+
+**Result.** The first answer was usable for all 204 specs, so no retry was
+needed and the retry temperatures change nothing measured so far. The middle
+one was set to 0.3 afterwards (a little more variety first, then a lot); no
+experiment can show a difference. The retry may still matter for the extra
+symbol sets, whose read step runs at 0.7, and for answers cut off at the limit.
+
+**Raw data.** [experiments/results/T18_read_retries.json](experiments/results/T18_read_retries.json).
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

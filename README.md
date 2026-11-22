@@ -474,7 +474,9 @@ The output is written next to the spec, or into `--out`:
 | `findings.json` | what the solver proved, with its wording |
 | `report.md` | the same, in plain language (also printed) |
 
-A 5-rule spec takes under a minute, and about a minute with 3 symbol sets.
+A 5-rule spec takes under a minute, and about a minute with 3 symbol sets. A
+spec of 100 requirements took about 10 minutes; the read step has room for
+about 140 requirements (`READ_MAX_TOKENS` in `formalize.py`).
 When you are done, cancel the server job: it holds the account's two GPUs.
 
 ## It works on any spec
@@ -523,12 +525,16 @@ Some notes on these numbers:
   two symbols, `slot_is_free` and `slot_is_taken`, and for Z3 a slot can then
   be neither.
 - All these specs have at most six requirements. To see what a longer document
-  does, we wrote one spec of 30 requirements, in
-  `experiments/sets/size/campsite_clean`, with three defect versions next to
-  it. It went as well as the small ones: the planted conflicts were found in
-  6 of 6 runs, the clean version gave no conflict, and the solver stage took
-  under a second. This is one document, so it is a first sign and not a
-  measurement.
+  does, we wrote one spec of 30 requirements (`experiments/sets/size`) and one
+  of 100 (`experiments/sets/size2`), each with three defect versions. Both
+  went as well as the small ones: the planted conflicts were found in 6 of 6
+  runs and the planted gap in 3 of 3. The clean version of the long one gave
+  one false alarm in 3 runs, and its solver stage takes 35 seconds instead of
+  under one. The optional second model does not fit a spec that long yet
+  (research.md 4.4). Two documents are a first sign, not a measurement.
+- The samples are drawn at temperature 0.7. At 0.3 and 0.5, on `eval8/`, the
+  conflicts and gaps did not change, and fewer ambiguities of "only" were
+  found (T17), so 0.7 stays.
 - The numbers are small: the specs were written by us, and there is one main
   model. The details are in [research.md](research.md).
 
@@ -567,7 +573,7 @@ research.md, section 5.
 | `speccheck/refine.py` | optional LLM review, off by default |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the vLLM servers on the cluster: the main model, the second model |
 | `tests/` | 42 tests of everything that needs no LLM |
-| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval8` and `size`, and the script that writes them |
+| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval8`, `size` and `size2`, and the script that writes them |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs and scores the evaluation; re-scores saved runs without a GPU |
 | `experiments/stability.py`, `fact_threshold.py` | the earlier experiments |

@@ -21,7 +21,7 @@ come back in plain language, each with "A) keep as-is / B) change".
 | Goal | Status |
 |---|---|
 | **G1** A minimal working prototype of Kiro's formal analysis: spec, formal check, answer in plain language | **Done.** Conflicts, gaps, ambiguities and scenarios, as in Kiro's formal part. Gaps are asked once for each event, and all 18 planted gaps of `eval8/` were found. Both Kiro blog examples found by the solver (`delete_property`: 3 of 3 in the last runs; a wrong voted fact can still hide it). Ambiguities: about half with one model; with the optional second reader 30 and 32 of 36 (held-out `eval4/`, `eval7/`), at up to one extra question per spec |
-| **G2** Data-driven: any spec, any format | **Partly.** 51 base specs in two formats (Kiro EARS, OpenSpec), no change to code or prompts; one spec of 30 requirements went as well as the small ones (E13). Missing: a whole OpenSpec *project*, where a change is checked against the specs that already exist |
+| **G2** Data-driven: any spec, any format | **Partly.** 51 base specs in two formats (Kiro EARS, OpenSpec), no change to code or prompts; specs of 30 and of 100 requirements went as well as the small ones (E13, E14), and the read step now has room for about 140. Missing: a whole OpenSpec *project*, where a change is checked against the specs that already exist |
 | **G3** Code and documents a person can read | **Done** for the current state. GUIDE.md and README.md were revised after a point-by-point review (2026-11-22): each mechanism is a short list of steps on one real example |
 | **G4** Research for a paper, on the local model | **Well under way.** 8 held-out tests (E5, E7 to E13): 61 to 100% of planted conflicts found; at most 1 false alarm in 18 clean runs with doubtful conflicts set aside (none in the last five). Gaps measured for the first time (E13). Still small: one main model, specs written by us |
 | **G5** Only the formal part | **Done.** An LLM review of the text was built, measured, and switched off |
@@ -71,37 +71,29 @@ There are three candidates, in this order. The first is the one we recommend.
      marked doubtful when the assumed facts rule its situation out, as
      conflicts are.
 
-Two small things are open after step 26 (E13):
+Small things that are open:
 
-- **The wording of a finding that depends on a reading.** The model now names
-  the two readings correctly, but in the one report we looked at it wrote the
-  gap as if it were the ambiguity, and ended with "Which did you mean?". One
-  sentence in the wording prompt would probably settle it; it needs a run
-  with the LLM to check.
-- **Size beyond one spec.** The 30-requirement spec fell into 16 to 18
-  families of rules, which is why its solver stage took under a second. A
-  document whose rules all meet in a few symbols would still take about 30
-  seconds at that size, and more beyond it. The read step may now answer with
-  24576 tokens instead of 8192, enough for about 150 requirements (the 30
-  requirements took 4,000 to 5,000); the server's window of 32768 tokens is the
-  real bound. Not yet tried on a spec that long. The second reader's server
-  has a window of only 6144 tokens, which a long symbol list may already
-  exceed.
+- **The wording of a finding that depends on a reading** (E13). The model now
+  names the two readings correctly, but in the one report we looked at it
+  wrote the gap as if it were the ambiguity, and ended with "Which did you
+  mean?". One sentence in the wording prompt would probably settle it; it
+  needs a run with the LLM to check.
+- **Long documents** (E14). A spec of 100 requirements works: its read answer
+  is 16,799 tokens, which the new limit of 24576 holds (about 140
+  requirements; the server's window of 32,768 tokens is the real bound). Three
+  things do not scale yet. The second reader cannot run: a translation prompt
+  with 206 symbols has 4,234 tokens, and its server allows 6,144 for prompt
+  and answer with 4,096 kept for the answer; the answers are about 60 tokens,
+  so a lower answer limit for translations would make room. A gap in the
+  report lists every other event as FALSE, about 70 lines at this size. And
+  the solver stage takes 35 s per model instead of under 1 s.
 
-Being run now (2026-11-22, step 27 and 28 in the TODO):
-
-- **A spec of 100 requirements** (`experiments/sets/size2`, E14): does the
-  read step fit in its new limit, and what happens to the findings and the
-  time at that size?
-- **The temperature of the 8 answers** (T17). Every sample in the pipeline
-  (translations, fact lists, links, questions) is drawn at 0.7, a value that
-  was only ever compared with 1.0 (E1). T17 runs `eval8/` at 0.3 and 0.5, and
-  at 0.7 again on the same day, with one symbol set, and compares the ablation
-  tables. A lower temperature makes the 8 answers more alike: fewer flags on
-  clear rules, but also fewer real ambiguities found, and perhaps fewer
-  facts and links. `eval8/` is development data, so a value that looks
-  better is adopted only after a held-out `eval9/`, written first. The read
-  step's 0.7 for extra symbol sets (`SET_TEMPERATURE`) is not part of T17.
+Decided on 2026-11-22: **the samples stay at temperature 0.7** (T17). On
+`eval8/`, 0.3 and 0.5 changed nothing for conflicts, gaps or false alarms;
+two runs at 0.7 differed more in ambiguities (14 and 20 of 36) than the
+temperatures did; and at 0.3 the ambiguities of "only" fell from 8 of 9 to 3.
+The read step's retry temperatures (now 0 → 0.3 → 0.9) are never reached at
+temperature 0: the first answer was usable for all 204 specs (T18).
 
 Time ("then", "after", "until") is not planned. The model is one snapshot.
 
@@ -218,7 +210,7 @@ Around the package:
 | File | Job |
 |---|---|
 | `tests/` | 42 tests of everything that needs no LLM |
-| `experiments/make_eval.py` | writes the evaluation sets `eval` to `eval8` and `size` into `experiments/sets/` (clean specs and planted defects) |
+| `experiments/make_eval.py` | writes the evaluation sets `eval` to `eval8`, `size` and `size2` into `experiments/sets/` (clean specs and planted defects) |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs the pipeline on a set of specs and scores it against the planted defects; adds the second reader to saved runs; re-scores saved runs without a GPU |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the main model and the second model on the cluster (section 8) |
@@ -715,8 +707,12 @@ SLURM:    experiments/slurm/serve.sbatch → vllm serve Qwen/Qwen3.8-27B-FP8   (
   `thelamapi/next-70b`, which was already in the cluster's model cache. It
   needs both GPUs, so it runs in its own job (`experiments/slurm/serve_second.sbatch`,
   port 18201), after Qwen's, and the experiments add its answers to saved runs.
-- **2 GPUs:** the account's limit. `--data-parallel-size 2` gives two replicas
-  behind one address, so the Python code needs no load balancing.
+- **2 GPUs:** the account's limit, for all its jobs together: a second job
+  waits with `QOSGrpGRES` (seen 2026-11-22). `--data-parallel-size 2` gives
+  two replicas behind one address, so the Python code needs no load balancing.
+  For E14 and T17 a second server with the same model and flags ran on two
+  free GPUs of the lab workstation; `serve.sbatch` takes `PORT`, so that two
+  servers can also share one node when the quota allows it.
 - **Shared quota:** other jobs of the account use the same 2 GPUs. Start the
   server with a short limit (`sbatch --time=00:30:00 serve.sbatch`) and cancel it when done.
 - **Key:** a random API key is written to `~/speccheck/api_key` at each start;
@@ -815,10 +811,12 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       30-requirement spec written first; a gap is looked for once for each event; conflicts
       are searched only among rules that share symbols (D8); held-out `eval8/`: planted gaps
       0 → 18 of 18, conflicts 18 of 21, the long spec 6 of 6 (E13)
-- [~] **Step 27 — long documents**: read answer limit 8192 → 24576 tokens; a
-      100-requirement spec (`size2/`) written first; run E14
-- [~] **Step 28 — the temperature of the samples**: `evaluate.py --temperature`;
-      T17 on `eval8/` at 0.3, 0.5 and 0.7, with ablation tables
+- [x] **Step 27 — long documents**: read answer limit 8192 → 24576 tokens; a
+      100-requirement spec (`size2/`) written first; E14: 6 of 6 conflicts, the
+      gap 3 of 3, read answer 16,799 tokens; the second reader does not fit yet
+- [x] **Step 28 — the temperature of the samples**: `evaluate.py --temperature`;
+      T17 on `eval8/` at 0.3, 0.5 and 0.7: no gain, 0.7 kept. T18: the read
+      step's retry is never needed at temperature 0 (0 of 204)
 - [x] **Documentation pass 2**: GUIDE.md reviewed point by point and rewritten (a new
       2.4 on gaps and scenarios; the ambiguity check, voted facts and links as steps on
       one real example), then shortened from 1112 to 893 lines; README.md reworded in the

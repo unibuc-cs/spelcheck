@@ -55,14 +55,13 @@ LOW_ENTROPY = 0.4
 HIGH_ENTROPY = 1.0
 
 # The read step copies every requirement word for word and lists every symbol,
-# so its answer grows with the document. For the 30-requirement spec in
-# experiments/sets/size it is about 15,000 characters, roughly 4,000 to 5,000
-# tokens: some 150 tokens per requirement. An answer that is cut off is not
-# valid JSON, and the whole run fails.
+# so its answer grows with the document. For the 100-requirement spec in
+# experiments/sets/size2 it is 16,799 tokens, about 170 per requirement (E14).
+# An answer that is cut off is not valid JSON, and the whole run fails.
 # The server sets the upper bound: the prompt and the answer together must fit
 # in its context window (--max-model-len 32768 in experiments/slurm/serve.sbatch),
 # and vLLM refuses a request that asks for more. 24576 leaves 8192 tokens for
-# the prompt (the instructions and the document), and is enough for about 150
+# the prompt (the instructions and the document), and is enough for about 140
 # requirements. On a server with a smaller window, lower it.
 READ_MAX_TOKENS = 24576
 
@@ -380,8 +379,10 @@ def _read(llm: LLM, spec_text: str, first_temperature: float) -> tuple[list[dict
     """Step 1: extract the rules and the symbols, retrying if the symbols are unusable."""
     error = None
     # If the symbol list of the first answer is broken (duplicate or illegal
-    # names), ask again with more randomness to get a different one.
-    for temperature in (first_temperature, 0.5, 0.9):
+    # names), ask again with more randomness to get a different one: a little
+    # first, then a lot. At temperature 0 the first answer was usable for all
+    # 204 specs of eval to eval8 and specs/ (T18), so the retry is rare.
+    for temperature in (first_temperature, 0.3, 0.9):
         answers = llm.ask(READ_SYSTEM, spec_text, READ_SCHEMA, temperature=temperature,
                           max_tokens=READ_MAX_TOKENS)
         if not answers:

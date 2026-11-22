@@ -29,6 +29,7 @@ its entries. How each mechanism works is in [plan.md](plan.md), section 5.
   | `eval3/` to `eval7/` | 24 each | 6 or 7 conflicts and 12 ambiguities each | E8 to E12 |
   | `eval8/` | 30 | 7 conflicts, 12 ambiguities, 6 gaps | E13 |
   | `size/` | 4 versions of one spec of 30 requirements | 2 conflicts, 1 gap | E13 |
+  | `size2/` | 4 versions of one spec of 100 requirements | 2 conflicts, 1 gap | E14 (not held-out: no design was tuned on it) |
 
 - **A run** is the pipeline once on one spec version. The LLM answers
   differently each time, so every version is run 3 times, and every number
@@ -74,12 +75,19 @@ of 7 after a change to the read prompt (4.3), and in 3 of 3 in the last runs
 The solver sees symbols, not words. Each mechanism below repairs one way in
 which the LLM's translation into logic can go wrong, and each was measured.
 
-### 3.1 Sampling each rule 8 times finds ambiguity, not conflicts (E1)
+### 3.1 Sampling each rule 8 times finds ambiguity, not conflicts (E1, T17)
 
 Conflicts are found as often with 1 translation per rule as with 8, because
 all samples of a rule use the same symbols. What the 8 samples show is
 disagreement: "the number of failed attempts reaches 5" split into "exactly 5"
 and "5 or more", which nobody had planted.
+
+The samples are drawn at temperature 0.7. On `eval8/` at 0.3, 0.5 and 0.7,
+conflicts (18 of 21), gaps (18 of 18) and false alarms (none, doubtful ones
+set aside) did not change at all (T17). Planted ambiguities were 13, 14 and 14
+of 36, but two runs at 0.7 gave 14 and 20, so most of that is noise. The one
+clear effect: ambiguities of "only", which show up when the 8 translations
+split, fell from 8 of 9 at 0.7 to 3 of 9 at 0.3. The temperature stays 0.7.
 
 ### 3.2 Assumed facts help, but only if they can never remove a finding (T1, E2)
 
@@ -177,6 +185,25 @@ the clean version (doubtful ones set aside), and the right number of
 requirements in every run. One spec is thin evidence: in a document whose rules
 all meet in a few symbols, nothing is saved.
 
+### 3.12 A document of 100 requirements works, with a longer read answer (E14)
+
+The read step writes every requirement and every symbol into one answer. For
+100 requirements that answer is 16,799 tokens, about 170 per requirement, and
+with the old limit of 8192 it was cut off, so every run would have failed.
+With a limit of 24576 (room for about 140 requirements in the server's window
+of 32,768 tokens), all 12 runs read the right number of requirements, with
+about 206 symbols:
+
+- planted conflicts 6 of 6, the planted gap 3 of 3, no false gap on the 20
+  covered events;
+- one false alarm in 3 clean runs, not marked doubtful: "reserve a seat"
+  against "release a seat unpaid for 30 minutes", one seat symbol for all
+  seats in one snapshot;
+- one rule rejected in every run, a sentence we wrote unclearly ("has not
+  checked in 30 minutes before departure");
+- the solver stage takes 35 s per model, a full run with the wording about 10
+  minutes.
+
 ---
 
 ## 4. What does not work yet
@@ -245,11 +272,16 @@ Planted ambiguities on the held-out `eval4/` (E9), 9 per kind:
   for one kind of planted gap.
 - **Conflicts of three rules** are searched, but the one planted case is also
   found through a pair.
-- **The plain-language wording** was checked by hand only (L9).
+- **The plain-language wording** was checked by hand only (L9). On a long
+  spec it buries a gap: each lists every other event as FALSE, about 70 lines
+  at 100 requirements (E14).
+- **The second reader on a long spec** cannot run as it is: with 206 symbols
+  a translation prompt has 4,234 tokens, and its server allows 6,144 for
+  prompt and answer, with 4,096 kept for the answer (E14).
 
 ### 4.5 The evaluation is small
 
-Eight sets with 48 base specs (201 versions) and one longer spec, all written
+Eight sets with 48 base specs (201 versions) and two longer specs, all written
 by us; 63 to 90 runs per experiment; one main model. One leak is known: an
 example in the read prompt came from the domain of an `eval3/` spec (D4).
 
@@ -297,9 +329,14 @@ the prompts, so it can be scored again without a GPU.
 | E12 | `eval7/`, held-out, with the comparison of T13 | 72 runs | 13 of 18 conflicts; ambiguities 17 → 32 of 36 with the second reader (3.8) |
 | E13 | `eval8/`, held-out, with gaps asked for each event; and one spec of 30 requirements | 90 + 12 runs | 18 of 21 conflicts; planted gaps 0 → 18 of 18; the long spec 6 of 6 conflicts, solver stage 30 s → under 1 s (3.10, 3.11) |
 
-The trials (T1 to T16) were run on development data between these
-experiments; research_log.md has them in order, together with the bugs that
+| E14 | one spec of 100 requirements, read answer up to 24576 tokens | 12 runs | read answer 16,799 tokens; 6 of 6 conflicts, the gap 3 of 3; solver stage 35 s (3.12) |
+
+The trials (T1 to T18) were run on development data between these
+experiments. Among the last: T17 compared temperatures 0.3, 0.5 and 0.7 (3.1);
+T18 found that the first read answer, at temperature 0, was usable for all
+204 specs, so the read step's retry is never needed on them. research_log.md
+has them in order, together with the bugs that
 changed results before they were fixed (L1 to L10) and the open threats to
 validity. To score a saved run again: `python -m experiments.evaluate --rescore
-experiments/results/E9_eval4.json` (E4 to E13), or `python -m
+experiments/results/E9_eval4.json` (E4 to E14), or `python -m
 experiments.stability --rescore experiments/results/E3_refine.json` (E1 to E3).
