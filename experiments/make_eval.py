@@ -1,6 +1,6 @@
-"""make_eval.py: writes the evaluation sets eval/ to eval9/, size/ and size2/. No LLM, no GPU.
+"""make_eval.py: writes the evaluation sets eval/ to eval10/, size/ and size2/. No LLM, no GPU.
 
-    python -m experiments.make_eval eval9      (only the sets named; all if none)
+    python -m experiments.make_eval eval10     (only the sets named; all if none)
 
 An evaluation set measures the formal check on specs that were NOT used to
 develop the prompts. Each set is held-out until its results are read to
@@ -20,7 +20,12 @@ design something; from then on it is development data:
              Read in E13; development data since.
     size2/   written 2026-11-22: one spec of 100 requirements. Read in E14.
     eval9/   written 2026-11-23, after T19, before the parentheses repair of
-             the facts vote. Same design as eval8/.
+             the facts vote. Same design as eval8/. Held-out in E15;
+             development data since.
+    eval10/  written 2026-11-23, after E15, before the doubtful mark on gaps.
+             Same design as eval8/, except that 3 of the 6 specs name the
+             condition of their two complementary requirements with two words
+             ("passes" / "fails") instead of one and its negation.
 
 Each set has six small specs (new domains; half Kiro EARS, half OpenSpec), each
 in several versions. The defects are planted by rule, so the expected answer is
@@ -1474,9 +1479,155 @@ SPECS9 = {
     },
 }
 
+# Written on 2026-11-23, after E15 and before the doubtful mark on gaps. The
+# design of eval8, except that 3 of the 6 specs (baggage, inspection,
+# passports) name the condition of requirements 1 and 2 with two words
+# ("within the weight limit" / "overweight"), the case that gave all false gaps
+# so far; the other 3 use one condition and its negation.
+SPECS10 = {
+    "baggage": {
+        "format": "ears",
+        "intro": "As a passenger, I want to drop my bag at a machine, so that I do not have to queue at the check-in desk.",
+        "rules": [
+            "WHEN a passenger drops a bag at the machine AND the bag is within the weight limit, THE Baggage System SHALL accept the bag and print a bag tag.",
+            "WHEN a passenger drops a bag at the machine AND the bag is overweight, THE Baggage System SHALL return the bag and show the fee for the extra weight.",
+            "WHEN a passenger scans a boarding pass AND the flight closes in less than 40 minutes, THE Baggage System SHALL send the passenger to the service desk.",
+            "WHEN the belt behind the machine jams for the third time in an hour, THE Baggage System SHALL call a technician.",
+            "WHEN a passenger presses the help button, THE Baggage System SHALL call an agent to the machine.",
+        ],
+        "variants": {
+            "overlap": ({"add": "WHILE the sorting hall is out of order, THE Baggage System SHALL NOT accept any bag."},
+                        {"conflicts": [[1, 6]]}),
+            # boundary: in exactly 40 minutes only, or in 40 minutes or less?
+            "ambiguity1": ({"replace": {3: "WHEN a passenger scans a boarding pass AND the flight closes in 40 minutes, THE Baggage System SHALL send the passenger to the service desk."}},
+                           {"kind": "boundary", "ambiguous": [3]}),
+            # "if": is the bag always accepted, or only after online check-in?
+            "ambiguity2": ({"replace": {1: "WHEN a passenger drops a bag at the machine AND the bag is within the weight limit, THE Baggage System SHALL accept the bag and print a bag tag if the passenger has checked in online."}},
+                           {"kind": "if", "ambiguous": [1]}),
+            "gap": ({"remove": 2}, {"gaps": [1]}),
+        },
+        "covered": [1],
+    },
+    "allotments": {
+        "format": "openspec",
+        "intro": "Residents rent garden plots from the town's allotment association.",
+        "rules": [
+            ("Renting", "Plot available", "WHEN a resident applies for a plot AND a plot is available THEN the system assigns the plot to the resident and sends the contract"),
+            ("Renting", "No plot available", "WHEN a resident applies for a plot AND no plot is available THEN the system puts the resident on the waiting list"),
+            ("Fees", "Yearly fee", "WHEN the gardening year begins THEN the system sends every tenant an invoice for the yearly fee"),
+            ("Upkeep", "Neglected plot", "WHEN an inspector reports a neglected plot for the third time THEN the system ends the tenant's contract"),
+            ("Upkeep", "Broken tap", "WHEN a tenant reports a broken water tap THEN the system informs the caretaker"),
+        ],
+        "variants": {
+            "direct": ({"add": ("Contracts", None, "The system SHALL never end a tenant's contract.")},
+                       {"conflicts": [[4, 6]]}),
+            # "only": must a plot be assigned when one is available, or are applicants merely refused without one?
+            "ambiguity1": ({"replace": {1: ("Renting", "Plot available", "WHEN a resident applies for a plot THEN the system assigns the plot to the resident and sends the contract only if a plot is available")}},
+                           {"kind": "only", "ambiguous": [1]}),
+            # scope: (plot or shed) and not on the board, or plot or (shed and not on the board)?
+            "ambiguity2": ({"replace": {3: ("Fees", "Yearly fee", "WHEN the gardening year begins AND a tenant has a plot or a shed and is not a member of the board THEN the system sends the tenant an invoice for the yearly fee")}},
+                           {"kind": "and/or", "ambiguous": [3]}),
+            "gap": ({"remove": 2}, {"gaps": [1]}),
+        },
+        "covered": [1],
+    },
+    "inspection": {
+        "format": "ears",
+        "intro": "As a car owner, I want the yearly safety test of my car recorded online, so that I can prove that the car is roadworthy.",
+        "rules": [
+            "WHEN an inspector finishes a test AND the car passes the test, THE Inspection System SHALL issue a certificate and set the date of the next test.",
+            "WHEN an inspector finishes a test AND the car fails the test, THE Inspection System SHALL list the defects and book a retest.",
+            "WHEN a certificate expires, THE Inspection System SHALL send the owner a reminder.",
+            "WHEN a car fails the test for the third time in a row, THE Inspection System SHALL report the car to the road authority.",
+            "WHEN an owner pays the test fee, THE Inspection System SHALL send a receipt by email.",
+        ],
+        "variants": {
+            "direct": ({"add": "WHEN an inspector finishes a test, THE Inspection System SHALL NOT issue a certificate."},
+                       {"conflicts": [[1, 6]]}),
+            # scope: (passes or minor defects) and brakes work, or passes or (minor defects and brakes work)?
+            "ambiguity1": ({"replace": {1: "WHEN an inspector finishes a test AND the car passes the test or the defects are minor and the brakes work, THE Inspection System SHALL issue a certificate and set the date of the next test."}},
+                           {"kind": "and/or", "ambiguous": [1], "allowed": [[1, 2]]}),
+            # "if": is the retest always booked, or only when the owner asks?
+            "ambiguity2": ({"replace": {2: "WHEN an inspector finishes a test AND the car fails the test, THE Inspection System SHALL list the defects and book a retest if the owner asks for one."}},
+                           {"kind": "if", "ambiguous": [2]}),
+            "gap": ({"remove": 2}, {"gaps": [1]}),
+        },
+        "covered": [1],
+    },
+    "visitors": {
+        "format": "openspec",
+        "intro": "Visitors check in at the entrance of a hospital ward.",
+        "rules": [
+            ("Check-in", "Listed visitor", "WHEN a visitor checks in at a ward AND the visitor is on the patient's visitor list THEN the system opens the ward door and prints a visitor badge"),
+            ("Check-in", "Unlisted visitor", "WHEN a visitor checks in at a ward AND the visitor is not on the patient's visitor list THEN the system keeps the ward door closed and calls a nurse"),
+            ("Hours", "End of visiting time", "WHEN visiting time ends THEN the system reminds all visitors to leave"),
+            ("Safety", "Badge not returned", "WHEN a visitor leaves without returning the badge for the second time THEN the system informs the ward manager"),
+            ("Hours", "Long visit", "WHEN a visitor has stayed for more than 2 hours THEN the system asks the visitor to make room for others"),
+        ],
+        "variants": {
+            "overlap": ({"add": ("Safety", "Isolation", "WHEN the patient is in isolation THEN the system keeps the ward door closed for visitors")},
+                        {"conflicts": [[1, 6]]}),
+            # boundary: after exactly 2 hours only, or from 2 hours on?
+            "ambiguity1": ({"replace": {5: ("Hours", "Long visit", "WHEN a visitor has stayed for 2 hours THEN the system asks the visitor to make room for others")}},
+                           {"kind": "boundary", "ambiguous": [5]}),
+            # "only": must a listed visitor be let in, or are unlisted ones merely kept out?
+            "ambiguity2": ({"replace": {1: ("Check-in", "Listed visitor", "WHEN a visitor checks in at a ward THEN the system opens the ward door and prints a visitor badge only if the visitor is on the patient's visitor list")}},
+                           {"kind": "only", "ambiguous": [1]}),
+            "gap": ({"remove": 2}, {"gaps": [1]}),
+        },
+        "covered": [1],
+    },
+    "fuel": {
+        "format": "ears",
+        "intro": "As a driver, I want to pay at the fuel pump with my card, so that I do not have to go into the shop.",
+        "rules": [
+            "WHEN a driver inserts a card at the pump AND the card is authorised, THE Pump System SHALL unlock the nozzle and show the price per litre.",
+            "WHEN a driver inserts a card at the pump AND the card is not authorised, THE Pump System SHALL keep the nozzle locked and return the card.",
+            "WHEN a driver hangs up the nozzle, THE Pump System SHALL charge the card for the fuel taken and print a receipt.",
+            "WHEN a card is refused for the third time in a row at the same pump, THE Pump System SHALL alert the shop staff.",
+            "WHEN the fuel tank of the station holds less than 500 litres, THE Pump System SHALL order a delivery.",
+        ],
+        "variants": {
+            "direct": ({"add": "WHEN a driver hangs up the nozzle, THE Pump System SHALL release the payment hold without charging the card."},
+                       {"conflicts": [[3, 6]]}),
+            # boundary: at exactly 500 litres only, or at 500 litres and below?
+            "ambiguity1": ({"replace": {5: "WHEN the fuel tank of the station is down to 500 litres, THE Pump System SHALL order a delivery."}},
+                           {"kind": "boundary", "ambiguous": [5]}),
+            # "if": is the card always charged, or only when the driver asks for a receipt?
+            "ambiguity2": ({"replace": {3: "WHEN a driver hangs up the nozzle, THE Pump System SHALL charge the card for the fuel taken and print a receipt if the driver asks for one."}},
+                           {"kind": "if", "ambiguous": [3]}),
+            "gap": ({"remove": 2}, {"gaps": [1]}),
+        },
+        "covered": [1],
+    },
+    "passports": {
+        "format": "openspec",
+        "intro": "Citizens renew their passports online.",
+        "rules": [
+            ("Renewal", "Valid old passport", "WHEN a citizen applies for a new passport AND the old passport is still valid THEN the system accepts the application online"),
+            ("Renewal", "Expired old passport", "WHEN a citizen applies for a new passport AND the old passport has expired THEN the system books an appointment at the passport office"),
+            ("Payment", "Fee", "WHEN a citizen pays the passport fee THEN the system starts the production of the passport"),
+            ("Delivery", "Ready", "WHEN a new passport is ready THEN the system sends the citizen a text message"),
+            ("Security", "Lost passports", "WHEN a citizen reports a passport lost for the second time in five years THEN the system asks the citizen to come to the office in person"),
+        ],
+        "variants": {
+            "overlap": ({"add": ("Security", "Travel ban", "WHEN a court has banned the citizen from travelling THEN the system blocks the production of any passport for the citizen")},
+                        {"conflicts": [[3, 6]]}),
+            # "only": must production start when the photo meets the rules, or is it merely held back otherwise?
+            "ambiguity1": ({"replace": {3: ("Payment", "Fee", "WHEN a citizen pays the passport fee THEN the system starts the production of the passport only if the photo meets the rules")}},
+                           {"kind": "only", "ambiguous": [3]}),
+            # scope: (still valid or identity card) and abroad, or still valid or (identity card and abroad)?
+            "ambiguity2": ({"replace": {1: ("Renewal", "Valid old passport", "WHEN a citizen applies for a new passport AND the old passport is still valid or the citizen has an identity card and lives abroad THEN the system accepts the application online")}},
+                           {"kind": "and/or", "ambiguous": [1], "allowed": [[1, 2]]}),
+            "gap": ({"remove": 2}, {"gaps": [1]}),
+        },
+        "covered": [1],
+    },
+}
+
 # Folder -> the specs written into it.
 SETS = {"eval": SPECS, "eval2": SPECS2, "eval3": SPECS3, "eval4": SPECS4, "eval5": SPECS5,
-        "eval6": SPECS6, "eval7": SPECS7, "eval8": SPECS8, "eval9": SPECS9,
+        "eval6": SPECS6, "eval7": SPECS7, "eval8": SPECS8, "eval9": SPECS9, "eval10": SPECS10,
         "size": SPECS_SIZE, "size2": SPECS_SIZE2}
 
 
