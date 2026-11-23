@@ -331,10 +331,13 @@ the prompts, so it can be scored again without a GPU.
 
 | E14 | one spec of 100 requirements, read answer up to 24576 tokens | 12 runs | read answer 16,799 tokens; 6 of 6 conflicts, the gap 3 of 3; solver stage 35 s (3.12) |
 
-The trials (T1 to T18) were run on development data between these
+The trials (T1 to T19) were run on development data between these
 experiments. Among the last: T17 compared temperatures 0.3, 0.5 and 0.7 (3.1);
 T18 found that the first read answer, at temperature 0, was usable for all
-204 specs, so the read step's retry is never needed on them. research_log.md
+204 specs, so the read step's retry is never needed on them; T19 found that
+5.4% of the sampled facts are dropped before the vote, nearly all for a slip
+in the formula (mostly missing outer parentheses) and almost never for an
+invented symbol. research_log.md
 has them in order, together with the bugs that
 changed results before they were fixed (L1 to L10) and the open threats to
 validity. To score a saved run again: `python -m experiments.evaluate --rescore

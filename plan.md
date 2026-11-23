@@ -87,6 +87,12 @@ Small things that are open:
   so a lower answer limit for translations would make room. A gap in the
   report lists every other event as FALSE, about 70 lines at this size. And
   the solver stage takes 35 s per model instead of under 1 s.
+- **Facts dropped for a slip in the formula** (T19). 5.4% of the sampled
+  facts do not parse, mostly `>= x 0` without its outer parentheses; an
+  invented symbol almost never. Adding the parentheses back would keep 115
+  more facts (2,319 → 2,434, in 65 of 1,827 models), mostly "a count is never
+  negative". Not measured: whether any finding changes. It is a design
+  change, so `eval9/` comes first.
 
 Decided on 2026-11-22: **the samples stay at temperature 0.7** (T17). On
 `eval8/`, 0.3 and 0.5 changed nothing for conflicts, gaps or false alarms;

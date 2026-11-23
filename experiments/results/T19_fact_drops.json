@@ -1,0 +1,33 @@
+{
+ "question": "How often is a sampled domain fact (step 4) dropped before the vote, and why?",
+ "date": "2026-11-22",
+ "source": "fact_samples of every saved run in experiments/results (E4 to E14, T8 to T17), parsed again with Vocabulary.parse; no GPU",
+ "facts_prompt": "the same FACTS_SYSTEM in all of these files",
+ "models": 1827,
+ "answers": 14591,
+ "answers_empty": 6499,
+ "answers_missing_not_json": 25,
+ "answers_dropped_contradict_themselves": 21,
+ "sampled_facts": 31646,
+ "parsed": 29927,
+ "dropped": {
+  "outer_parentheses_missing": {"count": 1091, "example": ">= consecutive_failure_count 0"},
+  "type_error": {"count": 366, "example": "(= x) with no second argument; a term that is not Boolean"},
+  "unknown_operator": {"count": 196, "most_common": {"->=": 33, "!=": 28, "eq": 22, "/=": 18, "/>=": 12, "-not": 8, "&": 7}},
+  "unknown_symbol_name": {"count": 49, "most_common": {"null": 21, "=": 8, "*comment_deleted*": 5, "*comment_published*": 3, "TRUE": 2, "reserve_price": 1, "exit_gate_closed": 1, "placeholder": 1}},
+  "syntax": {"count": 17, "example": "[] and Unicode operators such as (⇒ a b)"}
+ },
+ "invented_names_used_by_a_majority_of_one_runs_answers": 0,
+ "vote_with_outer_parentheses_added": {
+  "kept_facts_before": 2319,
+  "kept_facts_after": 2434,
+  "models_changed": 65,
+  "models_with_fewer_facts": 0,
+  "gained_facts_by_operator": {">=": 89, "=>": 20, "not": 6},
+  "examples": [
+   "(>= delivery_failure_count 0)  The delivery failure count is never negative.",
+   "(not (and bid_accepted bid_rejected))  A bid cannot be both accepted and rejected simultaneously.",
+   "(=> bike_available_for_rentals (not bike_blocked_for_rentals))  If a bike is available for rentals, it is not blocked for rentals."
+  ]
+ }
+}

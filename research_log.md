@@ -1923,6 +1923,45 @@ symbol sets, whose read step runs at 0.7, and for answers cut off at the limit.
 
 ---
 
+## T19 — How often is a sampled fact dropped before the vote? (2026-11-22, probe)
+
+**Question.** The facts question (step 4) sees only the symbol list. A fact
+whose formula does not parse, for example because it names a symbol that is
+not in the list, is dropped silently before the vote. How often does that
+happen, and does it change which facts are kept?
+
+**Setup.** Every saved run from E4 to E14 (1,827 formal models, all made with
+today's facts prompt): each sampled fact was parsed again with
+`Vocabulary.parse`, and the vote of `_agreed_facts` was redone with the
+missing outer parentheses added back. No GPU.
+
+**Result.** Of 31,646 sampled facts, 1,719 (5.4%) were dropped. Hardly any
+were dropped for an invented symbol:
+
+| Why it was dropped | Facts | Example |
+|---|---|---|
+| outer parentheses missing | 1,091 (3.4%) | `>= consecutive_failure_count 0` |
+| type error | 366 (1.2%) | `=` with one argument; a term that is not true or false |
+| operator that SMT-LIB does not have | 196 (0.6%) | `!=`, `/=`, `eq`, `&` |
+| name not in the list | 49 (0.2%) | `null` (21), `TRUE`; only 2 look like a real fact: `reserve_price`, `exit_gate_closed` |
+| other syntax | 17 | `[]`, `(⇒ a b)` |
+
+No invented name was used by more than half of one run's answers, so the
+vote never lost a fact for want of a symbol. With the parentheses repaired,
+the vote keeps 2,434 facts instead of 2,319, in 65 of the 1,827 models and
+never fewer: 89 are bounds ("the delivery failure count is never negative"),
+20 implications and 6 exclusions ("a bid cannot be both accepted and
+rejected"). Whether that changes any finding was not measured. Repairing the
+formula would be a design change, so it would need `eval9/` first.
+
+Apart from the facts themselves: 6,499 of the 14,591 answers were empty lists,
+which the prompt allows; 25 answers were not valid JSON; and 21 answers were
+dropped whole because their facts contradict each other.
+
+**Raw data.** [experiments/results/T19_fact_drops.json](experiments/results/T19_fact_drops.json).
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |
