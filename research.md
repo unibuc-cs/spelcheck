@@ -28,6 +28,7 @@ its entries. How each mechanism works is in [plan.md](plan.md), section 5.
   | `eval2/` | 30 | 12 conflicts, 12 ambiguities | E7 |
   | `eval3/` to `eval7/` | 24 each | 6 or 7 conflicts and 12 ambiguities each | E8 to E12 |
   | `eval8/` | 30 | 7 conflicts, 12 ambiguities, 6 gaps | E13 |
+  | `eval9/` | 30 | 6 conflicts, 12 ambiguities, 6 gaps | E15 |
   | `size/` | 4 versions of one spec of 30 requirements | 2 conflicts, 1 gap | E13 |
   | `size2/` | 4 versions of one spec of 100 requirements | 2 conflicts, 1 gap | E14 (not held-out: no design was tuned on it) |
 
@@ -56,10 +57,14 @@ The order spec gives the blog's two conflicts and its gap in every run we made
 | E11, `eval6/` | 15 of 18 (83%) | 0 of 18 |
 | E12, `eval7/` | 13 of 18 (72%) | 0 of 18 |
 | E13, `eval8/` | 18 of 21 (86%) | 0 of 18 |
+| E15, `eval9/` | 18 of 18 (100%) | 2 of 18, a real conflict we wrote by mistake |
 
 From E8 on, conflicts marked doubtful (3.7) are set aside. Counted, they give
-false alarms in 9, 6, 11, 8, 0 and 4 of 18 clean runs (E8 to E13). In E10 the
-mark also hit a planted conflict (4.2); counted, E10 finds 14 of 18.
+false alarms in 9, 6, 11, 8, 0, 4 and 5 of 18 clean runs (E8 to E13, E15). In
+E10 the mark also hit a planted conflict (4.2); counted, E10 finds 14 of 18.
+The 2 runs of E15 found a conflict in `shelter_clean` that is real: an animal
+adopted after 90 days in the shelter must be removed from the website and
+featured on its home page.
 
 ### 2.3 Both examples of the Kiro blog are found by the solver
 
@@ -281,13 +286,15 @@ Planted ambiguities on the held-out `eval4/` (E9), 9 per kind:
 
 ### 4.5 The evaluation is small
 
-Eight sets with 48 base specs (201 versions) and two longer specs, all written
+Nine sets with 54 base specs (231 versions) and two longer specs, all written
 by us; 63 to 90 runs per experiment; one main model. One leak is known: an
-example in the read prompt came from the domain of an `eval3/` spec (D4).
+example in the read prompt came from the domain of an `eval3/` spec (D4). And
+one clean spec, `shelter_clean` in `eval9/`, has a conflict we did not plan
+(E15).
 
 The runs of one spec mostly agree, so the numbers rest on fewer cases than
-they seem to: of the 67 planted conflicts of the eight held-out tests, 52 were
-found in all 3 of their runs, 7 in none, and only 8 in some (T15, E13).
+they seem to: of the 73 planted conflicts of the nine held-out tests, 58 were
+found in all 3 of their runs, 7 in none, and only 8 in some (T15, E13, E15).
 
 ---
 
@@ -328,8 +335,8 @@ the prompts, so it can be scored again without a GPU.
 | E11 | `eval6/`, held-out, the design of E10 again | 72 runs | 15 of 18 conflicts; the 3 misses are "remove" against "keep" (4.2) |
 | E12 | `eval7/`, held-out, with the comparison of T13 | 72 runs | 13 of 18 conflicts; ambiguities 17 → 32 of 36 with the second reader (3.8) |
 | E13 | `eval8/`, held-out, with gaps asked for each event; and one spec of 30 requirements | 90 + 12 runs | 18 of 21 conflicts; planted gaps 0 → 18 of 18; the long spec 6 of 6 conflicts, solver stage 30 s → under 1 s (3.10, 3.11) |
-
 | E14 | one spec of 100 requirements, read answer up to 24576 tokens | 12 runs | read answer 16,799 tokens; 6 of 6 conflicts, the gap 3 of 3; solver stage 35 s (3.12) |
+| E15 | `eval9/`, held-out, with the parentheses repair of the facts vote (T19) | 90 runs | 18 of 18 conflicts, planted gaps 18 of 18; the repair added 17 facts, all bounds, and changed no finding (on the saved runs: 3 planted conflicts gained in one run) (2.2) |
 
 The trials (T1 to T19) were run on development data between these
 experiments. Among the last: T17 compared temperatures 0.3, 0.5 and 0.7 (3.1);
@@ -337,7 +344,7 @@ T18 found that the first read answer, at temperature 0, was usable for all
 204 specs, so the read step's retry is never needed on them; T19 found that
 5.4% of the sampled facts are dropped before the vote, nearly all for a slip
 in the formula (mostly missing outer parentheses) and almost never for an
-invented symbol. research_log.md
+invented symbol. The vote now repairs the parentheses (E15). research_log.md
 has them in order, together with the bugs that
 changed results before they were fixed (L1 to L10) and the open threats to
 validity. To score a saved run again: `python -m experiments.evaluate --rescore

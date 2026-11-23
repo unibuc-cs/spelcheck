@@ -58,7 +58,7 @@ of the code, deals with one question: can we trust the translation, and when
 we cannot, do we say so clearly?
 
 To give an idea of the size: about 2,400 lines of Python now, half of them comments
-and prompts, one local model (Qwen3.8, 27B), and results measured on 201 versions
+and prompts, one local model (Qwen3.8, 27B), and results measured on 231 versions
 of small specs. The results are in part 5.
 
 ---
@@ -656,18 +656,18 @@ OpenSpec style. Every spec comes in three to five versions:
 | `direct` | one rule added that plainly contradicts an existing one | that conflict |
 | `overlap` | one rule added that clashes with an existing one only when both conditions hold | that conflict |
 | `ambiguity1`, `ambiguity2` | one rule reworded so that it has two readings | that rule, as ambiguous |
-| `gap` (only in `eval8`) | one of two complementary rules removed | a gap for the case left open |
+| `gap` (from `eval8` on) | one of two complementary rules removed | a gap for the case left open |
 
 Each version is a folder with two files: `spec.md`, which the tool reads, and
 `expected.json`, which holds the answer. For `lockers_overlap` it says
 `{"conflicts": [[1, 6], [3, 6]]}`: rule 6 clashes with rule 1 and with rule 3.
-There are eight sets, `eval` to `eval8`, with 201 versions in all.
+There are nine sets, `eval` to `eval9`, with 231 versions in all.
 
 Two more terms. A conflict reported on a clean spec is a *false alarm*. And
 because the model answers a little differently each time, every version is run
 three times, so all the numbers are counts of runs.
 
-Why eight sets? It is tempting to tune the prompts until the test specs come
+Why so many sets? It is tempting to tune the prompts until the test specs come
 out right, and then the result means nothing. So each set is written before a
 design change and used once, like an exam. The research notes call it a
 *held-out set*. After its results have been read it only counts as practice
@@ -676,7 +676,7 @@ material, and the next change needs a new set.
 ### 5.2 The results
 
 ```
-planted conflicts found, on 8 sets the design had not seen
+planted conflicts found, on 9 sets the design had not seen
 
 eval    44/48   ██████████████████░░   92%
 eval2   31/36   █████████████████░░░   86%
@@ -686,6 +686,7 @@ eval5   11/18   ████████████░░░░░░░░   6
 eval6   15/18   █████████████████░░░   83%
 eval7   13/18   ██████████████░░░░░░   72%
 eval8   18/21   █████████████████░░░   86%
+eval9   18/18   ████████████████████  100%
 ```
 
 | Question | Answer |
@@ -693,12 +694,12 @@ eval8   18/21   █████████████████░░░   8
 | Kiro's first example (`order`) | its 2 conflicts and its gap were found in 190 of 190 runs |
 | Kiro's second example (`delete_property`) | found in 3 of the last 3 runs. It was the hard one: 1 of 40 before links existed |
 | planted conflicts | 61% to 100% found (the chart above) |
-| false alarms | at most 1 in 18 clean runs, when doubtful conflicts are set aside |
+| false alarms | at most 1 in 18 clean runs, when doubtful conflicts are set aside. In `eval9`, 2 runs found a conflict that is real: we wrote it into a clean spec by mistake |
 | planted ambiguities, one model | about half (14 to 20 of 36) |
 | planted ambiguities, with the second model | 30 and 32 of 36, at the price of up to one extra question per spec |
 | how much assumed facts and links matter | a great deal: without them `eval8` gives 9 of 21, with them 18 |
-| planted gaps (`eval8` only) | 18 of 18 found, now that the question is asked once for each event; before, 0 of 18 |
-| false gaps (`eval8`) | in 4 of 18 runs on clean specs. Explained below |
+| planted gaps (`eval8`, `eval9`) | 18 of 18 found in each, now that the question is asked once for each event; before, 0 of 18 |
+| false gaps (`eval8`, `eval9`) | in 4 and 3 of 18 runs on clean specs. Explained below |
 | longer specs, 30 and 100 requirements | they went as well as the small ones. Explained below |
 
 **The false gaps.** A clean spec in `eval8` covers both cases of an event, for
@@ -817,7 +818,7 @@ The full list is in research.md, section 5.
    project has existing specs and a change on top of them. This is the
    recommended next step, and it was postponed on purpose.
 2. **A larger evaluation**, with another main model and specs we did not
-   write. All eight sets have been used, so a ninth has to be written first.
+   write. All nine sets have been used, so a tenth has to be written first.
 3. **The choice of symbols**, which is where the remaining misses come from.
 
 ---
@@ -873,7 +874,7 @@ speccheck/          the tool (the 7 files above; refine.py is the review that is
 specs/              3 small specs the prompts were developed on, with their saved output
 tests/              42 tests that need no LLM
 experiments/
-  sets/             the 8 evaluation sets, eval to eval8 (201 spec versions), and two long specs
+  sets/             the 9 evaluation sets, eval to eval9 (231 spec versions), and two long specs
   results/          every experiment: the raw data (.json) and its tables (.md)
   examples/         saved runs that the documents quote
   evaluate.py       runs the pipeline on a set and scores it

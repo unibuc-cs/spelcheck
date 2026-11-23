@@ -21,9 +21,9 @@ come back in plain language, each with "A) keep as-is / B) change".
 | Goal | Status |
 |---|---|
 | **G1** A minimal working prototype of Kiro's formal analysis: spec, formal check, answer in plain language | **Done.** Conflicts, gaps, ambiguities and scenarios, as in Kiro's formal part. Gaps are asked once for each event, and all 18 planted gaps of `eval8/` were found. Both Kiro blog examples found by the solver (`delete_property`: 3 of 3 in the last runs; a wrong voted fact can still hide it). Ambiguities: about half with one model; with the optional second reader 30 and 32 of 36 (held-out `eval4/`, `eval7/`), at up to one extra question per spec |
-| **G2** Data-driven: any spec, any format | **Partly.** 51 base specs in two formats (Kiro EARS, OpenSpec), no change to code or prompts; specs of 30 and of 100 requirements went as well as the small ones (E13, E14), and the read step now has room for about 140. Missing: a whole OpenSpec *project*, where a change is checked against the specs that already exist |
+| **G2** Data-driven: any spec, any format | **Partly.** 57 base specs in two formats (Kiro EARS, OpenSpec), no change to code or prompts; specs of 30 and of 100 requirements went as well as the small ones (E13, E14), and the read step now has room for about 140. Missing: a whole OpenSpec *project*, where a change is checked against the specs that already exist |
 | **G3** Code and documents a person can read | **Done** for the current state. GUIDE.md and README.md were revised after a point-by-point review (2026-11-22): each mechanism is a short list of steps on one real example |
-| **G4** Research for a paper, on the local model | **Well under way.** 8 held-out tests (E5, E7 to E13): 61 to 100% of planted conflicts found; at most 1 false alarm in 18 clean runs with doubtful conflicts set aside (none in the last five). Gaps measured for the first time (E13). Still small: one main model, specs written by us |
+| **G4** Research for a paper, on the local model | **Well under way.** 9 held-out tests (E5, E7 to E13, E15): 61 to 100% of planted conflicts found; with doubtful conflicts set aside, at most 1 false alarm in 18 clean runs, apart from a real conflict we wrote into an `eval9/` clean spec by mistake (2 runs, E15). Gaps measured for the first time (E13). Still small: one main model, specs written by us |
 | **G5** Only the formal part | **Done.** An LLM review of the text was built, measured, and switched off |
 
 In short: the pipeline works end to end, finds what Kiro's blog finds, and
@@ -56,8 +56,9 @@ There are three candidates, in this order. The first is the one we recommend.
 2. **A larger evaluation** (G4): another main model, the second reader on
    more sets, specs we did not write, and results counted per planted
    conflict (the runs of one spec mostly agree, so more specs help more than
-   more runs). All eight sets have been read, so the next design needs a
-   ninth held-out set, and it has to be written first.
+   more runs). All nine sets have been read (`eval9/` in E15), so the next
+   design needs a tenth held-out set, `eval10/`, and it has to be written
+   first.
 3. **The choice of symbols** (G1), which is where the remaining misses and
    false alarms come from:
    - "remove" against "keep" (found in 10 of 21 runs), and two symbols for
@@ -87,12 +88,6 @@ Small things that are open:
   so a lower answer limit for translations would make room. A gap in the
   report lists every other event as FALSE, about 70 lines at this size. And
   the solver stage takes 35 s per model instead of under 1 s.
-- **Facts dropped for a slip in the formula** (T19). 5.4% of the sampled
-  facts do not parse, mostly `>= x 0` without its outer parentheses; an
-  invented symbol almost never. Adding the parentheses back would keep 115
-  more facts (2,319 → 2,434, in 65 of 1,827 models), mostly "a count is never
-  negative". Not measured: whether any finding changes. It is a design
-  change, so `eval9/` comes first.
 
 Decided on 2026-11-22: **the samples stay at temperature 0.7** (T17). On
 `eval8/`, 0.3 and 0.5 changed nothing for conflicts, gaps or false alarms;
@@ -100,6 +95,11 @@ two runs at 0.7 differed more in ambiguities (14 and 20 of 36) than the
 temperatures did; and at 0.3 the ambiguities of "only" fell from 8 of 9 to 3.
 The read step's retry temperatures (now 0 → 0.3 → 0.9) are never reached at
 temperature 0: the first answer was usable for all 204 specs (T18).
+
+Decided on 2026-11-23: **the facts vote adds missing outer parentheses**
+(`>= x 0` becomes `(>= x 0)`, the most common slip, T19). On the saved runs
+it recovered one planted conflict (3 runs) and lost nothing; on held-out
+`eval9/` it added 17 facts, all bounds, and changed no finding (E15).
 
 Time ("then", "after", "until") is not planned. The model is one snapshot.
 
@@ -216,7 +216,7 @@ Around the package:
 | File | Job |
 |---|---|
 | `tests/` | 42 tests of everything that needs no LLM |
-| `experiments/make_eval.py` | writes the evaluation sets `eval` to `eval8`, `size` and `size2` into `experiments/sets/` (clean specs and planted defects) |
+| `experiments/make_eval.py` | writes the evaluation sets `eval` to `eval9`, `size` and `size2` into `experiments/sets/` (clean specs and planted defects) |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs the pipeline on a set of specs and scores it against the planted defects; adds the second reader to saved runs; re-scores saved runs without a GPU |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the main model and the second model on the cluster (section 8) |
@@ -338,6 +338,8 @@ F2:  not (access_granted and              ─┘   → conflict {R1, R4}, depend
 - every fact in every answer is a candidate, and the N answers vote on it:
   answer k votes for a candidate when the candidate follows from answer k's
   own facts
+- a formula that does not parse is dropped, except that missing outer
+  parentheses are added back (`>= x 0`, 3.4% of all facts, T19, E15)
 
 ```
 facts of answer k  and  not candidate      unsatisfiable?     answer k votes for it
@@ -823,6 +825,10 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
 - [x] **Step 28 — the temperature of the samples**: `evaluate.py --temperature`;
       T17 on `eval8/` at 0.3, 0.5 and 0.7: no gain, 0.7 kept. T18: the read
       step's retry is never needed at temperature 0 (0 of 204)
+- [x] **Step 29 — facts lost to a slip in the formula**: T19 counted the drops
+      (5.4%, mostly missing outer parentheses); `eval9/` written first; the
+      vote repairs the parentheses; held-out `eval9/` (E15): 18 of 18
+      conflicts, the repair changes no finding there
 - [x] **Documentation pass 2**: GUIDE.md reviewed point by point and rewritten (a new
       2.4 on gaps and scenarios; the ambiguity check, voted facts and links as steps on
       one real example), then shortened from 1112 to 893 lines; README.md reworded in the

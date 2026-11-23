@@ -1962,6 +1962,74 @@ dropped whole because their facts contradict each other.
 
 ---
 
+## E15 — Held-out `eval9/`, with the parentheses repair of the facts vote (2026-11-23)
+
+**Question.** T19 found that the most common reason a sampled fact is dropped
+is a formula without its outer parentheses (`>= count 0`). The facts vote now
+adds them back. Does that change any finding, on the saved runs and on specs
+it was not built on?
+
+**Setup.** `eval9/` was written and committed first (e96592d): six new domains
+(level crossing, research grants, animal shelter, swimming pool, phone
+top-up, kindergarten pick-up), the same design as `eval8/`, 30 versions. Then
+the repair was committed (3d25117), with a configuration of `evaluate.py`
+that scores the same runs as if the vote had not repaired anything (it keeps
+only the facts the old vote keeps; step 6 still ran with all of them). 90 runs
+(3 per version, 1 symbol set, temperature 0.7) on one cluster job, 2 GPUs,
+18 minutes.
+
+**Dev check first, no GPU.** On every saved run of `eval/` to `eval8/` and the
+two long specs, the facts that the repaired vote adds were put into the
+models (unchecked by step 6), and the runs scored again. One run of about
+1,800 changed: in `upload_overlap` (E4) the vote now keeps "a file cannot be
+both stored and rejected" (5 of 8 answers, 2 of them without parentheses),
+and the run finds its 3 planted conflicts. Nothing was lost, no false alarm
+and no ambiguity flag appeared.
+
+**Results on `eval9/`.**
+
+| Configuration | Planted conflicts | Clean runs with a false alarm | Unexpected conflicts | Planted ambiguities | Flags on clean specs |
+|---|---|---|---|---|---|
+| default | 18/18 | 5/18 | 17 | 18/36 | 1 |
+| doubtful conflicts set aside | 18/18 | 2/18 | 5 | 18/36 | 1 |
+| facts vote without the repair | 18/18 | 5/18 | 17 | 18/36 | 1 |
+| without assumed facts and links | 11/18 | 1/18 | 1 | 18/36 | 1 |
+| without step 6 | 17/18 | 5/18 | 17 | 16/36 | 1 |
+
+- **The repair changed nothing here.** 88 of 1,651 sampled facts (5.3%) had
+  no outer parentheses. The repair made the vote keep 17 more facts in 9 of
+  90 runs, and all of them are bounds ("the number of late arrivals is never
+  negative"). No conflict needs a bound, so every row is the same with and
+  without it.
+- **All 18 planted conflicts were found**, 9 direct and 9 overlap, in every
+  run. Without facts and links, 11 of 18.
+- **The 2 clean runs with a false alarm are a real conflict** that we wrote
+  into `shelter_clean` by mistake. R3: when the adoption fee is paid, the
+  animal is removed from the website. R4: an animal in the shelter for more
+  than 90 days is featured on the home page. An animal adopted after 90 days
+  falls under both. It was found in 2 of 3 runs through a link ("when the fee
+  is paid, the animal is not featured on the home page"). It is counted as a
+  false alarm, because the expected file was not changed after reading the
+  results.
+- **The doubtful ones** are `crossing_clean` (and the same pair in
+  `crossing_gap` and the ambiguity versions): "a train approaches" lowers the
+  barriers, "a train has passed" raises them, which clash only if both events
+  happen at once. All were marked.
+- **Ambiguities** 18 of 36: "only" 9 of 9, "if" 6 of 9, boundary 2 of 9,
+  "and/or" 1 of 9. One flag on the clean specs.
+- **Gaps**: the 6 planted gaps in 18 of 18 runs; a gap on a covered event in
+  3 of 18 clean runs (E13: 4 of 18).
+
+**Decision.** The repair stays. It never lost anything; on the saved runs it
+recovered one planted conflict (3 runs), on `eval9/` it changed nothing.
+`eval9/` is development data from now on; the next design needs `eval10/`.
+
+**Raw data.** [experiments/results/E15_eval9.json](experiments/results/E15_eval9.json)
+(with its table, E15_eval9.md), and the dev check
+[experiments/results/E15_dev_rescore.json](experiments/results/E15_dev_rescore.json).
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

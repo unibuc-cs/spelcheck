@@ -1,0 +1,147 @@
+﻿{
+ "E4_eval": {
+  "counts": {
+   "new facts": 1,
+   "runs with new facts": 1,
+   "with doubtful: conflict gained, planted": 3,
+   "doubtful set aside: conflict gained, planted": 3
+  },
+  "changes": [
+   [
+    "upload_overlap",
+    "with doubtful",
+    "+",
+    [
+     4,
+     6
+    ],
+    "planted"
+   ],
+   [
+    "upload_overlap",
+    "with doubtful",
+    "+",
+    [
+     2,
+     6
+    ],
+    "planted"
+   ],
+   [
+    "upload_overlap",
+    "with doubtful",
+    "+",
+    [
+     3,
+     6
+    ],
+    "planted"
+   ],
+   [
+    "upload_overlap",
+    "doubtful set aside",
+    "+",
+    [
+     4,
+     6
+    ],
+    "planted"
+   ],
+   [
+    "upload_overlap",
+    "doubtful set aside",
+    "+",
+    [
+     2,
+     6
+    ],
+    "planted"
+   ],
+   [
+    "upload_overlap",
+    "doubtful set aside",
+    "+",
+    [
+     3,
+     6
+    ],
+    "planted"
+   ]
+  ]
+ },
+ "E7_eval2": {
+  "counts": {
+   "new facts": 3,
+   "runs with new facts": 2
+  },
+  "changes": []
+ },
+ "E8_eval3": {
+  "counts": {},
+  "changes": []
+ },
+ "E9_eval4": {
+  "counts": {
+   "new facts": 13,
+   "runs with new facts": 7
+  },
+  "changes": []
+ },
+ "E10_eval5": {
+  "counts": {
+   "new facts": 4,
+   "runs with new facts": 3
+  },
+  "changes": []
+ },
+ "E11_eval6": {
+  "counts": {
+   "new facts": 3,
+   "runs with new facts": 3
+  },
+  "changes": []
+ },
+ "E12_eval7": {
+  "counts": {
+   "new facts": 9,
+   "runs with new facts": 5
+  },
+  "changes": []
+ },
+ "E13_eval8": {
+  "counts": {
+   "new facts": 4,
+   "runs with new facts": 2
+  },
+  "changes": []
+ },
+ "T17_eval8_t03": {
+  "counts": {
+   "new facts": 1,
+   "runs with new facts": 1
+  },
+  "changes": []
+ },
+ "T17_eval8_t05": {
+  "counts": {},
+  "changes": []
+ },
+ "T17_eval8_t07": {
+  "counts": {},
+  "changes": []
+ },
+ "E13_size": {
+  "counts": {
+   "new facts": 14,
+   "runs with new facts": 3
+  },
+  "changes": []
+ },
+ "E14_size2": {
+  "counts": {
+   "new facts": 12,
+   "runs with new facts": 2
+  },
+  "changes": []
+ }
+}

@@ -487,7 +487,7 @@ Nothing in the code or in the prompts is about orders.
 |---|---|---|
 | `specs/order`, `specs/delete_property` | Kiro EARS | the two examples of the Kiro blog |
 | `specs/auth_openspec` | OpenSpec (`### Requirement` / `#### Scenario`) | another format; two conflicts we planted |
-| `experiments/sets/`: `eval` to `eval8` | both | 48 specs in new domains. Each has a clean version and versions with one planted defect, 201 versions in all. Each set was written before it was used, as a test the prompts had not seen |
+| `experiments/sets/`: `eval` to `eval9` | both | 54 specs in new domains. Each has a clean version and versions with one planted defect, 231 versions in all. Each set was written before it was used, as a test the prompts had not seen |
 
 ## How reliable is it
 
@@ -503,6 +503,7 @@ Each line is a test on specs the prompts had not seen, with 3 runs per spec:
 | `eval6/` (E11), doubtful conflicts set aside | 15 of 18 | 0 of 18 | 19 of 36 |
 | `eval7/` (E12), doubtful conflicts set aside | 13 of 18 | 0 of 18 | 17 of 36; 32 of 36 with the second model |
 | `eval8/` (E13), doubtful conflicts set aside | 18 of 21 | 0 of 18 | 20 of 36 |
+| `eval9/` (E15), doubtful conflicts set aside | 18 of 18 | 2 of 18, a real conflict we wrote by mistake | 18 of 36 |
 
 Some notes on these numbers:
 
@@ -573,7 +574,7 @@ research.md, section 5.
 | `speccheck/refine.py` | optional LLM review, off by default |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the vLLM servers on the cluster: the main model, the second model |
 | `tests/` | 42 tests of everything that needs no LLM |
-| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval8`, `size` and `size2`, and the script that writes them |
+| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval9`, `size` and `size2`, and the script that writes them |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs and scores the evaluation; re-scores saved runs without a GPU |
 | `experiments/stability.py`, `fact_threshold.py` | the earlier experiments |
