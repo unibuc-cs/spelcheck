@@ -61,9 +61,11 @@ from speccheck.logic import Vocabulary
 #   settle       share of the answers a translation needs to stand (step 6)
 #   doubtful     count the conflicts marked doubtful (False: set them aside)
 #   second       use the second reader (step 7); only if the runs have one
+#   repair       keep the facts that the vote kept thanks to the parentheses
+#                repair (False: see without_repair)
 DEFAULT = {"sets": 1, "rule": "any", "facts": True, "max_group": 3,
            "questions": True, "link_checks": True, "doubtful": True, "settle": 0.5,
-           "second": False}
+           "second": False, "repair": True}
 
 CONFIGURATIONS = [
     ("default (1 symbol set)",               {}),
@@ -76,6 +78,7 @@ CONFIGURATIONS = [
     ("second reader, without step 6",        {"second": True, "questions": False, "link_checks": False}),
     ("second reader, 7 of 8 answers",        {"second": True, "settle": 0.75}),
     ("without assumed facts and links",      {"facts": False}),
+    ("facts vote without the parentheses repair", {"repair": False}),
     ("pairs of rules only",                  {"max_group": 2}),
     ("3 symbol sets, found with any",        {"sets": 3}),
     ("3 symbol sets, found with most",       {"sets": 3, "rule": "majority"}),
@@ -88,6 +91,9 @@ OUTPUT_FILES = ("report.md", "refined.md")
 
 # Answers the second model gives per rule in step 7.
 SECOND_SAMPLES = 8
+
+# Answers per rule and per fact list in the runs (formalize's default).
+SAMPLES = 8
 
 
 def one_run(job: tuple) -> dict:
@@ -183,6 +189,24 @@ def add_second_readings(data: dict, base_url: str) -> None:
     data["second_failed"] = failed
 
 
+def without_repair(model: dict) -> dict:
+    """The model as if the facts vote had not repaired any formula (T19).
+
+    A voted fact stays only if the vote without the repair, on the same saved
+    answers, kept it or something that implies it; the links all stay. Step 6
+    ran with all the facts, so this is close to a run without the repair, not
+    exactly one. On runs made before the repair nothing changes.
+    """
+    if "fact_samples" not in model:
+        return model
+    vocab = Vocabulary(model["symbols"])
+    old = [vocab.parse(fact["formula"]) for fact in
+           formalize_module._agreed_facts(vocab, model["fact_samples"], SAMPLES, repair=False)]
+    background = [fact for fact in model["background"]
+                  if "restates" in fact or vocab.implies(old, vocab.parse(fact["formula"]))]
+    return {**model, "background": background}
+
+
 def reported(run: dict, config: dict) -> tuple[set, set]:
     """What one run reports under one configuration.
 
@@ -192,6 +216,8 @@ def reported(run: dict, config: dict) -> tuple[set, set]:
     models = run["models"][:config["sets"]]
     if not config["facts"]:
         models = [{**model, "background": []} for model in models]
+    if not config["repair"]:
+        models = [without_repair(model) for model in models]
     # readings=False: only the counts are needed here (see reading_effects).
     findings = combine([analyze(model, config["max_group"], questions=config["questions"],
                                 link_checks=config["link_checks"], settle=config["settle"],

@@ -199,6 +199,22 @@ def test_fact_vote_keeps_what_most_samples_agree_on():
                      "formula": "(=> open (not closed))", "support": "3/4"}]
 
 
+def test_fact_vote_repairs_missing_outer_parentheses():
+    """">= count 0" is read as "(>= count 0)"; other slips are still dropped."""
+    vocab = Vocabulary([{"name": "count", "sort": "Int", "values": [], "description": ""},
+                        {"name": "open", "sort": "Bool", "values": [], "description": ""}])
+    answers = [{"facts": [{"text": "never negative", "formula": formula}]}
+               for formula in (">= count 0", ">= count 0", "(>= count 0)", "(!= count -1)")]
+
+    assert _agreed_facts(vocab, answers, asked=4) == [
+        {"id": "F1", "text": "never negative", "formula": "(>= count 0)", "support": "3/4"}]
+    # Without the repair only one answer says it: no majority.
+    assert _agreed_facts(vocab, answers, asked=4, repair=False) == []
+    # A bare symbol is already a formula and is left as it is.
+    assert _agreed_facts(vocab, [{"facts": [{"text": "t", "formula": "open"}]}] * 2, asked=2) == [
+        {"id": "F1", "text": "t", "formula": "open", "support": "2/2"}]
+
+
 def test_bad_symbols_are_rejected():
     """Symbol lists that would silently distort the analysis must be refused."""
     def symbol(name, sort, values=()):

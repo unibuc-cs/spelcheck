@@ -475,11 +475,31 @@ def _simplest(cluster: list[tuple[dict, Rule]]) -> tuple[dict, Rule]:
 # ---------------------------------------------------------- step 4: facts vote
 
 
-def _agreed_facts(vocab: Vocabulary, answers: list[dict], asked: int) -> list[dict]:
+def _fact_formula(vocab: Vocabulary, text: str, repair: bool = True) -> tuple[str, z3.BoolRef]:
+    """A sampled fact's formula, as text and in Z3. ValueError if it is unusable.
+
+    The most common slip in the sampled facts is a formula without its outer
+    parentheses: ">= count 0" for "(>= count 0)", 3.4% of all facts (T19).
+    With `repair` such a formula gets its parentheses back. Other slips (an
+    operator like "!=", a name that is not a symbol) are not repaired.
+    """
+    try:
+        return text, vocab.parse(text)
+    except ValueError:
+        if not repair or text.strip().startswith("("):
+            raise
+    text = f"({text.strip()})"
+    return text, vocab.parse(text)
+
+
+def _agreed_facts(vocab: Vocabulary, answers: list[dict], asked: int,
+                  repair: bool = True) -> list[dict]:
     """Keep the domain facts that a majority of the sampled answers agree on.
 
     answers  the LLM's answers, each {"facts": [{"text": ..., "formula": ...}]}
     asked    how many answers were requested (some may have come back unusable)
+    repair   give a formula its missing outer parentheses (see _fact_formula);
+             False only to measure what the repair changes
 
     Two answers rarely word a fact the same way, so agreement is decided by
     logic: an answer "agrees" with a fact when the fact follows from that
@@ -495,9 +515,10 @@ def _agreed_facts(vocab: Vocabulary, answers: list[dict], asked: int) -> list[di
         facts = []
         for fact in answer["facts"]:
             try:
-                facts.append((fact, vocab.parse(fact["formula"])))
+                text, formula = _fact_formula(vocab, fact["formula"], repair)
             except ValueError:
                 continue  # unknown symbol or malformed formula: this fact does not count
+            facts.append(({**fact, "formula": text}, formula))
         # An answer that contradicts itself would "agree" with everything.
         if not vocab.impossible([formula for _, formula in facts]):
             usable.append(facts)
