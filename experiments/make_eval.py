@@ -1,6 +1,6 @@
-"""make_eval.py: writes the evaluation sets eval/ to eval8/ and size/. No LLM, no GPU.
+"""make_eval.py: writes the evaluation sets eval/ to eval9/, size/ and size2/. No LLM, no GPU.
 
-    python -m experiments.make_eval eval8      (only the sets named; all if none)
+    python -m experiments.make_eval eval9      (only the sets named; all if none)
 
 An evaluation set measures the formal check on specs that were NOT used to
 develop the prompts. Each set is held-out until its results are read to
@@ -18,6 +18,9 @@ design something; from then on it is development data:
     size/    written 2026-11-20 with eval8/: one spec of 30 requirements, to
              see what a larger document does. Not part of the eval8 numbers.
              Read in E13; development data since.
+    size2/   written 2026-11-22: one spec of 100 requirements. Read in E14.
+    eval9/   written 2026-11-23, after T19, before the parentheses repair of
+             the facts vote. Same design as eval8/.
 
 Each set has six small specs (new domains; half Kiro EARS, half OpenSpec), each
 in several versions. The defects are planted by rule, so the expected answer is
@@ -1326,9 +1329,155 @@ SPECS_SIZE2 = {
     },
 }
 
+# Written on 2026-11-23, after T19 and before the parentheses repair of the
+# facts vote. Same design as eval8: six new domains, three with a direct and
+# three with an overlap conflict, each kind of ambiguity in three specs, and a
+# gap version that removes the second of two complementary requirements.
+SPECS9 = {
+    "crossing": {
+        "format": "ears",
+        "intro": "As a road user, I want the level crossing to close while a train passes, so that I can cross the railway safely.",
+        "rules": [
+            "WHEN a train approaches the crossing AND the barriers are working, THE Crossing System SHALL lower the barriers and switch on the warning lights.",
+            "WHEN a train approaches the crossing AND the barriers are not working, THE Crossing System SHALL tell the train driver to stop before the crossing.",
+            "WHEN a train has passed the crossing, THE Crossing System SHALL raise the barriers and switch off the warning lights.",
+            "WHEN a barrier fails to lower for the third time in a week, THE Crossing System SHALL report the crossing to maintenance.",
+            "WHEN a vehicle has stood on the crossing for more than 20 seconds, THE Crossing System SHALL warn the signal box.",
+        ],
+        "variants": {
+            "direct": ({"add": "WHEN a train has passed the crossing, THE Crossing System SHALL keep the barriers down."},
+                       {"conflicts": [[3, 6]]}),
+            # boundary: after exactly 20 seconds only, or from 20 seconds on?
+            "ambiguity1": ({"replace": {5: "WHEN a vehicle has stood on the crossing for 20 seconds, THE Crossing System SHALL warn the signal box."}},
+                           {"kind": "boundary", "ambiguous": [5]}),
+            # "if": are the barriers always raised, or only when no other train comes?
+            "ambiguity2": ({"replace": {3: "WHEN a train has passed the crossing, THE Crossing System SHALL raise the barriers and switch off the warning lights if no other train is approaching."}},
+                           {"kind": "if", "ambiguous": [3]}),
+            "gap": ({"remove": 2}, {"gaps": [1]}),
+        },
+        "covered": [1],
+    },
+    "grants": {
+        "format": "openspec",
+        "intro": "Researchers apply online for small research grants.",
+        "rules": [
+            ("Applications", "Complete application", "WHEN a researcher submits an application AND all required documents are attached THEN the system sends the application to two reviewers"),
+            ("Applications", "Incomplete application", "WHEN a researcher submits an application AND a required document is missing THEN the system returns the application to the researcher"),
+            ("Decisions", "Funding", "WHEN the committee approves an application THEN the system transfers the first payment to the researcher's institution"),
+            ("Reviews", "Late reviewer", "WHEN a reviewer misses the review deadline for the second time THEN the system removes the reviewer from the panel"),
+            ("Reporting", "Final report", "WHEN a project ends THEN the system asks the researcher for a final report"),
+        ],
+        "variants": {
+            "overlap": ({"add": ("Decisions", "Budget used up", "WHEN the grant budget of the year is used up THEN the system makes no payments")},
+                        {"conflicts": [[3, 6]]}),
+            # "only": must a complete application be sent, or are incomplete ones merely not sent?
+            "ambiguity1": ({"replace": {1: ("Applications", "Complete application", "WHEN a researcher submits an application THEN the system sends the application to two reviewers only if all required documents are attached")}},
+                           {"kind": "only", "ambiguous": [1]}),
+            # scope: (researcher or institution) and budget allows, or researcher or (institution and budget allows)?
+            "ambiguity2": ({"replace": {3: ("Decisions", "Funding", "WHEN the committee approves an application AND the researcher has signed the contract or the institution has signed it and the budget allows it THEN the system transfers the first payment to the researcher's institution")}},
+                           {"kind": "and/or", "ambiguous": [3]}),
+            "gap": ({"remove": 2}, {"gaps": [1]}),
+        },
+        "covered": [1],
+    },
+    "shelter": {
+        "format": "openspec",
+        "intro": "People adopt cats and dogs from an animal shelter through its website.",
+        "rules": [
+            ("Adoption", "Home check passed", "WHEN a person applies to adopt an animal AND the person has passed the home check THEN the system reserves the animal for the person"),
+            ("Adoption", "Home check not passed", "WHEN a person applies to adopt an animal AND the person has not passed the home check THEN the system rejects the application and tells the person why"),
+            ("Adoption", "Handover", "WHEN the adoption fee is paid THEN the system marks the animal as adopted and removes it from the website"),
+            ("Website", "Long stay", "WHEN an animal has been in the shelter for more than 90 days THEN the system features the animal on the home page"),
+            ("Volunteers", "Missed shifts", "WHEN a volunteer misses a shift for the third time THEN the system informs the volunteer coordinator"),
+        ],
+        "variants": {
+            "direct": ({"add": ("Records", None, "The system SHALL keep every adopted animal on the website.")},
+                       {"conflicts": [[3, 6]]}),
+            # boundary: on day 90 only, or from day 90 on?
+            "ambiguity1": ({"replace": {4: ("Website", "Long stay", "WHEN an animal has been in the shelter for 90 days THEN the system features the animal on the home page")}},
+                           {"kind": "boundary", "ambiguous": [4]}),
+            # "if": is the animal always marked as adopted, or only when it is microchipped?
+            "ambiguity2": ({"replace": {3: ("Adoption", "Handover", "WHEN the adoption fee is paid THEN the system marks the animal as adopted and removes it from the website if the animal is microchipped")}},
+                           {"kind": "if", "ambiguous": [3]}),
+            "gap": ({"remove": 2}, {"gaps": [1]}),
+        },
+        "covered": [1],
+    },
+    "pool": {
+        "format": "ears",
+        "intro": "As a swimmer, I want to enter the public pool with my card, so that I do not have to queue at the till.",
+        "rules": [
+            "WHEN a swimmer holds a card at the entry gate AND the card has entries left, THE Pool System SHALL open the gate and deduct one entry.",
+            "WHEN a swimmer holds a card at the entry gate AND the card has no entries left, THE Pool System SHALL keep the gate closed and show where to buy more entries.",
+            "WHEN the water temperature drops below 24 degrees, THE Pool System SHALL alert the pool manager.",
+            "WHEN a swimmer leaves through the exit gate, THE Pool System SHALL record the time of exit.",
+            "WHEN a card is reported lost for the second time, THE Pool System SHALL block the card and charge a replacement fee.",
+        ],
+        "variants": {
+            "overlap": ({"add": "WHILE the pool is closed for cleaning, THE Pool System SHALL keep the entry gate closed."},
+                        {"conflicts": [[1, 6]]}),
+            # scope: (entries left or season pass) and pool open, or entries left or (season pass and pool open)?
+            "ambiguity1": ({"replace": {1: "WHEN a swimmer holds a card at the entry gate AND the card has entries left or the swimmer has a season pass and the pool is open, THE Pool System SHALL open the gate and deduct one entry."}},
+                           {"kind": "and/or", "ambiguous": [1], "allowed": [[1, 2]]}),
+            # "only": must a card with entries open the gate, or are cards without entries merely refused?
+            "ambiguity2": ({"replace": {1: "WHEN a swimmer holds a card at the entry gate, THE Pool System SHALL open the gate and deduct one entry only if the card has entries left."}},
+                           {"kind": "only", "ambiguous": [1]}),
+            "gap": ({"remove": 2}, {"gaps": [1]}),
+        },
+        "covered": [1],
+    },
+    "topup": {
+        "format": "openspec",
+        "intro": "Customers of a prepaid mobile network add credit to their phones.",
+        "rules": [
+            ("Top-up", "Payment accepted", "WHEN a customer buys credit AND the payment is accepted THEN the system adds the credit to the balance and sends a text message"),
+            ("Top-up", "Payment refused", "WHEN a customer buys credit AND the payment is refused THEN the system leaves the balance unchanged and shows the reason"),
+            ("Calls", "Low balance", "WHEN the balance falls below 2 euros THEN the system sends the customer a warning"),
+            ("Calls", "Empty balance", "WHEN the balance reaches zero during a call THEN the system ends the call"),
+            ("Security", "Wrong PIN", "WHEN a customer enters a wrong PIN for the third time THEN the system locks the account for 24 hours"),
+        ],
+        "variants": {
+            "direct": ({"add": ("Calls", "Calls never cut", "WHEN the balance reaches zero during a call THEN the system lets the call continue")},
+                       {"conflicts": [[4, 6]]}),
+            # boundary: at exactly 2 euros only, or at 2 euros and below?
+            "ambiguity1": ({"replace": {3: ("Calls", "Low balance", "WHEN the balance falls to 2 euros THEN the system sends the customer a warning")}},
+                           {"kind": "boundary", "ambiguous": [3]}),
+            # "only": must an accepted payment be added, or are refused ones merely not added?
+            "ambiguity2": ({"replace": {1: ("Top-up", "Payment accepted", "WHEN a customer buys credit THEN the system adds the credit to the balance and sends a text message only if the payment is accepted")}},
+                           {"kind": "only", "ambiguous": [1]}),
+            "gap": ({"remove": 2}, {"gaps": [1]}),
+        },
+        "covered": [1],
+    },
+    "kindergarten": {
+        "format": "ears",
+        "intro": "As a parent, I want the kindergarten to check who picks up my child, so that my child goes home only with people I trust.",
+        "rules": [
+            "WHEN an adult comes to pick up a child AND the adult is on the child's pick-up list, THE Kindergarten System SHALL let the child go and record the time.",
+            "WHEN an adult comes to pick up a child AND the adult is not on the child's pick-up list, THE Kindergarten System SHALL keep the child inside and call the parents.",
+            "WHEN a child is absent without notice, THE Kindergarten System SHALL send a text message to the parents.",
+            "WHEN a parent arrives after closing time for the third time in a month, THE Kindergarten System SHALL charge a late fee.",
+            "WHEN a child has a fever, THE Kindergarten System SHALL call the parents and move the child to the quiet room.",
+        ],
+        "variants": {
+            "overlap": ({"add": "WHILE the parents have turned off notifications, THE Kindergarten System SHALL NOT send text messages to the parents."},
+                        {"conflicts": [[3, 6]]}),
+            # scope: (on the list or teacher) and parents agreed, or on the list or (teacher and parents agreed)?
+            "ambiguity1": ({"replace": {1: "WHEN an adult comes to pick up a child AND the adult is on the child's pick-up list or the adult is a teacher and the parents have agreed by phone, THE Kindergarten System SHALL let the child go and record the time."}},
+                           {"kind": "and/or", "ambiguous": [1], "allowed": [[1, 2]]}),
+            # "if": are the parents always called, or only for a high fever?
+            "ambiguity2": ({"replace": {5: "WHEN a child has a fever, THE Kindergarten System SHALL call the parents and move the child to the quiet room if the fever is above 39 degrees."}},
+                           {"kind": "if", "ambiguous": [5]}),
+            "gap": ({"remove": 2}, {"gaps": [1]}),
+        },
+        "covered": [1],
+    },
+}
+
 # Folder -> the specs written into it.
 SETS = {"eval": SPECS, "eval2": SPECS2, "eval3": SPECS3, "eval4": SPECS4, "eval5": SPECS5,
-        "eval6": SPECS6, "eval7": SPECS7, "eval8": SPECS8, "size": SPECS_SIZE, "size2": SPECS_SIZE2}
+        "eval6": SPECS6, "eval7": SPECS7, "eval8": SPECS8, "eval9": SPECS9,
+        "size": SPECS_SIZE, "size2": SPECS_SIZE2}
 
 
 def document(name: str, spec: dict, rules: list) -> str:
