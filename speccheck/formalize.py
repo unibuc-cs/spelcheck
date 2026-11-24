@@ -23,10 +23,13 @@ and counting below is done by this file:
                 the outcomes of the other rules ("the record is retained").
                 If most answers agree ("not retained"), that meaning becomes
                 an assumed fact, a "link" (example: _links).
-    6. probe    three checks by questions about one requirement (probe.py):
-                is the translation the only reading of the words? does the
-                rule demand what its link claims? does it agree with the
-                facts that make it impossible to obey?
+    6. probe    four checks by simple questions (probe.py). About one
+                requirement: is the translation the only reading of the
+                words? does the rule demand what its link claims? does it
+                agree with the facts that make it impossible to obey? And
+                about two rules that can apply together: can what they
+                demand both be the case? If not, that is one more assumed
+                fact.
     7. second   optional: a second model, of another family, translates every
                 rule N times as in step 2. For each answer Z3 is asked whether
                 it means the same as the translation; if no more than half
@@ -45,7 +48,7 @@ import z3
 
 from .llm import LLM
 from .logic import Rule, Vocabulary
-from .probe import MAJORITY, question
+from .probe import MAJORITY, outcomes, question
 
 # Entropy thresholds for the cluster step (natural logarithm).
 # With 8 samples:  8/0 -> 0.00, 7/1 -> 0.38   accepted
@@ -310,6 +313,8 @@ def formalize(llm: LLM, spec_text: str, samples: int = 8, temperature: float = 0
     # Step 6 (probe.py) adds "probes" to the rules, and a "check" to the links
     # and to the facts it tests.
     question(llm, formal, vocab, shown, temperature, keep_samples)
+    # Its fourth check adds assumed facts about pairs of outcomes ("between").
+    outcomes(llm, formal, vocab, temperature, keep_samples)
     # Step 7 (optional) adds "second" to the rules.
     if second is not None:
         second_reading(second, formal, samples, temperature, keep_samples)

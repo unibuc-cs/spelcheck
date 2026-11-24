@@ -151,6 +151,15 @@ class Vocabulary:
             trigger = ""
         return Rule(data["id"], self.parse(data["antecedent"]), self.parse(data["consequent"]), trigger)
 
+    def events_of(self, data: dict) -> set[str]:
+        """The events one rule dict reacts to: its trigger, and the events in its condition."""
+        events = {data.get("trigger")} & self.events
+        try:
+            events |= self.symbols_in(self.parse(data.get("antecedent", "true"))) & self.events
+        except ValueError:  # a rejected rule may have no formula that parses
+            pass
+        return events
+
     # ---------------------------------------------------------------- questions
     # Z3 answers sat, unsat or unknown. The two methods below each commit to one
     # definite answer, so "unknown" can never be reported as a finding.

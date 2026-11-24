@@ -4,7 +4,7 @@ Why: earlier steps keep whatever most of 8 LLM answers say. But 8 answers
 from the same model often repeat the same mistake. So here the LLM gets a
 different, simpler question, about ONE requirement at a time.
 
-Three checks. Each question is asked 8 times and the answers are counted.
+Four checks. Each question is asked 8 times and the answers are counted.
 
 1. Does the requirement really mean what we translated?
 
@@ -34,10 +34,24 @@ Three checks. Each question is asked 8 times and the answers are counted.
      question:  "Does the requirement agree with this fact?"
      result:    if most answers say "contradicts", the fact is dropped.
 
-In formal.json the answers end up under "probes" (in a rule) and "check"
-(in a link or a fact).
+4. Can what two requirements demand both be the case?  (outcomes, below)
+
+     Two rules that can apply in the same situation, written with different
+     symbols: "take the price from the balance" became payment_taken, and
+     "refuse all payments" became payment_refused. To Z3 both can be true,
+     so it sees no conflict, unless a fact says that they exclude each other.
+     question:  "A: payment_taken is TRUE. B: payment_refused is TRUE.
+                 Can both hold in the same snapshot?"
+     result:    if most answers say "impossible", that becomes an assumed
+                fact, (not (and payment_taken payment_refused)). Like every
+                assumed fact it can only add a conflict, and the report
+                quotes it.
+
+In formal.json the answers end up under "probes" (in a rule), "check" (in a
+link or a fact) and "outcome_pairs"; a fact of check 4 has "between".
 """
 
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from typing import NamedTuple
 
@@ -66,6 +80,9 @@ MAJORITY = 0.5
 ANSWERS = 8
 # At most this many other readings are tried per rule.
 MAX_READINGS = 3
+# Check 4 asks about at most this many pairs of rules, the first ones in the
+# document. The six-rule specs of the evaluation have 2 to 5 pairs each.
+MAX_PAIRS = 40
 
 READINGS_SYSTEM = """\
 You look for other ways to read ONE requirement. You get the requirement, the \
@@ -187,6 +204,36 @@ FACT_SCHEMA = {
         "answer": {"enum": ["agrees", "contradicts", "unclear"]},
     },
     "required": ["reason", "answer"],
+    "additionalProperties": False,
+}
+
+
+OUTCOMES_SYSTEM = """\
+You get two statements, A and B, about ONE snapshot of a software system. \
+Each is a list of facts, each marked TRUE or FALSE, or given a value. A fact \
+marked FALSE is not the case.
+
+Can A and B both hold in the same snapshot? Judge only by what the facts \
+mean, as their descriptions say. Answer:
+- impossible: A and B exclude each other by their meaning (a lamp cannot be \
+lit and dark at once; if every drawer is shut, the top drawer is not open).
+- possible: both can hold together (a form can be signed and also dated), \
+even if a system would rarely do both.
+- unclear: the descriptions can reasonably be read both ways.
+
+First give the reason in one or two sentences, then the answer. If the answer \
+is impossible, also write the fact that excludes the two as one plain \
+sentence ("A lamp cannot be lit and dark at once."); otherwise leave "fact" \
+empty."""
+
+OUTCOMES_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "reason": {"type": "string"},
+        "answer": {"enum": ["possible", "impossible", "unclear"]},
+        "fact": {"type": "string"},
+    },
+    "required": ["reason", "answer", "fact"],
     "additionalProperties": False,
 }
 
@@ -430,3 +477,116 @@ def _contradicting_facts(vocab: Vocabulary, rule, facts: dict) -> list[str]:
         if vocab.impossible(obeyed + [facts[other] for other in others]):
             needed = others  # not needed: the rule is impossible to obey without it
     return needed
+
+
+# ------------------------------------------------------------------- check 4
+
+
+def outcomes(llm: LLM, formal: dict, vocab: Vocabulary, temperature: float,
+             keep_answers: bool = False) -> None:
+    """Step 6, check 4: for rules that can apply together, can both get what they demand?
+
+    Runs after the other checks, on the links and facts they left standing.
+    The model sees only the two outcomes, as facts with their descriptions,
+    not the requirements: like the facts question of step 4, it is asked what
+    the symbols mean, not what the system should do.
+
+    Adds to formal:
+        "outcome_pairs"  every pair asked about, with the count of its answers
+        "background"     one assumed fact for each pair that most answers call
+                         impossible:
+                             {"id": "F4", "between": ["C1", "C6"], "support": "7/8",
+                              "formula": "(not (and payment_taken payment_refused))", ...}
+
+    keep_answers  also store every answer with its reason (for the experiments)
+    """
+    descriptions = {s["name"]: s["description"] for s in formal["symbols"]}
+    pairs = _open_pairs(vocab, formal)
+    if len(pairs) > MAX_PAIRS:
+        formal["outcome_pairs_skipped"] = len(pairs) - MAX_PAIRS
+        pairs = pairs[:MAX_PAIRS]
+
+    def ask(pair: tuple) -> list[dict]:
+        _, _, first_demands, second_demands = pair
+        prompt = (f"Statement A:\n{describe(first_demands, descriptions)}\n\n"
+                  f"Statement B:\n{describe(second_demands, descriptions)}")
+        return llm.ask(OUTCOMES_SYSTEM, prompt, OUTCOMES_SCHEMA, ANSWERS, temperature)
+
+    with ThreadPoolExecutor(max_workers=16) as pool:  # LLM calls only
+        replies = list(pool.map(ask, pairs))
+
+    formal["outcome_pairs"] = []
+    for (first, second, _, _), answers in zip(pairs, replies):
+        counts = Counter({choice: 0 for choice in OUTCOMES_SCHEMA["properties"]["answer"]["enum"]})
+        counts.update(reply["answer"] for reply in answers)
+        record = {"rules": [first["id"], second["id"]], "answers": dict(counts)}
+        if keep_answers:
+            record["replies"] = answers
+        formal["outcome_pairs"].append(record)
+        if counts["impossible"] > MAJORITY * len(answers):
+            sentence = next((reply["fact"].strip() for reply in answers
+                             if reply["answer"] == "impossible" and reply["fact"].strip()), "")
+            formal["background"].append({
+                "id": f"F{len(formal['background']) + 1}",
+                "text": (f"What {first['id']} and {second['id']} demand cannot both be the case"
+                         + (f": {sentence}" if sentence else ".")),
+                "formula": f"(not (and {first['consequent']} {second['consequent']}))",
+                "support": f"{counts['impossible']}/{len(answers)}",
+                "between": [first["id"], second["id"]],
+            })
+
+
+def _open_pairs(vocab: Vocabulary, formal: dict) -> list[tuple]:
+    """Check 4: the pairs of rules to ask about, as (rule, rule, what one demands, what the other demands).
+
+    A pair is asked about when a missing fact could hide a conflict between
+    the two, and only then:
+
+    - both rules can apply in one situation that the assumed facts allow;
+    - they do not react to two different events (that conflict would be
+      marked doubtful anyway, see checks._search);
+    - what they demand shares no symbol (otherwise Z3 already relates the
+      two), and no assumed fact already says that the two exclude each other;
+    - what each demands is one definite state of its symbols, so that it can
+      be shown as a list of facts (not "x or y", not "at least 5").
+
+    A rejected rule takes no part, and an ambiguous one is taken with its
+    first reading, as in checks.py.
+    """
+    facts = [vocab.parse(fact["formula"]) for fact in formal["background"]
+             if fact.get("check", {}).get("verdict") != "rejected"]
+    usable = []  # (rule dict, compiled rule, the events it reacts to, what it demands as facts)
+    for data in formal["rules"]:
+        if data.get("status") != "rejected":
+            rule = vocab.rule(data)
+            demands = _as_facts(vocab, rule.consequent)
+            if demands:
+                usable.append((data, rule, vocab.events_of(data), demands))
+    pairs = []
+    for index, (first, a, a_events, a_demands) in enumerate(usable):
+        for second, b, b_events, b_demands in usable[index + 1:]:
+            if a_events and b_events and not a_events & b_events:
+                continue  # two different events
+            if a_demands.keys() & b_demands.keys():
+                continue  # a symbol in common: Z3 sees how the two relate
+            if vocab.impossible([a.antecedent, b.antecedent] + facts):
+                continue  # they never apply together
+            if vocab.impossible([a.consequent, b.consequent] + facts):
+                continue  # the facts already say that the two exclude each other
+            pairs.append((first, second, a_demands, b_demands))
+    return pairs
+
+
+def _as_facts(vocab: Vocabulary, formula: z3.BoolRef) -> dict | None:
+    """A formula as one value for each of its symbols, or None if it does not fix them all.
+
+    (and (not door_unlocked) attempt_logged)  ->  {"door_unlocked": False, "attempt_logged": True}
+    (or a b), (>= count 5), true              ->  None
+    """
+    names = vocab.symbols_in(formula)
+    model = vocab.model([formula])
+    if not names or model is None:
+        return None
+    values = vocab.witness(model, names)
+    fixed = vocab.implies([formula], z3.And(*vocab.assignment(values)))
+    return values if fixed else None

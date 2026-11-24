@@ -3,6 +3,7 @@
     python -m experiments.evaluate --base-url http://localhost:18200/v1 --specs experiments/sets/eval2 --name E7_eval2
     python -m experiments.evaluate --rescore experiments/results/E7_eval2.json
     python -m experiments.evaluate --rescore experiments/results/E7_eval2.json --second-base-url http://localhost:18201/v1
+    python -m experiments.evaluate --rescore experiments/results/E7_eval2.json --outcomes-base-url http://localhost:18200/v1 --name T22_eval2
 
 The first form asks the LLM. Every spec folder under --specs is formalized
 `--runs` times; each run makes `--symbol-sets` formal models of the spec (the
@@ -15,6 +16,13 @@ expected findings and the prompts.
 The third form adds formalize step 7 to saved runs: a second model translates
 every rule of every saved formal model again, and the file is saved with its
 answers. (The two models then never need the GPUs at the same time.)
+
+The fourth form adds the questions about pairs of outcomes (probe.py, check
+4) to saved runs that were made without them. The check comes last in step 6
+and needs only the formal model, so on saved runs it does what it would have
+done in the run itself. Only what it adds is saved, under the new name, in a
+small file that names the runs it belongs to; --rescore on that file loads
+both (see load).
 
 All forms then score the saved runs with the solver and write
 experiments/results/<name>.md. No GPU is needed for that, so the same runs can be
@@ -51,11 +59,12 @@ from pathlib import Path
 
 from speccheck import formalize as formalize_module
 from speccheck import probe as probe_module
-from speccheck.change import Merged, about_change, changed_rules, merge, rule_events
+from speccheck.change import Merged, about_change, changed_rules, merge
 from speccheck.checks import analyze, combine, find_gaps, settled
 from speccheck.formalize import formalize_sets, judge_second, second_reading
 from speccheck.llm import LLM
 from speccheck.logic import Vocabulary
+from speccheck.probe import outcomes
 
 # How the check is run by default. Each configuration below changes some of it:
 #   sets         symbol sets used (the first n formal models of a run)
@@ -70,9 +79,11 @@ from speccheck.logic import Vocabulary
 #   second       use the second reader (step 7); only if the runs have one
 #   repair       keep the facts that the vote kept thanks to the parentheses
 #                repair (False: see without_repair)
+#   outcomes     use the assumed facts of probe check 4, the questions about
+#                pairs of outcomes (False: leave them out)
 DEFAULT = {"sets": 1, "rule": "any", "facts": True, "max_group": 3,
            "questions": True, "link_checks": True, "doubtful": True, "settle": 0.5,
-           "second": False, "repair": True}
+           "second": False, "repair": True, "outcomes": True}
 
 CONFIGURATIONS = [
     ("default (1 symbol set)",               {}),
@@ -86,6 +97,8 @@ CONFIGURATIONS = [
     ("second reader, 7 of 8 answers",        {"second": True, "settle": 0.75}),
     ("without assumed facts and links",      {"facts": False}),
     ("facts vote without the parentheses repair", {"repair": False}),
+    ("without the questions about outcomes", {"outcomes": False}),
+    ("without the questions about outcomes, doubtful set aside", {"outcomes": False, "doubtful": False}),
     ("pairs of rules only",                  {"max_group": 2}),
     ("3 symbol sets, found with any",        {"sets": 3}),
     ("3 symbol sets, found with most",       {"sets": 3, "rule": "majority"}),
@@ -166,7 +179,8 @@ def collect(base_url: str, specs_root: Path, runs: int, symbol_sets: int, temper
                     "readings": probe_module.READINGS_SYSTEM,
                     "question": probe_module.QUESTION_SYSTEM,
                     "link": probe_module.LINK_SYSTEM,
-                    "fact": probe_module.FACT_SYSTEM},
+                    "fact": probe_module.FACT_SYSTEM,
+                    "outcomes": probe_module.OUTCOMES_SYSTEM},
         "specs": specs,
         "runs": [{"spec": name, **result} for name, result in zip(jobs, results)],
     }
@@ -217,6 +231,70 @@ def add_second_readings(data: dict, base_url: str) -> None:
     data["second_failed"] = failed
 
 
+def outcomes_one(job: tuple) -> dict:
+    """Probe check 4 on one saved formal model. Runs in a worker process.
+
+    job = (base_url, formal model, temperature). Returns the model with its
+    "outcome_pairs" and the facts they gave, or {"error": ...}.
+    """
+    base_url, model, temperature = job
+    try:
+        outcomes(LLM(base_url), model, Vocabulary(model["symbols"]), temperature, keep_answers=True)
+        return model
+    except Exception as error:  # one failed model is a result, not a reason to stop
+        return {"error": str(error)}
+
+
+def add_outcomes(data: dict, base_url: str) -> None:
+    """Probe check 4 on every saved formal model, with the model at `base_url`.
+
+    The runs must have been made without the check: afterwards, every fact
+    with "between" counts as added by this call (see additions).
+    """
+    models = [model for run in data["runs"] for model in run.get("models", [])]
+    temperature = data.get("temperature", 0.7)
+    with ProcessPoolExecutor(max_workers=32) as pool:
+        done = list(pool.map(outcomes_one, [(base_url, model, temperature) for model in models]))
+    failed = 0
+    for model, result in zip(models, done):
+        if "error" in result:
+            failed += 1
+        else:
+            model.update(result)
+    data["prompts"]["outcomes"] = probe_module.OUTCOMES_SYSTEM
+    data["outcomes_added"] = datetime.now().isoformat(timespec="seconds")
+    data["outcomes_failed"] = failed
+
+
+def additions(data: dict, source: Path) -> dict:
+    """What add_outcomes added to the runs saved in `source`, as a file of its own."""
+    return {
+        "source": source.as_posix(),
+        "outcomes_added": data["outcomes_added"],
+        "outcomes_failed": data["outcomes_failed"],
+        "prompts": {"outcomes": data["prompts"]["outcomes"]},
+        # For each run, for each of its formal models: the pairs asked about
+        # (with every answer) and the assumed facts they gave.
+        "added": [[{"outcome_pairs": model.get("outcome_pairs", []),
+                    "facts": [fact for fact in model["background"] if "between" in fact]}
+                   for model in run.get("models", [])] for run in data["runs"]],
+    }
+
+
+def load(raw_file: Path) -> dict:
+    """Read saved runs. A file written by `additions` is put back on the runs it names."""
+    data = json.loads(raw_file.read_text(encoding="utf-8"))
+    if "source" not in data:
+        return data
+    runs = json.loads(Path(data["source"]).read_text(encoding="utf-8"))
+    for run, models in zip(runs["runs"], data["added"]):
+        for model, added in zip(run.get("models", []), models):
+            model["outcome_pairs"] = added["outcome_pairs"]
+            model["background"] = model["background"] + added["facts"]
+    runs["prompts"].update(data["prompts"])
+    return {**runs, "outcomes_added": data["outcomes_added"], "outcomes_failed": data["outcomes_failed"]}
+
+
 def without_repair(model: dict) -> dict:
     """The model as if the facts vote had not repaired any formula (T19).
 
@@ -231,7 +309,8 @@ def without_repair(model: dict) -> dict:
     old = [vocab.parse(fact["formula"]) for fact in
            formalize_module._agreed_facts(vocab, model["fact_samples"], SAMPLES, repair=False)]
     background = [fact for fact in model["background"]
-                  if "restates" in fact or vocab.implies(old, vocab.parse(fact["formula"]))]
+                  if "restates" in fact or "between" in fact
+                  or vocab.implies(old, vocab.parse(fact["formula"]))]
     return {**model, "background": background}
 
 
@@ -242,6 +321,9 @@ def findings_of(run: dict, config: dict) -> tuple[list[dict], list[dict]]:
         models = [{**model, "background": []} for model in models]
     if not config["repair"]:
         models = [without_repair(model) for model in models]
+    if not config["outcomes"]:  # the facts of probe check 4 have "between"
+        models = [{**model, "background": [fact for fact in model["background"] if "between" not in fact]}
+                  for model in models]
     # readings=False: only the counts are needed here (see reading_effects).
     findings = combine([analyze(model, config["max_group"], questions=config["questions"],
                                 link_checks=config["link_checks"], settle=config["settle"],
@@ -331,13 +413,7 @@ def gap_scores(data: dict) -> list[str]:
         """The events requirement `number` (position in the document) reacts to."""
         if number > len(model["rules"]):
             return set()
-        rule = model["rules"][number - 1]
-        events = {rule.get("trigger")} & vocab.events
-        try:
-            events |= vocab.symbols_in(vocab.parse(rule.get("antecedent", "true"))) & vocab.events
-        except ValueError:
-            pass
-        return events
+        return vocab.events_of(model["rules"][number - 1])
 
     lines = ["| Gap search | Planted gaps found | Clean runs with a gap on a covered event "
              "| Gaps on clean specs, with an event | Gaps on clean specs, all |",
@@ -418,7 +494,7 @@ def change_run(spec: dict, run: dict, config: dict) -> dict:
 
     def has_gap(name: str) -> bool:
         """Is there a gap about the change in which the event of this scenario happens?"""
-        return any(gap["event"] in rule_events(vocab, rules[label[name]]) for gap in gaps)
+        return any(gap["event"] in vocab.events_of(rules[label[name]]) for gap in gaps)
 
     extra = [rule["id"] for rule in models[0]["rules"] if rule["id"] not in merged.scenarios]
     return {
@@ -687,15 +763,22 @@ def main() -> None:
     parser.add_argument("--name", default="evaluation", help="output name: experiments/results/<name>.json and .md")
     parser.add_argument("--rescore", type=Path, help="score the runs saved in this .json again (no LLM)")
     parser.add_argument("--second-base-url", help="with --rescore: add step 7 with the second model at this server")
+    parser.add_argument("--outcomes-base-url", help="with --rescore: add the questions about pairs of outcomes, "
+                                                    "asked at this server, and save the runs under --name")
     args = parser.parse_args()
 
     if args.rescore:
         raw_file = args.rescore
-        data = json.loads(raw_file.read_text(encoding="utf-8"))
+        data = load(raw_file)
         rejudge_second(data)
         if args.second_base_url:
             add_second_readings(data, args.second_base_url)
             raw_file.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+        if args.outcomes_base_url:
+            add_outcomes(data, args.outcomes_base_url)
+            raw_file = Path("experiments/results") / f"{args.name}.json"  # the old file stays as it is
+            raw_file.write_text(json.dumps(additions(data, args.rescore), indent=1, ensure_ascii=False) + "\n",
+                                encoding="utf-8")
     elif args.base_url:
         raw_file = Path("experiments/results") / f"{args.name}.json"
         data = collect(args.base_url, args.specs, args.runs, args.symbol_sets, args.temperature)

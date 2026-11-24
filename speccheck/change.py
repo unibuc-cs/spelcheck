@@ -235,19 +235,9 @@ def about_change(finding: dict, models: list[dict], changed: list[set]) -> bool:
         return bool(ids & set(finding["rules"]))
     if finding["type"] == "gap" and "event" in finding:
         vocab = Vocabulary(model["symbols"])
-        return any(finding["event"] in rule_events(vocab, rule)
+        return any(finding["event"] in vocab.events_of(rule)
                    for rule in model["rules"] if rule["id"] in ids)
     return False
-
-
-def rule_events(vocab: Vocabulary, rule: dict) -> set[str]:
-    """The events a rule reacts to: its trigger, and the events in its condition."""
-    events = {rule.get("trigger")} & vocab.events
-    try:
-        events |= vocab.symbols_in(vocab.parse(rule.get("antecedent", "true"))) & vocab.events
-    except ValueError:  # a rejected rule may have no formula that parses
-        pass
-    return events
 
 
 def report_lines(merged: Merged, changed: set[str], left_out: int) -> tuple[list[str], list[str]]:
