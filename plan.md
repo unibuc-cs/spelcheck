@@ -37,28 +37,26 @@ The conflicts that are still missed come from the choice of symbols, mostly
 finds most of the ambiguities, at the cost of more questions to the author.
 A finding that holds with only one reading of an ambiguous rule now says so,
 and each ambiguity says what its other reading would change (5.9).
-Real OpenSpec projects, where specs already exist, have not been touched yet.
+Real OpenSpec projects, where specs already exist, have not been touched yet:
+that is the next step (2.1).
 
 ---
 
 ## 2. What is next
 
-There are three candidates, in this order. The first is the one we recommend.
+There are three candidates, in this order. The first is next, and its plan is
+in 2.1.
 
-1. **Check an OpenSpec change against the specs that already exist** (G2;
-   postponed by decision). This would close G2, and it is the most original
-   part for a paper, because Kiro, as documented, reads one document. A real
-   OpenSpec project has `openspec/specs/<domain>/spec.md` files, which say
-   what the system does now, and a change with ADDED / MODIFIED / REMOVED
-   requirements. The check would apply the change, formalize the merged spec,
-   and report only the findings that involve a new or modified requirement.
-   The existing requirements would be formalized once and cached.
+1. **Check an OpenSpec change against the specs that already exist** (G2).
+   This would close G2, and it is the most original part for a paper, because
+   Kiro, as documented, reads one document. The plan is in 2.1; its test set,
+   `eval11/`, is written, and nothing else is built yet.
 2. **A larger evaluation** (G4): another main model, the second reader on
    more sets, specs we did not write, and results counted per planted
    conflict (the runs of one spec mostly agree, so more specs help more than
-   more runs). All ten sets have been read (`eval10/` in E16), so the next
-   design needs an eleventh held-out set, `eval11/`, and it has to be written
-   first.
+   more runs). All ten sets have been read (`eval10/` in E16). `eval11/` is
+   reserved for the change check; anything else needs a set of its own,
+   written first.
 3. **The choice of symbols** (G1), which is where the remaining misses and
    false alarms come from:
    - "remove" against "keep" (found in 10 of 21 runs), and two symbols for
@@ -72,6 +70,74 @@ There are three candidates, in this order. The first is the one we recommend.
      once (step 30): a gap the assumed facts rule out is marked doubtful, but
      the facts rarely say that one of the two always holds, so only 2 of 13
      were marked (T20, E16). This is a known limit now.
+
+### 2.1 The plan for the change check (step 31, not built yet)
+
+**What it answers.** In an OpenSpec project the specs say what the system
+does today, and new work arrives as a *change*, a folder that holds only the
+difference. Does this change contradict what already exists, or leave a case
+open?
+
+```
+openspec/specs/auth/spec.md                        existing
+    "WHEN failed attempts reach 5 THEN the account is locked"
+openspec/changes/admin-bypass/specs/auth/spec.md   the change
+    ## ADDED Requirements
+    "WHEN an administrator fails 5 times THEN the account stays unlocked"
+```
+
+Neither file has a conflict on its own. Together they do.
+
+**How it runs.** `python -m speccheck --change openspec/changes/admin-bypass`
+
+| Step | Who | What |
+|---|---|---|
+| 1 merge | our code (`change.py`, new) | applies the change to the specs as `openspec archive` does: RENAMED, REMOVED, MODIFIED, ADDED, matched by the requirement's name. It writes all spec files into one document, `merged.md`, gives every scenario a label (R1, R2, ...), and notes which labels the change added or modified |
+| 2 formalize and check | the LLM and Z3 | the merged document goes through the pipeline like any spec. Prompts, `formalize.py` and `checks.py` do not change |
+| 3 select | our code | keeps the findings that involve the change (below). The others are counted in one line of the report and stay in `findings.json` |
+| 4 word | the LLM | as today. The report also says, for each rule, which spec file it is from and whether it is existing, added or modified |
+
+A finding involves the change when:
+- a conflict or a scenario has at least one added or modified rule;
+- an ambiguity is about an added or modified rule;
+- a gap is for an event that an added or modified rule reacts to.
+
+**Two choices that keep it small.**
+- The merged spec is formalized again for every change, and nothing is
+  cached. All rules then share one set of symbols, which the conflict search
+  needs. A change costs one normal run, and the read step has room for about
+  140 scenarios (E14).
+- The labels are written into the document by our code. The read step already
+  uses a document's own labels as rule ids. Our code checks that every label
+  came back and stops if one did not.
+
+**Limits, by design.**
+- A REMOVED requirement can open a gap. The removed rule is not in the merged
+  spec, so that gap is among the other findings and is not attributed to the
+  change. A scenario dropped by MODIFIED is attributed, because its
+  requirement is a modified one.
+- Findings among the existing requirements alone are not shown. They are not
+  the change's fault.
+
+**How it is tested.** `eval11/` was written first (`make_eval.py`): six
+OpenSpec projects in new domains, each with two or three spec files and six
+existing scenarios, and each with five changes whose right answer is known:
+
+| Version | The change | Must report |
+|---|---|---|
+| `clean` | adds a requirement that covers both of its cases (3 of the 6 also remove an unrelated requirement) | nothing about the change |
+| `direct` or `overlap` | adds a requirement that clashes with an existing scenario | that conflict |
+| `modified` | rewrites an existing requirement so that it clashes with a scenario in another spec file | that conflict |
+| `gap` | adds a requirement that covers one of two cases | a gap for its event |
+| `narrowed` | rewrites a requirement and drops one of its two complementary scenarios | a gap for its event |
+
+For development, the OpenSpec-format specs of `eval9/` and `eval10/` will be
+turned into projects (their planted defect becomes the change), so nothing is
+tuned on `eval11/` before the frozen run.
+
+**Size.** `speccheck/change.py` (new, about 150 lines), a `--change` option
+in `cli.py`, a few lines in `explain.py` for the report, the scoring in
+`evaluate.py`, and tests for the merge.
 
 Small things that are open:
 
@@ -225,7 +291,7 @@ Around the package:
 | File | Job |
 |---|---|
 | `tests/` | 42 tests of everything that needs no LLM |
-| `experiments/make_eval.py` | writes the evaluation sets `eval` to `eval10`, `size` and `size2` into `experiments/sets/` (clean specs and planted defects) |
+| `experiments/make_eval.py` | writes the evaluation sets `eval` to `eval11`, `size` and `size2` into `experiments/sets/` (clean specs and planted defects) |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs the pipeline on a set of specs and scores it against the planted defects; adds the second reader to saved runs; re-scores saved runs without a GPU |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the main model and the second model on the cluster (section 8) |
@@ -850,6 +916,10 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       `eval10/` (E16): 18 of 18 conflicts, no other conflict, 18 of 18 planted
       gaps, but none of the 5 false gaps marked. Kept, and the false gaps
       recorded as a known limit
+- [ ] **Step 31 — check an OpenSpec change against the existing specs**: plan
+      in 2.1 and `eval11/` (30 changes on 6 projects) written first, done;
+      then `change.py`, the `--change` option, a development run on old
+      specs, and the frozen held-out run
 - [x] **Documentation pass 2**: GUIDE.md reviewed point by point and rewritten (a new
       2.4 on gaps and scenarios; the ambiguity check, voted facts and links as steps on
       one real example), then shortened from 1112 to 893 lines; README.md reworded in the

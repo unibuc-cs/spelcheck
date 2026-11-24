@@ -1,6 +1,6 @@
-"""make_eval.py: writes the evaluation sets eval/ to eval10/, size/ and size2/. No LLM, no GPU.
+"""make_eval.py: writes the evaluation sets eval/ to eval11/, size/ and size2/. No LLM, no GPU.
 
-    python -m experiments.make_eval eval10     (only the sets named; all if none)
+    python -m experiments.make_eval eval11     (only the sets named; all if none)
 
 An evaluation set measures the formal check on specs that were NOT used to
 develop the prompts. Each set is held-out until its results are read to
@@ -61,6 +61,42 @@ Written per version: experiments/sets/<set>/<spec>_<version>/spec.md and expecte
                which the event of that requirement happens
     covered    (clean versions, eval8 on) requirement numbers whose event has
                all its cases covered: a gap in which it happens is a false alarm
+
+eval11/ is of another kind (written 2026-11-24, after E16, before the check of
+an OpenSpec change against the existing specs was built): six OpenSpec
+projects. A project has the specs that exist (openspec/specs/<capability>/
+spec.md, two or three files, six scenarios in all) and ONE change
+(openspec/changes/<name>/, with a proposal.md and one delta file for each
+capability it touches). Each project comes in five versions, which differ only
+in the change:
+
+    clean      the change adds a requirement that covers both of its cases
+               (in three projects it also removes an unrelated requirement).
+               Nothing may be reported about the change.
+    direct     the change adds a requirement that plainly contradicts an
+               existing scenario (three projects), or
+    overlap    one whose condition can hold together with an existing
+               scenario, with an incompatible outcome (the other three).
+    modified   the change rewrites an existing requirement (a state: "WHEN a
+               storm warning is in force"), so that it now clashes with a
+               scenario in another spec file.
+    gap        the change adds a requirement that covers one of two cases.
+    narrowed   the change rewrites a requirement and drops one of its two
+               complementary scenarios.
+
+The planted conflicts negate the outcome of an existing scenario in its own
+words ("opens the gate" / "does not open the gate"). The set is meant to test
+the change check (the merge, and which findings belong to the change), not the
+choice of symbols, whose limits the earlier sets measure.
+
+Written per version: experiments/sets/eval11/<project>_<version>/openspec/...
+and expected.json. A scenario is named there by "capability/requirement/
+scenario", as it is after the change:
+
+    conflicts  pairs of scenarios that must be reported as a conflict
+    gaps       scenarios: a gap must be reported in which their event happens
+    covered    (clean) the added scenarios, whose event has both cases
+               covered: a gap in which it happens is a false alarm
 """
 
 import json
@@ -1625,10 +1661,422 @@ SPECS10 = {
     },
 }
 
+# eval11: OpenSpec projects, each with one change (see the module docstring).
+#   specs     capability -> (purpose, requirements): what exists before the change
+#   changes   version -> the change: its folder name, the "why" of its
+#             proposal, its delta (capability -> ADDED / MODIFIED / REMOVED,
+#             and a purpose if the capability is new), and expected.json
+# A requirement is (name, its SHALL sentence, [(scenario name, "WHEN ... THEN ...")]);
+# a removed one is (name, reason, migration). "narrow" stands for a MODIFIED
+# delta that keeps only the first scenario of that requirement; the gap it
+# must give is filled in by write_projects.
+PROJECTS11 = {
+    "museum": {
+        "specs": {
+            "admission": ("Visitors buy day tickets and enter the museum through a gate.", [
+                ("Ticket sale", "The system SHALL sell day tickets at the entrance.", [
+                    ("Places left", "WHEN a visitor asks for a day ticket AND places are left for the day THEN the system sells the ticket and prints it"),
+                    ("Sold out", "WHEN a visitor asks for a day ticket AND no places are left for the day THEN the system offers the visitor a ticket for the next day"),
+                ]),
+                ("Members", "The system SHALL let members in without a day ticket.", [
+                    ("Member card", "WHEN a member scans a member card at the gate THEN the system opens the gate"),
+                ]),
+            ]),
+            "programme": ("The museum offers guided tours and hosts private events.", [
+                ("Guided tours", "The system SHALL take bookings for guided tours.", [
+                    ("Tour booking", "WHEN a visitor books a guided tour THEN the system reserves a place on the tour and sends a confirmation"),
+                ]),
+                ("Private events", "The system SHALL announce private events.", [
+                    ("Announcement", "WHEN a private event is taking place in the museum THEN the system shows a notice at the entrance"),
+                ]),
+                ("No-shows", "The system SHALL keep track of visitors who miss their tours.", [
+                    ("Second missed tour", "WHEN a visitor misses a booked tour for the second time THEN the system asks the visitor to pay in advance for the next booking"),
+                ]),
+            ]),
+        },
+        "changes": {
+            "clean": {
+                "name": "add-audio-guides",
+                "why": "Visitors keep asking for audio guides at the ticket desk.",
+                "delta": {"audio-guides": {
+                    "purpose": "The museum lends audio guides to visitors for the length of their visit.",
+                    "ADDED": [("Lending", "The system SHALL lend audio guides to visitors.", [
+                        ("Guide in stock", "WHEN a visitor asks for an audio guide AND an audio guide is in stock THEN the system hands out an audio guide and records the loan"),
+                        ("None in stock", "WHEN a visitor asks for an audio guide AND no audio guide is in stock THEN the system offers the visitor the guide as a phone app"),
+                    ])]}},
+                "expected": {"covered": ["audio-guides/Lending/Guide in stock", "audio-guides/Lending/None in stock"]},
+            },
+            "direct": {
+                "name": "add-interest-list",
+                "why": "Tours are often booked by people who then do not come.",
+                "delta": {"programme": {"ADDED": [("Interest list", "The system SHALL collect interest in a tour before places are given out.", [
+                    ("Booking request", "WHEN a visitor books a guided tour THEN the system reserves no place on the tour and adds the visitor to the list of interested visitors"),
+                ])]}},
+                "expected": {"conflicts": [["programme/Guided tours/Tour booking", "programme/Interest list/Booking request"]]},
+            },
+            "modified": {
+                "name": "close-gate-during-private-events",
+                "why": "Members walked into private events.",
+                "delta": {"programme": {"MODIFIED": [("Private events", "The system SHALL announce private events and keep other people out.", [
+                    ("Announcement", "WHEN a private event is taking place in the museum THEN the system shows a notice at the entrance and does not open the gate for members"),
+                ])]}},
+                "expected": {"conflicts": [["programme/Private events/Announcement", "admission/Members/Member card"]]},
+            },
+            "gap": {
+                "name": "add-school-groups",
+                "why": "Schools visit in groups and should not queue for single tickets.",
+                "delta": {"admission": {"ADDED": [("School groups", "The system SHALL admit a school group with one ticket.", [
+                    ("Registered group", "WHEN a teacher arrives with a school group AND the group is registered THEN the system prints one group ticket"),
+                ])]}},
+                "expected": {"gaps": ["admission/School groups/Registered group"]},
+            },
+            "narrowed": {
+                "name": "drop-next-day-offer",
+                "why": "Tickets for the next day are now sold online only.",
+                "narrow": ("admission", "Ticket sale"),
+            },
+        },
+    },
+    "coworking": {
+        "specs": {
+            "desks": ("Members book desks by the day and enter the building with a badge.", [
+                ("Desk booking", "The system SHALL let members book a desk for a day.", [
+                    ("Desk free", "WHEN a member books a desk for a day AND a desk is free on that day THEN the system confirms the booking and assigns a desk"),
+                    ("No desk free", "WHEN a member books a desk for a day AND no desk is free on that day THEN the system puts the member on the waiting list for that day"),
+                ]),
+                ("Entrance", "The system SHALL let members into the building.", [
+                    ("Badge at the entrance", "WHEN a member holds a badge to the reader at the entrance THEN the system unlocks the entrance door"),
+                ]),
+            ]),
+            "building": ("Services of the building that all members share.", [
+                ("Post", "The system SHALL tell members about their post.", [
+                    ("Parcel arrives", "WHEN a parcel arrives for a member THEN the system sends the member a message"),
+                ]),
+                ("Cleaning", "The system SHALL announce the weekly deep cleaning.", [
+                    ("Cleaning in progress", "WHEN the weekly deep cleaning is in progress THEN the system shows a notice on the screens"),
+                ]),
+                ("Printer", "The system SHALL keep the shared printer working.", [
+                    ("Third paper jam", "WHEN the printer reports a paper jam for the third time in a day THEN the system calls the service company"),
+                ]),
+            ]),
+        },
+        "changes": {
+            "clean": {
+                "name": "add-guest-passes",
+                "why": "Members bring guests, and nobody knows who is in the building.",
+                "delta": {"building": {
+                    "ADDED": [("Guests", "The system SHALL register guests at the reception.", [
+                        ("Host present", "WHEN a guest arrives at the reception AND the host is in the building THEN the system prints a guest pass and informs the host"),
+                        ("Host absent", "WHEN a guest arrives at the reception AND the host is not in the building THEN the system asks the guest to wait and calls the host"),
+                    ])],
+                    "REMOVED": [("Printer", "The printer is replaced by a leased one that the supplier monitors.", "None. The supplier's own service takes over.")]}},
+                "expected": {"covered": ["building/Guests/Host present", "building/Guests/Host absent"]},
+            },
+            "overlap": {
+                "name": "add-billing-holds",
+                "why": "Some members book desks for months without paying.",
+                "delta": {"billing": {
+                    "purpose": "Invoices for memberships, and what happens when they are not paid.",
+                    "ADDED": [("Overdue invoices", "The system SHALL limit members who have not paid.", [
+                        ("Invoice overdue", "WHEN a member has an overdue invoice THEN the system does not confirm any booking of the member"),
+                    ])]}},
+                "expected": {"conflicts": [["desks/Desk booking/Desk free", "billing/Overdue invoices/Invoice overdue"]]},
+            },
+            "modified": {
+                "name": "lock-door-during-cleaning",
+                "why": "The cleaners were disturbed by members coming in.",
+                "delta": {"building": {"MODIFIED": [("Cleaning", "The system SHALL announce the weekly deep cleaning and keep the building empty during it.", [
+                    ("Cleaning in progress", "WHEN the weekly deep cleaning is in progress THEN the system shows a notice on the screens and does not unlock the entrance door"),
+                ])]}},
+                "expected": {"conflicts": [["building/Cleaning/Cleaning in progress", "desks/Entrance/Badge at the entrance"]]},
+            },
+            "gap": {
+                "name": "add-meeting-rooms",
+                "why": "Members want to book meeting rooms as they book desks.",
+                "delta": {"desks": {"ADDED": [("Meeting rooms", "The system SHALL let members book meeting rooms by the hour.", [
+                    ("Room free", "WHEN a member books a meeting room AND the room is free at that time THEN the system reserves the room and adds it to the member's calendar"),
+                ])]}},
+                "expected": {"gaps": ["desks/Meeting rooms/Room free"]},
+            },
+            "narrowed": {
+                "name": "drop-desk-waiting-list",
+                "why": "The waiting list for desks was hardly used.",
+                "narrow": ("desks", "Desk booking"),
+            },
+        },
+    },
+    "marina": {
+        "specs": {
+            "berths": ("Visiting boats get a guest berth and pay for their stay.", [
+                ("Guest berths", "The system SHALL give guest berths to visiting boats.", [
+                    ("Berth free", "WHEN a skipper asks for a guest berth AND a guest berth is free THEN the system assigns the berth and shows its number"),
+                    ("No berth free", "WHEN a skipper asks for a guest berth AND no guest berth is free THEN the system sends the skipper to the anchorage"),
+                ]),
+                ("Departure", "The system SHALL close the stay when a boat leaves.", [
+                    ("Boat leaves", "WHEN a skipper reports the departure of the boat THEN the system frees the berth and sends the invoice for the stay"),
+                ]),
+            ]),
+            "crane": ("Skippers book the boat crane of the harbour.", [
+                ("Crane slots", "The system SHALL take bookings for the boat crane.", [
+                    ("Crane booking", "WHEN a skipper books the crane THEN the system reserves a crane slot and sends the time to the skipper"),
+                ]),
+            ]),
+            "harbour": ("The weather service and the shore power of the harbour.", [
+                ("Weather", "The system SHALL pass on storm warnings.", [
+                    ("Storm warning", "WHEN a storm warning is in force THEN the system shows the warning on the harbour screens"),
+                ]),
+                ("Shore power", "The system SHALL watch the shore power of the pontoons.", [
+                    ("Third outage", "WHEN the shore power of a pontoon fails for the third time in a week THEN the system calls the electrician"),
+                ]),
+            ]),
+        },
+        "changes": {
+            "clean": {
+                "name": "add-pump-out-station",
+                "why": "The harbour gets a station for waste water.",
+                "delta": {"harbour": {"ADDED": [("Pump-out", "The system SHALL manage the pump-out station.", [
+                    ("Station free", "WHEN a skipper asks for the pump-out station AND the station is free THEN the system unlocks the station for the boat"),
+                    ("Station in use", "WHEN a skipper asks for the pump-out station AND the station is not free THEN the system adds the boat to the queue for the station"),
+                ])]}},
+                "expected": {"covered": ["harbour/Pump-out/Station free", "harbour/Pump-out/Station in use"]},
+            },
+            "direct": {
+                "name": "keep-berths-of-season-guests",
+                "why": "Season guests lose their berth every time they sail out for a day.",
+                "delta": {"berths": {"ADDED": [("Season guests", "The system SHALL keep berths for boats that come back.", [
+                    ("Day trip", "WHEN a skipper reports the departure of the boat THEN the system does not free the berth and keeps it for the boat's return"),
+                ])]}},
+                "expected": {"conflicts": [["berths/Departure/Boat leaves", "berths/Season guests/Day trip"]]},
+            },
+            "modified": {
+                "name": "no-crane-in-storms",
+                "why": "The crane must not work in strong wind.",
+                "delta": {"harbour": {"MODIFIED": [("Weather", "The system SHALL pass on storm warnings and stop work that is unsafe in a storm.", [
+                    ("Storm warning", "WHEN a storm warning is in force THEN the system shows the warning on the harbour screens and does not reserve any crane slot"),
+                ])]}},
+                "expected": {"conflicts": [["harbour/Weather/Storm warning", "crane/Crane slots/Crane booking"]]},
+            },
+            "gap": {
+                "name": "add-winter-storage",
+                "why": "Owners ask to leave their boats ashore over the winter.",
+                "delta": {"berths": {"ADDED": [("Winter storage", "The system SHALL take requests for winter storage ashore.", [
+                    ("Place ashore free", "WHEN an owner asks for winter storage AND a place ashore is free THEN the system reserves the place and sends the price"),
+                ])]}},
+                "expected": {"gaps": ["berths/Winter storage/Place ashore free"]},
+            },
+            "narrowed": {
+                "name": "drop-anchorage-referral",
+                "why": "The anchorage is closed for dredging.",
+                "narrow": ("berths", "Guest berths"),
+            },
+        },
+    },
+    "cinema": {
+        "specs": {
+            "screenings": ("Customers buy seats for film screenings and enter the hall with their ticket.", [
+                ("Seat sale", "The system SHALL sell seats for screenings.", [
+                    ("Seats left", "WHEN a customer asks for a seat at a screening AND seats are left for the screening THEN the system sells the seat and shows its number"),
+                    ("Sold out", "WHEN a customer asks for a seat at a screening AND no seats are left for the screening THEN the system offers the customer the next screening of the film"),
+                ]),
+                ("Admission", "The system SHALL check tickets at the hall door.", [
+                    ("Ticket scan", "WHEN a customer scans a ticket at the hall door THEN the system lets the customer into the hall"),
+                ]),
+            ]),
+            "operations": ("What the staff of the cinema is told and asked to do.", [
+                ("Snack orders", "The system SHALL take snack orders from the seats.", [
+                    ("Order from a seat", "WHEN a customer orders snacks from a seat THEN the system sends the order to the kiosk and charges the customer's card"),
+                ]),
+                ("Projector", "The system SHALL report projector trouble.", [
+                    ("Projector fault", "WHEN the projector of a hall is out of order THEN the system informs the technician on duty"),
+                ]),
+                ("Cleaning", "The system SHALL react to complaints about dirty halls.", [
+                    ("Third complaint", "WHEN customers complain about a dirty hall for the third time in a week THEN the system orders an extra cleaning"),
+                ]),
+            ]),
+        },
+        "changes": {
+            "clean": {
+                "name": "add-lost-property",
+                "why": "Customers ask every day for things they left in a hall.",
+                "delta": {"operations": {
+                    "ADDED": [("Lost property", "The system SHALL answer questions about lost property.", [
+                        ("Item found", "WHEN a customer asks about a lost item AND the item is in the lost property box THEN the system tells the customer where to collect the item"),
+                        ("Item not found", "WHEN a customer asks about a lost item AND the item is not in the lost property box THEN the system records a search request"),
+                    ])],
+                    "REMOVED": [("Cleaning", "Every hall is now cleaned after every screening.", "None.")]}},
+                "expected": {"covered": ["operations/Lost property/Item found", "operations/Lost property/Item not found"]},
+            },
+            "overlap": {
+                "name": "enforce-age-ratings",
+                "why": "The cinema was fined for letting children into a film rated 16.",
+                "delta": {"screenings": {"ADDED": [("Age rating", "The system SHALL enforce the age rating of a film.", [
+                    ("Under age", "WHEN the customer is younger than the age rating of the film THEN the system does not let the customer into the hall"),
+                ])]}},
+                "expected": {"conflicts": [["screenings/Admission/Ticket scan", "screenings/Age rating/Under age"]]},
+            },
+            "modified": {
+                "name": "stop-sales-on-projector-fault",
+                "why": "Seats were sold for a hall whose projector was broken.",
+                "delta": {"operations": {"MODIFIED": [("Projector", "The system SHALL report projector trouble and stop the sale of seats.", [
+                    ("Projector fault", "WHEN the projector of a hall is out of order THEN the system informs the technician on duty and does not sell any seat for that hall"),
+                ])]}},
+                "expected": {"conflicts": [["operations/Projector/Projector fault", "screenings/Seat sale/Seats left"]]},
+            },
+            "gap": {
+                "name": "add-private-screenings",
+                "why": "Schools ask for screenings of their own.",
+                "delta": {"screenings": {"ADDED": [("Private screenings", "The system SHALL take requests for private screenings.", [
+                    ("Hall free", "WHEN a school asks for a private screening AND a hall is free at that time THEN the system books the hall and sends an offer"),
+                ])]}},
+                "expected": {"gaps": ["screenings/Private screenings/Hall free"]},
+            },
+            "narrowed": {
+                "name": "drop-next-screening-offer",
+                "why": "Customers found the offer of another screening confusing.",
+                "narrow": ("screenings", "Seat sale"),
+            },
+        },
+    },
+    "conference": {
+        "specs": {
+            "registration": ("People sign up for the conference and get their badge on arrival.", [
+                ("Sign-up", "The system SHALL register participants.", [
+                    ("Places left", "WHEN a person signs up for the conference AND places are left THEN the system registers the person and sends an invoice"),
+                    ("Conference full", "WHEN a person signs up for the conference AND no places are left THEN the system adds the person to the waiting list"),
+                ]),
+                ("Badges", "The system SHALL hand out badges on arrival.", [
+                    ("Arrival", "WHEN a participant arrives at the welcome desk THEN the system prints the participant's badge"),
+                ]),
+            ]),
+            "sessions": ("The talks, their speakers and the questions of the audience.", [
+                ("Questions", "The system SHALL collect questions for the speakers.", [
+                    ("Question sent", "WHEN a participant sends a question during a talk THEN the system shows the question to the moderator"),
+                ]),
+                ("Slides", "The system SHALL watch the deadline for the slides.", [
+                    ("Second missed deadline", "WHEN a speaker misses the deadline for the slides for the second time THEN the system informs the programme chair"),
+                ]),
+            ]),
+            "payments": ("The invoices of the participants.", [
+                ("Overdue invoices", "The system SHALL remind participants who have not paid.", [
+                    ("Invoice overdue", "WHEN the invoice of a participant is overdue THEN the system sends the participant a reminder"),
+                ]),
+            ]),
+        },
+        "changes": {
+            "clean": {
+                "name": "add-workshops",
+                "why": "The conference gets a day of workshops with few places each.",
+                "delta": {"sessions": {"ADDED": [("Workshops", "The system SHALL take bookings for workshops.", [
+                    ("Workshop has places", "WHEN a participant books a workshop AND the workshop has places left THEN the system adds the participant to the workshop"),
+                    ("Workshop full", "WHEN a participant books a workshop AND the workshop has no places left THEN the system suggests another workshop at the same time"),
+                ])]}},
+                "expected": {"covered": ["sessions/Workshops/Workshop has places", "sessions/Workshops/Workshop full"]},
+            },
+            "direct": {
+                "name": "go-paperless",
+                "why": "The organisers want to avoid printed material.",
+                "delta": {"registration": {"ADDED": [("Paperless arrival", "The system SHALL avoid printed material at the welcome desk.", [
+                    ("Code on the phone", "WHEN a participant arrives at the welcome desk THEN the system prints no badge and shows a code on the participant's phone"),
+                ])]}},
+                "expected": {"conflicts": [["registration/Badges/Arrival", "registration/Paperless arrival/Code on the phone"]]},
+            },
+            "modified": {
+                "name": "no-badge-without-payment",
+                "why": "Some participants attended without ever paying.",
+                "delta": {"payments": {"MODIFIED": [("Overdue invoices", "The system SHALL remind participants who have not paid and hold back their badge.", [
+                    ("Invoice overdue", "WHEN the invoice of a participant is overdue THEN the system sends the participant a reminder and does not print the participant's badge"),
+                ])]}},
+                "expected": {"conflicts": [["payments/Overdue invoices/Invoice overdue", "registration/Badges/Arrival"]]},
+            },
+            "gap": {
+                "name": "add-student-price",
+                "why": "Students asked for a lower price.",
+                "delta": {"registration": {"ADDED": [("Student price", "The system SHALL give students a lower price.", [
+                    ("Valid student card", "WHEN a person asks for the student price AND the student card is valid THEN the system lowers the price on the invoice"),
+                ])]}},
+                "expected": {"gaps": ["registration/Student price/Valid student card"]},
+            },
+            "narrowed": {
+                "name": "close-conference-waiting-list",
+                "why": "Nobody on the waiting list ever got a place.",
+                "narrow": ("registration", "Sign-up"),
+            },
+        },
+    },
+    "foodbank": {
+        "specs": {
+            "intake": ("Donors bring food, and volunteers check it and put it into the stock.", [
+                ("Deliveries", "The system SHALL record the food that donors deliver.", [
+                    ("Within date", "WHEN a donor delivers food AND the food is within its use-by date THEN the system adds the food to the stock and prints a receipt"),
+                    ("Past date", "WHEN a donor delivers food AND the food is not within its use-by date THEN the system refuses the food and records the reason"),
+                ]),
+                ("Cold room", "The system SHALL find a place for chilled goods.", [
+                    ("Chilled goods", "WHEN a volunteer scans chilled goods at the door THEN the system assigns a shelf in the cold room"),
+                ]),
+            ]),
+            "counter": ("Households collect a food parcel at the counter once a week.", [
+                ("Collection", "The system SHALL hand out food parcels at the counter.", [
+                    ("Card scanned", "WHEN a client scans the household card at the counter THEN the system releases a food parcel for the household"),
+                ]),
+                ("Stock count", "The system SHALL announce the yearly stock count.", [
+                    ("Count in progress", "WHEN the yearly stock count is in progress THEN the system shows a notice at the counter"),
+                ]),
+                ("Missed collections", "The system SHALL notice households that stop coming.", [
+                    ("Third missed collection", "WHEN a household misses its collection for the third time in a row THEN the system informs the social worker"),
+                ]),
+            ]),
+        },
+        "changes": {
+            "clean": {
+                "name": "add-diet-parcels",
+                "why": "Some clients cannot eat what is in the standard parcel.",
+                "delta": {"counter": {
+                    "ADDED": [("Diet parcels", "The system SHALL offer gluten-free parcels.", [
+                        ("Parcel in stock", "WHEN a client asks for a gluten-free parcel AND a gluten-free parcel is in stock THEN the system hands out the gluten-free parcel"),
+                        ("None in stock", "WHEN a client asks for a gluten-free parcel AND no gluten-free parcel is in stock THEN the system notes the request for the next week"),
+                    ])],
+                    "REMOVED": [("Missed collections", "The social workers now keep their own list.", "None.")]}},
+                "expected": {"covered": ["counter/Diet parcels/Parcel in stock", "counter/Diet parcels/None in stock"]},
+            },
+            "overlap": {
+                "name": "expire-registrations",
+                "why": "Households that had moved away were still collecting parcels.",
+                "delta": {"counter": {"ADDED": [("Registration", "The system SHALL keep the register of households up to date.", [
+                    ("Registration expired", "WHEN the registration of a household has expired THEN the system does not release any food parcel for the household"),
+                ])]}},
+                "expected": {"conflicts": [["counter/Collection/Card scanned", "counter/Registration/Registration expired"]]},
+            },
+            "modified": {
+                "name": "freeze-stock-during-count",
+                "why": "Food that arrived during the count was counted twice.",
+                "delta": {"counter": {"MODIFIED": [("Stock count", "The system SHALL announce the yearly stock count and keep the stock unchanged during it.", [
+                    ("Count in progress", "WHEN the yearly stock count is in progress THEN the system shows a notice at the counter and does not add any food to the stock"),
+                ])]}},
+                "expected": {"conflicts": [["counter/Stock count/Count in progress", "intake/Deliveries/Within date"]]},
+            },
+            "gap": {
+                "name": "add-shop-surplus",
+                "why": "Shops offer food that they cannot sell any more.",
+                "delta": {"intake": {"ADDED": [("Shop surplus", "The system SHALL collect surplus food from shops.", [
+                    ("Van free", "WHEN a shop offers surplus food AND a van is free THEN the system plans a pick-up and confirms it to the shop"),
+                ])]}},
+                "expected": {"gaps": ["intake/Shop surplus/Van free"]},
+            },
+            "narrowed": {
+                "name": "stop-recording-refused-food",
+                "why": "Volunteers now turn away food past its date before it reaches the system.",
+                "narrow": ("intake", "Deliveries"),
+            },
+        },
+    },
+}
+
 # Folder -> the specs written into it.
 SETS = {"eval": SPECS, "eval2": SPECS2, "eval3": SPECS3, "eval4": SPECS4, "eval5": SPECS5,
         "eval6": SPECS6, "eval7": SPECS7, "eval8": SPECS8, "eval9": SPECS9, "eval10": SPECS10,
         "size": SPECS_SIZE, "size2": SPECS_SIZE2}
+# Folder -> the OpenSpec projects written into it, each with one change.
+PROJECT_SETS = {"eval11": PROJECTS11}
 
 
 def document(name: str, spec: dict, rules: list) -> str:
@@ -1650,18 +2098,89 @@ def document(name: str, spec: dict, rules: list) -> str:
         if scenario is None:  # a requirement stated as one sentence, without a scenario
             lines += ["", text]
             continue
-        when, then = text.split(" THEN ")
-        lines += ["", f"#### Scenario: {scenario}", ""]
-        first, *others = when.removeprefix("WHEN ").split(" AND ")
-        lines += [f"- **WHEN** {first}"] + [f"- **AND** {part}" for part in others]
-        lines += [f"- **THEN** {then}"]
+        lines += [""] + scenario_lines(scenario, text)
     return "\n".join(lines) + "\n"
+
+
+def scenario_lines(scenario: str, text: str) -> list[str]:
+    """One OpenSpec scenario, from "WHEN a AND b THEN c": a header and one bullet for each part."""
+    when, then = text.split(" THEN ")
+    first, *others = when.removeprefix("WHEN ").split(" AND ")
+    return ([f"#### Scenario: {scenario}", "", f"- **WHEN** {first}"]
+            + [f"- **AND** {part}" for part in others] + [f"- **THEN** {then}"])
+
+
+def requirement_lines(requirement: tuple) -> list[str]:
+    """One OpenSpec requirement: its header, its SHALL sentence and its scenarios."""
+    name, sentence, scenarios = requirement
+    lines = [f"### Requirement: {name}", "", sentence, ""]
+    for scenario, text in scenarios:
+        lines += scenario_lines(scenario, text) + [""]
+    return lines
+
+
+def write_projects(root: Path, projects: dict) -> int:
+    """Write every version of every project (see PROJECTS11); return how many were written.
+
+    A version folder holds the project as OpenSpec lays it out:
+
+        openspec/specs/<capability>/spec.md                    what exists
+        openspec/changes/<name>/proposal.md                    why the change is made
+        openspec/changes/<name>/specs/<capability>/spec.md     the delta
+    """
+    written = 0
+    for project_name, project in projects.items():
+        for version, change in project["changes"].items():
+            delta, expected = change.get("delta"), change.get("expected")
+            if "narrow" in change:  # MODIFIED: the requirement with its first scenario only
+                capability, wanted = change["narrow"]
+                name, sentence, scenarios = next(requirement for requirement in project["specs"][capability][1]
+                                                 if requirement[0] == wanted)
+                delta = {capability: {"MODIFIED": [(name, sentence, scenarios[:1])]}}
+                expected = {"gaps": [f"{capability}/{name}/{scenarios[0][0]}"]}
+            folder = root / f"{project_name}_{version}"
+            for capability, (purpose, requirements) in project["specs"].items():
+                lines = [f"# {capability} Specification", "", "## Purpose", "", purpose, "", "## Requirements", ""]
+                for requirement in requirements:
+                    lines += requirement_lines(requirement)
+                _write(folder / "openspec" / "specs" / capability / "spec.md", lines)
+            change_folder = folder / "openspec" / "changes" / change["name"]
+            _write(change_folder / "proposal.md",
+                   ["## Why", "", change["why"], "", "## What Changes", ""]
+                   + [f"- `{capability}`: {', '.join(f'{kind} {requirement[0]}' for kind in ('ADDED', 'MODIFIED', 'REMOVED') for requirement in parts.get(kind, []))}"
+                      for capability, parts in delta.items()])
+            for capability, parts in delta.items():
+                lines = ["## Purpose", "", parts["purpose"], ""] if "purpose" in parts else []
+                for kind in ("ADDED", "MODIFIED"):
+                    if kind in parts:
+                        lines += [f"## {kind} Requirements", ""]
+                        for requirement in parts[kind]:
+                            lines += requirement_lines(requirement)
+                if "REMOVED" in parts:
+                    lines += ["## REMOVED Requirements", ""]
+                    for name, reason, migration in parts["REMOVED"]:
+                        lines += [f"### Requirement: {name}", "", f"**Reason**: {reason}", "", f"**Migration**: {migration}", ""]
+                _write(change_folder / "specs" / capability / "spec.md", lines)
+            (folder / "expected.json").write_text(
+                json.dumps({"conflicts": [], "gaps": [], "covered": [], **expected}) + "\n", encoding="utf-8")
+            written += 1
+    return written
+
+
+def _write(path: Path, lines: list[str]) -> None:
+    """Write `lines` as a text file that ends with exactly one newline; make its folders."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(lines).rstrip("\n") + "\n", encoding="utf-8")
 
 
 def main() -> None:
     # Only the sets named on the command line (all if none), so that writing a
     # new set never rewrites an old one.
-    for folder_name in sys.argv[1:] or SETS:
+    for folder_name in sys.argv[1:] or [*SETS, *PROJECT_SETS]:
+        if folder_name in PROJECT_SETS:
+            root = Path("experiments/sets") / folder_name
+            print(f"wrote {write_projects(root, PROJECT_SETS[folder_name])} projects to {root}/")
+            continue
         specs = SETS[folder_name]
         root = Path("experiments/sets") / folder_name
         for name, spec in specs.items():
