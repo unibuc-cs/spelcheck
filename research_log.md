@@ -2427,6 +2427,149 @@ were to make the check an option that is off by default, or to drop it. `eval12/
 
 ---
 
+## T23 — What a change removes: the gap it opens, on development data (2026-11-24)
+
+**Question.** The change check of T21 had two limits. A gap opened by a
+REMOVED requirement was found but not tied to the change, because the removed
+rule was not in the merged document. And every scenario of a MODIFIED
+requirement counted as changed, so an old conflict of a scenario whose words
+had not changed was shown as the change's (2 runs in T21). Can both go,
+without touching the prompts?
+
+**Design** (plan.md 5.10; `eval13/` was written first, f1dd15f):
+
+1. Our code (`change.merge`) gives every scenario one of four states.
+   Inside a MODIFIED requirement the scenarios are matched by name: the same
+   words is "existing", other words is "modified", a new name is "added", and
+   a name that the new text does not have is "removed". All scenarios of a
+   REMOVED requirement are "removed".
+2. The removed scenarios stay in the document that the LLM reads, with labels
+   of their own (X1, X2, ...). So they get the same symbols as the rest.
+3. Our code (`change.after_model`) takes the removed rules out of the formal
+   model, with the links and outcome facts that came from them, and keeps
+   them apart under `removed_rules`. The checks run on what is left.
+4. Z3 gets one more question for each removed rule (`checks.find_gaps`): in
+   the situation this rule was written for (its events happen and no others,
+   its condition holds), does any remaining rule apply? If none does, that is
+   a gap, reported as "opened by removing X1". A removed rule whose events no
+   remaining rule reacts to gives no gap: that event was retired by decision.
+
+**Setup.** `eval11/` and `change_dev/` again (both development data) and the
+development specs, full runs: 90, 66 and 12 runs, 3 per case, 1 symbol set,
+temperature 0.7, one cluster job of 41 minutes. These are also the first runs
+of the change sets with the questions about pairs of outcomes on (T22).
+
+**Results.**
+
+| | `eval11/` | `change_dev/` |
+|---|---|---|
+| planted conflicts found | 36 of 36 | 12 of 12 |
+| planted gaps found | 36 of 36 | 18 of 18 |
+| quiet changes with a conflict or a gap about them | 0 of 18 | none in this set |
+| other conflicts about the change | 0 | 3 |
+| labels kept | 90 of 90 runs | 66 of 66 runs |
+
+- **The X labels came back too**: 45 of the 156 runs had a removed scenario
+  in their document, and every label was a rule id in all of them.
+- **A flaw found and fixed before the freeze.** The first version of step 4
+  asked, for each event alone, whether a removed rule had covered an
+  uncovered situation. In `topup_gap` the model had read "the payment is
+  refused" as an event of its own, so the removed rule `(and
+  customer_buys_credit payment_refused)` needs two events at once and was
+  never reached: its gap was missed in 3 of 3 runs. The question now takes
+  the removed rule's own situation, with all of its events. Re-scored on the
+  same runs (only the Z3 part changed): 15 → 18 of 18.
+- **The old conflict of `shelter_gap` is no longer the change's.** Its
+  scenario has the same words as before, so it is "existing" (T21: shown in 2
+  of 3 runs; now found and not shown in 3 of 3). The 3 other conflicts are
+  `shelter_ambiguity1`, where the change does reword one of the two scenarios
+  of that conflict.
+- **The questions about outcomes added nothing about a change** in `eval11/`
+  (0 other conflicts, as in E17).
+- The development specs: 14 of 15 conflicts (`delete_property` 2 of 3), the
+  conflict of `auth_change` in 3 of 3.
+
+Before the freeze the merge was also run on the files of `eval13/`, to see
+that it does not fail there. No model saw them.
+
+**Raw data.** [experiments/results/T23_eval11.json](experiments/results/T23_eval11.json),
+T23_change_dev.json and T23_specs.json, each with its table (scored with the
+fixed step 4). A report of a change with a removal is saved in
+`experiments/examples/visitors_removed/`.
+
+---
+
+## E19 — Held-out `eval13/`: what a change removes (2026-11-24)
+
+**Question.** Does the design of T23 hold on projects it was not built on:
+is a gap that a removal opens tied to the change, and is an old conflict
+left alone?
+
+**Setup.** `eval13/` was written first (f1dd15f) and the design frozen in
+07ecd38. Six OpenSpec projects in new domains (student dormitory, language
+school, blood bank, building permits, newsroom, makerspace), each with two
+spec files and nine existing scenarios. Each project has one conflict among
+its existing scenarios ("unlock the room door" when a valid card is shown,
+against "do not unlock any room door" over the winter break), and no change
+touches the words of those two scenarios. Six changes for each project:
+
+| Version | The change | Must report |
+|---|---|---|
+| `clean` | adds a requirement with both of its cases | nothing about the change |
+| `modified` | rewrites a requirement so that it clashes with a scenario in the other spec file | that conflict |
+| `removed` | REMOVES the requirement that held one of two complementary cases | a gap for their event, as the change's |
+| `narrowed` | rewrites a requirement and drops one of its two complementary scenarios | the same kind of gap |
+| `retired` | REMOVES the only requirement for an event | nothing |
+| `sibling` | rewrites a requirement: one scenario gets a harmless addition, the other keeps its words and is part of the old conflict | nothing; the old conflict is not the change's |
+
+108 runs (3 per case, 1 symbol set, temperature 0.7) on one cluster job, 2
+GPUs, 40 minutes.
+
+**Results.** Only findings about the change count.
+
+| | Result |
+|---|---|
+| planted conflicts (`modified`) | 18 of 18 (15 with doubtful ones set aside) |
+| planted gaps, a requirement removed (`removed`) | 18 of 18 |
+| planted gaps, a scenario dropped (`narrowed`) | 17 of 18 |
+| quiet changes (`clean`, `retired`, `sibling`) with a gap about them | 0 of 54 |
+| quiet changes with a conflict about them | 2 of 54 |
+| the old conflict, shown as the change's | 0 of 108 |
+| the old conflict, found and not shown | 108 of 108 |
+| labels kept (R and X) | 108 of 108 runs; 54 of them had a removed scenario |
+
+- **Every gap shown is one that a removal opened.** The reports would show 35
+  gaps, all with "opened by removing X1", and all planted. 124 other gaps
+  were left out (108 in which no event happens, 16 on events of existing
+  rules).
+- **Removing the only rule for an event gave no gap**, in 18 of 18 runs of
+  `retired`.
+- **The old conflict was found in every run and never blamed on the change**,
+  also not in `sibling`, where the change rewrites the requirement that one
+  of its two scenarios belongs to.
+- **The one gap missed** (`dorm_narrowed`, 1 of 3 runs) is a translation
+  slip: the rule that stays lost its condition ("AND the student has guest
+  nights left"), so it covers every registration and no gap is left.
+- **The 2 conflicts on quiet changes** are `makerspace_sibling`, 2 of 3 runs.
+  The reworded scenario ("asks the member to top up the account and puts the
+  material back on the stock list") against "does not book anything to the
+  account of any member": a question about the two outcomes (T22) was
+  answered "impossible" by 7 and 8 of 8. The scenario is the change's, since
+  its words changed, but its old words would have given the same conflict.
+- **3 planted conflicts are marked doubtful**, all in `courses_modified`:
+  "WHEN a teacher is ill" was read as an event (the limit of E10 and E17).
+
+**Decision.** The design stays. It ties the gap of a removal to the change
+(18 of 18), stops blaming old conflicts on a change that rewrites a
+neighbouring scenario (0 of 108), and loses nothing on `eval11/` and
+`change_dev/` (T23). `eval13/` is development data from now on; the next
+design needs `eval14/`.
+
+**Raw data.** [experiments/results/E19_eval13.json](experiments/results/E19_eval13.json)
+(with its table, E19_eval13.md).
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

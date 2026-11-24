@@ -66,9 +66,9 @@ Where the project stands:
   gap that is not one in 3 to 5 of 18 clean runs;
 - it finds about half of the planted ambiguities, and 30 to 32 of 36 with a
   second model, at the price of up to one extra question per spec;
-- for a change to specs that already exist, it found all 36 conflicts and all
-  36 gaps we had planted in 30 changes it was not built on, and reported
-  nothing about the harmless ones.
+- for a change to specs that already exist, it found all 54 conflicts and 71
+  of the 72 gaps we had planted in 66 changes it was not built on, among them
+  every gap that a removed requirement opens.
 
 | Read next | For |
 |---|---|
@@ -497,9 +497,9 @@ Then our code keeps the findings that involve a rule the change added or
 modified. This is the top of the report:
 
 > Change `admin-never-locked`, checked against the specs that exist: 1
-> scenario(s) added, 0 in modified requirements.
+> scenario(s) added, 0 modified, 0 removed.
 >
-> Only findings that involve an added or modified rule (R5) are shown. 3 other
+> Shown are the findings that involve an added or modified rule (R5). 3 other
 > finding(s), among the existing requirements alone, are in findings.json.
 >
 > **1. Conflict: Administrator Account Lock Conflict**
@@ -514,7 +514,23 @@ The 3 findings that are not shown were there before the change: R1 against R4
 (the conflict of [Assumed facts and links](#assumed-facts-and-links)), the
 ambiguity of R3, and the gap in which no event happens. The report ends with
 a table that says, for each rule, which spec file and requirement it comes
-from. The steps are in [GUIDE.md, part 5](GUIDE.md#5-checking-a-change-against-the-specs-that-exist).
+from.
+
+A change can also remove a rule, and leave a case open. The scenarios that a
+change removes stay in the merged document under labels of their own (X1,
+X2, ...), so that they get the same symbols as the rest. They are taken out
+before the checks, and Z3 is asked one more question for each: is the
+situation this rule was written for still covered? In a spec for hospital
+visitors, a change drops the scenario for a visitor who is not on the
+patient's list (`experiments/examples/visitors_removed`):
+
+> **1. Gap (opened by removing X1): Missing rule for unauthorized check-in**
+>
+> The requirements do not specify what the system must do when a visitor who
+> is not on the patient's visitor list attempts to check in. This gap exists
+> because the previous rule that handled this specific scenario was removed.
+
+The steps are in [GUIDE.md, part 5](GUIDE.md#5-checking-a-change-against-the-specs-that-exist).
 
 ## Run it
 
@@ -578,7 +594,7 @@ Nothing in the code or in the prompts is about orders.
 | `specs/order`, `specs/delete_property` | Kiro EARS | the two examples of the Kiro blog |
 | `specs/auth_openspec` | OpenSpec (`### Requirement` / `#### Scenario`) | another format; two conflicts we planted |
 | `experiments/sets/`: `eval` to `eval10`, `eval12` | both | 66 specs in new domains. Each has a clean version and versions with one planted defect, 297 versions in all. Each set was written before it was used, as a test the prompts had not seen |
-| `specs/auth_change`, `experiments/sets/eval11` | OpenSpec projects: specs that exist, and a change | the login example as a change, and 6 projects in new domains with 5 changes each |
+| `specs/auth_change`, `experiments/sets/eval11`, `eval13` | OpenSpec projects: specs that exist, and a change | the login example as a change, and 12 projects in new domains with 5 or 6 changes each |
 
 ## How reliable is it
 
@@ -650,6 +666,13 @@ Some notes on these numbers:
   planted conflicts were worded to be easy to find ("opens the gate" against
   "does not open the gate"), because this set tests the merge and the
   selection of findings; one of them was marked doubtful in 3 of 3 runs.
+- What a change removes was tested on `eval13/` (E19): six more projects with
+  six changes each. A change that removes the requirement for one of two
+  cases got its gap, reported as opened by the change, in 18 of 18 runs. A
+  change that removes the only requirement for an event got none, in 18 of
+  18. Every project also has one conflict from before any change: it was
+  found in all 108 runs and shown as the change's in none. Of the 54 runs on
+  changes about which nothing should be reported, 2 showed a conflict.
 - The numbers are small: the specs were written by us, and there is one main
   model. The details are in [research.md](research.md).
 
@@ -666,7 +689,7 @@ Some notes on these numbers:
 | The questions about two outcomes also report conflicts that nobody planted | "release the coat when the guest shows the token" against "list a coat as unclaimed after 30 days": in one snapshot a coat collected late falls under both. No mark catches this kind yet. On a long spec only the first 40 pairs of rules are asked about |
 | Gaps depend on the symbols, and on the events the LLM marks | "free" and "taken" as two symbols give a false gap, and it is rarely marked doubtful. The gap in which no event happens, which almost every spec has, is marked as such and is rarely something to fix |
 | One snapshot, no time | "then", "after" and "until" are not modelled |
-| The change check does not own every effect of a change | a gap opened by a REMOVED requirement is found but stays among the findings that are not shown. Every scenario of a MODIFIED requirement counts as changed, so an old conflict of such a scenario is shown as the change's |
+| A reworded scenario is the change's, whatever its new words are | if its old words gave the same finding, the finding is still shown as the change's |
 | Every change is a full run | the specs are formalized again for each change, so that old and new rules share their symbols. A project is bounded by the read step's room, about 140 scenarios |
 
 ## Optional: an LLM review of the text (off by default)
@@ -687,11 +710,11 @@ research.md, section 5.
 | `speccheck/checks.py` | stage 2: conflicts, gaps, scenarios; which findings depend on a reading; merging several symbol sets |
 | `speccheck/explain.py` | stage 3: wording, the scenario judge, the Markdown report |
 | `speccheck/cli.py` | runs the three stages |
-| `speccheck/change.py` | for `--change`: applies an OpenSpec change to the specs, labels the scenarios, selects the findings about the change |
+| `speccheck/change.py` | for `--change`: applies an OpenSpec change to the specs, labels the scenarios, sets apart what the change removes, selects the findings about the change |
 | `speccheck/refine.py` | optional LLM review, off by default |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the vLLM servers on the cluster: the main model, the second model |
-| `tests/` | 58 tests of everything that needs no LLM |
-| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10` and `eval12`, `size` and `size2`; for the change check `eval11` and `change_dev`; and the script that writes them |
+| `tests/` | 63 tests of everything that needs no LLM |
+| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10` and `eval12`, `size` and `size2`; for the change check `eval11`, `eval13` and `change_dev`; and the script that writes them |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs and scores the evaluation; re-scores saved runs without a GPU |
 | `experiments/stability.py`, `fact_threshold.py` | the earlier experiments |

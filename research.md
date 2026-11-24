@@ -32,6 +32,7 @@ its entries. How each mechanism works is in [plan.md](plan.md), section 5.
   | `eval10/` | 30 | 6 conflicts, 12 ambiguities, 6 gaps | E16 |
   | `eval11/` | 30 changes on 6 OpenSpec projects (2.4) | 12 conflicts, 12 gaps | E17 |
   | `eval12/` | 36 | 12 conflicts said in other words, 12 ambiguities, 6 gaps | E18 |
+  | `eval13/` | 36 changes on 6 OpenSpec projects, with removals (2.4) | 6 conflicts, 12 gaps; 1 old conflict in each project | E19 |
   | `size/` | 4 versions of one spec of 30 requirements | 2 conflicts, 1 gap | E13 |
   | `size2/` | 4 versions of one spec of 100 requirements | 2 conflicts, 1 gap | E14 (not held-out: no design was tuned on it) |
 
@@ -83,14 +84,17 @@ found it in 1 of 40 runs, then in 8 of 8 after the links step (3.3, E5), in 3
 of 7 after a change to the read prompt (4.3), and in 3 of 3 in the last runs
 (T11).
 
-### 2.4 It checks a change against the specs that already exist (T21, E17)
+### 2.4 It checks a change against the specs that already exist (T21, E17, T23, E19)
 
 In an OpenSpec project the specs say what the system does today, and a
 *change* holds only what is added, modified or removed. With `--change`, our
 code applies the change to the specs and labels every scenario in the merged
-document; the pipeline checks that document as it is, with no change to the
-prompts or to the solver stage; and our code keeps the findings that involve
-an added or modified rule (plan.md 5.10).
+document; the pipeline formalizes that document as it is, with no change to
+the prompts; and our code keeps the findings that involve an added or
+modified rule (plan.md 5.10). What the change removes stays in that document
+under labels of its own, is taken out before the checks, and serves one more
+question to Z3: is the situation this removed rule was written for still
+covered?
 
 On the held-out `eval11/`, six projects with five changes each (E17):
 
@@ -116,6 +120,28 @@ On the held-out `eval11/`, six projects with five changes each (E17):
   event (4.2).
 - **On old specs turned into changes** (development data, T21): 12 of 12
   planted conflicts, 18 of 18 gaps, 13 of 36 ambiguities.
+
+On the held-out `eval13/`, six projects with six changes each, and one
+conflict that every project has before any change (E19):
+
+| | Result |
+|---|---|
+| planted gaps, the requirement for one of two cases is removed | 18 of 18, each reported as opened by the change |
+| planted gaps, one of two scenarios is dropped from a rewritten requirement | 17 of 18 |
+| a change that removes the only requirement for an event: gaps reported | 0 of 18 |
+| planted conflicts, a rewritten requirement against a scenario in the other spec file | 18 of 18 (15 with doubtful ones set aside) |
+| the old conflict, shown as the change's | 0 of 108 |
+| the old conflict, found and left out | 108 of 108 |
+| changes about which nothing may be reported: with a gap, with a conflict | 0 of 54, 2 of 54 |
+
+- **A gap that a removal opens is now the change's.** Before, it was found
+  and left among the other findings.
+- **An old conflict is not blamed on a change that rewrites a neighbouring
+  scenario.** Inside a rewritten requirement, a scenario with the same words
+  counts as existing (T21 had shown such a conflict in 2 runs).
+- **The 2 conflicts on quiet changes** come from a question about two
+  outcomes (3.13) on a scenario whose words did change; the one missed gap
+  is a translation that lost a condition (E19).
 
 ---
 
@@ -370,20 +396,20 @@ Planted ambiguities on the held-out `eval4/` (E9), 9 per kind:
   a translation prompt has 4,234 tokens, and its server allows 6,144 for
   prompt and answer, with 4,096 kept for the answer (E14).
 
-### 4.5 The change check has three limits by design (T21, E17)
+### 4.5 The limits of the change check (T21, E17, T23, E19)
 
-- **A removed requirement.** A change that removes a requirement can leave a
-  case open. The gap is found, but the removed rule is not in the merged
-  document, so nothing ties the gap to the change. Not tested.
-- **A modified requirement counts as a whole.** All its scenarios count as
-  changed, also those whose text stayed the same, so that a change which
-  drops one of two complementary scenarios owns the gap. The price: an old
-  conflict of an unchanged scenario is shown as the change's (2 development
-  runs, T21).
 - **Every change is a full run.** The merged spec is formalized again each
   time, so that old and new rules share their symbols. Nothing is cached,
   and the read step's room, about 140 scenarios (3.12), bounds the size of a
   project.
+- **A scenario with new words is the change's, whatever the words are.** If
+  its old words gave the same finding, the finding is still shown as the
+  change's (2 runs of E19).
+- **Removed rules are asked about, not compared.** For a removed rule Z3 is
+  asked whether its own situation is still covered. A removed rule that was
+  rejected (its translations scattered) cannot be asked about, and removing
+  a rule that reacted to no event (a state) is never reported.
+- **No real project.** The 12 projects are small and written by us.
 
 ### 4.6 The questions about outcomes also report conflicts that nobody planted (T22, E18)
 
@@ -414,8 +440,8 @@ requirements have several hundred.
 
 ### 4.7 The evaluation is small
 
-Eleven sets with 66 base specs (297 versions), two longer specs and six OpenSpec
-projects with 30 changes, all written by us; 63 to 90 runs per experiment; one main model. One leak is known: an
+Eleven sets with 66 base specs (297 versions), two longer specs and twelve OpenSpec
+projects with 66 changes, all written by us; 63 to 90 runs per experiment; one main model. One leak is known: an
 example in the read prompt came from the domain of an `eval3/` spec (D4). And
 one clean spec, `shelter_clean` in `eval9/`, has a conflict we did not plan
 (E15).
@@ -469,8 +495,9 @@ the prompts, so it can be scored again without a GPU.
 | E16 | `eval10/`, held-out, with the doubtful mark on gaps (T20) | 90 runs | 18 of 18 conflicts and no other conflict at all; planted gaps 18 of 18; the mark set aside none of the 5 false gaps (4.2) |
 | E17 | `eval11/`, held-out: 30 changes on 6 OpenSpec projects, checked against the specs that exist (T21) | 90 runs | 36 of 36 planted conflicts, 36 of 36 planted gaps, nothing else reported about a change; labels kept in 90 of 90 runs (2.4) |
 | E18 | `eval12/`, held-out: conflicts said in other words, with the questions about pairs of outcomes (T22) | 108 runs | 34 of 36 conflicts (27 without the questions); 3 of 18 clean runs with a conflict that was not planted (0 without) (3.13, 4.6) |
+| E19 | `eval13/`, held-out: 36 changes on 6 OpenSpec projects, with removals and an old conflict (T23) | 108 runs | gaps opened by a removal 18 of 18; the old conflict never shown as the change's; 18 of 18 conflicts, 17 of 18 gaps of a dropped scenario (2.4) |
 
-The trials (T1 to T22) were run on development data between these
+The trials (T1 to T23) were run on development data between these
 experiments. Among the last: T17 compared temperatures 0.3, 0.5 and 0.7 (3.1);
 T18 found that the first read answer, at temperature 0, was usable for all
 204 specs, so the read step's retry is never needed on them; T19 found that
@@ -481,7 +508,8 @@ typical case "one of two things is always the case" to the facts prompt and a
 doubtful mark on gaps that the facts rule out (4.2, E16). T21 built the check
 of an OpenSpec change on old specs turned into projects (2.4). T22 sorted the
 21 conflicts missed in E8 to E16 by cause, and added the questions about
-pairs of outcomes to the saved runs (3.13). research_log.md
+pairs of outcomes to the saved runs (3.13). T23 kept what a change removes in
+the merged document, to see which gap the removal opens (2.4). research_log.md
 has them in order, together with the bugs that
 changed results before they were fixed (L1 to L10) and the open threats to
 validity. To score a saved run again: `python -m experiments.evaluate --rescore

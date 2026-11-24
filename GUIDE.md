@@ -758,7 +758,8 @@ It works in four steps:
 
    A conflict, an ambiguity or a scenario is about the change when one of its
    rules was added or modified. A gap is about the change when such a rule
-   reacts to the event that happens in it.
+   reacts to the event that happens in it, or when a rule that the change
+   removes used to cover it (see below).
 4. **The LLM words what was kept.** The report shows the one conflict, says
    that 3 other findings are in `findings.json`, and ends with a table that
    tells where each rule comes from:
@@ -774,16 +775,39 @@ It works in four steps:
    > | R3 | auth | Account Lockout | Lockout threshold | |
    > | R5 | auth | Administrator Access | Administrators are never locked out | **added** |
 
-Three things to know about it:
+**When a change removes something.** A change can also take a rule away, and
+then a case may be left open. In a spec for hospital visitors
+(`experiments/examples/visitors_removed`), two scenarios cover a check-in: the
+visitor is on the patient's list, or is not. A change rewrites the requirement
+and drops the second scenario. Three more steps deal with that:
+
+1. **Our code keeps the dropped scenario in the merged document**, under a
+   label of its own, X1. So the model formalizes it together with the rest,
+   with the same symbols: `(and visitor_checks_in (not visitor_on_list))`.
+2. **Our code takes X1 out of the formal model before the checks** and keeps
+   it apart. A removed rule can neither cause a finding nor hide one.
+3. **Z3 is asked about the situation X1 was written for**: a visitor checks
+   in and is not on the list. Does any remaining rule apply there? None does.
+   So this is a gap, and the report says who opened it:
+
+   > **1. Gap (opened by removing X1): Missing rule for unauthorized check-in**
+   >
+   > The requirements do not specify what the system must do when a visitor
+   > who is not on the patient's visitor list attempts to check in. This gap
+   > exists because the previous rule that handled this specific scenario was
+   > removed.
+
+If a change removes the only rule for an event, nothing is reported. Nobody
+reacts to that event any more, and that was the point of the change.
+
+Two things to know about the whole check:
 
 - The merged document is formalized as a whole, again for every change. That
   is what gives the old and the new rules the same symbols, and without
   shared symbols Z3 sees no conflict (3.2).
-- Every scenario of a modified requirement counts as changed, also one whose
-  text stayed the same. An old conflict of such a scenario is shown too.
-- A requirement that a change removes can leave a case open. That gap is
-  found, but the removed rule is not in the merged document, so nothing ties
-  the gap to the change and it stays among the other findings.
+- Inside a requirement that a change rewrites, the scenarios are compared one
+  by one. A scenario with the same words as before counts as existing, so an
+  old conflict of that scenario is not blamed on the change.
 
 ---
 
@@ -823,11 +847,14 @@ versions in all. In `eval12` every planted conflict says the opposite outcome
 in other words ("switch the heater on" against "cut the power to the
 heater"), which is the kind the earlier sets missed.
 
-One more set, `eval11`, tests the change check of part 5. It has six small
-OpenSpec projects, and each comes with five changes: one that is harmless,
-two that clash with an existing scenario (a new requirement, and a rewritten
-one), and two that leave a case open (a new requirement with one of its two
-cases, and a rewritten one that lost a scenario).
+Two more sets, `eval11` and `eval13`, test the change check of part 5. Each
+has six small OpenSpec projects, and each project comes with five or six
+changes whose right answer is known. In `eval11`: one harmless change, two
+that clash with an existing scenario, and two that leave a case open. In
+`eval13` the changes also remove things: a requirement that held one of two
+cases (a gap must be reported), and the only requirement for an event
+(nothing must be reported). Every project of `eval13` also has a conflict
+that was there before any change, and it must not be blamed on the change.
 
 Two more terms. A conflict reported on a clean spec is a *false alarm*. And
 because the model answers a little differently each time, every version is run
@@ -874,7 +901,7 @@ eval12  34/36   ███████████████████░   9
 | planted gaps (`eval8` to `eval10`) | 18 of 18 found in each, now that the question is asked once for each event; before, 0 of 18 |
 | false gaps (`eval8` to `eval10`) | in 4, 3 and 5 of 18 runs on clean specs. Explained below |
 | longer specs, 30 and 100 requirements | they went as well as the small ones. Explained below |
-| changes checked against existing specs (`eval11`) | all 36 planted conflicts and all 36 planted gaps found; nothing was reported about the 18 harmless changes. Explained below |
+| changes checked against existing specs (`eval11`, `eval13`) | 54 of 54 planted conflicts and 71 of 72 planted gaps found, among them all 18 gaps opened by a removed requirement. The conflict that the specs had before was never blamed on a change. Explained below |
 
 **Conflicts that nobody planted.** The questions about two outcomes find the
 conflicts we had been missing, and others with them. On `eval12` they added 27
@@ -911,6 +938,14 @@ planted conflicts were worded to be easy to find ("opens the gate" against
 selection; and one of them was marked doubtful in 3 of 3 runs, because "WHEN
 the projector is out of order" was taken for an event (3.3).
 
+In the 108 runs on `eval13`, a change that removed the requirement for one of
+two cases got its gap in 18 of 18 runs, each reported as opened by the
+removal. A change that removed the only requirement for an event got no gap,
+in 18 of 18. The conflict that each project had before any change was found
+in all 108 runs and shown as the change's in none. Of the 54 runs on changes
+about which nothing should be reported, 2 showed a conflict: it came from a
+question about two outcomes (3.2), on a scenario that the change had reworded.
+
 **Longer specs.** All the specs counted above have at most six requirements.
 To see what a longer document does, we wrote two more, each in four versions
 (clean, direct, overlap, gap) and run three times:
@@ -936,7 +971,7 @@ The project has five goals. This is where each one stands:
 | Goal | Status |
 |---|---|
 | G1: a minimal working prototype of Kiro's formal analysis | done |
-| G2: it works on any spec, in any format | done for the prototype: 2 formats, 63 small specs, two long ones, and changes checked against existing specs (part 5). A real OpenSpec project has not been tried |
+| G2: it works on any spec, in any format | done for the prototype: 2 formats, 63 small specs, two long ones, and changes checked against existing specs, removals included (part 5). A real OpenSpec project has not been tried |
 | G3: code and documents a person can read | done for the current state |
 | G4: research for a paper, on the local model | well under way: 11 tests on specs the design had not seen. Still one main model, and specs written by us |
 | G5: only the formal part | done: an LLM review of the text was built, measured, and switched off |
@@ -951,7 +986,7 @@ The project has five goals. This is where each one stands:
 | two words for one yes/no question give a false gap | "the slot is free" and "the slot is taken" as two symbols: in 3 to 5 of 18 clean runs (6.2) |
 | a fact or a link can be wrong, even with a majority behind it | which is why the report quotes every one that a conflict depends on |
 | there is no time | "then", "after" and "until" are not modelled: the logic is one snapshot |
-| the change check does not own every effect of a change | a gap opened by a removed requirement stays among the other findings; and every change costs a full run (part 5) |
+| the change check formalizes all the specs again for every change | a change costs one full run, and a project can have about 140 scenarios at most (part 5) |
 | the evaluation is small | the specs were written by us, and there is one main model |
 
 **"Remove" against "keep", on a real case.** One of the planted conflicts
@@ -1025,8 +1060,8 @@ The full list is in research.md, section 5.
 
 1. **A larger evaluation**, with another main model, specs we did not write,
    and a real OpenSpec project with its changes.
-2. **The change check, further**: the gap that a removed requirement opens,
-   and a way to check a change without formalizing all the specs again.
+2. **The change check, further**: a way to check a change without
+   formalizing all the specs again.
 3. **What is left of the choice of symbols**: retention periods that become
    only a number, and a mark for the conflicts that exist only because the
    logic is one snapshot.
@@ -1069,12 +1104,12 @@ that section 2 described:
 |---|---|---|
 | `speccheck/llm.py` | 70 | one function, `ask`: a prompt goes in, N answers come out as JSON |
 | `speccheck/logic.py` | 260 | `model` and `impossible`, the two questions for Z3 (1.2), and `same_meaning` |
-| `speccheck/checks.py` | 720 | `_search` forces rules to apply (2.3); `find_conflicts` runs the two searches (3.2); `_try_other_readings` (3.1); then `find_gaps` and `find_scenarios` (2.4) |
+| `speccheck/checks.py` | 750 | `_search` forces rules to apply (2.3); `find_conflicts` runs the two searches (3.2); `_try_other_readings` (3.1); then `find_gaps` and `find_scenarios` (2.4) |
 | `speccheck/formalize.py` | 720 | the seven steps of 3.5. The prompts at the top show what the LLM is asked |
 | `speccheck/probe.py` | 590 | the questions about concrete situations (3.1 and 3.2), and `outcomes`, the questions about two outcomes (3.2) |
 | `speccheck/explain.py` | 360 | `evidence` writes the *Proven* lines; the wording prompt is above it |
-| `speccheck/cli.py` | 140 | the three stages, called one after the other |
-| `speccheck/change.py` | 270 | part 5: `merge` applies a change to the specs and labels the scenarios; `about_change` selects the findings |
+| `speccheck/cli.py` | 150 | the three stages, called one after the other |
+| `speccheck/change.py` | 370 | part 5: `merge` applies a change to the specs and labels the scenarios; `after_model` sets the removed rules apart; `about_change` selects the findings |
 
 About half of each file is comments, docstrings and prompts.
 
@@ -1084,10 +1119,10 @@ The folders:
 speccheck/          the tool (the 8 files above; refine.py is the review that is switched off)
 specs/              3 small specs the prompts were developed on, with their saved output,
                     and auth_change, the example of part 5
-tests/              58 tests that need no LLM
+tests/              63 tests that need no LLM
 experiments/
   sets/             the 11 evaluation sets, eval to eval10 and eval12 (297 spec versions), two long specs,
-                    and for the change check eval11 and change_dev (old specs as projects)
+                    and for the change check eval11, eval13 and change_dev (old specs as projects)
   results/          every experiment: the raw data (.json) and its tables (.md)
   examples/         saved runs that the documents quote
   evaluate.py       runs the pipeline on a set and scores it
