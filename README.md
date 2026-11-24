@@ -395,6 +395,11 @@ fact        (not (and at_least_24h less_than_24h))        → this situation can
 mark        doubtful: "the assumed facts say this situation cannot happen"
 ```
 
+A gap gets the same mark when the assumed facts rule out its situation: with
+`slot_is_free` and `slot_is_taken` as two symbols, "a resident books a slot"
+is uncovered when the slot is neither, and the fact
+`(or slot_is_free slot_is_taken)` says that cannot happen.
+
 ## Several symbol sets
 
 Every finding depends on the symbols the LLM picks, and it does not always
@@ -487,7 +492,7 @@ Nothing in the code or in the prompts is about orders.
 |---|---|---|
 | `specs/order`, `specs/delete_property` | Kiro EARS | the two examples of the Kiro blog |
 | `specs/auth_openspec` | OpenSpec (`### Requirement` / `#### Scenario`) | another format; two conflicts we planted |
-| `experiments/sets/`: `eval` to `eval9` | both | 54 specs in new domains. Each has a clean version and versions with one planted defect, 231 versions in all. Each set was written before it was used, as a test the prompts had not seen |
+| `experiments/sets/`: `eval` to `eval10` | both | 60 specs in new domains. Each has a clean version and versions with one planted defect, 261 versions in all. Each set was written before it was used, as a test the prompts had not seen |
 
 ## How reliable is it
 
@@ -504,6 +509,7 @@ Each line is a test on specs the prompts had not seen, with 3 runs per spec:
 | `eval7/` (E12), doubtful conflicts set aside | 13 of 18 | 0 of 18 | 17 of 36; 32 of 36 with the second model |
 | `eval8/` (E13), doubtful conflicts set aside | 18 of 21 | 0 of 18 | 20 of 36 |
 | `eval9/` (E15), doubtful conflicts set aside | 18 of 18 | 2 of 18, a real conflict we wrote by mistake | 18 of 36 |
+| `eval10/` (E16) | 18 of 18 | 0 of 18, even counting doubtful conflicts | 7 of 36 |
 
 Some notes on these numbers:
 
@@ -524,7 +530,11 @@ Some notes on these numbers:
   18 planted gaps were found. On the clean specs, where both cases are
   covered, 4 of 18 runs still reported a gap. Each time the model had made
   two symbols, `slot_is_free` and `slot_is_taken`, and for Z3 a slot can then
-  be neither.
+  be neither. On `eval9/` and `eval10/` too, all 18 planted gaps were found,
+  with such a false gap in 3 and 5 of 18 clean runs. A gap is marked doubtful
+  when the assumed facts rule its situation out, but the model rarely votes
+  the fact that would ("the slot is free or taken"): only 2 of 13 false gaps
+  were marked (research.md 4.2).
 - All these specs have at most six requirements. To see what a longer document
   does, we wrote one spec of 30 requirements (`experiments/sets/size`) and one
   of 100 (`experiments/sets/size2`), each with three defect versions. Both
@@ -549,7 +559,7 @@ Some notes on these numbers:
 | Some proven conflicts are artefacts of the model | two events at the same moment ("a visitor signs up" while "a subscriber changes the address"); "at least 24 hours" and "less than 24 hours" as two symbols, both true. These are marked *doubtful* |
 | The *doubtful* mark needs the LLM to name the event each rule reacts to | a state taken for an event ("WHEN a member is suspended") marks a real conflict too |
 | "Remove" against "keep" is missed in about half of the cases | "delete the listing" becomes a yes/no symbol, `listing_deleted`, and "keep every listing for seven years" becomes a number of years. For Z3 nothing connects the two, so both rules can be obeyed. The main cause of missed conflicts (GUIDE.md, section 5.4) |
-| Gaps depend on the symbols, and on the events the LLM marks | "free" and "taken" as two symbols give a false gap. The gap in which no event happens, which almost every spec has, is marked as such and is rarely something to fix |
+| Gaps depend on the symbols, and on the events the LLM marks | "free" and "taken" as two symbols give a false gap, and it is rarely marked doubtful. The gap in which no event happens, which almost every spec has, is marked as such and is rarely something to fix |
 | One snapshot, no time | "then", "after" and "until" are not modelled |
 | One document | checking a change against specs that already exist is the next step (plan.md) |
 
@@ -574,7 +584,7 @@ research.md, section 5.
 | `speccheck/refine.py` | optional LLM review, off by default |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the vLLM servers on the cluster: the main model, the second model |
 | `tests/` | 42 tests of everything that needs no LLM |
-| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval9`, `size` and `size2`, and the script that writes them |
+| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10`, `size` and `size2`, and the script that writes them |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs and scores the evaluation; re-scores saved runs without a GPU |
 | `experiments/stability.py`, `fact_threshold.py` | the earlier experiments |

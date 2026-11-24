@@ -29,6 +29,7 @@ its entries. How each mechanism works is in [plan.md](plan.md), section 5.
   | `eval3/` to `eval7/` | 24 each | 6 or 7 conflicts and 12 ambiguities each | E8 to E12 |
   | `eval8/` | 30 | 7 conflicts, 12 ambiguities, 6 gaps | E13 |
   | `eval9/` | 30 | 6 conflicts, 12 ambiguities, 6 gaps | E15 |
+  | `eval10/` | 30 | 6 conflicts, 12 ambiguities, 6 gaps | E16 |
   | `size/` | 4 versions of one spec of 30 requirements | 2 conflicts, 1 gap | E13 |
   | `size2/` | 4 versions of one spec of 100 requirements | 2 conflicts, 1 gap | E14 (not held-out: no design was tuned on it) |
 
@@ -58,9 +59,10 @@ The order spec gives the blog's two conflicts and its gap in every run we made
 | E12, `eval7/` | 13 of 18 (72%) | 0 of 18 |
 | E13, `eval8/` | 18 of 21 (86%) | 0 of 18 |
 | E15, `eval9/` | 18 of 18 (100%) | 2 of 18, a real conflict we wrote by mistake |
+| E16, `eval10/` | 18 of 18 (100%) | 0 of 18 |
 
 From E8 on, conflicts marked doubtful (3.7) are set aside. Counted, they give
-false alarms in 9, 6, 11, 8, 0, 4 and 5 of 18 clean runs (E8 to E13, E15). In
+false alarms in 9, 6, 11, 8, 0, 4, 5 and 0 of 18 clean runs (E8 to E13, E15, E16). In
 E10 the mark also hit a planted conflict (4.2); counted, E10 finds 14 of 18.
 The 2 runs of E15 found a conflict in `shelter_clean` that is real: an animal
 adopted after 90 days in the shelter must be removed from the website and
@@ -176,7 +178,8 @@ once for each event instead, on the same runs of `eval8/`:
 - **Planted gaps:** 0 of 18 found before, 18 of 18 after. The gap planted in
   the 30-requirement spec: 0 of 3 and 3 of 3.
 - **False gaps:** 4 of 18 clean runs, when "the slot is free" and "the slot is
-  taken" became two symbols (4.2).
+  taken" became two symbols (4.2). Since T20 a gap that the assumed facts rule
+  out is marked doubtful, as conflicts are, but that rarely happens (4.2).
 - **Other gaps on clean specs:** 21 in 18 runs, all cases that the specs do
   leave open. 6 of them were cases we had left out without noticing.
 
@@ -233,8 +236,11 @@ Planted ambiguities on the held-out `eval4/` (E9), 9 per kind:
   is no ground truth for them.
 - **A setting tuned on development data did not hold:** "7 of 8" gave 27 of 36
   there (T8), and 16 of 36 here.
+- **It depends on the set.** One model found 14 to 20 of 36 on `eval4/` to
+  `eval9/`, but 7 of 36 on `eval10/` (E16), where the 8 translations agreed on
+  all 9 planted "if" rules.
 
-### 4.2 The choice of symbols is still the fragile step (E1 to E3, E10 to E13, T10, T12, T14)
+### 4.2 The choice of symbols is still the fragile step (E1 to E3, E10 to E13, E16, T10, T12, T14, T20)
 
 - With symbols drawn again on every run, the login spec's conflicts are found
   in 3 to 9 of 10 runs instead of 10 of 10 (E1 to E3).
@@ -248,7 +254,13 @@ Planted ambiguities on the held-out `eval4/` (E9), 9 per kind:
   after every prompt change.
 - **Two symbols for one thing.** "Take the price" (`payment_taken`) against
   "refuse all payments" (`payment_refused`) was missed in 3 of 3 runs (E12).
-  "The slot is free" and "the slot is taken" give false gaps (3.10).
+- **Two symbols for two complementary conditions give false gaps** ("the
+  slot is free" / "taken", "the car passes" / "fails"): in 3 to 5 of 18 clean
+  runs per set (E13, E15, E16). To Z3 the slot can be neither. A gap that the
+  facts rule out is marked doubtful, but the model rarely votes the fact that
+  one of the two always holds: 2 of the 13 false gaps in T20 and E16 were
+  marked. For some pairs it is right not to (a payment can also be pending).
+  Left as a known limit.
 - **"Remove" against "keep" is found in 10 of 21 runs** (E10 to E13): 3 of 3 in
   `backup`, `lab` and `skipass`, 1 of 3 in `photos`, 0 of 3 in `messages`,
   `auctions` and `clinic`. When it is missed, the link read "remove" in
@@ -286,15 +298,16 @@ Planted ambiguities on the held-out `eval4/` (E9), 9 per kind:
 
 ### 4.5 The evaluation is small
 
-Nine sets with 54 base specs (231 versions) and two longer specs, all written
+Ten sets with 60 base specs (261 versions) and two longer specs, all written
 by us; 63 to 90 runs per experiment; one main model. One leak is known: an
 example in the read prompt came from the domain of an `eval3/` spec (D4). And
 one clean spec, `shelter_clean` in `eval9/`, has a conflict we did not plan
 (E15).
 
 The runs of one spec mostly agree, so the numbers rest on fewer cases than
-they seem to: of the 73 planted conflicts of the nine held-out tests, 58 were
-found in all 3 of their runs, 7 in none, and only 8 in some (T15, E13, E15).
+they seem to: of the 79 planted conflicts of the ten held-out tests, 64 were
+found in all 3 of their runs, 7 in none, and only 8 in some (T15, E13, E15,
+E16).
 
 ---
 
@@ -337,14 +350,17 @@ the prompts, so it can be scored again without a GPU.
 | E13 | `eval8/`, held-out, with gaps asked for each event; and one spec of 30 requirements | 90 + 12 runs | 18 of 21 conflicts; planted gaps 0 → 18 of 18; the long spec 6 of 6 conflicts, solver stage 30 s → under 1 s (3.10, 3.11) |
 | E14 | one spec of 100 requirements, read answer up to 24576 tokens | 12 runs | read answer 16,799 tokens; 6 of 6 conflicts, the gap 3 of 3; solver stage 35 s (3.12) |
 | E15 | `eval9/`, held-out, with the parentheses repair of the facts vote (T19) | 90 runs | 18 of 18 conflicts, planted gaps 18 of 18; the repair added 17 facts, all bounds, and changed no finding (on the saved runs: 3 planted conflicts gained in one run) (2.2) |
+| E16 | `eval10/`, held-out, with the doubtful mark on gaps (T20) | 90 runs | 18 of 18 conflicts and no other conflict at all; planted gaps 18 of 18; the mark set aside none of the 5 false gaps (4.2) |
 
-The trials (T1 to T19) were run on development data between these
+The trials (T1 to T20) were run on development data between these
 experiments. Among the last: T17 compared temperatures 0.3, 0.5 and 0.7 (3.1);
 T18 found that the first read answer, at temperature 0, was usable for all
 204 specs, so the read step's retry is never needed on them; T19 found that
 5.4% of the sampled facts are dropped before the vote, nearly all for a slip
 in the formula (mostly missing outer parentheses) and almost never for an
-invented symbol. The vote now repairs the parentheses (E15). research_log.md
+invented symbol. The vote now repairs the parentheses (E15). T20 added the
+typical case "one of two things is always the case" to the facts prompt and a
+doubtful mark on gaps that the facts rule out (4.2, E16). research_log.md
 has them in order, together with the bugs that
 changed results before they were fixed (L1 to L10) and the open threats to
 validity. To score a saved run again: `python -m experiments.evaluate --rescore

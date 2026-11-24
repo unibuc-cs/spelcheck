@@ -2030,6 +2030,109 @@ recovered one planted conflict (3 runs), on `eval9/` it changed nothing.
 
 ---
 
+## T20 — Facts that say "one of the two", and a doubtful mark on gaps (2026-11-23, development)
+
+**Question.** The false gaps of E13 and E15 come from two symbols for two
+complementary conditions, `slot_is_free` and `slot_is_taken`. To Z3 a slot can
+then be neither, so "a resident books a slot" has a situation no rule covers.
+A voted fact `(or slot_is_free slot_is_taken)` rules that situation out. Can
+such facts mark these gaps as doubtful, the way conflicts are marked?
+
+**Change** (`eval10/` was written and committed first, a3666f7):
+- The facts prompt (step 4) gets one more typical case: "one of two things is
+  always the case, because each is the opposite of the other (a switch is
+  either on or off)".
+- `find_gaps` gets the voted facts. For each event it first looks for a gap
+  that the facts allow. If there is none, but there is one without the facts,
+  that gap is still reported, with `doubted_by` (the facts that rule it out),
+  and its title says "doubtful: the assumed facts say this situation cannot
+  happen". A fact still never removes a gap.
+
+**Setup.** `eval8/` and `eval9/` (90 runs each) and the three development
+specs (9 runs): 3 runs per version, 1 symbol set, temperature 0.7, one cluster
+job.
+
+**Results.**
+
+| | `eval8/` | `eval9/` |
+|---|---|---|
+| clean runs with a gap on a covered event | 5 of 18 | 3 of 18 |
+| the same, doubtful gaps set aside | 3 of 18 | 3 of 18 |
+| planted gaps | 17 of 18 | 18 of 18 |
+| planted conflicts | 18 of 21 | 18 of 18 |
+| clean runs with a false alarm (doubtful conflicts set aside) | 0 of 18 | 1 of 18 |
+| planted ambiguities | 16 of 36 | 16 of 36 |
+
+- The "one of the two" fact was voted in 2 of the 3 `laundry_clean` runs, and
+  those two gaps were marked. In all 180 runs a fact of the form `(or ...)`
+  was voted in 4 (laundry and tolls, all in `eval8/`); before the change, in
+  none (E13, E15).
+- Not marked: `donations` ("the payment succeeds" / "fails", 2 runs) and
+  `topup` ("the payment is accepted" / "refused", 3 runs). The model never
+  says that one of the two always holds. A payment can also be pending, so it
+  is right not to.
+- The planted gap missed in `meters_gap` is unrelated: the translation put
+  the condition into the consequent.
+- Development specs: 13 of 15 conflicts, as before (`auth_openspec` [1, 4]
+  2 of 3, `delete_property` 2 of 3).
+
+**Raw data.** [experiments/results/T20_eval8.json](experiments/results/T20_eval8.json),
+T20_eval9.json and T20_specs.json, each with its table.
+
+---
+
+## E16 — Held-out `eval10/`, with the doubtful mark on gaps (2026-11-24)
+
+**Question.** Does the design of T20 hold on specs it was not built on?
+
+**Setup.** `eval10/` was written first (a3666f7): six new domains (baggage
+drop, allotment gardens, car inspection, hospital visitors, fuel station,
+passport office), the same design as `eval9/`, 30 versions. Three of them
+have a pair of complementary conditions in two words: "within the weight
+limit" / "overweight", "passes" / "fails", "still valid" / "expired". Then
+the design was frozen (167b1d6). 90 runs (3 per version, 1 symbol set,
+temperature 0.7) on one cluster job, 2 GPUs, 17 minutes.
+
+**Results on `eval10/`.**
+
+| Configuration | Planted conflicts | Clean runs with a false alarm | Unexpected conflicts | Planted ambiguities | Flags on clean specs |
+|---|---|---|---|---|---|
+| default | 18/18 | 0/18 | 0 | 7/36 | 1 |
+| doubtful conflicts set aside | 18/18 | 0/18 | 0 | 7/36 | 1 |
+| without assumed facts and links | 15/18 | 0/18 | 0 | 7/36 | 1 |
+| without step 6 | 18/18 | 0/18 | 0 | 10/36 | 1 |
+
+Gaps: the 6 planted gaps in 18 of 18 runs; a gap on a covered event in 5 of
+18 clean runs, and still 5 with doubtful gaps set aside.
+
+- **All 18 planted conflicts were found**, in every run, and no other
+  conflict was reported on any version, even counting doubtful ones. This is
+  the first held-out set without one.
+- **The mark set aside none of the 5 false gaps.** In `baggage_clean` (2 of 3
+  runs) the vote kept only "not both",
+  `(=> bag_within_weight_limit (not bag_overweight))`. In `inspection_clean`
+  (3 of 3 runs) no fact about `test_passed` and `test_failed` was voted at
+  all. No `(or ...)` fact was voted in any of the 90 runs. `passports` gave no
+  false gap.
+- **Ambiguities 7 of 36, the fewest of any held-out set** (14 to 20 before):
+  "if" 0 of 9, "and/or" 1 of 9, boundary 1 of 9, "only" 5 of 9. Sampling
+  alone, which does not see the facts, found 10 of 36, with "if" also 0 of 9:
+  the 8 translations agreed on those rules. So it is the set, not the change,
+  which added no new kind of fact here.
+
+**Decision.** The design stays: conflicts, false alarms and planted gaps are as
+good as before or better. It does not solve the false gaps: of 54 clean runs
+in T20 and E16, 13 had a false gap and 2 were marked. The model rarely says
+that two conditions cover every case, and for some pairs (a payment can be
+pending) it is right not to. This is recorded as a known limit and not tried
+again. `eval10/` is development data from now on; the next design needs
+`eval11/`.
+
+**Raw data.** [experiments/results/E16_eval10.json](experiments/results/E16_eval10.json)
+(with its table, E16_eval10.md).
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

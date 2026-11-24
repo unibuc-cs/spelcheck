@@ -21,9 +21,9 @@ come back in plain language, each with "A) keep as-is / B) change".
 | Goal | Status |
 |---|---|
 | **G1** A minimal working prototype of Kiro's formal analysis: spec, formal check, answer in plain language | **Done.** Conflicts, gaps, ambiguities and scenarios, as in Kiro's formal part. Gaps are asked once for each event, and all 18 planted gaps of `eval8/` were found. Both Kiro blog examples found by the solver (`delete_property`: 3 of 3 in the last runs; a wrong voted fact can still hide it). Ambiguities: about half with one model; with the optional second reader 30 and 32 of 36 (held-out `eval4/`, `eval7/`), at up to one extra question per spec |
-| **G2** Data-driven: any spec, any format | **Partly.** 57 base specs in two formats (Kiro EARS, OpenSpec), no change to code or prompts; specs of 30 and of 100 requirements went as well as the small ones (E13, E14), and the read step now has room for about 140. Missing: a whole OpenSpec *project*, where a change is checked against the specs that already exist |
+| **G2** Data-driven: any spec, any format | **Partly.** 63 base specs in two formats (Kiro EARS, OpenSpec), no change to code or prompts; specs of 30 and of 100 requirements went as well as the small ones (E13, E14), and the read step now has room for about 140. Missing: a whole OpenSpec *project*, where a change is checked against the specs that already exist |
 | **G3** Code and documents a person can read | **Done** for the current state. GUIDE.md and README.md were revised after a point-by-point review (2026-11-22): each mechanism is a short list of steps on one real example |
-| **G4** Research for a paper, on the local model | **Well under way.** 9 held-out tests (E5, E7 to E13, E15): 61 to 100% of planted conflicts found; with doubtful conflicts set aside, at most 1 false alarm in 18 clean runs, apart from a real conflict we wrote into an `eval9/` clean spec by mistake (2 runs, E15). Gaps measured for the first time (E13). Still small: one main model, specs written by us |
+| **G4** Research for a paper, on the local model | **Well under way.** 10 held-out tests (E5, E7 to E13, E15, E16): 61 to 100% of planted conflicts found; with doubtful conflicts set aside, at most 1 false alarm in 18 clean runs, apart from a real conflict we wrote into an `eval9/` clean spec by mistake (2 runs, E15). Planted gaps 18 of 18 in each of the last three sets (E13, E15, E16). Still small: one main model, specs written by us |
 | **G5** Only the formal part | **Done.** An LLM review of the text was built, measured, and switched off |
 
 In short: the pipeline works end to end, finds what Kiro's blog finds, and
@@ -56,8 +56,8 @@ There are three candidates, in this order. The first is the one we recommend.
 2. **A larger evaluation** (G4): another main model, the second reader on
    more sets, specs we did not write, and results counted per planted
    conflict (the runs of one spec mostly agree, so more specs help more than
-   more runs). All nine sets have been read (`eval9/` in E15), so the next
-   design needs a tenth held-out set, `eval10/`, and it has to be written
+   more runs). All ten sets have been read (`eval10/` in E16), so the next
+   design needs an eleventh held-out set, `eval11/`, and it has to be written
    first.
 3. **The choice of symbols** (G1), which is where the remaining misses and
    false alarms come from:
@@ -68,9 +68,10 @@ There are three candidates, in this order. The first is the one we recommend.
      leaves out on purpose.
    - two symbols for complementary conditions ("the slot is free", "the slot
      is taken"). They give doubtful conflicts, and since step 26 also the
-     false alarms of the gap search (4 of 18 clean runs, E13). A gap could be
-     marked doubtful when the assumed facts rule its situation out, as
-     conflicts are.
+     false alarms of the gap search (3 to 5 of 18 clean runs per set). Tried
+     once (step 30): a gap the assumed facts rule out is marked doubtful, but
+     the facts rarely say that one of the two always holds, so only 2 of 13
+     were marked (T20, E16). This is a known limit now.
 
 Small things that are open:
 
@@ -101,6 +102,14 @@ Decided on 2026-11-23: **the facts vote adds missing outer parentheses**
 it recovered one planted conflict (3 runs) and lost nothing; on held-out
 `eval9/` it added 17 facts, all bounds, and changed no finding (E15).
 
+Decided on 2026-11-24: **a gap that the assumed facts rule out is marked
+doubtful, and the facts prompt names the case "one of two things is always
+the case"** (T20). It broke nothing: on held-out `eval10/`, 18 of 18 planted
+conflicts, no other conflict at all, 18 of 18 planted gaps (E16). It also
+helps little, because the model rarely votes such a fact: none of the 5
+false gaps of `eval10/` was marked. The false gaps from two complementary
+symbols stay, as a known limit, and are not tried again.
+
 Time ("then", "after", "until") is not planned. The model is one snapshot.
 
 ---
@@ -128,7 +137,7 @@ Every term used later is defined here.
 | **second reader** | Optional: a second local model, of another family, that translates every rule again; where its reading differs from the translation, the rule is reported as ambiguous (step 7, 5.8). |
 | **event** | A yes/no symbol for something that happens at one moment (a request, a click, an arrival). The read step marks each symbol as an event or not. |
 | **trigger** | The event a rule reacts to, named by the read step: "WHEN a visitor signs up ..." reacts to `visitor_signed_up`. A rule that reacts to a state ("WHILE ...") has none. |
-| **doubtful** | A mark on a proven conflict that is likely an artefact of the model (5.2). Doubtful conflicts are reported, marked, never removed. |
+| **doubtful** | A mark on a proven conflict or gap that is likely an artefact of the model (5.2, 5.4). Doubtful findings are reported, marked, never removed. |
 | **finding** | One thing reported to the author. There are four types: |
 
 | Finding type | It says | Who decides |
@@ -216,7 +225,7 @@ Around the package:
 | File | Job |
 |---|---|
 | `tests/` | 42 tests of everything that needs no LLM |
-| `experiments/make_eval.py` | writes the evaluation sets `eval` to `eval9`, `size` and `size2` into `experiments/sets/` (clean specs and planted defects) |
+| `experiments/make_eval.py` | writes the evaluation sets `eval` to `eval10`, `size` and `size2` into `experiments/sets/` (clean specs and planted defects) |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs the pipeline on a set of specs and scores it against the planted defects; adds the second reader to saved runs; re-scores saved runs without a GPU |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the main model and the second model on the cluster (section 8) |
@@ -362,7 +371,7 @@ run 2   the same search with the facts added   → keep only conflicts that need
 - one rule against the facts is not reported, only two or more rules (with
   one snapshot, "WHEN the door is open, close it" contradicts "a closed door
   is not open" by design)
-- gaps ignore the facts: a fact could only make a gap disappear
+- a fact never removes a gap either; it can only mark one as doubtful (5.4)
 
 **Links: a second source of facts** (`formalize.py`, step 5)
 - a symbol that only one rule uses hides meaning: "the record is removed", as
@@ -430,8 +439,12 @@ gap      parcel_scanned TRUE, compartment_free FALSE
   rules that react to states only), the search is as it was: over all
   situations, with the gap found excluded and the question asked again, at
   most 3 gaps
-- the assumed facts are not used: a gap can still show a value that a fact
-  rules out
+- the assumed facts only mark a gap: when they rule out every uncovered
+  situation for an event, the gap is still reported, marked doubtful, with
+  the facts that rule it out (`doubted_by`). In the laundry spec,
+  `slot_is_free` and `slot_is_taken` are two symbols, so "books a slot"
+  with neither is uncovered; the fact `(or slot_is_free slot_is_taken)`
+  rules that out. The model rarely votes such a fact (T20, E16)
 
 ### 5.5 What do the requirements allow or rule out? (`checks.py`, `explain.py`)
 
@@ -664,6 +677,7 @@ It is the only input of `checks.py`, so the solver stage can be re-run without a
   "covers_gaps": 1}`, what its other reading changes (5.9).
 - A gap has `event` (the event that happens in it) or `quiet: true` (no event
   happens); a gap found by the search over all situations has neither (5.4).
+  It is doubtful when it has `doubted_by`, as a conflict is.
 - After stage 3 every finding also has `title`, `explanation`, `option_a`,
   `option_b`.
 
@@ -681,7 +695,7 @@ It is the only input of `checks.py`, so the solver stage can be re-run without a
 
 The remarks in brackets appear only when they apply; a doubtful conflict says
 "doubtful: needs two events at the same moment" or "doubtful: the assumed facts
-say this situation cannot happen". A conflict or gap that is gone with the
+say this situation cannot happen", and a doubtful gap says the latter. A conflict or gap that is gone with the
 other reading of an ambiguous rule says "depends on the reading of R3".
 
 ---
@@ -694,6 +708,7 @@ other reading of an ambiguous rule says "depends on the reading of R3".
 | gap marked "no event happens" | a proof, but it may only mean that the system waits. Nearly every spec has one |
 | conflict "if the assumed facts hold" | a proof that also needs the listed facts or links. Judge them |
 | conflict marked "doubtful" | a proof, but likely an artefact of the model (two events at once, or a situation the facts rule out). On `eval3/`, all 60 marked conflicts were false alarms |
+| gap marked "doubtful" | a proof, but the assumed facts say its situation cannot happen; usually two symbols for one yes/no question ("free", "taken"). Rare: most such false gaps are not marked |
 | ambiguity | a real question: the model's own translations disagree, the words did not decide between two readings it was shown, or a second model reads it otherwise. Expect about half of the real ambiguities to be found; with the second reader most, with about one extra question per spec |
 | scenario | a proven consequence of the rules. Which scenarios are shown is chosen by an LLM judge; whether one is a problem is for the author to decide |
 | conflict or gap marked "depends on the reading of R3" | a proof that holds with the first reading of R3 only. R3 is ambiguous: answer its question first |
@@ -829,6 +844,12 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       (5.4%, mostly missing outer parentheses); `eval9/` written first; the
       vote repairs the parentheses; held-out `eval9/` (E15): 18 of 18
       conflicts, the repair changes no finding there
+- [x] **Step 30 — false gaps from two complementary symbols**: `eval10/`
+      written first; the facts prompt names "one of two things is always the
+      case"; a gap the facts rule out is marked doubtful (T20); held-out
+      `eval10/` (E16): 18 of 18 conflicts, no other conflict, 18 of 18 planted
+      gaps, but none of the 5 false gaps marked. Kept, and the false gaps
+      recorded as a known limit
 - [x] **Documentation pass 2**: GUIDE.md reviewed point by point and rewritten (a new
       2.4 on gaps and scenarios; the ambiguity check, voted facts and links as steps on
       one real example), then shortened from 1112 to 893 lines; README.md reworded in the

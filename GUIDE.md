@@ -58,7 +58,7 @@ of the code, deals with one question: can we trust the translation, and when
 we cannot, do we say so clearly?
 
 To give an idea of the size: about 2,400 lines of Python now, half of them comments
-and prompts, one local model (Qwen3.8, 27B), and results measured on 231 versions
+and prompts, one local model (Qwen3.8, 27B), and results measured on 261 versions
 of small specs. The results are in part 5.
 
 ---
@@ -567,7 +567,7 @@ fact        (not (and at_least_24h less_than_24h))        this situation cannot 
 
 The two conditions became two separate yes/no symbols, so Z3 can make both
 true. A conflict whose situation the assumed facts rule out is marked as
-doubtful too.
+doubtful too, and so is a gap (5.2).
 
 In both cases the conflict stays in the report, with the word "doubtful" and
 the reason. It is marked and not deleted because the mark is itself a guess:
@@ -620,6 +620,7 @@ how much weight the finding carries:
 | "... (found with k of K symbol sets)" | k of the K formalizations found it | the higher k, the better |
 | "Ambiguity: ..." | not a proof, a question to the author | a fair question, though some are asked about clear rules |
 | "Gap: ..." | proven: an event happens and no rule applies | certain. Ask yourself whether that case was left out on purpose |
+| "Gap (doubtful: ...)" | proven, but the assumed facts say its situation cannot happen (5.2) | little: usually two symbols for one yes/no question |
 | "Gap (no event happens): ..." | proven: nothing happens, and no rule applies (2.4) | certain, but rarely something to fix. Almost every spec has this gap, so it is shown once, after the other gaps |
 | "Scenario, allowed: ..." or "Scenario, ruled out: ..." | proven: the rules allow this situation, or make it impossible (2.4) | the proof is certain. Which scenarios are shown is the model's choice, and whether one is a problem is for you, the author, to decide |
 
@@ -661,7 +662,7 @@ OpenSpec style. Every spec comes in three to five versions:
 Each version is a folder with two files: `spec.md`, which the tool reads, and
 `expected.json`, which holds the answer. For `lockers_overlap` it says
 `{"conflicts": [[1, 6], [3, 6]]}`: rule 6 clashes with rule 1 and with rule 3.
-There are nine sets, `eval` to `eval9`, with 231 versions in all.
+There are ten sets, `eval` to `eval10`, with 261 versions in all.
 
 Two more terms. A conflict reported on a clean spec is a *false alarm*. And
 because the model answers a little differently each time, every version is run
@@ -676,7 +677,7 @@ material, and the next change needs a new set.
 ### 5.2 The results
 
 ```
-planted conflicts found, on 9 sets the design had not seen
+planted conflicts found, on 10 sets the design had not seen
 
 eval    44/48   ██████████████████░░   92%
 eval2   31/36   █████████████████░░░   86%
@@ -687,6 +688,7 @@ eval6   15/18   █████████████████░░░   8
 eval7   13/18   ██████████████░░░░░░   72%
 eval8   18/21   █████████████████░░░   86%
 eval9   18/18   ████████████████████  100%
+eval10  18/18   ████████████████████  100%
 ```
 
 | Question | Answer |
@@ -695,11 +697,11 @@ eval9   18/18   ████████████████████  10
 | Kiro's second example (`delete_property`) | found in 3 of the last 3 runs. It was the hard one: 1 of 40 before links existed |
 | planted conflicts | 61% to 100% found (the chart above) |
 | false alarms | at most 1 in 18 clean runs, when doubtful conflicts are set aside. In `eval9`, 2 runs found a conflict that is real: we wrote it into a clean spec by mistake |
-| planted ambiguities, one model | about half (14 to 20 of 36) |
+| planted ambiguities, one model | about half (14 to 20 of 36), but 7 of 36 on `eval10` |
 | planted ambiguities, with the second model | 30 and 32 of 36, at the price of up to one extra question per spec |
 | how much assumed facts and links matter | a great deal: without them `eval8` gives 9 of 21, with them 18 |
-| planted gaps (`eval8`, `eval9`) | 18 of 18 found in each, now that the question is asked once for each event; before, 0 of 18 |
-| false gaps (`eval8`, `eval9`) | in 4 and 3 of 18 runs on clean specs. Explained below |
+| planted gaps (`eval8` to `eval10`) | 18 of 18 found in each, now that the question is asked once for each event; before, 0 of 18 |
+| false gaps (`eval8` to `eval10`) | in 4, 3 and 5 of 18 runs on clean specs. Explained below |
 | longer specs, 30 and 100 requirements | they went as well as the small ones. Explained below |
 
 **The false gaps.** A clean spec in `eval8` covers both cases of an event, for
@@ -709,7 +711,10 @@ alarm. The tool reported one in 4 of the 18 runs on clean specs, always for
 the same reason: the model had made two symbols, `slot_is_free` and
 `slot_is_taken`, and to Z3 a slot can then be neither free nor taken. With one
 symbol, and "taken" written as `(not slot_is_free)`, the false gap does not
-appear.
+appear. A voted fact "the slot is free or taken" rules that situation out, and
+then the gap is marked doubtful. But the model rarely proposes such a fact:
+only 2 of 13 false gaps were marked (`eval8` to `eval10`). This is a known
+limit.
 
 **Longer specs.** All the specs counted above have at most six requirements.
 To see what a longer document does, we wrote two more, each in four versions
@@ -818,7 +823,7 @@ The full list is in research.md, section 5.
    project has existing specs and a change on top of them. This is the
    recommended next step, and it was postponed on purpose.
 2. **A larger evaluation**, with another main model and specs we did not
-   write. All nine sets have been used, so a tenth has to be written first.
+   write. All ten sets have been used, so an eleventh has to be written first.
 3. **The choice of symbols**, which is where the remaining misses come from.
 
 ---
@@ -872,9 +877,9 @@ The folders:
 ```
 speccheck/          the tool (the 7 files above; refine.py is the review that is switched off)
 specs/              3 small specs the prompts were developed on, with their saved output
-tests/              42 tests that need no LLM
+tests/              44 tests that need no LLM
 experiments/
-  sets/             the 9 evaluation sets, eval to eval9 (231 spec versions), and two long specs
+  sets/             the 10 evaluation sets, eval to eval10 (261 spec versions), and two long specs
   results/          every experiment: the raw data (.json) and its tables (.md)
   examples/         saved runs that the documents quote
   evaluate.py       runs the pipeline on a set and scores it
