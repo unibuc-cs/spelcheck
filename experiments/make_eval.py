@@ -1,6 +1,6 @@
-"""make_eval.py: writes the evaluation sets eval/ to eval13/, size/ and size2/. No LLM, no GPU.
+"""make_eval.py: writes the evaluation sets eval/ to eval14/, size/ and size2/. No LLM, no GPU.
 
-    python -m experiments.make_eval eval13     (only the sets named; all if none)
+    python -m experiments.make_eval eval14     (only the sets named; all if none)
 
 change_dev/ is development data for the change check: the OpenSpec-format
 specs of eval9/ and eval10/ as projects with a change (see as_projects).
@@ -135,6 +135,26 @@ expected.json has, besides the keys above:
     old        the conflict that the specs had before the change. It must not
                be shown as the change's.
     nothing    true: no conflict and no gap may be reported about the change
+
+eval14/ is of the same kind again (written 2026-11-24, after E19, before a
+change could be checked without formalizing all the specs again): six more
+OpenSpec projects with seven existing scenarios each, to be run in both ways,
+the full one and the new one. Six versions:
+
+    clean      the change adds a requirement that covers both of its cases.
+    direct     it adds a requirement for the trigger of an existing scenario,
+               with the opposite outcome said in other words ("switches the
+               floodlights on" / "keeps the floodlights dark").
+    overlap    it adds a requirement for a state, which forbids, in the same
+               words, what a scenario in the other spec file demands.
+    modified   it rewrites a requirement so that it clashes with a scenario
+               in the other spec file (as in eval11 and eval13).
+    gap        it adds a requirement that covers one of two cases.
+    removed    it REMOVES the requirement that held one of two complementary
+               cases (as in eval13).
+
+The new way must give a new rule the symbols of the old ones, or no clash
+with them can be seen; direct, overlap and modified test that.
 """
 
 import json
@@ -2498,6 +2518,247 @@ PROJECTS13 = {
 }
 
 
+def _project14(capabilities: tuple, first, second, event, pair, counted, notice, added, direct, overlap, gap,
+               names: dict) -> dict:
+    """One eval14 project from its seven existing scenarios and what the changes add.
+
+    capabilities  the names of its two spec files, with their purpose
+    first, second two requirements with one scenario each: the two complementary cases of one event
+    event         a requirement with one scenario: an event and what the system then does
+    pair          a requirement with two complementary scenarios
+    counted       a requirement about something that happens for the n-th time
+    notice        a state requirement, and the words that the "modified" change adds to it: it then
+                  forbids what `first` demands
+    added         the requirement that the "clean" change adds, with both of its cases
+    direct        a requirement for the trigger of `event`, with the opposite outcome in other words
+    overlap       a state requirement that forbids what the first scenario of `pair` demands
+    gap           a requirement with one of two cases
+    names         for each change: the name of its folder and the "why" of its proposal
+    """
+    (a, a_purpose), (b, b_purpose) = capabilities
+    (notice_name, notice_sentence, [(notice_scenario, notice_text)]), notice_extra = notice
+
+    def name(capability: str, requirement: tuple, scenario: int = 0) -> str:
+        return f"{capability}/{requirement[0]}/{requirement[2][scenario][0]}"
+
+    def change(version: str, delta: dict, expected: dict) -> dict:
+        return {"name": names[version][0], "why": names[version][1], "delta": delta, "expected": expected}
+
+    changes = {
+        "clean": change("clean", {b: {"ADDED": [added]}},
+                        {"covered": [name(b, added, 0), name(b, added, 1)], "nothing": True}),
+        "direct": change("direct", {a: {"ADDED": [direct]}},
+                         {"conflicts": [[name(a, event), name(a, direct)]]}),
+        "overlap": change("overlap", {a: {"ADDED": [overlap]}},
+                          {"conflicts": [[name(b, pair), name(a, overlap)]]}),
+        "modified": change("modified", {b: {"MODIFIED": [(notice_name, notice_sentence,
+                                                           [(notice_scenario, notice_text + notice_extra)])]}},
+                           {"conflicts": [[f"{b}/{notice_name}/{notice_scenario}", name(a, first)]]}),
+        "gap": change("gap", {b: {"ADDED": [gap]}}, {"gaps": [name(b, gap)]}),
+        "removed": change("removed", {a: {"REMOVED": [(second[0], names["removed"][1], "None.")]}},
+                          {"gaps": [name(a, first)]}),
+    }
+    return {"specs": {a: (a_purpose, [first, second, event]),
+                      b: (b_purpose, [pair, counted, (notice_name, notice_sentence, [(notice_scenario, notice_text)])])},
+            "changes": changes}
+
+
+PROJECTS14 = {
+    "tennis": _project14(
+        (("courts", "Members of a tennis club book courts and play on them."),
+         ("club", "Guests, members who do not turn up, and tournaments.")),
+        ("Booking a free court", "The system SHALL give a free court to the member who asks for it.", [
+            ("Court free", "WHEN a member books a court AND the court is free at that hour THEN the system reserves the court for the member")]),
+        ("Booking a taken court", "The system SHALL offer another hour when a court is taken.", [
+            ("Court taken", "WHEN a member books a court AND the court is not free at that hour THEN the system shows the member the next free hour")]),
+        ("Floodlights", "The system SHALL light the courts for evening play.", [
+            ("Evening match", "WHEN a member starts a match after sunset THEN the system switches the floodlights on")]),
+        ("Guests", "The system SHALL handle the guests of members.", [
+            ("Guest fee paid", "WHEN a member brings a guest AND the guest fee is paid THEN the system prints a guest ticket"),
+            ("Guest fee not paid", "WHEN a member brings a guest AND the guest fee is not paid THEN the system asks for the guest fee")]),
+        ("No-shows", "The system SHALL act on members who do not turn up.", [
+            ("Third no-show", "WHEN a member misses a booked court for the third time in a season THEN the system blocks the bookings of the member for a week")]),
+        (("Tournaments", "The system SHALL announce tournaments.", [
+            ("Tournament day", "WHEN a tournament is being played THEN the system shows the schedule at the entrance")]),
+         " and does not reserve any court for members"),
+        ("Ball machine", "The system SHALL lend the ball machine to members.", [
+            ("Machine free", "WHEN a member asks for the ball machine AND the machine is free THEN the system hands out the key of the machine"),
+            ("Machine in use", "WHEN a member asks for the ball machine AND the machine is not free THEN the system puts the member on the list for the machine")]),
+        ("Energy saving", "The system SHALL save electricity in the evening.", [
+            ("Lights out", "WHEN a member starts a match after sunset THEN the system keeps the floodlights dark")]),
+        ("Unpaid dues", "The system SHALL limit members who have not paid their dues.", [
+            ("Dues unpaid", "WHEN the dues of a member are unpaid THEN the system does not print any guest ticket")]),
+        ("Coaching", "The system SHALL take bookings for coaching hours.", [
+            ("Coach free", "WHEN a member asks for a coaching hour AND a coach is free THEN the system books the hour and informs the coach")]),
+        {"clean": ("add-ball-machine", "The club has bought a ball machine."),
+         "direct": ("save-electricity", "The electricity bill of the club has doubled."),
+         "overlap": ("limit-members-with-unpaid-dues", "Members who had not paid kept bringing guests."),
+         "modified": ("no-member-bookings-on-tournament-days", "Members booked courts that the tournament needed."),
+         "gap": ("add-coaching", "The club has hired two coaches."),
+         "removed": ("drop-next-free-hour", "The new calendar shows the free hours by itself.")}),
+    "brewery": _project14(
+        (("brewing", "Brewers start batches, and the tanks are watched while the beer ferments."),
+         ("sales", "Orders of the shops, complaints, and what the brewers are told.")),
+        ("Starting a batch with malt", "The system SHALL start a batch when the malt is there.", [
+            ("Malt in stock", "WHEN a brewer starts a batch AND the malt for the recipe is in stock THEN the system reserves a tank and prints the brew sheet")]),
+        ("Starting a batch without malt", "The system SHALL get the malt that a batch needs.", [
+            ("Malt missing", "WHEN a brewer starts a batch AND the malt for the recipe is not in stock THEN the system orders the malt from the supplier")]),
+        ("Fermentation", "The system SHALL watch the temperature of the tanks.", [
+            ("Tank too warm", "WHEN the temperature of a tank rises above 22 degrees THEN the system opens the cooling valve of the tank")]),
+        ("Shop orders", "The system SHALL serve the orders of the shops.", [
+            ("Beer in stock", "WHEN a shop orders beer AND the beer is in stock THEN the system prints a delivery note"),
+            ("Beer not in stock", "WHEN a shop orders beer AND the beer is not in stock THEN the system tells the shop the next bottling date")]),
+        ("Complaints", "The system SHALL act on complaints about a batch.", [
+            ("Third complaint", "WHEN a shop complains about a batch for the third time THEN the system recalls the batch")]),
+        (("Cleaning", "The system SHALL announce the cleaning of the brewhouse.", [
+            ("Cleaning day", "WHEN the brewhouse is being cleaned THEN the system shows a notice to the brewers")]),
+         " and does not reserve any tank"),
+        ("Tastings", "The system SHALL take bookings for tastings.", [
+            ("Places left", "WHEN a visitor books a tasting AND places are left THEN the system confirms the tasting by email"),
+            ("Tasting full", "WHEN a visitor books a tasting AND no places are left THEN the system offers the visitor the next tasting")]),
+        ("Warm fermentation", "The system SHALL let some beers ferment warm.", [
+            ("Warm tank", "WHEN the temperature of a tank rises above 22 degrees THEN the system shuts off the cooling of the tank")]),
+        ("Recalls", "The system SHALL stop deliveries during a recall.", [
+            ("Recall running", "WHEN a recall is running THEN the system does not print any delivery note")]),
+        ("Kegs", "The system SHALL rent kegs to customers.", [
+            ("Keg available", "WHEN a customer asks for a keg AND a keg is available THEN the system books the keg and prints the deposit slip")]),
+        {"clean": ("add-tastings", "Visitors ask for tastings at the brewery."),
+         "direct": ("allow-warm-fermentation", "The new summer ale has to ferment warm."),
+         "overlap": ("stop-deliveries-during-recalls", "Beer from a recalled batch was delivered to a shop."),
+         "modified": ("no-new-batches-on-cleaning-days", "A batch was started in a tank that was being cleaned."),
+         "gap": ("add-keg-rental", "Customers ask for kegs for their parties."),
+         "removed": ("drop-automatic-malt-orders", "The malt is now ordered by the head brewer by phone.")}),
+    "musicschool": _project14(
+        (("lessons", "Pupils of a music school take lessons and practise in the rooms of the school."),
+         ("school", "Instruments on loan, absences, and school concerts.")),
+        ("Lessons with a free teacher", "The system SHALL book a lesson when a teacher is free.", [
+            ("Teacher free", "WHEN a pupil asks for a lesson AND a teacher of the instrument is free THEN the system books the lesson and informs the teacher")]),
+        ("Lessons without a free teacher", "The system SHALL keep a waiting list for lessons.", [
+            ("No teacher free", "WHEN a pupil asks for a lesson AND no teacher of the instrument is free THEN the system puts the pupil on the waiting list")]),
+        ("Practice rooms", "The system SHALL open the practice rooms to pupils.", [
+            ("Pupil card", "WHEN a pupil holds the card to a practice room THEN the system unlocks the practice room")]),
+        ("Instrument loans", "The system SHALL lend instruments to pupils.", [
+            ("Instrument on the shelf", "WHEN a pupil asks to borrow an instrument AND the instrument is on the shelf THEN the system records the loan"),
+            ("Instrument lent out", "WHEN a pupil asks to borrow an instrument AND the instrument is not on the shelf THEN the system reserves the instrument for the pupil")]),
+        ("Absences", "The system SHALL tell the parents about missed lessons.", [
+            ("Third absence", "WHEN a pupil misses a lesson for the third time in a term THEN the system informs the parents")]),
+        (("Concerts", "The system SHALL announce school concerts.", [
+            ("Concert evening", "WHEN a school concert is taking place THEN the system shows the programme in the hall")]),
+         " and does not book any lesson"),
+        ("Sheet music", "The system SHALL sell sheet music to pupils.", [
+            ("Copy in stock", "WHEN a pupil orders sheet music AND a copy is in stock THEN the system puts the copy aside for the pupil"),
+            ("No copy in stock", "WHEN a pupil orders sheet music AND no copy is in stock THEN the system orders a copy from the publisher")]),
+        ("Supervised practice", "The system SHALL let pupils practise only when a teacher is present.", [
+            ("Card at the door", "WHEN a pupil holds the card to a practice room THEN the system keeps the practice room shut")]),
+        ("Unpaid fees", "The system SHALL limit pupils whose fees are not paid.", [
+            ("Fees unpaid", "WHEN the fees of a pupil are unpaid THEN the system does not record any loan")]),
+        ("Grade exams", "The system SHALL enter pupils for grade exams.", [
+            ("Teacher agrees", "WHEN a pupil signs up for a grade exam AND the teacher agrees THEN the system enters the pupil for the exam")]),
+        {"clean": ("add-sheet-music", "Pupils buy their sheet music at the school."),
+         "direct": ("supervise-practice", "An instrument was damaged in a practice room."),
+         "overlap": ("limit-pupils-with-unpaid-fees", "Instruments were lent to pupils who had not paid their fees."),
+         "modified": ("no-lessons-during-concerts", "Lessons were booked into the hall on a concert evening."),
+         "gap": ("add-grade-exams", "The school now enters pupils for grade exams."),
+         "removed": ("drop-lesson-waiting-list", "The waiting list for lessons is now kept by the secretary.")}),
+    "drivingschool": _project14(
+        (("driving", "Learners of a driving school book lessons and take the theory test."),
+         ("office", "Registration, cancellations, and the days on which the cars are serviced.")),
+        ("Lessons with a free car", "The system SHALL book a lesson when a car is free.", [
+            ("Car free", "WHEN a learner books a driving lesson AND a car is free at that time THEN the system books the lesson and assigns a car")]),
+        ("Lessons without a free car", "The system SHALL offer another time when no car is free.", [
+            ("No car free", "WHEN a learner books a driving lesson AND no car is free at that time THEN the system offers the learner another time")]),
+        ("Theory test", "The system SHALL record the result of the theory test.", [
+            ("Test passed", "WHEN a learner passes the theory test THEN the system opens the booking of road lessons for the learner")]),
+        ("Registration", "The system SHALL register new learners.", [
+            ("Eye test valid", "WHEN a person registers as a learner AND the eye test of the person is valid THEN the system creates a learner file"),
+            ("Eye test not valid", "WHEN a person registers as a learner AND the eye test of the person is not valid THEN the system asks for a new eye test")]),
+        ("Late cancellations", "The system SHALL act on lessons that are cancelled late.", [
+            ("Third late cancellation", "WHEN a learner cancels a lesson late for the third time THEN the system charges the learner for the lesson")]),
+        (("Car service", "The system SHALL announce the days on which the cars are serviced.", [
+            ("Service day", "WHEN the cars are being serviced THEN the system shows the service day in the calendar")]),
+         " and does not book any lesson"),
+        ("Road exams", "The system SHALL book road exams at the test centre.", [
+            ("Slot at the test centre", "WHEN an instructor asks for a road exam AND the test centre has a slot THEN the system books the exam and informs the learner"),
+            ("No slot", "WHEN an instructor asks for a road exam AND the test centre has no slot THEN the system puts the learner on the list for the next date")]),
+        ("Waiting period", "The system SHALL make learners wait after the theory test.", [
+            ("After the theory test", "WHEN a learner passes the theory test THEN the system keeps road lessons closed for the learner")]),
+        ("Age limit", "The system SHALL respect the legal age for learners.", [
+            ("Too young", "WHEN a person is younger than 17 THEN the system does not create any learner file")]),
+        ("Refresher courses", "The system SHALL take bookings for refresher courses.", [
+            ("Licence held", "WHEN a driver asks for a refresher course AND the driver holds a licence THEN the system books the course")]),
+        {"clean": ("add-road-exams", "Road exams were booked by phone and often forgotten."),
+         "direct": ("add-waiting-period", "The insurer asks for a waiting period after the theory test."),
+         "overlap": ("respect-age-limit", "A fifteen-year-old was registered as a learner."),
+         "modified": ("no-lessons-on-service-days", "Lessons were booked on a day when all cars were at the garage."),
+         "gap": ("add-refresher-courses", "Older drivers ask for refresher courses."),
+         "removed": ("drop-other-time-offer", "Learners now see the free times in the app.")}),
+    "climbing": _project14(
+        (("entry", "Climbers check in at a climbing hall and hand back rental gear."),
+         ("hall", "Courses, fall reports, and the setting of new routes.")),
+        ("Entry with a safety check", "The system SHALL let in climbers who have passed the safety check.", [
+            ("Check passed", "WHEN a climber checks in AND the climber has passed the safety check THEN the system opens the turnstile and counts the visit")]),
+        ("Entry without a safety check", "The system SHALL send new climbers to an instructor.", [
+            ("Check missing", "WHEN a climber checks in AND the climber has not passed the safety check THEN the system sends the climber to the instructor")]),
+        ("Rental gear", "The system SHALL take back rental gear.", [
+            ("Gear handed back", "WHEN a climber hands back rental gear THEN the system releases the deposit")]),
+        ("Courses", "The system SHALL take sign-ups for courses.", [
+            ("Places left", "WHEN a climber signs up for a course AND places are left THEN the system adds the climber to the course"),
+            ("Course full", "WHEN a climber signs up for a course AND no places are left THEN the system suggests the next course")]),
+        ("Fall reports", "The system SHALL act on falls that are reported.", [
+            ("Second fall report", "WHEN a route gets a fall report for the second time in a week THEN the system closes the route for inspection")]),
+        (("Route setting", "The system SHALL announce the setting of new routes.", [
+            ("Setting in progress", "WHEN routes are being set in the hall THEN the system shows the closed walls on the screen")]),
+         " and does not open the turnstile"),
+        ("Birthday parties", "The system SHALL take bookings for birthday parties.", [
+            ("Room free", "WHEN a parent books a birthday party AND the party room is free on that day THEN the system reserves the room and sends the price"),
+            ("Room not free", "WHEN a parent books a birthday party AND the party room is not free on that day THEN the system offers the parent another day")]),
+        ("Damaged gear", "The system SHALL check rental gear before the deposit goes back.", [
+            ("Gear check", "WHEN a climber hands back rental gear THEN the system holds the deposit back")]),
+        ("Expired memberships", "The system SHALL limit climbers whose membership has expired.", [
+            ("Membership expired", "WHEN the membership of a climber has expired THEN the system does not add the climber to any course")]),
+        ("Private coaching", "The system SHALL take bookings for private coaching.", [
+            ("Coach available", "WHEN a climber asks for private coaching AND a coach is available THEN the system books the coach")]),
+        {"clean": ("add-birthday-parties", "Parents ask for birthday parties in the hall."),
+         "direct": ("check-gear-before-refund", "Damaged gear came back and the deposit was already paid out."),
+         "overlap": ("limit-expired-memberships", "Climbers with an expired membership filled the courses."),
+         "modified": ("close-entry-during-route-setting", "Climbers walked under the lift while routes were being set."),
+         "gap": ("add-private-coaching", "Climbers ask for hours with a coach of their own."),
+         "removed": ("drop-instructor-referral", "The safety check is now done online before the first visit.")}),
+    "florist": _project14(
+        (("bouquets", "Customers of a flower shop order bouquets, which the workshop makes."),
+         ("shop", "Loyalty cards, complaints, and the arrival of fresh flowers.")),
+        ("Bouquets with flowers in stock", "The system SHALL pass on orders that can be made.", [
+            ("Flowers in stock", "WHEN a customer orders a bouquet AND the flowers are in stock THEN the system sends the order to the workshop")]),
+        ("Bouquets without flowers in stock", "The system SHALL propose something else when flowers are missing.", [
+            ("Flowers missing", "WHEN a customer orders a bouquet AND the flowers are not in stock THEN the system proposes a similar bouquet")]),
+        ("Finished bouquets", "The system SHALL get finished bouquets to the customers.", [
+            ("Bouquet ready", "WHEN the workshop finishes a bouquet THEN the system hands the bouquet to the driver")]),
+        ("Loyalty cards", "The system SHALL reward regular customers.", [
+            ("Card full", "WHEN a customer shows a loyalty card AND the card is full THEN the system gives the customer a free bouquet"),
+            ("Card not full", "WHEN a customer shows a loyalty card AND the card is not full THEN the system adds a stamp to the card")]),
+        ("Complaints", "The system SHALL act on complaints about wilted flowers.", [
+            ("Third complaint", "WHEN a customer complains about wilted flowers for the third time THEN the system informs the owner")]),
+        (("Fresh flowers", "The system SHALL announce the arrival of fresh flowers.", [
+            ("Truck unloading", "WHEN the flower truck is being unloaded THEN the system shows a notice at the counter")]),
+         " and does not send any order to the workshop"),
+        ("Wedding consultations", "The system SHALL take bookings for wedding consultations.", [
+            ("Florist free", "WHEN a couple asks for a consultation AND a florist is free that week THEN the system books the consultation"),
+            ("No florist free", "WHEN a couple asks for a consultation AND no florist is free that week THEN the system offers the couple the following week")]),
+        ("Pick-up", "The system SHALL keep bouquets for customers who fetch them.", [
+            ("Bouquet kept", "WHEN the workshop finishes a bouquet THEN the system keeps the bouquet in the cold room")]),
+        ("Busy weeks", "The system SHALL give nothing away in the busiest weeks.", [
+            ("Week before Mother's Day", "WHEN it is the week before Mother's Day THEN the system does not give any customer a free bouquet")]),
+        ("Subscriptions", "The system SHALL take orders for a weekly bouquet.", [
+            ("Address in the delivery area", "WHEN a customer asks for a weekly bouquet AND the address is in the delivery area THEN the system starts the subscription")]),
+        {"clean": ("add-wedding-consultations", "Couples ask for an hour with a florist before their wedding."),
+         "direct": ("keep-bouquets-for-pick-up", "Many customers want to fetch their bouquet themselves."),
+         "overlap": ("no-free-bouquets-in-busy-weeks", "Free bouquets were handed out in the busiest week of the year."),
+         "modified": ("no-orders-during-unloading", "Orders came into the workshop while everyone was unloading the truck."),
+         "gap": ("add-subscriptions", "Customers ask for a fresh bouquet every week."),
+         "removed": ("drop-similar-bouquet-proposals", "Customers did not like the bouquets that were proposed instead.")}),
+}
+
+
 def as_projects(specs: dict) -> dict:
     """Old OpenSpec-format specs as projects with a change: development data for the change check.
 
@@ -2551,7 +2812,7 @@ def as_projects(specs: dict) -> dict:
 
 # Folder -> the OpenSpec projects written into it, each with one change.
 # change_dev is made from eval9 and eval10, which have been read (E15, E16).
-PROJECT_SETS = {"eval11": PROJECTS11, "eval13": PROJECTS13,
+PROJECT_SETS = {"eval11": PROJECTS11, "eval13": PROJECTS13, "eval14": PROJECTS14,
                 "change_dev": as_projects({**SPECS9, **SPECS10})}
 
 

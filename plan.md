@@ -66,7 +66,8 @@ this order:
    scenarios. The idea: formalize the specs that exist once, save the result,
    and translate only the new requirements of a change into the saved
    symbols. That needs a new prompt for the read step, the most fragile one,
-   so it has to be measured against the full run on a set of its own.
+   so it has to be measured against the full run on a set of its own (the
+   plan is in 2.1).
 3. **The choice of symbols** (G1), which is where the remaining misses and
    false alarms come from:
    - two symbols for one outcome ("take the price", "refuse all payments").
@@ -86,6 +87,39 @@ this order:
      once (step 30): a gap the assumed facts rule out is marked doubtful, but
      the facts rarely say that one of the two always holds, so only 2 of 13
      were marked (T20, E16). This is a known limit now.
+
+### 2.1 The plan for checking a change without formalizing everything again (step 34, not built yet)
+
+**Why.** Today every change costs a full run: all the specs are formalized
+again, so that old and new rules share their symbols (5.10). For a project of
+100 scenarios and a change of 2, that is 50 times the work it could be, and
+the project cannot be larger than one read answer can hold.
+
+**How it would run.** `python -m speccheck --change openspec/changes/NAME --incremental`
+
+| Step | Who | What |
+|---|---|---|
+| 1 base | the LLM and Z3, once | the specs that exist are formalized as today, as one labelled document. The formal model is saved in `openspec/.speccheck/base.json`, with a fingerprint of the specs, and made again only when the specs change |
+| 2 new part | our code | from the change: the scenarios that are added or reworded (labels N1, N2, ...), those that are removed, those that stay |
+| 3 formalize the new part | the LLM and Z3 | only the new scenarios go through stage 1. The read step gets the symbols of the base and one more instruction: use an existing symbol wherever it fits, add a new one only for a fact that has none. Translations, links and questions are asked for the new rules only, the question about two outcomes for the pairs with a new rule |
+| 4 put together | our code | the rules of the base, without the removed and the reworded ones, plus the new rules; the facts of both |
+| 5 check, select, word | Z3, our code, the LLM | as today (5.10) |
+
+**What is new for the model:** one addition to the read prompt. Everything
+else is the same prompts, asked about fewer rules.
+
+**The risk.** The read step picks the symbols. A new rule that does not get
+the symbol of an old one cannot clash with it, and the conflict is missed.
+
+**How it is tested.** `eval14/` was written first: six new projects with six
+changes each (`clean`, `direct`, `overlap`, `modified`, `gap`, `removed`).
+The same cases are run both ways, and compared: planted conflicts and gaps
+found, false alarms, and the cost of a change (requests and tokens). For
+development, `eval11/` and `eval13/` in the new way, against their full runs.
+
+**The decision.** If the new way finds as much as the full run, it becomes
+the way `--change` works; if it finds less, it stays an option, with the
+difference written down.
 
 Small things that are open:
 
