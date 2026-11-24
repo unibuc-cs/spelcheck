@@ -1,6 +1,6 @@
-"""make_eval.py: writes the evaluation sets eval/ to eval11/, size/ and size2/. No LLM, no GPU.
+"""make_eval.py: writes the evaluation sets eval/ to eval12/, size/ and size2/. No LLM, no GPU.
 
-    python -m experiments.make_eval eval11     (only the sets named; all if none)
+    python -m experiments.make_eval eval12     (only the sets named; all if none)
 
 change_dev/ is development data for the change check: the OpenSpec-format
 specs of eval9/ and eval10/ as projects with a change (see as_projects).
@@ -29,6 +29,13 @@ design something; from then on it is development data:
              Same design as eval8/, except that 3 of the 6 specs name the
              condition of their two complementary requirements with two words
              ("passes" / "fails") instead of one and its negation.
+    eval12/  written 2026-11-24, after E17, before the questions about pairs of
+             outcomes. Same design as eval8/, but every spec has a direct AND
+             an overlap version, and all 12 planted conflicts say the opposite
+             outcome in other words ("switch the heater on" / "cut the power
+             to the heater"), two of them as a retention period ("delete the
+             payslips" / "keep every payslip for ten years"). That is the kind
+             of conflict the earlier sets missed.
 
 Each set has six small specs (new domains; half Kiro EARS, half OpenSpec), each
 in several versions. The defects are planted by rule, so the expected answer is
@@ -1664,6 +1671,159 @@ SPECS10 = {
     },
 }
 
+SPECS12 = {
+    "beds": {
+        "format": "ears",
+        "intro": "As a ward nurse, I want beds assigned to arriving patients, so that nobody waits in the corridor.",
+        "rules": [
+            "WHEN a patient arrives on the ward AND a bed is free, THE Bed System SHALL assign a bed to the patient and inform the nurse.",
+            "WHEN a patient arrives on the ward AND no bed is free, THE Bed System SHALL put the patient on the waiting list of the ward.",
+            "WHEN a patient is discharged, THE Bed System SHALL release the patient's bed and mark it for cleaning.",
+            "WHEN a bed is reported broken for the second time in a month, THE Bed System SHALL order a replacement.",
+            "WHEN a bed has been marked for cleaning for more than 2 hours, THE Bed System SHALL alert the cleaning team.",
+        ],
+        "variants": {
+            "direct": ({"add": "WHEN a patient is discharged, THE Bed System SHALL hold the patient's bed for 24 hours."},
+                       {"conflicts": [[3, 6]]}),
+            "overlap": ({"add": "WHILE the ward is under quarantine, THE Bed System SHALL give no bed to anyone."},
+                        {"conflicts": [[1, 6]]}),
+            # boundary: after exactly 2 hours only, or from 2 hours on?
+            "ambiguity1": ({"replace": {5: "WHEN a bed has been marked for cleaning for 2 hours, THE Bed System SHALL alert the cleaning team."}},
+                           {"kind": "boundary", "ambiguous": [5]}),
+            # "only": must a bed be assigned when one is free, or are patients merely not placed without one?
+            "ambiguity2": ({"replace": {1: "WHEN a patient arrives on the ward, THE Bed System SHALL assign a bed to the patient and inform the nurse only if a bed is free."}},
+                           {"kind": "only", "ambiguous": [1]}),
+            "gap": ({"remove": 2}, {"gaps": [1]}),
+        },
+        "covered": [1],
+    },
+    "timesheets": {
+        "format": "openspec",
+        "intro": "Employees record their working hours, and their managers approve them.",
+        "rules": [
+            ("Submission", "Complete week", "WHEN an employee submits a timesheet AND every working day has an entry THEN the system sends the timesheet to the manager"),
+            ("Submission", "Missing days", "WHEN an employee submits a timesheet AND a working day has no entry THEN the system returns the timesheet to the employee"),
+            ("Approval", "Approved", "WHEN a manager approves a timesheet THEN the system locks the timesheet and passes the hours to payroll"),
+            ("Reminders", "Third late timesheet", "WHEN an employee is late with the timesheet for the third time in a year THEN the system informs the department head"),
+            ("Overtime", "Long week", "WHEN a timesheet has more than 48 hours in a week THEN the system asks the manager for a comment"),
+        ],
+        "variants": {
+            "direct": ({"add": ("Corrections", "After approval", "WHEN a manager approves a timesheet THEN the system leaves the timesheet open for corrections by the employee")},
+                       {"conflicts": [[3, 6]]}),
+            "overlap": ({"add": ("Audits", "Under audit", "WHEN the department is under audit THEN the system withholds all timesheets from the managers")},
+                        {"conflicts": [[1, 6]]}),
+            # scope: (more than 48 hours or Sunday work) and under 18, or more than 48 hours or (Sunday work and under 18)?
+            "ambiguity1": ({"replace": {5: ("Overtime", "Long week", "WHEN a timesheet has more than 48 hours in a week or work on a Sunday and the employee is under 18 THEN the system asks the manager for a comment")}},
+                           {"kind": "and/or", "ambiguous": [5]}),
+            # "if": is the timesheet always locked, or only for employees paid by the hour?
+            "ambiguity2": ({"replace": {3: ("Approval", "Approved", "WHEN a manager approves a timesheet THEN the system locks the timesheet and passes the hours to payroll if the employee is paid by the hour")}},
+                           {"kind": "if", "ambiguous": [3]}),
+            "gap": ({"remove": 2}, {"gaps": [1]}),
+        },
+        "covered": [1],
+    },
+    "aquarium": {
+        "format": "ears",
+        "intro": "As the keeper of a public aquarium, I want the tank controller to look after water and feeding, so that the fish stay healthy.",
+        "rules": [
+            "WHEN the feeding time comes AND the feeder is not empty, THE Tank Controller SHALL release a portion of food into the tank.",
+            "WHEN the feeding time comes AND the feeder is empty, THE Tank Controller SHALL alert the keeper.",
+            "WHEN the water temperature falls below 24 degrees, THE Tank Controller SHALL switch the heater on.",
+            "WHEN the filter clogs for the third time in a week, THE Tank Controller SHALL ask for a new filter cartridge.",
+            "WHEN the water level is more than 5 centimetres below the mark, THE Tank Controller SHALL open the refill valve.",
+        ],
+        "variants": {
+            "direct": ({"add": "WHEN the water temperature falls below 24 degrees, THE Tank Controller SHALL cut the power to the heater."},
+                       {"conflicts": [[3, 6]]}),
+            "overlap": ({"add": "WHILE the tank is being treated with medicine, THE Tank Controller SHALL keep all food out of the tank."},
+                        {"conflicts": [[1, 6]]}),
+            # boundary: at exactly 5 centimetres only, or at 5 centimetres and more?
+            "ambiguity1": ({"replace": {5: "WHEN the water level is 5 centimetres below the mark, THE Tank Controller SHALL open the refill valve."}},
+                           {"kind": "boundary", "ambiguous": [5]}),
+            # "only": must food be released when the feeder is not empty, or is it merely held back otherwise?
+            "ambiguity2": ({"replace": {1: "WHEN the feeding time comes, THE Tank Controller SHALL release a portion of food into the tank only if the feeder is not empty."}},
+                           {"kind": "only", "ambiguous": [1]}),
+            "gap": ({"remove": 2}, {"gaps": [1]}),
+        },
+        "covered": [1],
+    },
+    "cloakroom": {
+        "format": "openspec",
+        "intro": "Guests of a theatre leave their coats at the cloakroom and get them back with a token.",
+        "rules": [
+            ("Hand-in", "Hook free", "WHEN a guest hands in a coat AND a hook is free THEN the system assigns a hook and prints a token"),
+            ("Hand-in", "Cloakroom full", "WHEN a guest hands in a coat AND no hook is free THEN the system sends the guest to the second cloakroom"),
+            ("Return", "Token shown", "WHEN a guest shows a token THEN the system releases the coat to the guest and deletes the token record"),
+            ("Lost tokens", "Second lost token", "WHEN a guest reports a lost token for the second time in a season THEN the system asks the guest for an identity card"),
+            ("Left behind", "Unclaimed coat", "WHEN a coat has been on its hook for more than 30 days THEN the system adds the coat to the list of unclaimed coats"),
+        ],
+        "variants": {
+            "direct": ({"add": ("Records", None, "The system SHALL keep every token record for two years.")},
+                       {"conflicts": [[3, 6]]}),
+            "overlap": ({"add": ("Performances", "Performance running", "WHEN a performance is running THEN the system holds back all coats")},
+                        {"conflicts": [[3, 6]]}),
+            # boundary: after exactly 30 days only, or from 30 days on?
+            "ambiguity1": ({"replace": {5: ("Left behind", "Unclaimed coat", "WHEN a coat has been on its hook for 30 days THEN the system adds the coat to the list of unclaimed coats")}},
+                           {"kind": "boundary", "ambiguous": [5]}),
+            # "if": is the coat always released, or only when the fee is paid?
+            "ambiguity2": ({"replace": {3: ("Return", "Token shown", "WHEN a guest shows a token THEN the system releases the coat to the guest and deletes the token record if the cloakroom fee is paid")}},
+                           {"kind": "if", "ambiguous": [3]}),
+            "gap": ({"remove": 2}, {"gaps": [1]}),
+        },
+        "covered": [1],
+    },
+    "turbine": {
+        "format": "ears",
+        "intro": "As the operator of a wind farm, I want each turbine to protect itself, so that faults and bad weather do no damage.",
+        "rules": [
+            "WHEN an operator sends the start command AND the turbine has no open fault, THE Turbine Controller SHALL release the brake and start the rotor.",
+            "WHEN an operator sends the start command AND the turbine has an open fault, THE Turbine Controller SHALL refuse the command and show the fault.",
+            "WHEN the wind direction changes by more than 10 degrees, THE Turbine Controller SHALL turn the nacelle into the wind.",
+            "WHEN the vibration sensor trips for the third time in a day, THE Turbine Controller SHALL call the maintenance crew.",
+            "WHEN the gearbox oil is hotter than 90 degrees, THE Turbine Controller SHALL lower the power output.",
+        ],
+        "variants": {
+            "direct": ({"add": "WHEN the wind direction changes by more than 10 degrees, THE Turbine Controller SHALL leave the nacelle where it is."},
+                       {"conflicts": [[3, 6]]}),
+            "overlap": ({"add": "WHILE ice is detected on the blades, THE Turbine Controller SHALL hold the rotor still."},
+                        {"conflicts": [[1, 6]]}),
+            # scope: (oil or generator hot) and full power, or oil hot or (generator hot and full power)?
+            "ambiguity1": ({"replace": {5: "WHEN the gearbox oil is hotter than 90 degrees or the generator is hotter than 120 degrees and the turbine runs at full power, THE Turbine Controller SHALL lower the power output."}},
+                           {"kind": "and/or", "ambiguous": [5]}),
+            # "only": must the rotor start when there is no open fault, or is it merely kept still otherwise?
+            "ambiguity2": ({"replace": {1: "WHEN an operator sends the start command, THE Turbine Controller SHALL release the brake and start the rotor only if the turbine has no open fault."}},
+                           {"kind": "only", "ambiguous": [1]}),
+            "gap": ({"remove": 2}, {"gaps": [1]}),
+        },
+        "covered": [1],
+    },
+    "payroll": {
+        "format": "openspec",
+        "intro": "A company pays its employees every month and gives them their payslips online.",
+        "rules": [
+            ("Monthly pay", "Bank details known", "WHEN the pay run starts AND the bank details of an employee are known THEN the system transfers the salary and publishes the payslip"),
+            ("Monthly pay", "Bank details missing", "WHEN the pay run starts AND the bank details of an employee are not known THEN the system informs the payroll clerk"),
+            ("Leavers", "Employee leaves", "WHEN an employee leaves the company THEN the system closes the employee's account and deletes the employee's payslips"),
+            ("Corrections", "Third correction", "WHEN the salary of an employee is corrected for the third time in a year THEN the system informs the head of finance"),
+            ("Bonuses", "Large bonus", "WHEN a bonus is higher than 5000 euros THEN the system asks a director for approval"),
+        ],
+        "variants": {
+            "direct": ({"add": ("Records", None, "The system SHALL keep every payslip for ten years.")},
+                       {"conflicts": [[3, 6]]}),
+            "overlap": ({"add": ("Monthly pay", "Unpaid leave", "WHEN an employee is on unpaid leave THEN the system pays the employee nothing")},
+                        {"conflicts": [[1, 6]]}),
+            # scope: (higher than 5000 or in shares) and a manager, or higher than 5000 or (in shares and a manager)?
+            "ambiguity1": ({"replace": {5: ("Bonuses", "Large bonus", "WHEN a bonus is higher than 5000 euros or paid in shares and the employee is a manager THEN the system asks a director for approval")}},
+                           {"kind": "and/or", "ambiguous": [5]}),
+            # "if": is the salary always transferred, or only for employees with electronic payslips?
+            "ambiguity2": ({"replace": {1: ("Monthly pay", "Bank details known", "WHEN the pay run starts AND the bank details of an employee are known THEN the system transfers the salary and publishes the payslip if the employee has asked for electronic payslips")}},
+                           {"kind": "if", "ambiguous": [1]}),
+            "gap": ({"remove": 2}, {"gaps": [1]}),
+        },
+        "covered": [1],
+    },
+}
+
 # eval11: OpenSpec projects, each with one change (see the module docstring).
 #   specs     capability -> (purpose, requirements): what exists before the change
 #   changes   version -> the change: its folder name, the "why" of its
@@ -2077,7 +2237,7 @@ PROJECTS11 = {
 # Folder -> the specs written into it.
 SETS = {"eval": SPECS, "eval2": SPECS2, "eval3": SPECS3, "eval4": SPECS4, "eval5": SPECS5,
         "eval6": SPECS6, "eval7": SPECS7, "eval8": SPECS8, "eval9": SPECS9, "eval10": SPECS10,
-        "size": SPECS_SIZE, "size2": SPECS_SIZE2}
+        "eval12": SPECS12, "size": SPECS_SIZE, "size2": SPECS_SIZE2}
 
 
 def as_projects(specs: dict) -> dict:
