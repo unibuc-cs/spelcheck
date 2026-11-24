@@ -2,6 +2,9 @@
 
     python -m experiments.make_eval eval11     (only the sets named; all if none)
 
+change_dev/ is development data for the change check: the OpenSpec-format
+specs of eval9/ and eval10/ as projects with a change (see as_projects).
+
 An evaluation set measures the formal check on specs that were NOT used to
 develop the prompts. Each set is held-out until its results are read to
 design something; from then on it is development data:
@@ -2075,8 +2078,62 @@ PROJECTS11 = {
 SETS = {"eval": SPECS, "eval2": SPECS2, "eval3": SPECS3, "eval4": SPECS4, "eval5": SPECS5,
         "eval6": SPECS6, "eval7": SPECS7, "eval8": SPECS8, "eval9": SPECS9, "eval10": SPECS10,
         "size": SPECS_SIZE, "size2": SPECS_SIZE2}
+
+
+def as_projects(specs: dict) -> dict:
+    """Old OpenSpec-format specs as projects with a change: development data for the change check.
+
+    The clean spec is what exists, in one spec file. Each planted version
+    becomes one change, a MODIFIED requirement in all cases: with one more
+    scenario (direct, overlap), with a scenario reworded (ambiguity), or with
+    one scenario fewer (gap). The old sets have no SHALL sentence under a
+    requirement's header, so a plain one is written. Versions that add a
+    requirement without a scenario are left out.
+    """
+    projects = {}
+    for name, spec in specs.items():
+        if spec["format"] != "openspec":
+            continue
+
+        def requirements(rules: list) -> dict:
+            """Requirement name -> (name, SHALL sentence, its scenarios), in the order of first use."""
+            grouped = {}
+            for requirement, scenario, text in rules:
+                grouped.setdefault(requirement, (requirement, f"The system SHALL handle {requirement.lower()}.", []))
+                grouped[requirement][2].append((scenario, text))
+            return grouped
+
+        changes = {}
+        for version, (change, expected) in spec["variants"].items():
+            if "add" in change and change["add"][1] is None:
+                continue
+            # The rules after the change, as main() makes them for the old sets.
+            rules = list(spec["rules"])
+            for number, rule in change.get("replace", {}).items():
+                rules[number - 1] = rule
+            if "add" in change:
+                rules.append(change["add"])
+            if "remove" in change:
+                del rules[change["remove"] - 1]
+            before, after = requirements(spec["rules"]), requirements(rules)
+            names = [f"{name}/{requirement}/{scenario}" for requirement, scenario, _ in rules]
+            changes[version] = {
+                "name": f"{name}-{version}",
+                "why": f"Development case: the '{version}' version of the spec '{name}', as a change.",
+                "delta": {name: {"MODIFIED": [after[key] for key in after if after[key] != before[key]]}},
+                # Requirement numbers (positions after the change) become scenario names.
+                "expected": {key: [[names[n - 1] for n in item] if isinstance(item, list) else names[item - 1]
+                                   for item in value] if isinstance(value, list) else value
+                             for key, value in expected.items()},
+            }
+        projects[name] = {"specs": {name: (spec["intro"], list(requirements(spec["rules"]).values()))},
+                          "changes": changes}
+    return projects
+
+
 # Folder -> the OpenSpec projects written into it, each with one change.
-PROJECT_SETS = {"eval11": PROJECTS11}
+# change_dev is made from eval9 and eval10, which have been read (E15, E16).
+PROJECT_SETS = {"eval11": PROJECTS11, "change_dev": as_projects({**SPECS9, **SPECS10})}
 
 
 def document(name: str, spec: dict, rules: list) -> str:

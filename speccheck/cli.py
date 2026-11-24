@@ -1,6 +1,7 @@
 """cli.py: runs the three stages on one spec file and writes the results.
 
     python -m speccheck SPEC.md --base-url http://localhost:18200/v1
+    python -m speccheck --change openspec/changes/NAME --base-url http://localhost:18200/v1
 
 Written next to the spec (or into --out):
 
@@ -9,6 +10,14 @@ Written next to the spec (or into --out):
     report.md       stage 3: the same, in plain language                       (explain.py)
 
 Options that change what is done:
+
+    --change DIR      check an OpenSpec change against the specs that exist
+                      (change.py), instead of one spec file. The change is
+                      applied to the specs, the result is written as merged.md
+                      and goes through the three stages; the report then shows
+                      the findings that involve an added or modified
+                      requirement. In findings.json every finding says so
+                      ("about_change"), and the others are not worded.
 
     --symbol-sets K   formalize K times, each time with its own symbols. Every
                       finding then says with how many of the K sets it was
@@ -29,6 +38,7 @@ import json
 import sys
 from pathlib import Path
 
+from .change import about_change, changed_rules, merge, report_lines
 from .checks import analyze, combine, find_scenarios
 from .explain import explain, judge, render
 from .formalize import formalize_sets
@@ -38,7 +48,8 @@ from .refine import confirm, refine, refined_text
 
 def main() -> None:
     parser = argparse.ArgumentParser(prog="speccheck", description="Check a requirements spec for conflicts, gaps and ambiguities.")
-    parser.add_argument("spec", type=Path, help="the requirements document (Markdown or plain text)")
+    parser.add_argument("spec", type=Path, nargs="?", help="the requirements document (Markdown or plain text)")
+    parser.add_argument("--change", type=Path, help="an OpenSpec change folder (openspec/changes/NAME) to check against the specs that exist")
     parser.add_argument("--base-url", help="OpenAI-compatible server, e.g. http://localhost:18200/v1")
     parser.add_argument("--model", help="model name (default: the model the server offers)")
     parser.add_argument("--samples", type=int, default=8, help="answers drawn per rule and for the domain facts")
@@ -50,10 +61,20 @@ def main() -> None:
     parser.add_argument("--review", action="store_true", help="also let the LLM review the text (off by default)")
     args = parser.parse_args()
 
-    spec_text = args.spec.read_text(encoding="utf-8")
-    title = args.spec.parent.name or args.spec.stem
-    out = args.out or args.spec.parent
+    if bool(args.spec) == bool(args.change):
+        parser.error("give a spec file, or --change with an OpenSpec change folder")
+    if args.change:
+        # The specs with the change applied, as one document with labelled scenarios.
+        merged = merge(args.change)
+        spec_text, title, out = merged.text, args.change.name, args.out or args.change
+    else:
+        merged = None
+        spec_text = args.spec.read_text(encoding="utf-8")
+        title = args.spec.parent.name or args.spec.stem
+        out = args.out or args.spec.parent
     out.mkdir(parents=True, exist_ok=True)
+    if merged:
+        (out / "merged.md").write_text(spec_text, encoding="utf-8")
     llm = LLM(args.base_url, args.model) if args.base_url else None
     if args.review and not llm:
         parser.error("--review needs the LLM: give --base-url")
@@ -76,6 +97,17 @@ def main() -> None:
     findings = combine([analyze(model) for model in models])
     scenarios = combine([find_scenarios(model) for model in models])
 
+    # A change: only the findings that involve one of its rules go on to stage
+    # 3. `others` are those among the requirements that existed before.
+    others = []
+    if merged:
+        changed = [changed_rules(model, merged) for model in models]
+        for finding in findings + scenarios:
+            finding["about_change"] = about_change(finding, models, changed)
+        others = [finding for finding in findings if not finding["about_change"]]
+        findings = [finding for finding in findings if finding["about_change"]]
+        scenarios = [scenario for scenario in scenarios if scenario["about_change"]]
+
     # Stage 3: findings -> plain language. Skipped when there is no LLM. The
     # defects are all worded; of the scenarios only the surprising ones stay.
     if llm:
@@ -88,9 +120,10 @@ def main() -> None:
         notes = confirm(refine(llm, spec_text, models[0]["rules"]), findings)
         findings += notes
         (out / "refined.md").write_text(refined_text(models[0]["rules"], notes, title), encoding="utf-8")
-    _save(out / "findings.json", findings)
+    _save(out / "findings.json", findings + others)
 
-    report = render(findings, models, title)
+    note, rules_table = report_lines(merged, changed[0], len(others)) if merged else ([], [])
+    report = render(findings, models, title, note) + "".join(f"{line}\n" for line in rules_table)
     (out / "report.md").write_text(report, encoding="utf-8")
     sys.stdout.reconfigure(encoding="utf-8")  # Windows consoles default to a legacy encoding
     print(report)

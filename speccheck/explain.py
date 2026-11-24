@@ -279,12 +279,15 @@ def judge(llm: LLM, scenarios: list[dict], models: list[dict], spec_text: str) -
     return sorted(worth_showing, key=lambda scenario: -scenario["surprise"])[:MAX_SCENARIOS]
 
 
-def render(findings: list[dict], models: list[dict], title: str) -> str:
+def render(findings: list[dict], models: list[dict], title: str, note: list[str] = ()) -> str:
     """Build the Markdown report. Works with or without the LLM wording.
 
     The report is the formal analysis: what the solver proved. If the optional
     review ran (refine.py), its notes follow as a second part, kept apart so
     the reader always knows how much to trust a finding.
+
+    note  lines to put under the summary line (the check of a change says
+          there which findings it shows, see change.report_lines)
     """
     solver = [f for f in findings if f["type"] != "review"]
     notes = [f for f in findings if f["type"] == "review"]
@@ -305,6 +308,7 @@ def render(findings: list[dict], models: list[dict], title: str) -> str:
         f"{counts['ambiguity']} ambiguity(ies)"
         + (f", {counts['scenario']} scenario(s) to confirm" if counts["scenario"] else "") + "."
         + (f" Review of the text: {len(notes)} note(s)." if notes else ""),
+        *([""] if note else []), *note,
     ]
 
     def section(level: str, number: int, kind: str, finding: dict, footer: str) -> list[str]:

@@ -34,6 +34,12 @@ What is counted, from the expected.json next to each spec (see make_eval.py):
 
 The score is given for several ways of running the check ("configurations"),
 each switching one part on or off. All are computed from the same LLM runs.
+
+A folder with an openspec/ folder in it is an OpenSpec project with one change
+(eval11, see make_eval.py). Its specs are merged with the change
+(speccheck/change.py) and the merged document is what gets formalized. Such
+cases are scored on their own (change_tables): only the findings that involve
+the change count, as in the report of `speccheck --change`.
 """
 
 import argparse
@@ -45,6 +51,7 @@ from pathlib import Path
 
 from speccheck import formalize as formalize_module
 from speccheck import probe as probe_module
+from speccheck.change import Merged, about_change, changed_rules, merge, rule_events
 from speccheck.checks import analyze, combine, find_gaps, settled
 from speccheck.formalize import formalize_sets, judge_second, second_reading
 from speccheck.llm import LLM
@@ -99,16 +106,31 @@ SAMPLES = 8
 def one_run(job: tuple) -> dict:
     """Formalize one spec once, with several symbol sets.
 
-    job = (base_url, spec_text, symbol_sets, temperature).
-    Returns {"models": [...]} or {"error": ...}. Runs in a worker process.
+    job = (base_url, spec, symbol_sets, temperature); spec is the entry that
+    collect() made for this spec. Returns {"models": [...]} or {"error": ...}.
+    Runs in a worker process.
     """
-    base_url, spec_text, symbol_sets, temperature = job
+    base_url, spec, symbol_sets, temperature = job
     try:
         # keep_samples: the raw LLM answers are saved too, for later study.
-        return {"models": formalize_sets(LLM(base_url), spec_text, symbol_sets,
-                                         temperature=temperature, keep_samples=True)}
+        models = formalize_sets(LLM(base_url), spec["text"], symbol_sets,
+                                temperature=temperature, keep_samples=True)
     except Exception as error:  # a failed run is a result too, not a reason to stop the batch
         return {"error": str(error)}
+    if "change" in spec:
+        # A change can only be scored if the scenario labels came back as rule
+        # ids (`speccheck --change` stops otherwise). The models are kept anyway.
+        try:
+            for model in models:
+                changed_rules(model, merged_of(spec))
+        except ValueError as error:
+            return {"error": str(error), "unlabelled": models}
+    return {"models": models}
+
+
+def merged_of(spec: dict) -> Merged:
+    """The merged document of a change case, back from what collect() saved."""
+    return Merged(text=spec["text"], **spec["change"])
 
 
 def collect(base_url: str, specs_root: Path, runs: int, symbol_sets: int, temperature: float) -> dict:
@@ -117,13 +139,19 @@ def collect(base_url: str, specs_root: Path, runs: int, symbol_sets: int, temper
     specs = {}
     for expected_file in sorted(specs_root.glob("*/expected.json")):
         folder = expected_file.parent
+        expected = json.loads(expected_file.read_text())
+        if (folder / "openspec").is_dir():  # an OpenSpec project with one change
+            change_dir = next(path for path in sorted((folder / "openspec" / "changes").iterdir())
+                              if path.is_dir())
+            merged = merge(change_dir)._asdict()
+            specs[folder.name] = {"text": merged.pop("text"), "change": merged, **expected}
+            continue
         spec_file = next(p for p in sorted(folder.glob("*.md")) if p.name not in OUTPUT_FILES)
-        specs[folder.name] = {"text": spec_file.read_text(encoding="utf-8"),
-                              **json.loads(expected_file.read_text())}
+        specs[folder.name] = {"text": spec_file.read_text(encoding="utf-8"), **expected}
 
     jobs = [name for name in specs for _ in range(runs)]
     with ProcessPoolExecutor(max_workers=32) as pool:
-        results = list(pool.map(one_run, [(base_url, specs[name]["text"], symbol_sets, temperature)
+        results = list(pool.map(one_run, [(base_url, specs[name], symbol_sets, temperature)
                                           for name in jobs]))
     return {
         "model": llm.model,
@@ -207,12 +235,8 @@ def without_repair(model: dict) -> dict:
     return {**model, "background": background}
 
 
-def reported(run: dict, config: dict) -> tuple[set, set]:
-    """What one run reports under one configuration.
-
-    Returns (conflicts, ambiguous rules). A conflict is a sorted tuple of rule
-    numbers (position in the document), an ambiguous rule is its number.
-    """
+def findings_of(run: dict, config: dict) -> tuple[list[dict], list[dict]]:
+    """The formal models of one run as a configuration uses them, and what the solver finds in them."""
     models = run["models"][:config["sets"]]
     if not config["facts"]:
         models = [{**model, "background": []} for model in models]
@@ -223,6 +247,26 @@ def reported(run: dict, config: dict) -> tuple[set, set]:
                                 link_checks=config["link_checks"], settle=config["settle"],
                                 second=config["second"], readings=False)
                         for model in models])
+    return models, findings
+
+
+def is_doubtful(finding: dict) -> bool:
+    """Is the finding marked as a likely artefact (checks.py)?"""
+    return "doubted_by" in finding or "simultaneous_events" in finding
+
+
+def kind(name: str) -> str:
+    """The version of a spec, from its folder name: clean, direct, overlap, ambiguity, gap ..."""
+    return name.rsplit("_", 1)[-1].rstrip("0123456789")
+
+
+def reported(run: dict, config: dict) -> tuple[set, set]:
+    """What one run reports under one configuration.
+
+    Returns (conflicts, ambiguous rules). A conflict is a sorted tuple of rule
+    numbers (position in the document), an ambiguous rule is its number.
+    """
+    models, findings = findings_of(run, config)
     number = {r["id"]: index for index, r in enumerate(models[0]["rules"], start=1)}
 
     def counts(finding: dict) -> bool:
@@ -230,12 +274,9 @@ def reported(run: dict, config: dict) -> tuple[set, set]:
         found = int(finding["support"].split("/")[0]) if "support" in finding else 1
         return found * 2 > len(models) if config["rule"] == "majority" else True
 
-    def doubtful(finding: dict) -> bool:
-        return "doubted_by" in finding or "simultaneous_events" in finding
-
     conflicts = {tuple(sorted(number[r] for r in f["rules"])) for f in findings
                  if f["type"] == "conflict" and counts(f)
-                 and (config["doubtful"] or not doubtful(f))}
+                 and (config["doubtful"] or not is_doubtful(f))}
     ambiguous = {number[f["rule"]] for f in findings if f["type"] == "ambiguity" and counts(f)}
     return conflicts, ambiguous
 
@@ -338,14 +379,200 @@ def gap_scores(data: dict) -> list[str]:
     return lines
 
 
+# The configurations under which a change is scored (labels as in CONFIGURATIONS).
+CHANGE_CONFIGURATIONS = ("default (1 symbol set)", "doubtful conflicts set aside",
+                         "without assumed facts and links")
+
+
+def change_run(spec: dict, run: dict, config: dict) -> dict:
+    """What one run reports about one change, and what was expected of it.
+
+    Only the findings that involve the change count (change.about_change), as
+    in the report of `speccheck --change`. Scenarios are named in expected.json
+    by "capability/requirement/scenario"; here they become rule labels.
+
+    Returns sets of rule labels (a conflict is a frozenset of them):
+        conflicts, expected     conflicts about the change; those planted
+        allowed                 conflicts that are a fair consequence of a planted
+                                ambiguity: neither required nor counted against the tool
+        left_out                conflicts among the existing rules alone
+        gaps                    the gaps about the change (findings)
+        gap_found, gap_planted  planted gaps: found, all
+        false_gaps              covered scenarios with a gap on their event
+        flags, ambiguous        rules of the change flagged as ambiguous; those planted
+        unlabelled              rules without a label, and those of them counted as changed
+    """
+    merged = merged_of(spec)
+    label = {f"{s['capability']}/{s['requirement']}/{s['scenario']}": name
+             for name, s in merged.scenarios.items()}
+    models, findings = findings_of(run, config)
+    changed = [changed_rules(model, merged) for model in models]
+    mine = [finding for finding in findings if about_change(finding, models, changed)]
+
+    def conflicts(some: list[dict]) -> set:
+        return {frozenset(f["rules"]) for f in some
+                if f["type"] == "conflict" and (config["doubtful"] or not is_doubtful(f))}
+
+    gaps = [f for f in mine if f["type"] == "gap" and (config["doubtful"] or not is_doubtful(f))]
+    vocab, rules = Vocabulary(models[0]["symbols"]), {rule["id"]: rule for rule in models[0]["rules"]}
+
+    def has_gap(name: str) -> bool:
+        """Is there a gap about the change in which the event of this scenario happens?"""
+        return any(gap["event"] in rule_events(vocab, rules[label[name]]) for gap in gaps)
+
+    extra = [rule["id"] for rule in models[0]["rules"] if rule["id"] not in merged.scenarios]
+    return {
+        "conflicts": conflicts(mine),
+        "expected": {frozenset(label[name] for name in pair) for pair in spec.get("conflicts", [])},
+        "allowed": {frozenset(label[name] for name in pair) for pair in spec.get("allowed", [])},
+        "left_out": conflicts(findings) - conflicts(mine),
+        "gaps": gaps,
+        "gap_found": {label[name] for name in spec.get("gaps", []) if has_gap(name)},
+        "gap_planted": {label[name] for name in spec.get("gaps", [])},
+        "false_gaps": {label[name] for name in spec.get("covered", []) if has_gap(name)},
+        "flags": {f["rule"] for f in mine if f["type"] == "ambiguity"},
+        "ambiguous": {label[name] for name in spec.get("ambiguous", [])},
+        "unlabelled": (extra, [rule for rule in extra if rule in changed[0]]),
+    }
+
+
+def change_tables(data: dict) -> str:
+    """Score the runs of OpenSpec changes (see change_run); build the Markdown summary."""
+    ok_runs = [run for run in data["runs"] if "models" in run]
+    configs = [(label, {**DEFAULT, **change}) for label, change in CONFIGURATIONS
+               if label in CHANGE_CONFIGURATIONS]
+    kinds = sorted({kind(name) for name, spec in data["specs"].items() if spec.get("conflicts")})
+
+    summary = ["| Configuration | Planted conflicts found | " + " | ".join(kinds)
+               + " | Clean changes with a conflict about the change | Other conflicts about the change "
+                 "| Conflicts among existing rules, not shown |",
+               "|---|---|" + "---|" * len(kinds) + "---|---|---|"]
+    gap_rows = ["| Configuration | Planted gaps found | gap | narrowed "
+                "| Clean changes with a gap on a covered event | Gaps about the change, all |",
+                "|---|---|---|---|---|---|"]
+    for label, config in configs:
+        found, total = Counter(), Counter()   # planted conflicts and gaps, by kind of change
+        alarms = false_gap_runs = clean = other = left_out = all_gaps = 0
+        for run in ok_runs:
+            result, version = change_run(data["specs"][run["spec"]], run, config), kind(run["spec"])
+            found[version] += len(result["expected"] & result["conflicts"]) + len(result["gap_found"])
+            total[version] += len(result["expected"]) + len(result["gap_planted"])
+            extra = result["conflicts"] - result["expected"] - result["allowed"]
+            other += len(extra)
+            left_out += len(result["left_out"])
+            all_gaps += len(result["gaps"])
+            if version == "clean":
+                clean += 1
+                alarms += bool(extra)
+                false_gap_runs += bool(result["false_gaps"])
+        summary.append(
+            f"| {label} | {sum(found[k] for k in kinds)}/{sum(total[k] for k in kinds)} | "
+            + " | ".join(f"{found[k]}/{total[k]}" for k in kinds)
+            + f" | {alarms}/{clean} | {other} | {left_out} |")
+        if "facts" not in dict(CONFIGURATIONS)[label]:  # a gap needs no fact
+            gap_rows.append(
+                f"| {label.replace('conflicts', 'findings')} "
+                f"| {found['gap'] + found['narrowed']}/{total['gap'] + total['narrowed']} "
+                f"| {found['gap']}/{total['gap']} | {found['narrowed']}/{total['narrowed']} "
+                f"| {false_gap_runs}/{clean} | {all_gaps} |")
+
+    # For the default configuration: ambiguity flags, labels, and every case.
+    label, config = configs[0]
+    results = {name: [change_run(spec, run, config) for run in ok_runs if run["spec"] == name]
+               for name, spec in data["specs"].items()}
+    every = [result for runs in results.values() for result in runs]
+    planted = sum(len(result["ambiguous"]) for result in every)
+    extra_runs = sum(bool(result["unlabelled"][0]) for result in every)
+    notes = [
+        f"- Ambiguity flags on rules of the change: {sum(len(r['flags'] - r['ambiguous']) for r in every)} "
+        f"where nothing was planted"
+        + (f"; planted ambiguities found: {sum(len(r['flags'] & r['ambiguous']) for r in every)}/{planted}"
+           if planted else "") + ".",
+        f"- Labels: {len(ok_runs)} of {len(data['runs'])} runs returned every scenario label as a rule id. "
+        f"In {extra_runs} of them the read step also made rules without a label "
+        f"({sum(len(r['unlabelled'][0]) for r in every)} rules, "
+        f"{sum(len(r['unlabelled'][1]) for r in every)} counted as part of the change).",
+    ]
+
+    def names(groups) -> str:
+        return ", ".join(sorted("[" + ", ".join(sorted(group, key=lambda r: (len(r), r))) + "]"
+                                for group in groups))
+
+    details = ["| Case | Runs | Expected, found in | Other conflicts about the change (rules: runs) "
+               "| Gaps about the change | Conflicts not shown |",
+               "|---|---|---|---|---|---|"]
+    for name, runs in results.items():
+        hits, extras = Counter(), Counter()
+        for result in runs:
+            hits.update(names([group]) for group in result["expected"] & result["conflicts"])
+            hits.update(f"gap {rule}" for rule in result["gap_found"])
+            extras.update(names([group])
+                          for group in result["conflicts"] - result["expected"] - result["allowed"])
+        wanted = ([names([group]) for group in runs[0]["expected"]]
+                  + [f"gap {rule}" for rule in runs[0]["gap_planted"]]) if runs else []
+        details.append(
+            f"| {name} | {len(runs)} | "
+            + (", ".join(f"{what}: {hits[what]}/{len(runs)}" for what in wanted) or "nothing expected")
+            + " | " + (", ".join(f"{what}: {n}" for what, n in sorted(extras.items())) or "none")
+            + f" | {sum(len(result['gaps']) for result in runs)}"
+            + f" | {sum(len(result['left_out']) for result in runs)} |")
+
+    return "\n".join([
+        *heading(data, "Evaluation of the change check"),
+        "Only findings that involve a rule of the change count; see change_run in evaluate.py.",
+        "",
+        "## Conflicts, by configuration",
+        "",
+        *summary,
+        "",
+        "## Gaps",
+        "",
+        *gap_rows,
+        "",
+        f"## Ambiguities and labels ({label})",
+        "",
+        *notes,
+        "",
+        f"## By case ({label})",
+        "",
+        *details,
+    ]) + "\n"
+
+
 def tables(data: dict) -> str:
-    """Score all saved runs under every configuration; build the Markdown summary."""
+    """Score all saved runs; build the Markdown summary.
+
+    Plain specs and OpenSpec changes are scored apart (spec_tables,
+    change_tables); a folder may hold both, as specs/ does.
+    """
+    def part(wanted: bool) -> dict:
+        specs = {name: spec for name, spec in data["specs"].items() if ("change" in spec) == wanted}
+        return {**data, "specs": specs, "runs": [run for run in data["runs"] if run["spec"] in specs]}
+
+    plain, changes = part(False), part(True)
+    return "\n".join(([spec_tables(plain)] if plain["specs"] else [])
+                     + ([change_tables(changes)] if changes["specs"] else []))
+
+
+def heading(data: dict, what: str) -> list[str]:
+    """The first lines of a summary: how the runs were made, and how many could be scored."""
+    scored = sum("models" in run for run in data["runs"])
+    failed = len(data["runs"]) - scored
+    return [
+        # Files written before the option existed were all made at 0.7.
+        f"# {what} ({data['runs_per_spec']} runs per spec, {data['symbol_sets']} symbol sets per run, "
+        f"temperature {data.get('temperature', 0.7)}, model {data['model']}, {data['date']})",
+        "",
+        f"{len(data['specs'])} specs, {scored} runs scored" + (f", {failed} failed" if failed else "")
+        + (f"; second reader: {data['second_model']}" if "second_model" in data else "") + ".",
+        "",
+    ]
+
+
+def spec_tables(data: dict) -> str:
+    """Score the runs of plain specs under every configuration; build the Markdown summary."""
     def groups(spec: dict, key: str) -> set:
         return {tuple(sorted(group)) for group in spec.get(key, [])}
-
-    def kind(name: str) -> str:
-        """The version of a spec, from its folder name: clean, direct, overlap, ambiguity."""
-        return name.rsplit("_", 1)[-1].rstrip("0123456789")
 
     ok_runs = [run for run in data["runs"] if "models" in run]
     summary = [
@@ -428,15 +655,8 @@ def tables(data: dict) -> str:
                 total[spec["kind"]] += len(spec["ambiguous"])
         by_kind.append(f"| {label_k} | " + " | ".join(f"{found[k]}/{total[k]}" for k in kinds) + " |")
 
-    failed = len(data["runs"]) - len(ok_runs)
     return "\n".join([
-        # Files written before the option existed were all made at 0.7.
-        f"# Evaluation ({data['runs_per_spec']} runs per spec, {data['symbol_sets']} symbol sets per run, "
-        f"temperature {data.get('temperature', 0.7)}, model {data['model']}, {data['date']})",
-        "",
-        f"{len(data['specs'])} specs, {len(ok_runs)} runs scored" + (f", {failed} failed" if failed else "")
-        + (f"; second reader: {data['second_model']}" if "second_model" in data else "") + ".",
-        "",
+        *heading(data, "Evaluation"),
         "## By configuration",
         "",
         *summary,
