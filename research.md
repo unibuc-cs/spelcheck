@@ -434,6 +434,11 @@ Planted ambiguities on the held-out `eval4/` (E9), 9 per kind:
   runs).
 - **The specs of a project must fit one read answer**, about 140 scenarios
   (3.12), also for the saved model.
+- **The saved model lasts until the specs change.** Archiving a change
+  changes them, and the next check then pays one full run again. So
+  `--incremental` saves work for several changes against the same specs, or
+  for one change checked many times, not for a single check after every
+  archive. Carrying the model of the archived change over is not built.
 - **A scenario with new words is the change's, whatever the words are.** If
   its old words gave the same finding, the finding is still shown as the
   change's (2 runs of E19).

@@ -777,9 +777,21 @@ With `--incremental`:
 | 3 formalize the new part | the LLM and Z3 (`formalize(base=...)`) | the read step sees the symbols of the base before the document and is told to use them where they fit (`READ_MORE`). Translations, links and the questions of step 6 are asked for the new rules only; the question about two outcomes for the pairs with a new rule; the facts question again only if a symbol was added |
 | 4 as before | Z3, our code, the LLM | removed rules set apart, the checks, the selection, the wording |
 
+- it is an option and off by default: on held-out `eval14/` it found 50 of
+  the 54 planted conflicts that the full run found (and the same 36 of 36
+  gaps), for 9 requests to the LLM for a change against 68 (research.md 2.4)
+- the saved model records what it was made from: a fingerprint of the
+  labelled text of the specs, and the name of the model. It is used while
+  both are the same and made again, by one full run, when one is not: a spec
+  was edited, a change was archived into the specs, another model is asked.
+  Deleting the file forces it. The run says on the error stream which of the
+  two happened (`cli._base_model`)
+- so it saves work when several changes are checked against the same specs,
+  or one change many times. The model of an archived change is not carried
+  over into the next base; that is not built
 - a change that only removes asks the LLM nothing before the wording
-- the second reader (5.8) and several symbol sets (5.6) are not used this way
-- what it finds and what it costs, next to the full run: research.md 2.4
+- the second reader (5.8), several symbol sets (5.6) and the review are not
+  available this way; the command line refuses the combination
 
 **Kept simple:**
 - if a label does not come back as a rule id, the tool stops: it could not

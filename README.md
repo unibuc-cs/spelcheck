@@ -69,8 +69,9 @@ Where the project stands:
 - for a change to specs that already exist, it found all 108 conflicts and
   107 of the 108 gaps we had planted in 102 changes it was not built on, among
   them every gap that a removed requirement opens. A cheaper way to check a
-  change, on a saved model of the specs, costs about a seventh and found 50 of
-  54 conflicts where the full way found 54.
+  change, the option `--incremental`, is off by default: it costs about a
+  seventh and found 50 of 54 conflicts where the full way found 54
+  ([The two ways to check a change](#the-two-ways-to-check-a-change)).
 
 | Read next | For |
 |---|---|
@@ -533,15 +534,49 @@ patient's list (`experiments/examples/visitors_removed`):
 > is not on the patient's visitor list attempts to check in. This gap exists
 > because the previous rule that handled this specific scenario was removed.
 
-By default the whole merged document is formalized again for every change.
-With `--incremental` the specs that exist are formalized once, and that formal
-model is saved in `openspec/.speccheck/base.json` until the specs change. For
-a change, only its new scenarios are formalized (labels N1, N2, ...), and the
-LLM is shown the symbols of the saved model and told to use them. A change
-then costs a few requests, not a run over the whole project: on 36 changes
-checked both ways, 9 requests against 68. This cheaper way found 50 of the 54
-planted conflicts that the full run found, so the full run is the default
-(a saved run: `experiments/examples/auth_incremental`).
+### The two ways to check a change
+
+There are two ways to run the check. The default is the full run. The option
+`--incremental` is cheaper and finds a little less, so it is off unless you
+ask for it.
+
+| | Default: `--change DIR` | Option: `--change DIR --incremental` |
+|---|---|---|
+| What the LLM formalizes for a change | all the specs, with the change applied | only the scenarios that the change adds or rewords (labels N1, N2, ...) |
+| How old and new rules get the same symbols | they are read together, in one document | the specs were formalized once before; the read step is shown those symbols and told to use them |
+| Requests to the LLM for one change (measured, `eval14/`) | 68 | 9; none for a change that only removes |
+| Cost that comes once | none | one full run of the specs that exist, about 61 requests |
+| Planted conflicts found (`eval14/`, the same 36 changes) | 54 of 54 | 50 of 54 |
+| Planted gaps found | 36 of 36 | 36 of 36 |
+| Clean changes with something reported about them | 0 of 18 | 0 of 18 |
+| Files written | `merged.md`, `formal.json`, `findings.json`, `report.md` | `new.md` in place of `merged.md`, and the saved model, `openspec/.speccheck/base.json` |
+| Cannot be combined with | | `--symbol-sets`, `--second-base-url`, `--review` |
+
+What to know before using `--incremental`:
+
+- **The saved model.** The first run formalizes the specs under
+  `openspec/specs` and saves their formal model in
+  `openspec/.speccheck/base.json`. Later runs use that file, and say so on the
+  error stream ("using the saved model of the specs").
+- **When it is made again.** The file records what it was made from: a
+  fingerprint of the text of the specs, and the name of the model. If either
+  is different, the specs are formalized again, by one full run. That happens
+  after you edit a spec, after a change is archived into the specs, and when
+  you ask another model. To force it, delete the file.
+- **So it pays off** when several changes are checked against the same specs,
+  or when one change is checked again and again while it is written. A single
+  check after every archived change costs a full run each time, as the
+  default does.
+- **What it misses.** In the test, the 4 conflicts it missed were two new
+  rules that were rejected because their translations disagreed. One was "WHEN
+  a person is younger than 17 THEN the system does not create any learner
+  file": read without the rest of the document, it was given the event "a
+  person registers" as its trigger, which it does not name. A finding it does
+  report is as sure as one of the full run.
+- **Keep the file out of version control** if the specs are edited by several
+  people; it is a cache. This repository ignores `.speccheck/`.
+
+A saved run of the option is in `experiments/examples/auth_incremental`.
 
 The steps are in [GUIDE.md, part 5](GUIDE.md#5-checking-a-change-against-the-specs-that-exist).
 
@@ -571,7 +606,7 @@ export OPENAI_API_KEY=<content of ~/speccheck/api_key on the cluster>
 python -m speccheck path/to/your_spec.md --base-url http://localhost:18200/v1
 python -m speccheck path/to/your_spec.md --base-url http://localhost:18200/v1 --symbol-sets 3
 python -m speccheck --change path/to/openspec/changes/<name> --base-url http://localhost:18200/v1
-python -m speccheck --change path/to/openspec/changes/<name> --base-url http://localhost:18200/v1 --incremental
+python -m speccheck --change path/to/openspec/changes/<name> --base-url http://localhost:18200/v1 --incremental   # the cheaper way, see "The two ways to check a change"
 ```
 
 **With the second model.** It is optional and finds more ambiguities. It needs
@@ -737,7 +772,7 @@ research.md, section 5.
 | `speccheck/change.py` | for `--change`: applies an OpenSpec change to the specs, labels the scenarios, sets apart what the change removes, selects the findings about the change |
 | `speccheck/refine.py` | optional LLM review, off by default |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the vLLM servers on the cluster: the main model, the second model |
-| `tests/` | 69 tests of everything that needs no LLM |
+| `tests/` | 70 tests of everything that needs no LLM |
 | `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10` and `eval12`, `size` and `size2`; for the change check `eval11`, `eval13`, `eval14` and `change_dev`; and the script that writes them |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs and scores the evaluation; re-scores saved runs without a GPU |

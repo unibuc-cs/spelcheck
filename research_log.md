@@ -2726,6 +2726,13 @@ the full run needs 68, and its findings were never wrong where the full
 run's were right. `eval14/` is development data from now on; the next design
 needs `eval15/`.
 
+**After the test** (the same day, no effect on the numbers above): the saved
+model now also records the name of the LLM and is made again for another
+one; a run says on the error stream whether it used the saved model or made
+it; and the command line refuses `--incremental` together with
+`--symbol-sets`, `--second-base-url` or `--review`. README.md has a section
+on the two ways, "The two ways to check a change".
+
 **Raw data.** [experiments/results/E20_eval14_full.json](experiments/results/E20_eval14_full.json)
 and E20_eval14_incremental.json, each with its table.
 

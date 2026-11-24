@@ -826,7 +826,25 @@ the whole project. With `--incremental` it goes another way:
 Run on the same 36 changes, this way asked the model about a seventh of what
 the full way asks, and it found 50 of the 54 conflicts that the full way
 found (6.2). So it is an option for when the cost matters, and the full way
-stays the default.
+stays the default:
+
+| | Default | With `--incremental` |
+|---|---|---|
+| formalized for a change | all the specs, with the change applied | only its new scenarios |
+| requests to the model for a change | 68 | 9, after one full run for the specs |
+| planted conflicts found, of 54 | 54 | 50 |
+| planted gaps found, of 36 | 36 | 36 |
+
+Three things to know about the saved model:
+
+- It records what it was made from: the text of the specs, and the name of
+  the model. When either is different, it is made again by one full run. So
+  it is made again after a spec is edited, and after a change is archived
+  into the specs. Deleting the file forces it.
+- It therefore pays off when several changes are checked against the same
+  specs, or when one change is checked many times while it is written.
+- It cannot be combined with several symbol sets (3.4) or with the second
+  model (3.1).
 
 One more thing to know about the whole check: inside a requirement that a
 change rewrites, the scenarios are compared one by one. A scenario with the
@@ -1157,7 +1175,7 @@ The folders:
 speccheck/          the tool (the 8 files above; refine.py is the review that is switched off)
 specs/              3 small specs the prompts were developed on, with their saved output,
                     and auth_change, the example of part 5
-tests/              69 tests that need no LLM
+tests/              70 tests that need no LLM
 experiments/
   sets/             the 11 evaluation sets, eval to eval10 and eval12 (297 spec versions), two long specs,
                     and for the change check eval11, eval13, eval14 and change_dev (old specs as projects)

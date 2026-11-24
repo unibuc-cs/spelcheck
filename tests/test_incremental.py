@@ -196,3 +196,41 @@ def test_a_change_that_only_removes_has_nothing_new(tmp_path: Path):
                    on_base=True)
     assert merged.text == ""
     assert merged.scenarios["R4"]["status"] == "removed"
+
+
+# ------------------------------------------------------------ the saved model of the specs
+
+
+def test_the_model_of_the_specs_is_made_once_and_again_when_they_change(tmp_path: Path, capsys):
+    """cli._base_model: saved next to the specs, reused, and made again for other specs or another model."""
+    from speccheck.cli import _base_model
+
+    project(tmp_path, {})
+    openspec = tmp_path / "openspec"
+    rule = {"reading": "", "antecedent": "customer_pays", "consequent": "order_confirmed"}
+    llm = FakeLLM(read={"rules": [{"id": f"R{n}", "text": f"rule {n}", "trigger": ""} for n in range(1, 5)],
+                        "symbols": [symbol("customer_pays", event=True), symbol("order_confirmed")]},
+                  translations={f"R{n}": rule for n in range(1, 5)})
+    llm.model = "model-a"
+
+    first = _base_model(llm, openspec, samples=2, temperature=0.7)
+    assert [r["id"] for r in first["rules"]] == ["R1", "R2", "R3", "R4"]
+    assert (openspec / ".speccheck" / "base.json").exists()
+    asked = len(llm.calls)
+
+    # The same specs and the same model: nothing is asked.
+    assert _base_model(llm, openspec, samples=2, temperature=0.7) == first
+    assert len(llm.calls) == asked
+    assert "using the saved model" in capsys.readouterr().err
+
+    # Another model: made again.
+    llm.model = "model-b"
+    _base_model(llm, openspec, samples=2, temperature=0.7)
+    assert len(llm.calls) == 2 * asked
+
+    # The specs were edited: made again.
+    spec = openspec / "specs" / "shop" / "spec.md"
+    spec.write_text(spec.read_text(encoding="utf-8").replace("refunds the price", "refunds the price in full"),
+                    encoding="utf-8")
+    _base_model(llm, openspec, samples=2, temperature=0.7)
+    assert len(llm.calls) == 3 * asked

@@ -21,12 +21,21 @@ Options that change what is done:
                       ("about_change"), and the others are not worded.
                       merged.md and formal.json also hold what the change
                       removes (labels X1, X2, ...); the checks leave it out.
-    --incremental     with --change: do not formalize all the specs again.
-                      The specs that exist are formalized once, and that
-                      formal model is kept in openspec/.speccheck/base.json
-                      until the specs change. For the change, only its new
-                      scenarios are formalized (written as new.md), with the
-                      symbols of that model.
+    --incremental     with --change: the cheaper way, off by default. The
+                      specs that exist are formalized once, and that formal
+                      model is kept in openspec/.speccheck/base.json. For
+                      the change, only its new scenarios are formalized
+                      (written as new.md, not merged.md), with the symbols
+                      of that model. A change then costs about a seventh of
+                      a full run, and a change that only removes costs
+                      nothing before the wording. It finds a little less: on
+                      the held-out eval14, 50 of the 54 planted conflicts
+                      that the full run found (research_log.md, E20).
+                      The saved model is made again, by one full run, when
+                      the text of the specs has changed (so also after a
+                      change was archived into them) or when another model
+                      is used. Delete the file to force that. Not with
+                      --symbol-sets, --second-base-url or --review.
 
     --symbol-sets K   formalize K times, each time with its own symbols. Every
                       finding then says with how many of the K sets it was
@@ -61,7 +70,9 @@ def main() -> None:
     parser.add_argument("spec", type=Path, nargs="?", help="the requirements document (Markdown or plain text)")
     parser.add_argument("--change", type=Path, help="an OpenSpec change folder (openspec/changes/NAME) to check against the specs that exist")
     parser.add_argument("--incremental", action="store_true",
-                        help="with --change: formalize the specs that exist once, and for the change only its new scenarios")
+                        help="with --change: the cheaper way, off by default. The specs that exist are formalized "
+                             "once and kept in openspec/.speccheck/base.json; for the change, only its new "
+                             "scenarios are formalized. Finds a little less than the full run (README.md)")
     parser.add_argument("--base-url", help="OpenAI-compatible server, e.g. http://localhost:18200/v1")
     parser.add_argument("--model", help="model name (default: the model the server offers)")
     parser.add_argument("--samples", type=int, default=8, help="answers drawn per rule and for the domain facts")
@@ -75,8 +86,11 @@ def main() -> None:
 
     if bool(args.spec) == bool(args.change):
         parser.error("give a spec file, or --change with an OpenSpec change folder")
-    if args.incremental and (not args.change or args.symbol_sets > 1):
-        parser.error("--incremental goes with --change, and with one symbol set")
+    if args.incremental and not args.change:
+        parser.error("--incremental goes with --change")
+    if args.incremental and (args.symbol_sets > 1 or args.second_base_url or args.review):
+        parser.error("--incremental cannot be combined with --symbol-sets, --second-base-url or --review: "
+                     "it formalizes only the new scenarios of the change, once")
     if args.change:
         # The specs with the change applied, as one document with labelled
         # scenarios; with --incremental, only the new scenarios of the change.
@@ -158,20 +172,26 @@ def main() -> None:
 def _base_model(llm: LLM, openspec_dir: Path, samples: int, temperature: float) -> dict:
     """The formal model of the specs that exist (openspec/specs), made once and then kept.
 
-    It is saved in openspec/.speccheck/base.json together with a fingerprint
-    of the specs, and made again when the specs are not the same any more.
+    It is saved in openspec/.speccheck/base.json with what it was made from:
+    a fingerprint of the specs (of their labelled text) and the name of the
+    model. It is used as long as both are the same, and made again, by one
+    full run, when one of them is not: the specs were edited, a change was
+    archived into them, or another model is asked. Which of the two happened
+    is said on the error stream, since it decides what the run costs.
     """
     document = base_document(openspec_dir / "specs")
     fingerprint = hashlib.sha256(document.text.encode("utf-8")).hexdigest()
     saved = openspec_dir / ".speccheck" / "base.json"
     if saved.exists():
         kept = json.loads(saved.read_text(encoding="utf-8"))
-        if kept.get("fingerprint") == fingerprint:
+        if kept.get("fingerprint") == fingerprint and kept.get("model") == llm.model:
+            print(f"speccheck: using the saved model of the specs ({saved})", file=sys.stderr)
             return kept["formal"]
+    print(f"speccheck: formalizing the specs that exist; their model is saved in {saved}", file=sys.stderr)
     formal = formalize(llm, document.text, samples, temperature)
     changed_rules(formal, document)  # stops here if a scenario label did not come back
     saved.parent.mkdir(exist_ok=True)
-    _save(saved, {"fingerprint": fingerprint, "formal": formal})
+    _save(saved, {"fingerprint": fingerprint, "model": llm.model, "formal": formal})
     return formal
 
 
