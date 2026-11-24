@@ -2268,6 +2268,163 @@ now on; the next design needs `eval12/`.
 
 ---
 
+## T22 — What the missed conflicts look like, and a question about pairs of outcomes (2026-11-24, development)
+
+**Question.** Which planted conflicts are still missed, and why?
+
+**The misses, from the saved runs (no GPU).** The eight held-out tests E8 to
+E16 (`eval3/` to `eval10/`) planted 51 conflicts, 153 with their 3 runs each.
+129 were found, 3 were found but marked doubtful, and 21 were missed:
+
+| Cause | Runs | Where |
+|---|---|---|
+| The two rules demand opposite things with two different symbols, and no assumed fact connects them | 13 | `doors` 6 (`(not door_unlocked)` / `all_doors_unlocked`), `canteen` 3 (`payment_taken` / `payment_refused`), `messages` 3 (`message_removed` / `message_in_archive`), `oven` 1 (`heating_paused` / `heating_at_program_temp`) |
+| "Keep for N years" became only a number | 5 | `auctions` 3, `photos` 2: `(= listing_retention_years 7)` against `listing_deleted` |
+| The "keep" rule was rejected: its 8 translations disagreed | 3 | `clinic` |
+
+In 13 of the 21 the same thing is missing: one piece of common sense, such as
+"a payment cannot be taken and refused at once". The facts question of step 4
+is open ("list the facts that connect these symbols") and often does not
+mention the pair that matters; 45% of its answers are an empty list (T19).
+
+**Design: probe check 4** (`probe.outcomes`; `eval12/` was written first,
+c6e2231). The existing prompts do not change.
+
+1. Our code and Z3 pick the pairs of rules to ask about: both rules can apply
+   in one situation that the facts allow; they do not react to two different
+   events; what they demand shares no symbol and is not already excluded by a
+   fact; and what each demands is one definite state of its symbols.
+2. The model is asked 8 times about the two outcomes alone, shown as facts
+   with their descriptions, without the requirement texts: "Statement A:
+   TRUE: payment_taken (...). Statement B: TRUE: payment_refused (...). Can A
+   and B both hold in the same snapshot?" It answers possible, impossible or
+   unclear.
+3. If more than half of the answers say impossible, our code adds the assumed
+   fact `(not (and payment_taken payment_refused))`, with the model's
+   sentence and its support.
+4. Z3 proves the conflict as before; the report says "if the assumed facts
+   hold" and quotes the fact.
+
+At most 40 pairs are asked about. The six-rule specs have 2 to 5; the specs
+of 30 and 100 requirements have several hundred candidates, so there the
+check covers only the first 40.
+
+**Setup.** The check comes last in step 6 and needs only the formal model.
+So it was run on the saved formal models of E8 to E16 (`evaluate.py --rescore
+... --outcomes-base-url`), which gives a before and an after on the same 630
+runs. Each `T22_<set>.json` holds only what the check added and names the
+runs it belongs to. The development specs got a full run. One cluster job,
+26 minutes.
+
+**Results on `eval3/` to `eval10/`.** 1,434 pairs were asked about, 2.3 per
+run, and 130 of them (9%) were called impossible by a majority.
+
+| | Without the check | With it |
+|---|---|---|
+| planted conflicts found | 132 of 153 | 145 of 153 |
+| the same, doubtful ones set aside | 129 of 153 | 142 of 153 |
+| clean runs with a conflict that was not planted, doubtful ones set aside | 3 of 144 | 13 of 144 |
+| conflicts that were not planted, all versions, doubtful ones set aside | 32 | 88 |
+
+- **Recovered, 13 of the 21 misses:** `doors` 6 of 6, `canteen` 3 of 3,
+  `photos` 2 of 2 ("the photo is erased" against "the retention period is 2
+  years" was called impossible), `messages` 1 of 3, `oven` 1 of 1. Not
+  recovered: `auctions` 3, `messages` 2, `clinic` 3.
+- **The 56 added conflicts that were not planted**, by kind:
+
+  | Kind | Conflicts | Example |
+  |---|---|---|
+  | the planted rule against a third rule | 20 | "refuse all payments" also clashes with "add the top-up to the balance" (`canteen`) |
+  | two original rules, in a version with a planted defect | 14 | the same pairs as on the clean specs below |
+  | two rules of a clean spec | 13 | "start the selected program" against "stop all brushes" when the emergency button is pressed (`carwash`, 6); "move to the calling floor" against "take the elevator out of service" (`elevator`, 3); `claims` 2, `irrigation` 1, `shelter` 1 |
+  | involves the rule with the planted ambiguity | 9 | `claims`, `shelter` |
+
+- **On the clean specs** the 10 new runs are 7 runs in which two rules really
+  can apply together and nothing says which one wins (`carwash`, `elevator`,
+  `irrigation`), 1 more run of the real conflict of `shelter_clean` (E15),
+  and 2 runs of `claims_clean` that are an artefact: "reject the claim"
+  (damage not covered) against "pay the claim" (a registered claim under
+  1000 euros), where nothing says that a registered claim is a covered one.
+  The scoring counts all 10 as false alarms.
+- **The development specs** are unchanged: 15 of 15 conflicts, the conflict
+  of `auth_change` in 3 of 3 runs, no other conflict.
+
+**Raw data.** [experiments/results/T22_eval3.json](experiments/results/T22_eval3.json)
+to T22_eval10.json (the answers to every question; each with its table,
+which has rows with and without the check) and T22_specs.json.
+
+---
+
+## E18 — Held-out `eval12/`: the questions about pairs of outcomes (2026-11-24)
+
+**Question.** Does check 4 of T22 find conflicts worded in other words, on
+specs it was not built on, and what does it cost?
+
+**Setup.** `eval12/` was written first (c6e2231) and the design frozen in
+f2bb7ed. Six new domains (hospital beds, timesheets, aquarium, theatre
+cloakroom, wind turbine, payroll), 36 versions: each spec has a clean, a
+direct, an overlap, two ambiguity and a gap version. All 12 planted conflicts
+say the opposite outcome in other words ("switch the heater on" / "cut the
+power to the heater"); two are retention periods ("delete the payslips" /
+"keep every payslip for ten years"). 108 runs (3 per version, 1 symbol set,
+temperature 0.7) on one cluster job, 2 GPUs, 24 minutes. "Without the check"
+is the same runs scored without the facts that check 4 added.
+
+**Results on `eval12/`.**
+
+| | Without the check | With it |
+|---|---|---|
+| planted conflicts found | 27 of 36 | 34 of 36 |
+| direct (the same condition, the opposite outcome) | 9 of 18 | 16 of 18 |
+| overlap (another condition, the opposite outcome) | 18 of 18 | 18 of 18 |
+| clean runs with a conflict that was not planted | 0 of 18 | 3 of 18 |
+| conflicts that were not planted, all versions | 1 | 28 |
+| planted ambiguities found | 16 of 36 | 16 of 36 |
+| planted gaps found | 17 of 18 | 17 of 18 |
+| clean runs with a gap on a covered event | 0 of 18 | 0 of 18 |
+
+410 pairs were asked about, 3.8 per run, and 58 (14%) were called impossible.
+
+- **Gained, 7 of the 9 misses:** `beds_direct` 3 of 3 ("release the bed" /
+  "hold the bed for 24 hours": `bed_released` and `bed_held`, 8 of 8 answers
+  impossible), `cloakroom_direct` 3 of 3 (a retention period: "delete the
+  token record" / "keep every token record for two years", which became
+  `token_record_deleted` and `token_record_retained`), `payroll_direct` 1 of
+  3.
+- **Still missed, 2 runs of `payroll_direct`.** "Keep every payslip for ten
+  years" became the number `(= payslip_retention_years 10)`: one run called
+  it impossible together with "the payslips are deleted" (8 of 8, found),
+  one split 4 to 4 (missed). In the third the rule became "a payslip younger
+  than ten years is retained", which is not one definite state, so the pair
+  was not asked about.
+- **The overlap conflicts did not need the check**: 18 of 18 without it, 3 of
+  18 without any assumed fact or link. The links of step 5 found them.
+- **The 27 added conflicts that were not planted** are nearly all one pair. 24
+  are in `cloakroom`, in all six versions: "WHEN a guest shows a token THEN
+  the system releases the coat" against "WHEN a coat has been on its hook for
+  more than 30 days THEN the system adds the coat to the list of unclaimed
+  coats". A guest who collects a coat after more than 30 days falls under
+  both, and 8 of 8 answers say that a coat cannot be released and on the
+  unclaimed list at once. Over time there is no clash: the coat was listed
+  before and is released now. So this is an artefact of the one-snapshot
+  model, on a pair of rules that we wrote into the clean spec without seeing
+  it. The other 3 are the planted rule of `timesheets_overlap` against a
+  third rule ("withhold all timesheets from the managers" against "ask the
+  manager for a comment").
+- **The 3 clean runs with a conflict** are the 3 runs of `cloakroom_clean`.
+- Ambiguities, gaps and false gaps are the same with and without the check.
+
+**Decision.** Not taken yet: keep the check on, keep it as an option that is
+off by default, or drop it. It finds most of the conflicts that were missed
+(13 of 21 in T22, 7 of 9 here), and it reports more conflicts that nobody
+planted (clean runs with one: 3 to 13 of 144 in T22, 0 to 3 of 18 here). `eval12/` is development data from now on; the next design needs
+`eval13/`.
+
+**Raw data.** [experiments/results/E18_eval12.json](experiments/results/E18_eval12.json)
+(with its table, E18_eval12.md).
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |
