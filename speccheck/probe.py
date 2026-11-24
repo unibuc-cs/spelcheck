@@ -239,7 +239,7 @@ OUTCOMES_SCHEMA = {
 
 
 def question(llm: LLM, formal: dict, vocab: Vocabulary, symbol_list: str,
-             temperature: float, keep_answers: bool = False) -> None:
+             temperature: float, keep_answers: bool = False, only: set | None = None) -> None:
     """Step 6: check 1 on the rules, check 2 on the links, check 3 on the facts of `formal`.
 
     formal        the formal model: "probes" are added to its rules, and a
@@ -247,11 +247,18 @@ def question(llm: LLM, formal: dict, vocab: Vocabulary, symbol_list: str,
     symbol_list   the symbols as shown to the model in the other steps
     keep_answers  also store every answer with its reason, and the readings
                   the model proposed (for the experiments)
+    only          the ids of the rules to ask about, or None for all. Used
+                  when rules were added to a model whose other rules have
+                  their answers already (formalize with `base`).
     """
+    def asked(rule_id: str) -> bool:
+        return only is None or rule_id in only
+
     descriptions = {s["name"]: s["description"] for s in formal["symbols"]}
     text_of = {rule["id"]: rule["text"] for rule in formal["rules"]}
-    agreed = [rule for rule in formal["rules"] if rule["status"] == "accepted"]
-    split = [rule for rule in formal["rules"] if rule["status"] == "ambiguous" and "alternative" in rule]
+    agreed = [rule for rule in formal["rules"] if rule["status"] == "accepted" and asked(rule["id"])]
+    split = [rule for rule in formal["rules"]
+             if rule["status"] == "ambiguous" and "alternative" in rule and asked(rule["id"])]
     # formal["background"] holds both kinds of assumed facts. A voted fact
     # (step 4) has an id, a text and a formula. A link (step 5) has, besides,
     # "restates": the id of the rule it restates, and the agreed restatement
@@ -261,11 +268,14 @@ def question(llm: LLM, formal: dict, vocab: Vocabulary, symbol_list: str,
     #                      (not property_record_retained_in_db))",
     #      "antecedent": "deletion_confirmed",
     #      "consequent": "(not property_record_retained_in_db)", ...}
-    links = [fact for fact in formal["background"] if "restates" in fact]
+    links = [fact for fact in formal["background"] if "restates" in fact and asked(fact["restates"])]
     # Z3 picks only situations that the voted facts allow, so that they are
     # realistic (a record is not both removed and kept). The links are left
-    # out: they are what check 2 tests.
-    facts = [vocab.parse(fact["formula"]) for fact in formal["background"] if "restates" not in fact]
+    # out: they are what check 2 tests. So are the facts of check 4
+    # ("between"), which a base model may have.
+    voted = {fact["id"]: fact for fact in formal["background"]
+             if "restates" not in fact and "between" not in fact}
+    facts = [vocab.parse(fact["formula"]) for fact in voted.values()]
 
     # Check 1, the LLM: other readings of the rules whose samples agreed. (For a
     # rule whose samples split, the other reading is the second group.)
@@ -306,11 +316,10 @@ def question(llm: LLM, formal: dict, vocab: Vocabulary, symbol_list: str,
             questions.append(Question(LINK_SYSTEM, LINK_SCHEMA, prompt, ANSWERS,
                                       record=link["check"], translation_first=None))
     # Check 3, Z3: the voted facts that make a requirement impossible to obey.
-    voted = {fact["id"]: fact for fact in formal["background"] if "restates" not in fact}
     voted_formulas = {fact_id: vocab.parse(fact["formula"]) for fact_id, fact in voted.items()}
     suspects: dict[str, dict] = {}  # fact id -> the first rule it contradicts
     for rule in formal["rules"]:
-        if rule.get("status") != "rejected":
+        if rule.get("status") != "rejected" and asked(rule["id"]):
             for fact_id in _contradicting_facts(vocab, vocab.rule(rule), voted_formulas):
                 suspects.setdefault(fact_id, rule)
     for fact_id, rule in suspects.items():
@@ -483,7 +492,7 @@ def _contradicting_facts(vocab: Vocabulary, rule, facts: dict) -> list[str]:
 
 
 def outcomes(llm: LLM, formal: dict, vocab: Vocabulary, temperature: float,
-             keep_answers: bool = False) -> None:
+             keep_answers: bool = False, only: set | None = None) -> None:
     """Step 6, check 4: for rules that can apply together, can both get what they demand?
 
     Runs after the other checks, on the links and facts they left standing.
@@ -499,9 +508,12 @@ def outcomes(llm: LLM, formal: dict, vocab: Vocabulary, temperature: float,
                               "formula": "(not (and payment_taken payment_refused))", ...}
 
     keep_answers  also store every answer with its reason (for the experiments)
+    only          ask only about pairs with one of these rules, and keep the
+                  pairs that the model has already (formalize with `base`)
     """
     descriptions = {s["name"]: s["description"] for s in formal["symbols"]}
-    pairs = _open_pairs(vocab, formal)
+    pairs = [pair for pair in _open_pairs(vocab, formal)
+             if only is None or pair[0]["id"] in only or pair[1]["id"] in only]
     if len(pairs) > MAX_PAIRS:
         formal["outcome_pairs_skipped"] = len(pairs) - MAX_PAIRS
         pairs = pairs[:MAX_PAIRS]
@@ -515,7 +527,7 @@ def outcomes(llm: LLM, formal: dict, vocab: Vocabulary, temperature: float,
     with ThreadPoolExecutor(max_workers=16) as pool:  # LLM calls only
         replies = list(pool.map(ask, pairs))
 
-    formal["outcome_pairs"] = []
+    formal["outcome_pairs"] = [] if only is None else list(formal.get("outcome_pairs", []))
     for (first, second, _, _), answers in zip(pairs, replies):
         counts = Counter({choice: 0 for choice in OUTCOMES_SCHEMA["properties"]["answer"]["enum"]})
         counts.update(reply["answer"] for reply in answers)

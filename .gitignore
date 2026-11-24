@@ -6,3 +6,6 @@ __pycache__/
 .jbeval/
 .scratch/
 out/
+
+# The saved formal model of an OpenSpec project (speccheck --change --incremental)
+.speccheck/

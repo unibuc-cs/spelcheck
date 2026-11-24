@@ -55,6 +55,16 @@ scenarios are matched by theirs. So a scenario has one of four states:
                requirement has no scenario of that name
 
 A capability that has no spec yet gets one from its ADDED requirements.
+
+The other way to run it (cli.py, with --incremental) does not formalize the
+whole merged document for every change. The specs that exist are formalized
+once (base_document), and that formal model is saved. For a change,
+merge(on_base=True) writes a document with its new scenarios only, labelled
+N1, N2, ...; formalize adds them to the saved model, with the symbols that
+model has. The scenarios that stay keep the labels they have in the saved
+model, and so do the removed ones. A scenario with new words has two labels:
+the new text is N..., and its old rule in the saved model is "replaced",
+which after_model drops.
 """
 
 import re
@@ -74,7 +84,8 @@ class Merged(NamedTuple):
     name: str           # the change's folder name
     text: str           # the document; every scenario header carries its label
     scenarios: dict     # label -> {"capability", "requirement", "scenario", "status"};
-    #                     status is "existing", "added", "modified" or "removed"
+    #                     status is "existing", "added", "modified" or "removed"; with
+    #                     on_base also "replaced": the old rule of a modified scenario
     changed_text: list  # the text above the first scenario (the SHALL sentence) of each
     #                     added requirement, and of each modified one where it changed
     removed: list       # "capability/requirement" for each requirement the change removes
@@ -84,24 +95,30 @@ class Merged(NamedTuple):
 class _Requirement(NamedTuple):
     """One requirement of a spec, while the change is applied."""
     sentence: list   # the lines above its first scenario
-    scenarios: list  # (name, lines below the header, status), in document order
+    scenarios: list  # (name, lines below the header, status, the label it has in
+    #                  the specs before the change or None), in document order
     status: str      # "existing", "added", "removed", or "modified": its sentence has new words
 
 
-def merge(change_dir: Path) -> Merged:
+def base_document(specs_dir: Path) -> Merged:
+    """The specs that exist (openspec/specs), as one labelled document, with no change applied."""
+    return _document(_load(specs_dir), "", on_base=False)
+
+
+def merge(change_dir: Path, on_base: bool = False) -> Merged:
     """Apply the change in `change_dir` to its project's specs; return them as one labelled document.
 
     change_dir is openspec/changes/<name>; the specs are in openspec/specs,
     two folders up. A delta that names a requirement which does not exist (or
     adds one that does) raises ValueError, as `openspec archive` refuses it.
+
+    on_base  the document holds only the added and modified scenarios of the
+             change, labelled N1, N2, ... (it is empty if there are none). The
+             other scenarios keep the labels they have in base_document; see
+             the module docstring.
     """
     specs_dir = change_dir.parent.parent / "specs"
-    specs = {}  # capability -> [the lines before its first requirement, {requirement name: _Requirement}]
-    for spec_file in sorted(specs_dir.glob("**/spec.md")):
-        capability = spec_file.parent.relative_to(specs_dir).as_posix()
-        preamble, requirements = _requirements(spec_file.read_text(encoding="utf-8").splitlines())
-        specs[capability] = [preamble, {name: _parsed(lines, "existing") for name, lines in requirements.items()}]
-
+    specs = _load(specs_dir)
     for delta_file in sorted((change_dir / "specs").glob("**/spec.md")):
         capability = delta_file.parent.relative_to(change_dir / "specs").as_posix()
         sections = _sections(delta_file.read_text(encoding="utf-8").splitlines())
@@ -125,8 +142,9 @@ def merge(change_dir: Path) -> Merged:
         for name in sections.get("REMOVED", {}):
             # It stays in the document, marked: step 3 of the module docstring needs its rules.
             gone = requirements[existing(name, "REMOVED")]
-            requirements[name] = _Requirement(gone.sentence, [(scenario, lines, "removed")
-                                                              for scenario, lines, _ in gone.scenarios], "removed")
+            requirements[name] = _Requirement(gone.sentence, [(scenario, lines, "removed", was)
+                                                              for scenario, lines, _, was in gone.scenarios],
+                                              "removed")
         for name, lines in sections.get("MODIFIED", {}).items():
             requirements[name] = _rewritten(requirements[existing(name, "MODIFIED")], _parsed(lines, "added"))
         for name, lines in sections.get("ADDED", {}).items():
@@ -134,33 +152,77 @@ def merge(change_dir: Path) -> Merged:
                 raise ValueError(f"{delta_file}: ADDED names the requirement '{name}', "
                                  f"which the spec of '{capability}' already has")
             requirements[name] = _parsed(lines, "added")
+    return _document(specs, change_dir.name, on_base)
 
-    # Write everything into one document, and label the scenarios on the way:
-    # R1, R2, ... for those that are in the specs after the change, X1, X2, ...
-    # for those that the change removes.
+
+def _load(specs_dir: Path) -> dict:
+    """The specs that exist: capability -> [the lines before its first requirement, {name: _Requirement}].
+
+    Every scenario gets the label it has in the document of these specs, R1,
+    R2, ... in the order of that document.
+    """
+    specs, count = {}, 0
+    for spec_file in sorted(specs_dir.glob("**/spec.md")):
+        capability = spec_file.parent.relative_to(specs_dir).as_posix()
+        preamble, requirements = _requirements(spec_file.read_text(encoding="utf-8").splitlines())
+        specs[capability] = [preamble, {}]
+        for name, lines in requirements.items():
+            sentence, scenarios, status = _parsed(lines, "existing")
+            labelled = []
+            for scenario, body, _, _ in scenarios:
+                count += 1
+                labelled.append((scenario, body, status, f"R{count}"))
+            specs[capability][1][name] = _Requirement(sentence, labelled, status)
+    return specs
+
+
+def _document(specs: dict, name: str, on_base: bool) -> Merged:
+    """Write the specs into one document, and label the scenarios on the way.
+
+    As a whole (on_base False): R1, R2, ... for the scenarios that are in the
+    specs after the change, X1, X2, ... for those that the change removes.
+    On a base: only the added and modified scenarios are written, as N1, N2,
+    ...; the others are listed under the labels they had before the change.
+    """
     document, scenarios, changed_text, removed, removed_text = [], {}, [], [], []
-    count = {"R": 0, "X": 0}
+    count = {"R": 0, "X": 0, "N": 0}
     for capability, (preamble, requirements) in specs.items():
-        document += preamble
-        for name, requirement in requirements.items():
-            document += ["", f"### Requirement: {name}", *requirement.sentence]  # surplus blank lines go below
+        heading = preamble if not on_base else [f"# {capability} Specification"]
+        written = len(document)
+        for requirement_name, requirement in requirements.items():
             sentence = _plain(" ".join(requirement.sentence))
             if requirement.status == "removed":
-                removed.append(f"{capability}/{name}")
+                removed.append(f"{capability}/{requirement_name}")
                 removed_text.append(sentence)
-            elif requirement.status == "added" or (requirement.status == "modified" and sentence):
+            elif requirement.status in ("added", "modified"):
                 changed_text.append(sentence)
-            for scenario, lines, status in requirement.scenarios:
-                letter = "X" if status == "removed" else "R"
-                count[letter] += 1
-                label = f"{letter}{count[letter]}"
-                scenarios[label] = {"capability": capability, "requirement": name,
+            block = []
+            for scenario, lines, status, was in requirement.scenarios:
+                is_new = status in ("added", "modified")
+                if not on_base:
+                    letter = "X" if status == "removed" else "R"
+                elif is_new:
+                    letter = "N"
+                    if status == "modified":  # its old rule, in the model of the base
+                        scenarios[was] = {"capability": capability, "requirement": requirement_name,
+                                          "scenario": scenario, "status": "replaced"}
+                else:
+                    letter = None  # it keeps the label it has in the base
+                if letter:
+                    count[letter] += 1
+                label = f"{letter}{count[letter]}" if letter else was
+                scenarios[label] = {"capability": capability, "requirement": requirement_name,
                                     "scenario": scenario, "status": status}
-                document += [f"#### Scenario {label}: {scenario}", *lines]
-        document.append("")
-    text = re.sub(r"\n{3,}", "\n\n", "\n".join(document)).strip() + "\n"
-    return Merged(change_dir.name, text, scenarios, [body for body in changed_text if body], removed,
-                  [body for body in removed_text if body])
+                if is_new or not on_base:
+                    block += [f"#### Scenario {label}: {scenario}", *lines]
+            if block or not on_base:
+                document += ["", f"### Requirement: {requirement_name}", *requirement.sentence, *block]
+        if len(document) > written or not on_base:
+            document[written:written] = heading
+            document.append("")
+    text = re.sub(r"\n{3,}", "\n\n", "\n".join(document)).strip()
+    return Merged(name, text + "\n" if text else "", scenarios, [body for body in changed_text if body],
+                  removed, [body for body in removed_text if body])
 
 
 def _parsed(lines: list[str], status: str) -> _Requirement:
@@ -169,7 +231,7 @@ def _parsed(lines: list[str], status: str) -> _Requirement:
     for line in lines:
         header = SCENARIO.match(line)
         if header:
-            scenarios.append((header.group(1), [], status))
+            scenarios.append((header.group(1), [], status, None))
         elif scenarios:
             scenarios[-1][1].append(line)
         else:
@@ -186,17 +248,18 @@ def _rewritten(old: _Requirement, new: _Requirement) -> _Requirement:
     end, as "removed". The sentence of the requirement counts as changed (see
     Merged.changed_text) only if its words differ.
     """
-    before = {scenario: lines for scenario, lines, _ in old.scenarios}
+    before = {scenario: (lines, was) for scenario, lines, _, was in old.scenarios}
     scenarios = []
-    for scenario, lines, _ in new.scenarios:
+    for scenario, lines, _, _ in new.scenarios:
         if scenario not in before:
-            status = "added"
+            scenarios.append((scenario, lines, "added", None))
         else:
-            same = _plain(" ".join(before[scenario])) == _plain(" ".join(lines))
-            status = "existing" if same else "modified"
-        scenarios.append((scenario, lines, status))
-    kept = {scenario for scenario, _, _ in new.scenarios}
-    scenarios += [(scenario, lines, "removed") for scenario, lines, _ in old.scenarios if scenario not in kept]
+            old_lines, was = before[scenario]
+            same = _plain(" ".join(old_lines)) == _plain(" ".join(lines))
+            scenarios.append((scenario, lines, "existing" if same else "modified", was))
+    kept = {scenario for scenario, _, _, _ in new.scenarios}
+    scenarios += [(scenario, lines, "removed", was) for scenario, lines, _, was in old.scenarios
+                  if scenario not in kept]
     # The state of the requirement itself says whether its sentence changed.
     same_sentence = _plain(" ".join(old.sentence)) == _plain(" ".join(new.sentence))
     return _Requirement(new.sentence, scenarios, "existing" if same_sentence else "modified")
@@ -296,15 +359,19 @@ def after_model(model: dict, merged: Merged) -> dict:
     gone = {label for label, scenario in merged.scenarios.items() if scenario["status"] == "removed"}
     gone |= {rule["id"] for rule in model["rules"]
              if rule["id"] not in merged.scenarios and _is_sentence_of(rule, list(merged.removed_text))}
-    if not gone:
+    # The old rule of a scenario that has new words (only with on_base): it
+    # is simply dropped, its new rule takes its place.
+    replaced = {label for label, scenario in merged.scenarios.items() if scenario["status"] == "replaced"}
+    if not gone and not replaced:
         return model
+    out = gone | replaced
     return {
         **model,
-        "rules": [rule for rule in model["rules"] if rule["id"] not in gone],
+        "rules": [rule for rule in model["rules"] if rule["id"] not in out],
         "removed_rules": [rule for rule in model["rules"] if rule["id"] in gone],
         # A link restates one rule ("restates"); a fact of probe check 4 is about two ("between").
         "background": [fact for fact in model.get("background", [])
-                       if fact.get("restates") not in gone and not gone & set(fact.get("between", []))],
+                       if fact.get("restates") not in out and not out & set(fact.get("between", []))],
     }
 
 
@@ -358,7 +425,7 @@ def report_lines(merged: Merged, changed: set[str], left_out: int) -> tuple[list
              "| Rule | Spec | Requirement | Scenario | |", "|---|---|---|---|---|"]
     table += [f"| {label} | {scenario['capability']} | {scenario['requirement']} | {scenario['scenario']} "
               f"| {'' if scenario['status'] == 'existing' else '**' + scenario['status'] + '**'} |"
-              for label, scenario in merged.scenarios.items()]
+              for label, scenario in merged.scenarios.items() if scenario["status"] != "replaced"]
     return note, table
 
 

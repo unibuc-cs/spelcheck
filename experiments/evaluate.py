@@ -48,6 +48,12 @@ A folder with an openspec/ folder in it is an OpenSpec project with one change
 (speccheck/change.py) and the merged document is what gets formalized. Such
 cases are scored on their own (change_tables): only the findings that involve
 the change count, as in the report of `speccheck --change`.
+
+With --incremental such cases are run the other way (`speccheck --change
+--incremental`): the specs of a project are formalized once for each run, and
+for each change only its new scenarios, on top of that model. The summary
+then also says what a change cost, in requests and tokens, so that the two
+ways can be compared.
 """
 
 import argparse
@@ -59,9 +65,9 @@ from pathlib import Path
 
 from speccheck import formalize as formalize_module
 from speccheck import probe as probe_module
-from speccheck.change import Merged, about_change, after_model, changed_rules, merge
+from speccheck.change import Merged, about_change, after_model, base_document, changed_rules, merge
 from speccheck.checks import analyze, combine, find_gaps, settled
-from speccheck.formalize import formalize_sets, judge_second, second_reading
+from speccheck.formalize import formalize, formalize_sets, judge_second, second_reading
 from speccheck.llm import LLM
 from speccheck.logic import Vocabulary
 from speccheck.probe import outcomes
@@ -119,15 +125,21 @@ SAMPLES = 8
 def one_run(job: tuple) -> dict:
     """Formalize one spec once, with several symbol sets.
 
-    job = (base_url, spec, symbol_sets, temperature); spec is the entry that
-    collect() made for this spec. Returns {"models": [...]} or {"error": ...}.
-    Runs in a worker process.
+    job = (base_url, spec, symbol_sets, temperature, base); spec is the entry
+    that collect() made for this spec. base is a formal model to add the spec
+    to (--incremental), or None. Returns {"models": [...], "cost": ...} or
+    {"error": ...}; cost is what the run asked of the LLM. Runs in a worker
+    process.
     """
-    base_url, spec, symbol_sets, temperature = job
+    base_url, spec, symbol_sets, temperature, base = job
+    llm = LLM(base_url)
     try:
         # keep_samples: the raw LLM answers are saved too, for later study.
-        models = formalize_sets(LLM(base_url), spec["text"], symbol_sets,
-                                temperature=temperature, keep_samples=True)
+        if base is None:
+            models = formalize_sets(llm, spec["text"], symbol_sets, temperature=temperature, keep_samples=True)
+        else:  # a change that only removes adds nothing to the base
+            models = [formalize(llm, spec["text"], temperature=temperature, keep_samples=True, base=base)
+                      if spec["text"] else base]
     except Exception as error:  # a failed run is a result too, not a reason to stop the batch
         return {"error": str(error)}
     if "change" in spec:
@@ -137,8 +149,8 @@ def one_run(job: tuple) -> dict:
             for model in models:
                 changed_rules(model, merged_of(spec))
         except ValueError as error:
-            return {"error": str(error), "unlabelled": models}
-    return {"models": models}
+            return {"error": str(error), "unlabelled": models, "cost": dict(llm.usage)}
+    return {"models": models, "cost": dict(llm.usage)}
 
 
 def merged_of(spec: dict) -> Merged:
@@ -146,32 +158,67 @@ def merged_of(spec: dict) -> Merged:
     return Merged(text=spec["text"], **spec["change"])
 
 
-def collect(base_url: str, specs_root: Path, runs: int, symbol_sets: int, temperature: float) -> dict:
-    """Ask the LLM: formalize every spec under `specs_root`, `runs` times."""
+def collect(base_url: str, specs_root: Path, runs: int, symbol_sets: int, temperature: float,
+            incremental: bool = False) -> dict:
+    """Ask the LLM: formalize every spec under `specs_root`, `runs` times.
+
+    incremental  for the OpenSpec changes: formalize the specs of each project
+                 once for each run (its base), and each change on top of the
+                 base of its run. The cases of one project are the folders
+                 that share its specs.
+    """
     llm = LLM(base_url)
     specs = {}
+    documents = {}  # the labelled document of a project's specs -> that document (a Merged)
     for expected_file in sorted(specs_root.glob("*/expected.json")):
         folder = expected_file.parent
         expected = json.loads(expected_file.read_text())
         if (folder / "openspec").is_dir():  # an OpenSpec project with one change
             change_dir = next(path for path in sorted((folder / "openspec" / "changes").iterdir())
                               if path.is_dir())
-            merged = merge(change_dir)._asdict()
+            merged = merge(change_dir, on_base=incremental)._asdict()
             specs[folder.name] = {"text": merged.pop("text"), "change": merged, **expected}
+            if incremental:
+                document = base_document(folder / "openspec" / "specs")
+                documents[document.text] = document
+                specs[folder.name]["base"] = document.text
             continue
         spec_file = next(p for p in sorted(folder.glob("*.md")) if p.name not in OUTPUT_FILES)
         specs[folder.name] = {"text": spec_file.read_text(encoding="utf-8"), **expected}
 
-    jobs = [name for name in specs for _ in range(runs)]
+    jobs = [(name, run) for name in specs for run in range(runs)]
     with ProcessPoolExecutor(max_workers=32) as pool:
-        results = list(pool.map(one_run, [(base_url, specs[name], symbol_sets, temperature)
-                                          for name in jobs]))
+        # First the bases: each project's specs, formalized `runs` times.
+        base_jobs = [(text, run) for text in documents for run in range(runs)]
+        base_specs = {text: {"text": text, "change": {k: v for k, v in document._asdict().items() if k != "text"}}
+                      for text, document in documents.items()}
+        bases = dict(zip(base_jobs, pool.map(one_run, [(base_url, base_specs[text], 1, temperature, None)
+                                                       for text, _ in base_jobs])))
+
+        def base_of(name: str, run: int) -> dict | None:
+            made = bases.get((specs[name].get("base"), run))
+            return made["models"][0] if made and "models" in made else None
+
+        results = list(pool.map(one_run, [(base_url, specs[name], symbol_sets, temperature, base_of(name, run))
+                                          for name, run in jobs
+                                          if not incremental or "base" not in specs[name] or base_of(name, run)]))
+    if incremental:  # a change whose base could not be made has no run
+        made = iter(results)
+        results = [next(made) if "base" not in specs[name] or base_of(name, run)
+                   else {"error": "the specs of the project could not be formalized: "
+                                  + bases[specs[name]["base"], run].get("error", "")}
+                   for name, run in jobs]
+    jobs = [name for name, _ in jobs]
     return {
         "model": llm.model,
         "date": datetime.now().isoformat(timespec="seconds"),
         "runs_per_spec": runs,
         "symbol_sets": symbol_sets,
         "temperature": temperature,
+        # How the changes were run, and what the bases cost (their formal
+        # models are part of the models of the changes).
+        "incremental": incremental,
+        "base_costs": [made.get("cost") for made in bases.values()],
         # The exact prompts, so the experiment can be understood after they change.
         "prompts": {"read": formalize_module.READ_SYSTEM,
                     "formalize": formalize_module.FORMALIZE_SYSTEM,
@@ -180,7 +227,8 @@ def collect(base_url: str, specs_root: Path, runs: int, symbol_sets: int, temper
                     "question": probe_module.QUESTION_SYSTEM,
                     "link": probe_module.LINK_SYSTEM,
                     "fact": probe_module.FACT_SYSTEM,
-                    "outcomes": probe_module.OUTCOMES_SYSTEM},
+                    "outcomes": probe_module.OUTCOMES_SYSTEM,
+                    "read_more": formalize_module.READ_MORE},
         "specs": specs,
         "runs": [{"spec": name, **result} for name, result in zip(jobs, results)],
     }
@@ -481,7 +529,7 @@ def change_run(spec: dict, run: dict, config: dict) -> dict:
     """
     merged = merged_of(spec)
     label = {f"{s['capability']}/{s['requirement']}/{s['scenario']}": name
-             for name, s in merged.scenarios.items() if s["status"] != "removed"}
+             for name, s in merged.scenarios.items() if s["status"] not in ("removed", "replaced")}
     # Which rules are the change's is read off the models as the LLM made them.
     # The checks then run without the rules that the change removes.
     changed = [changed_rules(model, merged) for model in run["models"][:config["sets"]]]
@@ -593,6 +641,18 @@ def change_tables(data: dict) -> str:
         f"{sum(len(r['unlabelled'][1]) for r in every)} counted as part of the change).",
     ]
 
+    def mean_cost(costs: list) -> str:
+        costs = [cost for cost in costs if cost]
+        if not costs:
+            return "not recorded"
+        return ", ".join(f"{sum(cost[key] for cost in costs) / len(costs):,.0f} {what}"
+                         for key, what in (("requests", "requests"), ("prompt_tokens", "tokens read"),
+                                           ("completion_tokens", "tokens written"))) + f" ({len(costs)} runs)"
+
+    notes.append(f"- What a change cost the LLM, on average: {mean_cost([run.get('cost') for run in ok_runs])}."
+                 + (f" What the specs of a project cost, once for each run: {mean_cost(data.get('base_costs', []))}."
+                    if data.get("incremental") else ""))
+
     def names(groups) -> str:
         return ", ".join(sorted("[" + ", ".join(sorted(group, key=lambda r: (len(r), r))) + "]"
                                 for group in groups))
@@ -618,7 +678,8 @@ def change_tables(data: dict) -> str:
             + f" | {sum(len(result['left_out']) for result in runs)} |")
 
     return "\n".join([
-        *heading(data, "Evaluation of the change check"),
+        *heading(data, "Evaluation of the change check"
+                       + (", the specs formalized once" if data.get("incremental") else "")),
         "Only findings that involve the change count; see change_run in evaluate.py.",
         "",
         "## Conflicts, by configuration",
@@ -629,7 +690,7 @@ def change_tables(data: dict) -> str:
         "",
         *gap_rows,
         "",
-        f"## Ambiguities and labels ({label})",
+        f"## Ambiguities, labels and cost ({label})",
         "",
         *notes,
         "",
@@ -789,6 +850,8 @@ def main() -> None:
     parser.add_argument("--second-base-url", help="with --rescore: add step 7 with the second model at this server")
     parser.add_argument("--outcomes-base-url", help="with --rescore: add the questions about pairs of outcomes, "
                                                     "asked at this server, and save the runs under --name")
+    parser.add_argument("--incremental", action="store_true",
+                        help="OpenSpec changes: formalize the specs of a project once, and each change on top")
     args = parser.parse_args()
 
     if args.rescore:
@@ -805,7 +868,8 @@ def main() -> None:
                                 encoding="utf-8")
     elif args.base_url:
         raw_file = Path("experiments/results") / f"{args.name}.json"
-        data = collect(args.base_url, args.specs, args.runs, args.symbol_sets, args.temperature)
+        data = collect(args.base_url, args.specs, args.runs, args.symbol_sets, args.temperature,
+                       args.incremental)
         raw_file.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     else:
         parser.error("give --base-url (to run the evaluation) or --rescore (to score saved runs)")

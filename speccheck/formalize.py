@@ -38,6 +38,11 @@ and counting below is done by this file:
 `formalize` does this once. `formalize_sets` does it K times, each time with
 its own symbols, so that findings can be checked against that choice.
 
+`formalize` can also add to a formal model that exists (its `base`): only the
+rules of the new document go through the steps, and the read step is told to
+use the symbols the model has. `speccheck --change --incremental` uses this,
+so that a change does not cost a run over all the specs.
+
 The prompts below are generic: nothing in this file is about any one spec.
 """
 
@@ -112,6 +117,20 @@ other symbol (a state, a quantity, something the system does) has event: false.
 example "disable" may mean switched off, or merely hidden), declare a symbol \
 for each of those facts so the difference can be expressed.
 - description: one phrase that pins the meaning down."""
+
+# Added to READ_SYSTEM when the document adds to a system that has a formal
+# model already (formalize with `base`). The user message then starts with
+# the symbols of that model.
+READ_MORE = """
+
+The document is an ADDITION to a system that is described already. The \
+symbols of that system are listed before the document. Use a listed symbol \
+wherever it fits the meaning: a new rule about a fact that already has a \
+symbol MUST use that symbol, also when the rule says it in other words, so \
+that a clash with the rules written before can be seen. Add a symbol only \
+for a fact that no listed symbol stands for. Under "symbols", give only the \
+symbols you add (an empty list if the listed ones are enough). The trigger \
+of a rule may be a listed event."""
 
 READ_SCHEMA = {
     "type": "object",
@@ -254,7 +273,7 @@ they cannot express it at all, answer with consequent: none"""
 
 def formalize(llm: LLM, spec_text: str, samples: int = 8, temperature: float = 0.7,
               read_temperature: float = 0.0, keep_samples: bool = False,
-              second: LLM | None = None) -> dict:
+              second: LLM | None = None, base: dict | None = None) -> dict:
     """Turn a requirements document into a formal.json dict.
 
     samples           answers drawn per rule (for the ambiguity check) and for
@@ -268,10 +287,21 @@ def formalize(llm: LLM, spec_text: str, samples: int = 8, temperature: float = 0
                       The experiments use this so that the clustering and the
                       vote can be redone later without a GPU.
     second            a second model for step 7, or None to skip it
+    base              a formal model that the document adds to, or None. With
+                      a base, only the rules of the document are formalized:
+                      read with the symbols of the base (plus those the read
+                      step adds), translated, linked and questioned. Returned
+                      is the base with the new symbols, facts and rules added
+                      at the end. The rules of the base are not asked about
+                      again, and step 7 is skipped.
     """
-    rules, symbols = _read(llm, spec_text, read_temperature)
+    old_symbols = base["symbols"] if base else []
+    old_rules = base["rules"] if base else []
+    rules, symbols = _read(llm, spec_text, read_temperature, old_symbols)
     vocab = Vocabulary(symbols)
     shown = _symbol_list(symbols)
+    # With a base whose symbols are enough, the facts are those of the base.
+    ask_facts = not base or len(symbols) > len(old_symbols)
 
     # Steps 2 and 4 ask the LLM. Each call asks for `samples` (8) answers. The
     # threads only wait for replies, so that up to 16 requests (128 answers, the
@@ -280,21 +310,24 @@ def formalize(llm: LLM, spec_text: str, samples: int = 8, temperature: float = 0
     # requirements, so that it cannot simply repeat a requirement as a "fact".
     with ThreadPoolExecutor(max_workers=16) as pool:
         fact_call = pool.submit(llm.ask, FACTS_SYSTEM, f"Symbols:\n{shown}",
-                                FACTS_SCHEMA, samples, temperature)
+                                FACTS_SCHEMA, samples, temperature) if ask_facts else None
         answers_per_rule = list(pool.map(
             lambda rule: _translate(llm, shown, rule, samples, temperature), rules))
-        fact_answers = fact_call.result()
+        fact_answers = fact_call.result() if fact_call else []
 
     # The Z3 work (step 3 and the vote of step 4) runs here, after the threads
     # are done: Z3 must not be used from several threads at the same time.
     formal_rules = [{**rule, **_judge(vocab, answers)}
                     for rule, answers in zip(rules, answers_per_rule)]
     background = _agreed_facts(vocab, fact_answers, samples)
+    if base:
+        background = _more_facts(vocab, base["background"], background)
 
     # Step 5: a rule whose outcome is written with symbols that no other rule
     # uses is translated once more, with the outcomes of the other rules
-    # instead (see _symbols_to_hide and _links).
-    hidden = _symbols_to_hide(vocab, formal_rules)
+    # instead (see _symbols_to_hide and _links). With a base, the other rules
+    # include those of the base, and only the new rules are translated again.
+    hidden = _symbols_to_hide(vocab, old_rules + formal_rules)
     to_restate = [rule for rule in formal_rules if rule["id"] in hidden]
     with ThreadPoolExecutor(max_workers=16) as pool:  # LLM calls only, again
         restatements = list(pool.map(
@@ -304,19 +337,22 @@ def formalize(llm: LLM, spec_text: str, samples: int = 8, temperature: float = 0
     background += _links(vocab, to_restate, hidden, restatements, samples, background)
 
     formal = {
+        **(base or {}),
         "symbols": symbols,
         # Assumed domain facts. checks.py uses them only to find more conflicts.
         # The list can be edited by hand: each entry needs id, text and formula.
         "background": background,
-        "rules": formal_rules,
+        "rules": old_rules + formal_rules,
     }
+    # With a base, steps 6 and 7 are about the new rules only.
+    new = {rule["id"] for rule in formal_rules} if base else None
     # Step 6 (probe.py) adds "probes" to the rules, and a "check" to the links
     # and to the facts it tests.
-    question(llm, formal, vocab, shown, temperature, keep_samples)
+    question(llm, formal, vocab, shown, temperature, keep_samples, only=new)
     # Its fourth check adds assumed facts about pairs of outcomes ("between").
-    outcomes(llm, formal, vocab, temperature, keep_samples)
+    outcomes(llm, formal, vocab, temperature, keep_samples, only=new)
     # Step 7 (optional) adds "second" to the rules.
-    if second is not None:
+    if second is not None and not base:
         second_reading(second, formal, samples, temperature, keep_samples)
 
     if keep_samples:
@@ -324,7 +360,9 @@ def formalize(llm: LLM, spec_text: str, samples: int = 8, temperature: float = 0
             rule["samples"] = answers
         for rule, answers in zip(to_restate, restatements):
             rule["restated_samples"] = answers
-        formal["fact_samples"] = fact_answers
+        # The answers of a second facts question are kept apart: the vote of
+        # the base can then still be redone from "fact_samples" alone.
+        formal["added_fact_samples" if base else "fact_samples"] = fact_answers
     return formal
 
 
@@ -384,22 +422,36 @@ def _symbol_list(symbols: list[dict], hidden: set = frozenset()) -> str:
     )
 
 
-def _read(llm: LLM, spec_text: str, first_temperature: float) -> tuple[list[dict], list[dict]]:
-    """Step 1: extract the rules and the symbols, retrying if the symbols are unusable."""
+def _read(llm: LLM, spec_text: str, first_temperature: float,
+          existing: list[dict] = ()) -> tuple[list[dict], list[dict]]:
+    """Step 1: extract the rules and the symbols, retrying if the symbols are unusable.
+
+    existing  the symbols of a formal model that the document adds to. The
+              model is shown them and asked to use them (READ_MORE). Returned
+              are the rules of the document, and all symbols: the existing
+              ones first, then those the model added.
+    """
+    system = READ_SYSTEM + READ_MORE if existing else READ_SYSTEM
+    user = (f"Symbols of the system so far:\n{_symbol_list(existing)}\n\nDocument:\n{spec_text}"
+            if existing else spec_text)
+    known = {symbol["name"] for symbol in existing}
     error = None
     # If the symbol list of the first answer is broken (duplicate or illegal
     # names), ask again with more randomness to get a different one: a little
     # first, then a lot. At temperature 0 the first answer was usable for all
     # 204 specs of eval to eval8 and specs/ (T18), so the retry is rare.
     for temperature in (first_temperature, 0.3, 0.9):
-        answers = llm.ask(READ_SYSTEM, spec_text, READ_SCHEMA, temperature=temperature,
+        answers = llm.ask(system, user, READ_SCHEMA, temperature=temperature,
                           max_tokens=READ_MAX_TOKENS)
         if not answers:
             error = "the model returned no valid JSON"
             continue
         try:
-            Vocabulary(answers[0]["symbols"])  # raises ValueError on bad symbols
-            return answers[0]["rules"], answers[0]["symbols"]
+            # A symbol that the model lists although it exists is not added twice.
+            symbols = list(existing) + [symbol for symbol in answers[0]["symbols"]
+                                        if symbol["name"] not in known]
+            Vocabulary(symbols)  # raises ValueError on bad symbols
+            return answers[0]["rules"], symbols
         except ValueError as problem:
             error = problem
     raise RuntimeError(f"could not get a usable symbol list: {error}")
@@ -557,6 +609,24 @@ def _agreed_facts(vocab: Vocabulary, answers: list[dict], asked: int,
 
 
 # ---------------------------------------------------------------- step 5: links
+
+
+def _more_facts(vocab: Vocabulary, known: list[dict], voted: list[dict]) -> list[dict]:
+    """The facts of a base model, and after them the newly voted facts that say something new.
+
+    A voted fact is left out when the facts of the base imply it or contradict
+    it (those that step 6 rejected do not count). The others get the next ids.
+    """
+    formulas = [vocab.parse(fact["formula"]) for fact in known
+                if fact.get("check", {}).get("verdict") != "rejected"]
+    facts = list(known)
+    for fact in voted:
+        formula = vocab.parse(fact["formula"])
+        if vocab.implies(formulas, formula) or vocab.impossible(formulas + [formula]):
+            continue
+        formulas.append(formula)
+        facts.append({**fact, "id": f"F{len(facts) + 1}"})
+    return facts
 
 
 def _symbols_to_hide(vocab: Vocabulary, formal_rules: list[dict]) -> dict[str, set[str]]:

@@ -7,6 +7,7 @@ JSON schema, so the rest of the code never has to parse free text.
 
 import json
 import os
+import threading
 
 from openai import OpenAI
 
@@ -25,6 +26,10 @@ class LLM:
                              timeout=1800)
         # If no model name is given, use the (first) model the server offers.
         self.model = model or self.client.models.list().data[0].id
+        # What this connection has cost so far. The experiments compare two
+        # ways of checking a change by it. (`ask` is called from threads.)
+        self.usage = {"requests": 0, "prompt_tokens": 0, "completion_tokens": 0}
+        self._lock = threading.Lock()
 
     def ask(self, system: str, user: str, schema: dict,
             samples: int = 1, temperature: float = 0.0, max_tokens: int = 4096) -> list[dict]:
@@ -58,6 +63,11 @@ class LLM:
             temperature=temperature,
             max_tokens=max_tokens,
         )
+        with self._lock:
+            self.usage["requests"] += 1
+            if response.usage:
+                self.usage["prompt_tokens"] += response.usage.prompt_tokens
+                self.usage["completion_tokens"] += response.usage.completion_tokens
         answers = []
         for choice in response.choices:
             try:
