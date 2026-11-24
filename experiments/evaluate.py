@@ -274,9 +274,10 @@ def gap_scores(data: dict) -> list[str]:
     """A table: are the planted gaps found, and what else is reported as a gap?
 
     For the default configuration and the first symbol set of every run. The
-    gaps are searched twice: over all situations, as before step 26, and once
-    for each event (checks.find_gaps), so that the two can be compared on the
-    same runs.
+    gaps are searched over all situations, as before step 26, and once for
+    each event (checks.find_gaps), so that the two can be compared on the
+    same runs; the last row leaves out the gaps that the assumed facts mark
+    as doubtful.
 
     A planted gap names a requirement by its number: its other case was
     removed from the spec (make_eval.py, "gap" versions). It counts as found
@@ -300,8 +301,11 @@ def gap_scores(data: dict) -> list[str]:
     lines = ["| Gap search | Planted gaps found | Clean runs with a gap on a covered event "
              "| Gaps on clean specs, with an event | Gaps on clean specs, all |",
              "|---|---|---|---|---|"]
-    for label, by_event in (("over all situations (as before step 26)", False),
-                            ("once for each event", True)):
+    # by_event: the search of step 26; aside: leave out the gaps that the
+    # assumed facts mark as doubtful (the facts that step 6 rejected not used).
+    for label, by_event, aside in (("over all situations (as before step 26)", False, False),
+                                   ("once for each event", True, False),
+                                   ("once for each event, doubtful set aside", True, True)):
         found = planted = alarms = covered_runs = with_event = on_clean = 0
         for run in data["runs"]:
             if "models" not in run:
@@ -310,8 +314,12 @@ def gap_scores(data: dict) -> list[str]:
             vocab = Vocabulary(model["symbols"])
             decided = [settled(rule, DEFAULT["settle"], DEFAULT["questions"], DEFAULT["second"])
                        for rule in model["rules"]]
+            facts = {fact["id"]: vocab.parse(fact["formula"]) for fact in model.get("background", [])
+                     if fact.get("check", {}).get("verdict") != "rejected"}
             gaps = find_gaps(vocab, [vocab.rule(rule) for rule in decided
-                                     if rule.get("status") != "rejected"], by_event)
+                                     if rule.get("status") != "rejected"], by_event, doubt=facts)
+            if aside:
+                gaps = [gap for gap in gaps if "doubted_by" not in gap]
 
             def happens_in_a_gap(number: int) -> bool:
                 return any(gap["when"].get(event) is True

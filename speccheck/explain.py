@@ -62,7 +62,7 @@ conflict or a gap.
 If the finding lists assumptions, it holds only if they are true. Say so in \
 the explanation and state each assumption in plain words.
 
-If the finding says the conflict may be a false alarm (assumed facts make its \
+If the finding says it may be a false alarm (assumed facts make its \
 situation impossible, or it needs two events at the same moment), say so, \
 and say why in plain words."""
 
@@ -178,6 +178,11 @@ def evidence(finding: dict, formal: dict) -> str:
         if finding.get("quiet"):
             text += ("\nNo event happens in this situation, so this may only mean that "
                      "the system waits.")
+        if finding.get("doubted_by"):
+            fact_texts = {fact["id"]: fact["text"] for fact in formal.get("background", [])}
+            text += ("\nBut these assumed facts say that this situation cannot happen, "
+                     "so the gap may be a false alarm:")
+            text += "".join(f"\n- {fact_id}: {fact_texts[fact_id]}" for fact_id in finding["doubted_by"])
         for rule_id, reading in finding.get("depends_on_reading", {}).items():
             text += (f"\nBut {rule_id} is ambiguous (see its finding). With its other reading "
                      f"a requirement applies in this situation. That reading: {reading}")
@@ -285,16 +290,18 @@ def render(findings: list[dict], models: list[dict], title: str) -> str:
     notes = [f for f in findings if f["type"] == "review"]
     counts = {kind: sum(f["type"] == kind for f in solver)
               for kind in ("conflict", "gap", "ambiguity", "scenario")}
-    doubtful = sum(f["type"] == "conflict" and bool(f.get("doubted_by") or f.get("simultaneous_events"))
-                   for f in solver)
+    doubtful = {kind: sum(f["type"] == kind and bool(f.get("doubted_by") or f.get("simultaneous_events"))
+                          for f in solver)
+                for kind in ("conflict", "gap")}
     lines = [
         f"# Requirements analysis: {title}",
         "",
         f"{len(models[0]['rules'])} requirements analysed"
         + (f" with {len(models)} symbol sets" if len(models) > 1 else "")
         + f": {counts['conflict']} conflict(s)"
-        + (f" ({doubtful} doubtful)" if doubtful else "")
-        + f", {counts['gap']} gap(s), "
+        + (f" ({doubtful['conflict']} doubtful)" if doubtful["conflict"] else "")
+        + f", {counts['gap']} gap(s)"
+        + (f" ({doubtful['gap']} doubtful)" if doubtful["gap"] else "") + ", "
         f"{counts['ambiguity']} ambiguity(ies)"
         + (f", {counts['scenario']} scenario(s) to confirm" if counts["scenario"] else "") + "."
         + (f" Review of the text: {len(notes)} note(s)." if notes else ""),

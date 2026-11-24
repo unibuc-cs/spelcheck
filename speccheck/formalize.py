@@ -197,6 +197,8 @@ its meaning. Each symbol is one fact about a single snapshot of the system.
 List the domain facts that connect these symbols: statements that hold in \
 EVERY possible snapshot purely because of what the symbols mean. Typical cases:
 - two things cannot both be the case (a door cannot be open and closed);
+- one of two things is always the case, because each is the opposite of the \
+other (a switch is either on or off);
 - one thing is part of another, or implies it (a signed-and-dated form is a \
 signed form);
 - a quantity has a natural bound (a count is never negative).

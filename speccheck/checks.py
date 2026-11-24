@@ -65,8 +65,8 @@ def analyze(formal: dict, max_group: int = 3, questions: bool = True,
     # Each rule with the status that steps 6 and 7 give it (see settled).
     decided = [settled(rule, settle, questions, second) for rule in formal["rules"]]
     # Assumed facts, fact id -> formula (the "background" list of formal.json).
-    # They are guesses of the LLM about what the symbols mean, so only the
-    # conflict check uses them, and only to ADD findings (or cast doubt).
+    # They are guesses of the LLM about what the symbols mean, so they may only
+    # ADD conflicts, or cast doubt on a conflict or a gap.
     facts = {fact["id"]: vocab.parse(fact["formula"]) for fact in formal.get("background", [])
              if not (link_checks and fact.get("check", {}).get("verdict") == "rejected")}
     # Rules without a stable formalization cannot be checked; they are reported
@@ -74,7 +74,7 @@ def analyze(formal: dict, max_group: int = 3, questions: bool = True,
     rules = [vocab.rule(r) for r in decided if r.get("status") != "rejected"]
     ambiguities = find_ambiguities(decided)
     conflicts = find_conflicts(vocab, rules, facts, max_group)
-    gaps = find_gaps(vocab, rules)
+    gaps = find_gaps(vocab, rules, doubt=facts)
     if readings:
         _try_other_readings(vocab, decided, rules, facts, max_group, ambiguities, conflicts, gaps)
         # The ambiguities whose answer changes another finding come first.
@@ -496,7 +496,8 @@ def _minimal_conflict(vocab: Vocabulary, situation: list, rules: list[Rule],
 # ------------------------------------------------------------------------- gaps
 
 
-def find_gaps(vocab: Vocabulary, rules: list[Rule], by_event: bool = True) -> list[dict]:
+def find_gaps(vocab: Vocabulary, rules: list[Rule], by_event: bool = True,
+              doubt: dict | None = None) -> list[dict]:
     """Find situations in which no rule says what the system must do.
 
     A situation is uncovered when every conditional rule's antecedent is false.
@@ -521,8 +522,17 @@ def find_gaps(vocab: Vocabulary, rules: list[Rule], by_event: bool = True) -> li
     rules that react to states only), and with by_event=False (the experiments
     compare the two), the search is over all situations, at most MAX_GAPS gaps.
 
-    The assumed domain facts are not used here: a fact can only declare
-    situations impossible, so it could only make a gap disappear.
+    doubt  the assumed domain facts (id -> formula). As with conflicts, they
+           never remove a gap, they can only cast doubt on one. Example:
+
+               rules  "WHEN a resident books a slot AND the slot is free THEN ..."
+                      "WHEN a resident books a slot AND the slot is taken THEN ..."
+               gap    slot_booked TRUE, slot_is_free FALSE, slot_is_taken FALSE
+               fact   F2: a slot is either free or taken
+
+           For each event, a gap the facts allow is looked for first. If there
+           is none, the gap found without them is reported with "doubted_by":
+           the facts that say it cannot happen (here F2).
     """
     conditional = [
         rule for rule in rules
@@ -565,20 +575,42 @@ def find_gaps(vocab: Vocabulary, rules: list[Rule], by_event: bool = True) -> li
             already_found.append(z3.Not(z3.And(vocab.assignment(when))))
         return found
 
+    def doubted(given: list) -> list[str]:
+        """The facts that rule out every uncovered situation in which `given` holds."""
+        excluded = _minimal_conflict(vocab, nothing_fires + given, [], doubt) if doubt else None
+        return excluded[1] if excluded else []
+
+    def one_gap(given: list, keep: frozenset) -> list[dict]:
+        """The gap among the situations in which `given` holds: one the facts
+        allow if there is one, else the one without the facts, marked doubtful."""
+        if doubt:
+            allowed = search(given + list(doubt.values()), 1, keep)
+            if allowed:
+                return allowed
+        return [{**gap, "doubted_by": doubted(given)} if doubt else gap
+                for gap in search(given, 1, keep)]
+
     # The events some rule reacts to: named as its trigger, or used in its condition.
     reacted_to = sorted({rule.trigger for rule in conditional if rule.trigger}
                         | (vocab.events & relevant))
     if not by_event or not reacted_to:
-        return search([], MAX_GAPS)
+        # Up to MAX_GAPS gaps, found as before; each one whose situations the
+        # facts all rule out is marked.
+        gaps = search([], MAX_GAPS)
+        for gap in gaps:
+            facts = doubted(vocab.assignment(gap["when"]))
+            if facts:
+                gap["doubted_by"] = facts
+        return gaps
 
     happens = {name: vocab.variables[name] for name in sorted(vocab.events)}
     findings = []
     for event in reacted_to:
         alone = [happens[event]] + [z3.Not(other) for name, other in happens.items() if name != event]
-        for gap in search(alone, 1, keep=frozenset([event])):
-            findings.append({"type": "gap", "event": event, "when": gap["when"]})
+        for gap in one_gap(alone, frozenset([event])):
+            findings.append({"type": "gap", "event": event, **gap})
     nothing_happens = [z3.Not(event) for event in happens.values()]
-    for gap in search(nothing_happens, 1, keep=frozenset(vocab.events & relevant)):
+    for gap in one_gap(nothing_happens, frozenset(vocab.events & relevant)):
         findings.append({**gap, "quiet": True})
     return findings
 

@@ -376,6 +376,33 @@ def test_a_gap_is_looked_for_once_for_each_event():
     assert gaps == [{"type": "gap", "when": {"code_entered": False, "parcel_scanned": False}, "quiet": True}]
 
 
+def test_a_gap_the_facts_rule_out_is_marked_doubtful():
+    """"Free" and "full" as two symbols: "neither" is a gap, unless a fact says one always holds."""
+    def formal(rules: list, facts: list) -> dict:
+        return {"symbols": [{"name": name, "sort": "Bool", "values": [], "description": "",
+                             "event": name == "parcel_scanned"}
+                            for name in ("parcel_scanned", "compartment_free", "locker_full",
+                                         "compartment_opened", "other_locker_shown")],
+                "background": [{"id": f"F{n}", "text": text, "formula": text}
+                               for n, text in enumerate(facts, start=1)],
+                "rules": rules}
+
+    def scan_gap(formal: dict) -> dict:
+        return next(f for f in analyze(formal) if f["type"] == "gap" and f.get("event") == "parcel_scanned")
+
+    both = [{"id": "P1", "antecedent": "(and parcel_scanned compartment_free)", "consequent": "compartment_opened"},
+            {"id": "P2", "antecedent": "(and parcel_scanned locker_full)", "consequent": "other_locker_shown"}]
+    # "Not both" leaves "neither" possible: the gap stands.
+    assert "doubted_by" not in scan_gap(formal(both, ["(not (and compartment_free locker_full))"]))
+    # "One of the two always holds": the same gap is still reported, marked doubtful.
+    gap = scan_gap(formal(both, ["(or compartment_free locker_full)"]))
+    assert gap["doubted_by"] == ["F1"]
+    assert gap["when"] == {"parcel_scanned": True, "compartment_free": False, "locker_full": False}
+    # Without the rule for a full locker, the fact allows the gap: it is not marked.
+    gap = scan_gap(formal(both[:1], ["(or compartment_free locker_full)"]))
+    assert "doubted_by" not in gap and gap["when"]["compartment_free"] is False
+
+
 def test_the_gap_search_over_all_situations_is_still_there():
     """The experiments compare: by_event=False searches as before, in any situation."""
     formal = lockers(with_the_full_locker_rule=False)
