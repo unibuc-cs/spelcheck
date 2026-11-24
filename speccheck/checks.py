@@ -74,7 +74,10 @@ def analyze(formal: dict, max_group: int = 3, questions: bool = True,
     rules = [vocab.rule(r) for r in decided if r.get("status") != "rejected"]
     ambiguities = find_ambiguities(decided)
     conflicts = find_conflicts(vocab, rules, facts, max_group)
-    gaps = find_gaps(vocab, rules, doubt=facts)
+    # The rules that a change removes (change.after_model). They take no part
+    # in any check; they only show which gap the change opened.
+    lost = [vocab.rule(rule) for rule in formal.get("removed_rules", []) if rule.get("status") != "rejected"]
+    gaps = find_gaps(vocab, rules, doubt=facts, lost=lost)
     if readings:
         _try_other_readings(vocab, decided, rules, facts, max_group, ambiguities, conflicts, gaps)
         # The ambiguities whose answer changes another finding come first.
@@ -497,7 +500,7 @@ def _minimal_conflict(vocab: Vocabulary, situation: list, rules: list[Rule],
 
 
 def find_gaps(vocab: Vocabulary, rules: list[Rule], by_event: bool = True,
-              doubt: dict | None = None) -> list[dict]:
+              doubt: dict | None = None, lost: list[Rule] = ()) -> list[dict]:
     """Find situations in which no rule says what the system must do.
 
     A situation is uncovered when every conditional rule's antecedent is false.
@@ -533,6 +536,21 @@ def find_gaps(vocab: Vocabulary, rules: list[Rule], by_event: bool = True,
            For each event, a gap the facts allow is looked for first. If there
            is none, the gap found without them is reported with "doubted_by":
            the facts that say it cannot happen (here F2).
+
+    lost   rules that a change removes (change.py); `rules` are those that
+           stay. For each lost rule, the situation it was written for is
+           looked at first: its events happen and no others, and its
+           condition holds. If no rule applies there now, that is a gap the
+           change opened. Example:
+
+               stays  "WHEN a visitor checks in AND the visitor is on the list THEN ..."
+               lost   "WHEN a visitor checks in AND the visitor is not on the list THEN ..."
+               gap    visitor_checks_in TRUE, visitor_on_list FALSE
+
+           Such a gap has "opened_by": the id of the lost rule, and it takes
+           the place of the usual gap for that event. A lost rule whose events
+           no remaining rule reacts to gives no gap: nothing reacts to that
+           event any more, by decision.
     """
     conditional = [
         rule for rule in rules
@@ -604,10 +622,25 @@ def find_gaps(vocab: Vocabulary, rules: list[Rule], by_event: bool = True,
         return gaps
 
     happens = {name: vocab.variables[name] for name in sorted(vocab.events)}
+    # First the gaps that a change opened (see `lost` above). The situation is
+    # the lost rule's own: all of its events, also when it names two ("a
+    # customer buys credit" and "the payment is refused").
+    opened = {}  # event -> the gap that a lost rule for this event leaves open
+    for rule in lost:
+        its_events = ({rule.trigger} | vocab.symbols_in(rule.antecedent)) & vocab.events
+        still_handled = sorted(its_events & set(reacted_to))
+        if not still_handled or still_handled[0] in opened:
+            continue  # nothing reacts to its events any more; or that event has its gap already
+        only_these = [event if name in its_events else z3.Not(event) for name, event in happens.items()]
+        # What the lost rule asked about stays in the situation shown.
+        shown = frozenset(its_events | vocab.symbols_in(rule.antecedent))
+        for gap in one_gap(only_these + [rule.antecedent], shown):
+            opened[still_handled[0]] = {**gap, "opened_by": [rule.id]}
+
     findings = []
     for event in reacted_to:
         alone = [happens[event]] + [z3.Not(other) for name, other in happens.items() if name != event]
-        for gap in one_gap(alone, frozenset([event])):
+        for gap in [opened[event]] if event in opened else one_gap(alone, frozenset([event])):
             findings.append({"type": "gap", "event": event, **gap})
     nothing_happens = [z3.Not(event) for event in happens.values()]
     for gap in one_gap(nothing_happens, frozenset(vocab.events & relevant)):

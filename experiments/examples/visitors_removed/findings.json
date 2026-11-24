@@ -1,0 +1,45 @@
+[
+  {
+    "type": "gap",
+    "event": "visitor_checks_in",
+    "when": {
+      "visiting_time_ends": false,
+      "visitor_checks_in": true,
+      "visitor_leaves_without_badge": false,
+      "visitor_on_list": false,
+      "visitor_stay_duration": "2"
+    },
+    "opened_by": [
+      "X1"
+    ],
+    "about_change": true,
+    "situation": "A visitor initiates a check-in process at a ward, the scheduled visiting time period has not ended, the visitor is not present on the patient's visitor list, the visitor has not left the ward without returning their badge, and the visitor has stayed for 2 hours.",
+    "title": "Missing rule for unauthorized check-in",
+    "explanation": "The requirements do not specify what the system must do when a visitor who is not on the patient's visitor list attempts to check in. This gap exists because the previous rule that handled this specific scenario was removed.",
+    "option_a": "Keeping the requirements as written means the system has no defined behavior for a visitor who is not on the list and attempts to check in.",
+    "option_b": "Add a requirement stating that when a visitor checks in at a ward and is not on the patient's visitor list, the system keeps the ward door closed and calls a nurse."
+  },
+  {
+    "type": "gap",
+    "event": "visitor_leaves_without_badge",
+    "when": {
+      "badge_not_returned_count": 3,
+      "visiting_time_ends": false,
+      "visitor_leaves_without_badge": true,
+      "visitor_on_list": false,
+      "visitor_stay_duration": "2"
+    },
+    "about_change": false
+  },
+  {
+    "type": "gap",
+    "when": {
+      "visiting_time_ends": false,
+      "visitor_checks_in": false,
+      "visitor_leaves_without_badge": false,
+      "visitor_stay_duration": "2"
+    },
+    "quiet": true,
+    "about_change": false
+  }
+]

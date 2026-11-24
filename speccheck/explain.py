@@ -178,6 +178,11 @@ def evidence(finding: dict, formal: dict) -> str:
         if finding.get("quiet"):
             text += ("\nNo event happens in this situation, so this may only mean that "
                      "the system waits.")
+        if finding.get("opened_by"):
+            removed = {rule["id"]: rule["text"] for rule in formal.get("removed_rules", [])}
+            text += ("\nBefore the change a requirement covered this situation, "
+                     "and the change removes it:")
+            text += "".join(f"\n- {rule_id}: {removed.get(rule_id, '')}" for rule_id in finding["opened_by"])
         if finding.get("doubted_by"):
             fact_texts = {fact["id"]: fact["text"] for fact in formal.get("background", [])}
             text += ("\nBut these assumed facts say that this situation cannot happen, "
@@ -340,6 +345,8 @@ def render(findings: list[dict], models: list[dict], title: str, note: list[str]
             remarks.append("doubtful: needs two events at the same moment")
         if finding.get("quiet"):
             remarks.append("no event happens")
+        if finding.get("opened_by"):
+            remarks.append(f"opened by removing {', '.join(finding['opened_by'])}")
         if finding.get("depends_on_reading"):
             remarks.append(f"depends on the reading of {', '.join(finding['depends_on_reading'])}")
         if "support" in finding:  # several symbol sets were used

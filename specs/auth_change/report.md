@@ -2,9 +2,9 @@
 
 5 requirements analysed: 1 conflict(s), 0 gap(s), 0 ambiguity(ies).
 
-Change `admin-never-locked`, checked against the specs that exist: 1 scenario(s) added, 0 in modified requirements.
+Change `admin-never-locked`, checked against the specs that exist: 1 scenario(s) added, 0 modified, 0 removed.
 
-Only findings that involve an added or modified rule (R5) are shown. 3 other finding(s), among the existing requirements alone, are in findings.json.
+Shown are the findings that involve an added or modified rule (R5). 3 other finding(s), among the existing requirements alone, are in findings.json.
 
 ## 1. Conflict: Administrator Account Lock Conflict
 

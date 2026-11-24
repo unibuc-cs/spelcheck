@@ -16,8 +16,11 @@ Options that change what is done:
                       applied to the specs, the result is written as merged.md
                       and goes through the three stages; the report then shows
                       the findings that involve an added or modified
-                      requirement. In findings.json every finding says so
+                      requirement, and the gaps that a removed one leaves
+                      open. In findings.json every finding says so
                       ("about_change"), and the others are not worded.
+                      merged.md and formal.json also hold what the change
+                      removes (labels X1, X2, ...); the checks leave it out.
 
     --symbol-sets K   formalize K times, each time with its own symbols. Every
                       finding then says with how many of the K sets it was
@@ -38,7 +41,7 @@ import json
 import sys
 from pathlib import Path
 
-from .change import about_change, changed_rules, merge, report_lines
+from .change import about_change, after_model, changed_rules, merge, report_lines
 from .checks import analyze, combine, find_scenarios
 from .explain import explain, judge, render
 from .formalize import formalize_sets
@@ -92,6 +95,12 @@ def main() -> None:
     else:
         parser.error("give --base-url (to formalize with the LLM) or --formal (to reuse a formal.json)")
 
+    # A change: which rules it added or modified, and the formal model without
+    # the rules it removes (they stay in formal.json, and apart in `models`).
+    if merged:
+        changed = [changed_rules(model, merged) for model in models]
+        models = [after_model(model, merged) for model in models]
+
     # Stage 2: logic -> findings. Z3 only. Each model is checked by itself;
     # `combine` merges the results and counts how many models agree.
     findings = combine([analyze(model) for model in models])
@@ -101,7 +110,6 @@ def main() -> None:
     # 3. `others` are those among the requirements that existed before.
     others = []
     if merged:
-        changed = [changed_rules(model, merged) for model in models]
         for finding in findings + scenarios:
             finding["about_change"] = about_change(finding, models, changed)
         others = [finding for finding in findings if not finding["about_change"]]

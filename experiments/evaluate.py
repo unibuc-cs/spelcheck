@@ -59,7 +59,7 @@ from pathlib import Path
 
 from speccheck import formalize as formalize_module
 from speccheck import probe as probe_module
-from speccheck.change import Merged, about_change, changed_rules, merge
+from speccheck.change import Merged, about_change, after_model, changed_rules, merge
 from speccheck.checks import analyze, combine, find_gaps, settled
 from speccheck.formalize import formalize_sets, judge_second, second_reading
 from speccheck.llm import LLM
@@ -472,22 +472,29 @@ def change_run(spec: dict, run: dict, config: dict) -> dict:
         allowed                 conflicts that are a fair consequence of a planted
                                 ambiguity: neither required nor counted against the tool
         left_out                conflicts among the existing rules alone
+        old, old_shown          the conflict that the specs had before the change
+                                (expected.json "old"); it, if shown as the change's
         gaps                    the gaps about the change (findings)
         gap_found, gap_planted  planted gaps: found, all
-        false_gaps              covered scenarios with a gap on their event
         flags, ambiguous        rules of the change flagged as ambiguous; those planted
         unlabelled              rules without a label, and those of them counted as changed
     """
     merged = merged_of(spec)
     label = {f"{s['capability']}/{s['requirement']}/{s['scenario']}": name
-             for name, s in merged.scenarios.items()}
-    models, findings = findings_of(run, config)
-    changed = [changed_rules(model, merged) for model in models]
+             for name, s in merged.scenarios.items() if s["status"] != "removed"}
+    # Which rules are the change's is read off the models as the LLM made them.
+    # The checks then run without the rules that the change removes.
+    changed = [changed_rules(model, merged) for model in run["models"][:config["sets"]]]
+    models, findings = findings_of({**run, "models": [after_model(model, merged) for model in run["models"]]},
+                                   config)
     mine = [finding for finding in findings if about_change(finding, models, changed)]
 
     def conflicts(some: list[dict]) -> set:
         return {frozenset(f["rules"]) for f in some
                 if f["type"] == "conflict" and (config["doubtful"] or not is_doubtful(f))}
+
+    def pairs(key: str) -> set:
+        return {frozenset(label[name] for name in pair) for pair in spec.get(key, [])}
 
     gaps = [f for f in mine if f["type"] == "gap" and (config["doubtful"] or not is_doubtful(f))]
     vocab, rules = Vocabulary(models[0]["symbols"]), {rule["id"]: rule for rule in models[0]["rules"]}
@@ -499,13 +506,14 @@ def change_run(spec: dict, run: dict, config: dict) -> dict:
     extra = [rule["id"] for rule in models[0]["rules"] if rule["id"] not in merged.scenarios]
     return {
         "conflicts": conflicts(mine),
-        "expected": {frozenset(label[name] for name in pair) for pair in spec.get("conflicts", [])},
-        "allowed": {frozenset(label[name] for name in pair) for pair in spec.get("allowed", [])},
+        "expected": pairs("conflicts"),
+        "allowed": pairs("allowed"),
         "left_out": conflicts(findings) - conflicts(mine),
+        "old": pairs("old"),
+        "old_shown": pairs("old") & conflicts(mine),
         "gaps": gaps,
         "gap_found": {label[name] for name in spec.get("gaps", []) if has_gap(name)},
         "gap_planted": {label[name] for name in spec.get("gaps", [])},
-        "false_gaps": {label[name] for name in spec.get("covered", []) if has_gap(name)},
         "flags": {f["rule"] for f in mine if f["type"] == "ambiguity"},
         "ambiguous": {label[name] for name in spec.get("ambiguous", [])},
         "unlabelled": (extra, [rule for rule in extra if rule in changed[0]]),
@@ -513,44 +521,59 @@ def change_run(spec: dict, run: dict, config: dict) -> dict:
 
 
 def change_tables(data: dict) -> str:
-    """Score the runs of OpenSpec changes (see change_run); build the Markdown summary."""
+    """Score the runs of OpenSpec changes (see change_run); build the Markdown summary.
+
+    A change is "quiet" when nothing may be reported about it: expected.json
+    says "nothing" (eval13), or it is the clean version of an older set.
+    """
     ok_runs = [run for run in data["runs"] if "models" in run]
     configs = [(label, {**DEFAULT, **change}) for label, change in CONFIGURATIONS
                if label in CHANGE_CONFIGURATIONS]
     kinds = sorted({kind(name) for name, spec in data["specs"].items() if spec.get("conflicts")})
+    gap_kinds = sorted({kind(name) for name, spec in data["specs"].items() if spec.get("gaps")})
+
+    def quiet(name: str) -> bool:
+        return data["specs"][name].get("nothing", kind(name) == "clean")
 
     summary = ["| Configuration | Planted conflicts found | " + " | ".join(kinds)
-               + " | Clean changes with a conflict about the change | Other conflicts about the change "
-                 "| Conflicts among existing rules, not shown |",
-               "|---|---|" + "---|" * len(kinds) + "---|---|---|"]
-    gap_rows = ["| Configuration | Planted gaps found | gap | narrowed "
-                "| Clean changes with a gap on a covered event | Gaps about the change, all |",
-                "|---|---|---|---|---|---|"]
+               + " | Quiet changes with a conflict about them | Other conflicts about the change "
+                 "| The old conflict, shown as the change's | The old conflict, found and not shown "
+                 "| All conflicts among existing rules, not shown |",
+               "|---|---|" + "---|" * len(kinds) + "---|---|---|---|---|"]
+    gap_rows = ["| Configuration | Planted gaps found | " + " | ".join(gap_kinds)
+                + " | Quiet changes with a gap about them | Gaps about the change, all |",
+                "|---|---|" + "---|" * len(gap_kinds) + "---|---|"]
     for label, config in configs:
-        found, total = Counter(), Counter()   # planted conflicts and gaps, by kind of change
-        alarms = false_gap_runs = clean = other = left_out = all_gaps = 0
+        found, total = Counter(), Counter()          # planted conflicts, by kind of change
+        gap_found, gap_total = Counter(), Counter()  # planted gaps, by kind of change
+        alarms = gap_alarms = quiet_runs = other = left_out = all_gaps = old = old_shown = old_left = 0
         for run in ok_runs:
             result, version = change_run(data["specs"][run["spec"]], run, config), kind(run["spec"])
-            found[version] += len(result["expected"] & result["conflicts"]) + len(result["gap_found"])
-            total[version] += len(result["expected"]) + len(result["gap_planted"])
+            found[version] += len(result["expected"] & result["conflicts"])
+            total[version] += len(result["expected"])
+            gap_found[version] += len(result["gap_found"])
+            gap_total[version] += len(result["gap_planted"])
             extra = result["conflicts"] - result["expected"] - result["allowed"]
             other += len(extra)
             left_out += len(result["left_out"])
             all_gaps += len(result["gaps"])
-            if version == "clean":
-                clean += 1
+            old += len(result["old"])
+            old_shown += len(result["old_shown"])
+            old_left += len(result["old"] & result["left_out"])
+            if quiet(run["spec"]):
+                quiet_runs += 1
                 alarms += bool(extra)
-                false_gap_runs += bool(result["false_gaps"])
+                gap_alarms += bool(result["gaps"])
         summary.append(
-            f"| {label} | {sum(found[k] for k in kinds)}/{sum(total[k] for k in kinds)} | "
+            f"| {label} | {sum(found.values())}/{sum(total.values())} | "
             + " | ".join(f"{found[k]}/{total[k]}" for k in kinds)
-            + f" | {alarms}/{clean} | {other} | {left_out} |")
+            + f" | {alarms}/{quiet_runs} | {other} | {old_shown}/{old} | {old_left}/{old} | {left_out} |")
         if "facts" not in dict(CONFIGURATIONS)[label]:  # a gap needs no fact
             gap_rows.append(
                 f"| {label.replace('conflicts', 'findings')} "
-                f"| {found['gap'] + found['narrowed']}/{total['gap'] + total['narrowed']} "
-                f"| {found['gap']}/{total['gap']} | {found['narrowed']}/{total['narrowed']} "
-                f"| {false_gap_runs}/{clean} | {all_gaps} |")
+                f"| {sum(gap_found.values())}/{sum(gap_total.values())} | "
+                + " | ".join(f"{gap_found[k]}/{gap_total[k]}" for k in gap_kinds)
+                + f" | {gap_alarms}/{quiet_runs} | {all_gaps} |")
 
     # For the default configuration: ambiguity flags, labels, and every case.
     label, config = configs[0]
@@ -575,8 +598,8 @@ def change_tables(data: dict) -> str:
                                 for group in groups))
 
     details = ["| Case | Runs | Expected, found in | Other conflicts about the change (rules: runs) "
-               "| Gaps about the change | Conflicts not shown |",
-               "|---|---|---|---|---|---|"]
+               "| Gaps about the change | The old conflict, shown as the change's | Conflicts not shown |",
+               "|---|---|---|---|---|---|---|"]
     for name, runs in results.items():
         hits, extras = Counter(), Counter()
         for result in runs:
@@ -591,11 +614,12 @@ def change_tables(data: dict) -> str:
             + (", ".join(f"{what}: {hits[what]}/{len(runs)}" for what in wanted) or "nothing expected")
             + " | " + (", ".join(f"{what}: {n}" for what, n in sorted(extras.items())) or "none")
             + f" | {sum(len(result['gaps']) for result in runs)}"
+            + f" | {sum(len(result['old_shown']) for result in runs)}"
             + f" | {sum(len(result['left_out']) for result in runs)} |")
 
     return "\n".join([
         *heading(data, "Evaluation of the change check"),
-        "Only findings that involve a rule of the change count; see change_run in evaluate.py.",
+        "Only findings that involve the change count; see change_run in evaluate.py.",
         "",
         "## Conflicts, by configuration",
         "",

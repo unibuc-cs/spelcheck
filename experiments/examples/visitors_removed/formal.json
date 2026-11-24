@@ -1,0 +1,445 @@
+{
+  "symbols": [
+    {
+      "name": "visitor_checks_in",
+      "sort": "Bool",
+      "values": [],
+      "description": "A visitor initiates a check-in process at a ward",
+      "event": true
+    },
+    {
+      "name": "visitor_on_list",
+      "sort": "Bool",
+      "values": [],
+      "description": "The checking-in visitor is present on the patient's visitor list",
+      "event": false
+    },
+    {
+      "name": "ward_door_open",
+      "sort": "Bool",
+      "values": [],
+      "description": "The ward door is in the open state",
+      "event": false
+    },
+    {
+      "name": "badge_printed",
+      "sort": "Bool",
+      "values": [],
+      "description": "A visitor badge has been printed for the visitor",
+      "event": false
+    },
+    {
+      "name": "nurse_called",
+      "sort": "Bool",
+      "values": [],
+      "description": "A nurse has been called to the ward",
+      "event": false
+    },
+    {
+      "name": "visiting_time_ends",
+      "sort": "Bool",
+      "values": [],
+      "description": "The scheduled visiting time period has ended",
+      "event": true
+    },
+    {
+      "name": "visitors_reminded_to_leave",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system has issued a reminder to all visitors to leave",
+      "event": false
+    },
+    {
+      "name": "visitor_stay_duration",
+      "sort": "Real",
+      "values": [],
+      "description": "The amount of time a visitor has stayed in the ward, in hours",
+      "event": false
+    },
+    {
+      "name": "visitor_asked_to_make_room",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system has asked the visitor to make room for others",
+      "event": false
+    },
+    {
+      "name": "visitor_leaves_without_badge",
+      "sort": "Bool",
+      "values": [],
+      "description": "A visitor leaves the ward without returning their badge",
+      "event": true
+    },
+    {
+      "name": "badge_not_returned_count",
+      "sort": "Int",
+      "values": [],
+      "description": "The number of times this specific visitor has left without returning a badge",
+      "event": false
+    },
+    {
+      "name": "ward_manager_informed",
+      "sort": "Bool",
+      "values": [],
+      "description": "The ward manager has been informed about the badge issue",
+      "event": false
+    }
+  ],
+  "background": [
+    {
+      "id": "F1",
+      "text": "What R1 demands, in the terms of the other requirements: If a visitor initiates a check-in at a ward and is present on the patient's visitor list, the system must open the ward door.",
+      "formula": "(=> (and (and visitor_checks_in visitor_on_list) (and ward_door_open badge_printed)) ward_door_open)",
+      "support": "8/8",
+      "restates": "R1",
+      "antecedent": "(and visitor_checks_in visitor_on_list)",
+      "consequent": "ward_door_open",
+      "check": {
+        "when": {
+          "visitor_checks_in": true,
+          "visitor_on_list": true,
+          "ward_door_open": false
+        },
+        "answers": {
+          "possible": 0,
+          "impossible": 8,
+          "unclear": 0
+        },
+        "verdict": "confirmed"
+      }
+    },
+    {
+      "id": "F2",
+      "text": "What R2 demands, in the terms of the other requirements: When the scheduled visiting time period ends, the system must ask visitors to make room for others.",
+      "formula": "(=> (and visiting_time_ends visitors_reminded_to_leave) visitor_asked_to_make_room)",
+      "support": "6/8",
+      "restates": "R2",
+      "antecedent": "visiting_time_ends",
+      "consequent": "visitor_asked_to_make_room",
+      "check": {
+        "when": {
+          "visiting_time_ends": true,
+          "visitor_asked_to_make_room": false
+        },
+        "answers": {
+          "possible": 8,
+          "impossible": 0,
+          "unclear": 0
+        },
+        "verdict": "rejected"
+      }
+    },
+    {
+      "id": "F3",
+      "text": "What R3 demands, in the terms of the other requirements: If a visitor's stay in the ward exceeds two hours, the system must issue a reminder to all visitors to leave.",
+      "formula": "(=> (and (> visitor_stay_duration 2) visitor_asked_to_make_room) visitors_reminded_to_leave)",
+      "support": "8/8",
+      "restates": "R3",
+      "antecedent": "(> visitor_stay_duration 2)",
+      "consequent": "visitors_reminded_to_leave",
+      "check": {
+        "when": {
+          "visitor_stay_duration": "3",
+          "visitors_reminded_to_leave": false
+        },
+        "answers": {
+          "possible": 3,
+          "impossible": 5,
+          "unclear": 0
+        },
+        "verdict": "confirmed"
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "R1",
+      "text": "WHEN a visitor checks in at a ward AND the visitor is on the patient's visitor list THEN the system opens the ward door and prints a visitor badge",
+      "trigger": "visitor_checks_in",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "When a visitor initiates a check-in and is confirmed to be on the patient's visitor list, the system must open the ward door and print a visitor badge.",
+      "antecedent": "(and visitor_checks_in visitor_on_list)",
+      "consequent": "(and ward_door_open badge_printed)",
+      "probes": [
+        {
+          "reading": "The system opens the ward door and prints a visitor badge only if the visitor checks in and is on the patient's visitor list.",
+          "antecedent": "(and ward_door_open badge_printed)",
+          "consequent": "(and visitor_checks_in visitor_on_list)",
+          "situations": [
+            {
+              "when": {
+                "badge_printed": true,
+                "visitor_checks_in": false,
+                "visitor_on_list": false,
+                "ward_door_open": true
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "badge_printed": false,
+                "visitor_checks_in": true,
+                "visitor_on_list": true,
+                "ward_door_open": false
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "X1",
+      "text": "WHEN a visitor checks in at a ward AND the visitor is not on the patient's visitor list THEN the system keeps the ward door closed and calls a nurse",
+      "trigger": "visitor_checks_in",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a visitor initiates a check-in and is not listed as an authorized visitor, the ward door must remain closed and a nurse must be summoned.",
+      "antecedent": "(and visitor_checks_in (not visitor_on_list))",
+      "consequent": "(and (not ward_door_open) nurse_called)",
+      "probes": [
+        {
+          "reading": "If a visitor checks in, the system keeps the ward door closed; additionally, if the visitor is not on the list, it calls a nurse.",
+          "antecedent": "visitor_checks_in",
+          "consequent": "(and (not ward_door_open) (=> (not visitor_on_list) nurse_called))",
+          "situations": [
+            {
+              "when": {
+                "nurse_called": false,
+                "visitor_checks_in": true,
+                "visitor_on_list": true,
+                "ward_door_open": true
+              },
+              "translation_says": "obeyed"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R2",
+      "text": "WHEN visiting time ends THEN the system reminds all visitors to leave",
+      "trigger": "visiting_time_ends",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "When the scheduled visiting time period ends, the system must issue a reminder to all visitors to leave.",
+      "antecedent": "visiting_time_ends",
+      "consequent": "visitors_reminded_to_leave",
+      "probes": [
+        {
+          "reading": "The system reminds all visitors to leave only if the scheduled visiting time period has ended.",
+          "antecedent": "visitors_reminded_to_leave",
+          "consequent": "visiting_time_ends",
+          "situations": [
+            {
+              "when": {
+                "visiting_time_ends": false,
+                "visitors_reminded_to_leave": true
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "visiting_time_ends": true,
+                "visitors_reminded_to_leave": false
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R3",
+      "text": "WHEN a visitor has stayed for more than 2 hours THEN the system asks the visitor to make room for others",
+      "trigger": "",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a visitor's stay duration exceeds 2 hours, the system must request that the visitor make room for others.",
+      "antecedent": "(> visitor_stay_duration 2)",
+      "consequent": "visitor_asked_to_make_room",
+      "probes": [
+        {
+          "reading": "The system asks the visitor to make room for others only if the visitor has stayed for more than 2 hours.",
+          "antecedent": "visitor_asked_to_make_room",
+          "consequent": "(> visitor_stay_duration 2)",
+          "situations": [
+            {
+              "when": {
+                "visitor_asked_to_make_room": true,
+                "visitor_stay_duration": "0"
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "visitor_asked_to_make_room": false,
+                "visitor_stay_duration": "3"
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 7,
+            "other": 1,
+            "either": 0
+          }
+        },
+        {
+          "reading": "The system asks the visitor to make room for others if the visitor has stayed for at least 2 hours.",
+          "antecedent": "(>= visitor_stay_duration 2)",
+          "consequent": "visitor_asked_to_make_room",
+          "situations": [
+            {
+              "when": {
+                "visitor_asked_to_make_room": false,
+                "visitor_stay_duration": "2"
+              },
+              "translation_says": "obeyed"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        },
+        {
+          "reading": "The system asks the visitor to make room for others if the visitor has stayed for exactly 2 hours.",
+          "antecedent": "(= visitor_stay_duration 2)",
+          "consequent": "visitor_asked_to_make_room",
+          "situations": [
+            {
+              "when": {
+                "visitor_asked_to_make_room": false,
+                "visitor_stay_duration": "2"
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "visitor_asked_to_make_room": false,
+                "visitor_stay_duration": "3"
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R4",
+      "text": "WHEN a visitor leaves without returning the badge for the second time THEN the system informs the ward manager",
+      "trigger": "visitor_leaves_without_badge",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "When a specific visitor leaves the ward without returning their badge and this is the second time that has happened for them, the system must inform the ward manager.",
+      "antecedent": "(and visitor_leaves_without_badge (= badge_not_returned_count 2))",
+      "consequent": "ward_manager_informed",
+      "probes": [
+        {
+          "reading": "The system informs the ward manager when a visitor leaves without returning their badge and the count of such incidents for that visitor is at least two.",
+          "antecedent": "(and visitor_leaves_without_badge (>= badge_not_returned_count 2))",
+          "consequent": "ward_manager_informed",
+          "situations": [
+            {
+              "when": {
+                "badge_not_returned_count": 3,
+                "visitor_leaves_without_badge": true,
+                "ward_manager_informed": false
+              },
+              "translation_says": "obeyed"
+            }
+          ],
+          "answers": {
+            "translation": 7,
+            "other": 1,
+            "either": 0
+          }
+        }
+      ]
+    }
+  ],
+  "outcome_pairs": [
+    {
+      "rules": [
+        "R1",
+        "R3"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "X1",
+        "R3"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R2",
+        "R3"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R3",
+        "R4"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    }
+  ]
+}
