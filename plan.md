@@ -23,7 +23,7 @@ projects have them (5.10).
 | Goal | Status |
 |---|---|
 | **G1** A minimal working prototype of Kiro's formal analysis: spec, formal check, answer in plain language | **Done.** Conflicts, gaps, ambiguities and scenarios, as in Kiro's formal part. Gaps are asked once for each event, and all 18 planted gaps of `eval8/` were found. Both Kiro blog examples found by the solver (`delete_property`: 3 of 3 in the last runs; a wrong voted fact can still hide it). Ambiguities: about half with one model; with the optional second reader 30 and 32 of 36 (held-out `eval4/`, `eval7/`), at up to one extra question per spec |
-| **G2** Data-driven: any spec, any format | **Done for the prototype.** 63 base specs in two formats (Kiro EARS, OpenSpec), no change to code or prompts; specs of 30 and of 100 requirements went as well as the small ones (E13, E14), and the read step has room for about 140. An OpenSpec *change* is checked against the specs that exist (`--change`, 5.10): on held-out `eval11/`, 36 of 36 planted conflicts and 36 of 36 planted gaps, and nothing else reported about a change (E17). A gap that a removal opens is reported as the change's, 18 of 18 on held-out `eval13/`, and a conflict the specs had before is never blamed on the change (E19). Not tried: a real OpenSpec project |
+| **G2** Data-driven: any spec, any format | **Done for the prototype.** 63 base specs in two formats (Kiro EARS, OpenSpec), no change to code or prompts; specs of 30 and of 100 requirements went as well as the small ones (E13, E14), and the read step has room for about 140. An OpenSpec *change* is checked against the specs that exist (`--change`, 5.10): on held-out `eval11/`, 36 of 36 planted conflicts and 36 of 36 planted gaps, and nothing else reported about a change (E17). A gap that a removal opens is reported as the change's, 18 of 18 on held-out `eval13/`, and a conflict the specs had before is never blamed on the change (E19). With `--incremental` a change is checked on a saved model of the specs, for about a seventh of the cost, and finds a little less: 50 against 54 of 54 conflicts on held-out `eval14/` (E20). Not tried: a real OpenSpec project |
 | **G3** Code and documents a person can read | **Done** for the current state. GUIDE.md and README.md were revised after a point-by-point review (2026-11-22): each mechanism is a short list of steps on one real example |
 | **G4** Research for a paper, on the local model | **Well under way.** 12 held-out tests (E5, E7 to E13, E15 to E18). On the 10 before the questions about outcomes: 61 to 100% of planted conflicts found; with doubtful conflicts set aside, at most 1 false alarm in 18 clean runs, apart from a real conflict we wrote into an `eval9/` clean spec by mistake (2 runs, E15). With those questions (E18, conflicts said in other words): 34 of 36, and 3 of 18 clean runs with a conflict that was not planted. Planted gaps 18 of 18 in each of the last three sets (E13, E15, E16). Still small: one main model, specs written by us |
 | **G5** Only the formal part | **Done.** An LLM review of the text was built, measured, and switched off |
@@ -58,16 +58,17 @@ this order:
    more sets, specs we did not write, and results counted per planted
    conflict (the runs of one spec mostly agree, so more specs help more than
    more runs). For the change check: a real OpenSpec project with its
-   history of changes. All thirteen sets have been read (`eval13/` in E19), so
-   a new design needs `eval14/`, written first.
+   history of changes. All fourteen sets have been read (`eval14/` in E20), so
+   a new design needs `eval15/`, written first.
 2. **The change check, further** (G2). The gap that a removal opens is done
-   (step 33). What is left: every change costs a full run, because nothing is
-   cached, and a project is bounded by the read step's room, about 140
-   scenarios. The idea: formalize the specs that exist once, save the result,
-   and translate only the new requirements of a change into the saved
-   symbols. That needs a new prompt for the read step, the most fragile one,
-   so it has to be measured against the full run on a set of its own (the
-   plan is in 2.1).
+   (step 33), and so is a way to check a change on a saved model of the
+   specs (step 34, `--incremental`). What is left:
+   - the saved-model way misses a few conflicts that the full run finds (4
+     of 54 on `eval14/`): a new rule read on its own can get an event of the
+     saved model as its trigger and then be rejected (research.md 4.5);
+   - the specs of a project must still fit one read answer, about 140
+     scenarios. The same step that adds a change to a saved model could add
+     the spec files one by one, which would lift that bound. Not tried.
 3. **The choice of symbols** (G1), which is where the remaining misses and
    false alarms come from:
    - two symbols for one outcome ("take the price", "refuse all payments").
@@ -87,39 +88,6 @@ this order:
      once (step 30): a gap the assumed facts rule out is marked doubtful, but
      the facts rarely say that one of the two always holds, so only 2 of 13
      were marked (T20, E16). This is a known limit now.
-
-### 2.1 The plan for checking a change without formalizing everything again (step 34, not built yet)
-
-**Why.** Today every change costs a full run: all the specs are formalized
-again, so that old and new rules share their symbols (5.10). For a project of
-100 scenarios and a change of 2, that is 50 times the work it could be, and
-the project cannot be larger than one read answer can hold.
-
-**How it would run.** `python -m speccheck --change openspec/changes/NAME --incremental`
-
-| Step | Who | What |
-|---|---|---|
-| 1 base | the LLM and Z3, once | the specs that exist are formalized as today, as one labelled document. The formal model is saved in `openspec/.speccheck/base.json`, with a fingerprint of the specs, and made again only when the specs change |
-| 2 new part | our code | from the change: the scenarios that are added or reworded (labels N1, N2, ...), those that are removed, those that stay |
-| 3 formalize the new part | the LLM and Z3 | only the new scenarios go through stage 1. The read step gets the symbols of the base and one more instruction: use an existing symbol wherever it fits, add a new one only for a fact that has none. Translations, links and questions are asked for the new rules only, the question about two outcomes for the pairs with a new rule |
-| 4 put together | our code | the rules of the base, without the removed and the reworded ones, plus the new rules; the facts of both |
-| 5 check, select, word | Z3, our code, the LLM | as today (5.10) |
-
-**What is new for the model:** one addition to the read prompt. Everything
-else is the same prompts, asked about fewer rules.
-
-**The risk.** The read step picks the symbols. A new rule that does not get
-the symbol of an old one cannot clash with it, and the conflict is missed.
-
-**How it is tested.** `eval14/` was written first: six new projects with six
-changes each (`clean`, `direct`, `overlap`, `modified`, `gap`, `removed`).
-The same cases are run both ways, and compared: planted conflicts and gaps
-found, false alarms, and the cost of a change (requests and tokens). For
-development, `eval11/` and `eval13/` in the new way, against their full runs.
-
-**The decision.** If the new way finds as much as the full run, it becomes
-the way `--change` works; if it finds less, it stays an option, with the
-difference written down.
 
 Small things that are open:
 
@@ -166,6 +134,13 @@ with a conflict that was not planted from 3 to 13 of 144 (T22). On held-out
 loss, and each added conflict quotes the fact it rests on. The rule for such
 decisions from now on: when the gains are larger than the losses, the new
 version becomes the default, and the loss is written down as a limit.
+
+Decided on 2026-11-24: **checking a change on a saved model of the specs is
+an option, `--incremental`; the full run stays the default** (step 34, 5.10).
+The rule was set before the test: the new way becomes the default only if it
+finds as much. On held-out `eval14/` it found 50 of the 54 planted conflicts
+against 54, and the same 36 of 36 gaps, for 9 requests to the LLM for a change
+against 68 (E20). It is the cheaper way, not the better one.
 
 Decided on 2026-11-24: **what a change removes stays in the merged document,
 apart** (step 33, 5.10). The removed scenarios are formalized with the rest
@@ -283,14 +258,14 @@ The code, in the order to read it:
 
 | File | Lines | Job | Uses |
 |---|---|---|---|
-| `speccheck/llm.py` | 70 | One function: prompt + JSON schema in, N parsed answers out | the model server |
+| `speccheck/llm.py` | 80 | One function: prompt + JSON schema in, N parsed answers out | the model server |
 | `speccheck/logic.py` | 250 | Symbols to Z3 variables; parses formulas; asks the solver, including the test "do these two rules mean the same?" | Z3 |
-| `speccheck/formalize.py` | 720 | Stage 1: text to `formal.json` (steps 1 to 5, then 6 and 7); `formalize_sets` for K symbol sets | `llm`, `logic`, `probe` |
-| `speccheck/probe.py` | 590 | Stage 1, step 6: four checks by simple questions, three about one requirement and one about the outcomes of two | `llm`, `logic` |
+| `speccheck/formalize.py` | 790 | Stage 1: text to `formal.json` (steps 1 to 5, then 6 and 7); `formalize_sets` for K symbol sets; with `base`, adds new rules to a formal model that exists | `llm`, `logic`, `probe` |
+| `speccheck/probe.py` | 600 | Stage 1, step 6: four checks by simple questions, three about one requirement and one about the outcomes of two | `llm`, `logic` |
 | `speccheck/checks.py` | 750 | Stage 2: `formal.json` to findings; which findings depend on a reading; scenarios; `combine` for K formal models | `logic` |
 | `speccheck/explain.py` | 370 | Stage 3: findings to plain words; the scenario judge; builds `report.md` | `llm` |
-| `speccheck/cli.py` | 150 | Runs the three stages, writes the files; with `--change`, on the specs of an OpenSpec project with a change applied | all |
-| `speccheck/change.py` | 370 | For `--change`: applies an OpenSpec change to the specs that exist, labels the scenarios, and says which findings involve the change (5.10) | `logic` |
+| `speccheck/cli.py` | 180 | Runs the three stages, writes the files; with `--change`, on the specs of an OpenSpec project with a change applied | all |
+| `speccheck/change.py` | 440 | For `--change`: applies an OpenSpec change to the specs that exist, labels the scenarios, and says which findings involve the change (5.10) | `logic` |
 
 About half of each file is comments, docstrings and prompts.
 
@@ -790,9 +765,23 @@ gap       "Gap (opened by removing X1)", with the text of X1 under it
 - a removed rule that was rejected (its translations scattered) cannot be
   asked about
 
+**Without formalizing everything again** (`--incremental`; `formalize` with
+`base`). By default the merged spec is formalized again for every change, so
+that all rules share one set of symbols, and a change costs one normal run.
+With `--incremental`:
+
+| Step | Who | What |
+|---|---|---|
+| 1 base | the LLM and Z3, once | the specs that exist are formalized as one labelled document (`change.base_document`). The model is kept in `openspec/.speccheck/base.json` with a fingerprint of the specs, and made again only when they change |
+| 2 new part | our code (`change.merge(on_base=True)`) | writes the added and reworded scenarios of the change as a document of their own, `new.md`, labelled N1, N2, ... The scenarios that stay keep the labels of the base, the removed ones too; the old rule of a reworded scenario is "replaced" and dropped |
+| 3 formalize the new part | the LLM and Z3 (`formalize(base=...)`) | the read step sees the symbols of the base before the document and is told to use them where they fit (`READ_MORE`). Translations, links and the questions of step 6 are asked for the new rules only; the question about two outcomes for the pairs with a new rule; the facts question again only if a symbol was added |
+| 4 as before | Z3, our code, the LLM | removed rules set apart, the checks, the selection, the wording |
+
+- a change that only removes asks the LLM nothing before the wording
+- the second reader (5.8) and several symbol sets (5.6) are not used this way
+- what it finds and what it costs, next to the full run: research.md 2.4
+
 **Kept simple:**
-- the merged spec is formalized again for every change, with nothing cached,
-  so that all rules share one set of symbols. A change costs one normal run
 - if a label does not come back as a rule id, the tool stops: it could not
   tell the change's rules from the others (`change.changed_rules`)
 - the read step may take a requirement's SHALL sentence for a rule of its
@@ -1074,6 +1063,12 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       covered; a scenario with the same words inside a rewritten requirement
       counts as existing (T23); held-out `eval13/` (E19): gaps opened by a
       removal 18 of 18, the old conflict shown as the change's 0 of 108
+- [x] **Step 34 — a change without formalizing everything again**: `eval14/`
+      written first; the specs formalized once and saved, a change's new
+      scenarios formalized on top with the saved symbols (`--incremental`;
+      T24); held-out `eval14/` both ways (E20): conflicts 54 of 54 against 50
+      of 54, gaps 36 of 36 both, 68 requests for a change against 9. Kept as
+      an option; the full run stays the default
 - [x] **Documentation pass 2**: GUIDE.md reviewed point by point and rewritten (a new
       2.4 on gaps and scenarios; the ambiguity check, voted facts and links as steps on
       one real example), then shortened from 1112 to 893 lines; README.md reworded in the

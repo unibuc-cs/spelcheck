@@ -66,9 +66,11 @@ Where the project stands:
   reported a gap that is not one in 0 to 5 of 18 clean runs;
 - it finds about half of the planted ambiguities, and 30 to 32 of 36 with a
   second model, at the price of up to one extra question per spec;
-- for a change to specs that already exist, it found all 54 conflicts and 71
-  of the 72 gaps we had planted in 66 changes it was not built on, among them
-  every gap that a removed requirement opens.
+- for a change to specs that already exist, it found all 108 conflicts and
+  107 of the 108 gaps we had planted in 102 changes it was not built on, among
+  them every gap that a removed requirement opens. A cheaper way to check a
+  change, on a saved model of the specs, costs about a seventh and found 50 of
+  54 conflicts where the full way found 54.
 
 | Read next | For |
 |---|---|
@@ -531,6 +533,16 @@ patient's list (`experiments/examples/visitors_removed`):
 > is not on the patient's visitor list attempts to check in. This gap exists
 > because the previous rule that handled this specific scenario was removed.
 
+By default the whole merged document is formalized again for every change.
+With `--incremental` the specs that exist are formalized once, and that formal
+model is saved in `openspec/.speccheck/base.json` until the specs change. For
+a change, only its new scenarios are formalized (labels N1, N2, ...), and the
+LLM is shown the symbols of the saved model and told to use them. A change
+then costs a few requests, not a run over the whole project: on 36 changes
+checked both ways, 9 requests against 68. This cheaper way found 50 of the 54
+planted conflicts that the full run found, so the full run is the default
+(a saved run: `experiments/examples/auth_incremental`).
+
 The steps are in [GUIDE.md, part 5](GUIDE.md#5-checking-a-change-against-the-specs-that-exist).
 
 ## Run it
@@ -559,6 +571,7 @@ export OPENAI_API_KEY=<content of ~/speccheck/api_key on the cluster>
 python -m speccheck path/to/your_spec.md --base-url http://localhost:18200/v1
 python -m speccheck path/to/your_spec.md --base-url http://localhost:18200/v1 --symbol-sets 3
 python -m speccheck --change path/to/openspec/changes/<name> --base-url http://localhost:18200/v1
+python -m speccheck --change path/to/openspec/changes/<name> --base-url http://localhost:18200/v1 --incremental
 ```
 
 **With the second model.** It is optional and finds more ambiguities. It needs
@@ -580,6 +593,7 @@ The output is written next to the spec, or into `--out`:
 | `findings.json` | what the solver proved, with its wording |
 | `report.md` | the same, in plain language (also printed) |
 | `merged.md` | only with `--change`: the specs with the change applied, every scenario labelled. What the change removes is still in it, under the labels X1, X2, ...; the checks leave it out. The output goes into the change's folder |
+| `new.md`, `openspec/.speccheck/base.json` | only with `--change --incremental`: the new scenarios of the change, which is all that is formalized for it; and the saved formal model of the specs that exist |
 
 A 5-rule spec takes under a minute, and about a minute with 3 symbol sets. A
 spec of 100 requirements took about 10 minutes; the read step has room for
@@ -595,7 +609,7 @@ Nothing in the code or in the prompts is about orders.
 | `specs/order`, `specs/delete_property` | Kiro EARS | the two examples of the Kiro blog |
 | `specs/auth_openspec` | OpenSpec (`### Requirement` / `#### Scenario`) | another format; two conflicts we planted |
 | `experiments/sets/`: `eval` to `eval10`, `eval12` | both | 66 specs in new domains. Each has a clean version and versions with one planted defect, 297 versions in all. Each set was written before it was used, as a test the prompts had not seen |
-| `specs/auth_change`, `experiments/sets/eval11`, `eval13` | OpenSpec projects: specs that exist, and a change | the login example as a change, and 12 projects in new domains with 5 or 6 changes each |
+| `specs/auth_change`, `experiments/sets/eval11`, `eval13`, `eval14` | OpenSpec projects: specs that exist, and a change | the login example as a change, and 18 projects in new domains with 5 or 6 changes each |
 
 ## How reliable is it
 
@@ -675,6 +689,14 @@ Some notes on these numbers:
   18. Every project also has one conflict from before any change: it was
   found in all 108 runs and shown as the change's in none. Of the 54 runs on
   changes about which nothing should be reported, 2 showed a conflict.
+- The two ways to check a change were compared on `eval14/` (E20): six more
+  projects, 36 changes, each checked both ways. The full way found 54 of 54
+  planted conflicts and 36 of 36 gaps, with 68 requests to the LLM for a
+  change. On a saved model of the specs (`--incremental`) a change took 9
+  requests, after one full run for the specs of the project. That way found
+  the same 36 gaps and 50 of the 54 conflicts: two new rules were rejected
+  because their translations disagreed. So `--incremental` is the cheaper
+  way, and the full run is the default.
 - The numbers are small: the specs were written by us, and there is one main
   model. The details are in [research.md](research.md).
 
@@ -692,7 +714,7 @@ Some notes on these numbers:
 | Gaps depend on the symbols, and on the events the LLM marks | "free" and "taken" as two symbols give a false gap, and it is rarely marked doubtful. The gap in which no event happens, which almost every spec has, is marked as such and is rarely something to fix |
 | One snapshot, no time | "then", "after" and "until" are not modelled |
 | A reworded scenario is the change's, whatever its new words are | if its old words gave the same finding, the finding is still shown as the change's |
-| Every change is a full run | the specs are formalized again for each change, so that old and new rules share their symbols. A project is bounded by the read step's room, about 140 scenarios |
+| The cheaper way to check a change finds a little less | by default the specs are formalized again for each change, so that old and new rules share their symbols. `--incremental` avoids that, and missed 4 of 54 planted conflicts that the full run found. Either way, a project is bounded by the read step's room, about 140 scenarios |
 
 ## Optional: an LLM review of the text (off by default)
 
@@ -707,7 +729,7 @@ research.md, section 5.
 |---|---|
 | `speccheck/llm.py` | the one place that calls the model (answers forced into a JSON schema) |
 | `speccheck/logic.py` | symbols to Z3 variables, formula parsing, solver questions |
-| `speccheck/formalize.py` | stage 1: read, sample, cluster, facts, links; several symbol sets |
+| `speccheck/formalize.py` | stage 1: read, sample, cluster, facts, links; several symbol sets; adding new rules to a saved formal model |
 | `speccheck/probe.py` | stage 1, step 6: questions about concrete situations, and about the outcomes of two rules |
 | `speccheck/checks.py` | stage 2: conflicts, gaps, scenarios; which findings depend on a reading; merging several symbol sets |
 | `speccheck/explain.py` | stage 3: wording, the scenario judge, the Markdown report |
@@ -715,8 +737,8 @@ research.md, section 5.
 | `speccheck/change.py` | for `--change`: applies an OpenSpec change to the specs, labels the scenarios, sets apart what the change removes, selects the findings about the change |
 | `speccheck/refine.py` | optional LLM review, off by default |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the vLLM servers on the cluster: the main model, the second model |
-| `tests/` | 63 tests of everything that needs no LLM |
-| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10` and `eval12`, `size` and `size2`; for the change check `eval11`, `eval13` and `change_dev`; and the script that writes them |
+| `tests/` | 69 tests of everything that needs no LLM |
+| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10` and `eval12`, `size` and `size2`; for the change check `eval11`, `eval13`, `eval14` and `change_dev`; and the script that writes them |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs and scores the evaluation; re-scores saved runs without a GPU |
 | `experiments/stability.py`, `fact_threshold.py` | the earlier experiments |

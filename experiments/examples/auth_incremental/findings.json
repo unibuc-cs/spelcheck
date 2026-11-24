@@ -1,0 +1,73 @@
+[
+  {
+    "type": "conflict",
+    "rules": [
+      "R3",
+      "N1"
+    ],
+    "when": {
+      "failed_attempts_count": 5,
+      "is_admin": true
+    },
+    "about_change": true,
+    "situation": "The number of consecutive failed login attempts for the account is 5, and the account belongs to an administrator.",
+    "title": "Administrator Lockout Conflict",
+    "explanation": "Requirement R3 states that the system must lock an account when the number of failed attempts reaches 5. However, Requirement N1 states that the system must not lock an account if it belongs to an administrator. In the situation where an administrator has failed 5 times, these two requirements directly contradict each other.",
+    "option_a": "Keeping the requirements as written means the system is forced to choose between locking the administrator's account or violating the rule that administrators are never locked, creating an undefined state.",
+    "option_b": "Modify Requirement R3 to explicitly exclude administrator accounts from the locking mechanism, or clarify that Requirement N1 takes precedence over R3 for administrator accounts."
+  },
+  {
+    "type": "ambiguity",
+    "rule": "R3",
+    "status": "ambiguous",
+    "found_by": "questions",
+    "split": [
+      8
+    ],
+    "readings": [
+      "Whenever the count of consecutive failed login attempts equals 5, the account must be in a locked state. [in logic: (= failed_attempts_count 5) => account_locked]",
+      "The account is locked as soon as the number of consecutive failed attempts becomes at least 5. [in logic: (>= failed_attempts_count 5) => account_locked]"
+    ],
+    "differs_when": {
+      "account_locked": false,
+      "failed_attempts_count": 6
+    },
+    "answers": {
+      "translation": 1,
+      "other": 7,
+      "either": 0
+    },
+    "other_reading": {
+      "removes": [],
+      "adds": [],
+      "covers_gaps": 0
+    },
+    "about_change": false
+  },
+  {
+    "type": "conflict",
+    "rules": [
+      "R1",
+      "R3"
+    ],
+    "facts": [
+      "F4"
+    ],
+    "when": {
+      "failed_attempts_count": 5,
+      "password_correct": true,
+      "password_submitted": true
+    },
+    "about_change": false
+  },
+  {
+    "type": "gap",
+    "when": {
+      "failed_attempts_count": 0,
+      "is_admin": false,
+      "password_submitted": false
+    },
+    "quiet": true,
+    "about_change": false
+  }
+]

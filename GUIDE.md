@@ -61,9 +61,9 @@ we cannot, do we say so clearly?
 The same tool also checks a *change* against specs that already exist, which
 is how OpenSpec projects work. That is part 5.
 
-To give an idea of the size: about 3,100 lines of Python now, half of them comments
+To give an idea of the size: about 3,500 lines of Python now, half of them comments
 and prompts, one local model (Qwen3.8, 27B), and results measured on 297 versions
-of small specs and on 30 changes. The results are in part 6.
+of small specs and on 102 changes. The results are in part 6.
 
 ---
 
@@ -801,14 +801,37 @@ and drops the second scenario. Three more steps deal with that:
 If a change removes the only rule for an event, nothing is reported. Nobody
 reacts to that event any more, and that was the point of the change.
 
-Two things to know about the whole check:
+**Not starting from zero for every change.** As described so far, the merged
+document is formalized as a whole for every change. That is what gives the
+old and the new rules the same symbols, and without shared symbols Z3 sees no
+conflict (3.2). It also means that a change of one scenario costs as much as
+the whole project. With `--incremental` it goes another way:
 
-- The merged document is formalized as a whole, again for every change. That
-  is what gives the old and the new rules the same symbols, and without
-  shared symbols Z3 sees no conflict (3.2).
-- Inside a requirement that a change rewrites, the scenarios are compared one
-  by one. A scenario with the same words as before counts as existing, so an
-  old conflict of that scenario is not blamed on the change.
+1. **The specs that exist are formalized once.** Their formal model is saved
+   next to them, in `openspec/.speccheck/base.json`, and made again only when
+   the specs change.
+2. **Our code writes down what is new in the change**: the added and the
+   reworded scenarios, labelled N1, N2, ... For the login example that is one
+   scenario, N1, "administrators are never locked out".
+3. **The model formalizes only that**, and it is shown the symbols of the
+   saved model first, with one more instruction: use a listed symbol wherever
+   it fits, and add a new one only for a fact that has none. N1 came out as
+   `(=> is_admin (not account_locked))`: one new symbol, `is_admin`, and the
+   `account_locked` that the lockout rule already uses
+   (`experiments/examples/auth_incremental`).
+4. **Our code puts the two together**: the saved rules, without the removed
+   and the reworded ones, plus the new rules. The checks, the selection and
+   the wording are the same as before.
+
+Run on the same 36 changes, this way asked the model about a seventh of what
+the full way asks, and it found 50 of the 54 conflicts that the full way
+found (6.2). So it is an option for when the cost matters, and the full way
+stays the default.
+
+One more thing to know about the whole check: inside a requirement that a
+change rewrites, the scenarios are compared one by one. A scenario with the
+same words as before counts as existing, so an old conflict of that scenario
+is not blamed on the change.
 
 ---
 
@@ -848,14 +871,16 @@ versions in all. In `eval12` every planted conflict says the opposite outcome
 in other words ("switch the heater on" against "cut the power to the
 heater"), which is the kind the earlier sets missed.
 
-Two more sets, `eval11` and `eval13`, test the change check of part 5. Each
-has six small OpenSpec projects, and each project comes with five or six
-changes whose right answer is known. In `eval11`: one harmless change, two
+Three more sets, `eval11`, `eval13` and `eval14`, test the change check of
+part 5. Each has six small OpenSpec projects, and each project comes with five
+or six changes whose right answer is known. In `eval11`: one harmless change, two
 that clash with an existing scenario, and two that leave a case open. In
 `eval13` the changes also remove things: a requirement that held one of two
 cases (a gap must be reported), and the only requirement for an event
 (nothing must be reported). Every project of `eval13` also has a conflict
 that was there before any change, and it must not be blamed on the change.
+The changes of `eval14` were checked twice, the full way and on a saved model
+of the specs, to compare the two.
 
 Two more terms. A conflict reported on a clean spec is a *false alarm*. And
 because the model answers a little differently each time, every version is run
@@ -902,7 +927,8 @@ eval12  34/36   ███████████████████░   9
 | planted gaps (`eval8` to `eval10`, `eval12`) | 18 of 18 found in the first three and 17 of 18 in `eval12`, now that the question is asked once for each event; before, 0 of 18 |
 | false gaps (the same sets) | in 4, 3, 5 and 0 of 18 runs on clean specs. Explained below |
 | longer specs, 30 and 100 requirements | they went as well as the small ones. Explained below |
-| changes checked against existing specs (`eval11`, `eval13`) | 54 of 54 planted conflicts and 71 of 72 planted gaps found, among them all 18 gaps opened by a removed requirement. The conflict that the specs had before was never blamed on a change. Explained below |
+| changes checked against existing specs (`eval11`, `eval13`, `eval14`) | 108 of 108 planted conflicts and 107 of 108 planted gaps found, among them all 36 gaps opened by a removed requirement. The conflict that the specs had before was never blamed on a change. Explained below |
+| the same changes on a saved model of the specs (`eval14`) | 50 of the 54 conflicts that the full way found, and all 36 gaps, for 9 requests to the model for a change, not 68. Explained below |
 
 **Conflicts that nobody planted.** The questions about two outcomes find the
 conflicts we had been missing, and others with them. On `eval12` they added 27
@@ -947,6 +973,17 @@ in all 108 runs and shown as the change's in none. Of the 54 runs on changes
 about which nothing should be reported, 2 showed a conflict: it came from a
 question about two outcomes (3.2), on a scenario that the change had reworded.
 
+The 36 changes of `eval14` were checked both ways. The full way found all 54
+planted conflicts and all 36 gaps, and it asked the model 68 requests for a
+change. On a saved model of the specs (`--incremental`, part 5) a change took
+9 requests, after one full run for the specs of the project, and a change
+that only removes took none. That way found the same 36 gaps and 50 of the 54
+conflicts. The 4 it missed are two new rules that were rejected because their
+eight translations disagreed. One is "WHEN a person is younger than 17 THEN
+the system does not create any learner file": read on its own, next to the
+saved symbols, it was given the event "a person registers" as its trigger,
+which it does not name.
+
 **Longer specs.** All the specs counted above have at most six requirements.
 To see what a longer document does, we wrote two more, each in four versions
 (clean, direct, overlap, gap) and run three times:
@@ -974,7 +1011,7 @@ The project has five goals. This is where each one stands:
 | G1: a minimal working prototype of Kiro's formal analysis | done |
 | G2: it works on any spec, in any format | done for the prototype: 2 formats, 63 small specs, two long ones, and changes checked against existing specs, removals included (part 5). A real OpenSpec project has not been tried |
 | G3: code and documents a person can read | done for the current state |
-| G4: research for a paper, on the local model | well under way: 11 tests on specs the design had not seen. Still one main model, and specs written by us |
+| G4: research for a paper, on the local model | well under way: 14 tests on specs the design had not seen. Still one main model, and specs written by us |
 | G5: only the formal part | done: an LLM review of the text was built, measured, and switched off |
 
 ### 6.4 What does not work yet
@@ -987,7 +1024,7 @@ The project has five goals. This is where each one stands:
 | two words for one yes/no question give a false gap | "the slot is free" and "the slot is taken" as two symbols: in 3 to 5 of 18 clean runs (6.2) |
 | a fact or a link can be wrong, even with a majority behind it | which is why the report quotes every one that a conflict depends on |
 | there is no time | "then", "after" and "until" are not modelled: the logic is one snapshot |
-| the change check formalizes all the specs again for every change | a change costs one full run, and a project can have about 140 scenarios at most (part 5) |
+| the cheaper way to check a change finds a little less | on a saved model of the specs a change costs about a seventh, and 4 of 54 planted conflicts were missed that the full way found (6.2). Either way, a project can have about 140 scenarios at most |
 | the evaluation is small | the specs were written by us, and there is one main model |
 
 **"Remove" against "keep", on a real case.** One of the planted conflicts
@@ -1061,8 +1098,8 @@ The full list is in research.md, section 5.
 
 1. **A larger evaluation**, with another main model, specs we did not write,
    and a real OpenSpec project with its changes.
-2. **The change check, further**: a way to check a change without
-   formalizing all the specs again.
+2. **The change check, further**: the few conflicts that the cheaper way
+   misses, and projects too large for one read answer.
 3. **What is left of the choice of symbols**: retention periods that become
    only a number, and a mark for the conflicts that exist only because the
    logic is one snapshot.
@@ -1103,14 +1140,14 @@ that section 2 described:
 
 | File | Lines | What to look for |
 |---|---|---|
-| `speccheck/llm.py` | 70 | one function, `ask`: a prompt goes in, N answers come out as JSON |
+| `speccheck/llm.py` | 80 | one function, `ask`: a prompt goes in, N answers come out as JSON |
 | `speccheck/logic.py` | 260 | `model` and `impossible`, the two questions for Z3 (1.2), and `same_meaning` |
 | `speccheck/checks.py` | 750 | `_search` forces rules to apply (2.3); `find_conflicts` runs the two searches (3.2); `_try_other_readings` (3.1); then `find_gaps` and `find_scenarios` (2.4) |
-| `speccheck/formalize.py` | 720 | the seven steps of 3.5. The prompts at the top show what the LLM is asked |
-| `speccheck/probe.py` | 590 | the questions about concrete situations (3.1 and 3.2), and `outcomes`, the questions about two outcomes (3.2) |
+| `speccheck/formalize.py` | 790 | the seven steps of 3.5. The prompts at the top show what the LLM is asked. With `base`, `formalize` adds new rules to a formal model that exists (part 5) |
+| `speccheck/probe.py` | 600 | the questions about concrete situations (3.1 and 3.2), and `outcomes`, the questions about two outcomes (3.2) |
 | `speccheck/explain.py` | 360 | `evidence` writes the *Proven* lines; the wording prompt is above it |
-| `speccheck/cli.py` | 150 | the three stages, called one after the other |
-| `speccheck/change.py` | 370 | part 5: `merge` applies a change to the specs and labels the scenarios; `after_model` sets the removed rules apart; `about_change` selects the findings |
+| `speccheck/cli.py` | 180 | the three stages, called one after the other |
+| `speccheck/change.py` | 440 | part 5: `merge` applies a change to the specs and labels the scenarios; `after_model` sets the removed rules apart; `about_change` selects the findings |
 
 About half of each file is comments, docstrings and prompts.
 
@@ -1120,10 +1157,10 @@ The folders:
 speccheck/          the tool (the 8 files above; refine.py is the review that is switched off)
 specs/              3 small specs the prompts were developed on, with their saved output,
                     and auth_change, the example of part 5
-tests/              63 tests that need no LLM
+tests/              69 tests that need no LLM
 experiments/
   sets/             the 11 evaluation sets, eval to eval10 and eval12 (297 spec versions), two long specs,
-                    and for the change check eval11, eval13 and change_dev (old specs as projects)
+                    and for the change check eval11, eval13, eval14 and change_dev (old specs as projects)
   results/          every experiment: the raw data (.json) and its tables (.md)
   examples/         saved runs that the documents quote
   evaluate.py       runs the pipeline on a set and scores it

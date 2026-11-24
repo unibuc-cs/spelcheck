@@ -2570,6 +2570,167 @@ design needs `eval14/`.
 
 ---
 
+## T24 — A change on a saved model of the specs, on development data (2026-11-24)
+
+**Question.** Every change costs a full run: the merged spec is formalized
+again, so that old and new rules share their symbols. Can a change be checked
+by formalizing only its new scenarios, on top of a formal model of the specs
+that is made once, without losing findings?
+
+**Design** (plan.md 5.10; `eval14/` was written first, 881d1bb):
+
+1. **The base.** The specs that exist are formalized as today, as one
+   labelled document (`change.base_document`). `speccheck --change
+   --incremental` keeps that model in `openspec/.speccheck/base.json`, with a
+   fingerprint of the specs, and makes it again only when the specs change.
+2. **The new part.** Our code (`change.merge(on_base=True)`) writes a
+   document with the added and reworded scenarios of the change only,
+   labelled N1, N2, ... The scenarios that stay keep the labels they have in
+   the base, and so do the removed ones. The old rule of a reworded scenario
+   is "replaced" and dropped.
+3. **Formalizing the new part** (`formalize(..., base=...)`). The read step
+   is shown the symbols of the base before the document, and its prompt gets
+   one addition (`READ_MORE`): "Use a listed symbol wherever it fits the
+   meaning: a new rule about a fact that already has a symbol MUST use that
+   symbol, also when the rule says it in other words, so that a clash with
+   the rules written before can be seen. Add a symbol only for a fact that no
+   listed symbol stands for." The new rules are translated 8 times as usual.
+   The facts question is asked again only if a symbol was added. Links are
+   made for the new rules, in the terms of all rules' outcomes. The questions
+   of step 6 are asked for the new rules, and the question about two outcomes
+   for the pairs with a new rule.
+4. The rest is as in T23: removed rules set apart, the checks, the selection.
+
+**Setup.** `eval11/` and `eval13/` (development data) the new way: for each
+project and each of the 3 runs its specs were formalized once (18 bases for
+each set), and each change on the base of its run. 90 and 108 runs, plus the
+development specs in the usual way and the command line twice on
+`specs/auth_change`. One cluster job, 29 minutes. `evaluate.py` now records
+what each run asked of the LLM.
+
+**Results.**
+
+| | `eval11/`, full (T23) | `eval11/`, new way | `eval13/`, full (E19) | `eval13/`, new way |
+|---|---|---|---|---|
+| planted conflicts found | 36 of 36 | 35 of 36 | 18 of 18 | 18 of 18 |
+| planted gaps found | 36 of 36 | 36 of 36 | 35 of 36 | 36 of 36 |
+| quiet changes with a conflict about them | 0 of 18 | 0 of 18 | 2 of 54 | 2 of 54 |
+| quiet changes with a gap about them | 0 of 18 | 0 of 18 | 0 of 54 | 0 of 54 |
+| the old conflict, shown as the change's | | | 0 of 108 | 0 of 108 |
+| labels kept | 90 of 90 runs | 90 of 90 | 108 of 108 | 108 of 108 |
+
+| What the LLM was asked, on average | Requests | Tokens read | Tokens written |
+|---|---|---|---|
+| a change of `eval11/`, new way | 9 | 4,812 | 3,743 |
+| the specs of an `eval11/` project (6 scenarios), once | 46 | 21,491 | 18,823 |
+| a change of `eval13/`, new way | 7 | 3,500 | 3,077 |
+| the specs of an `eval13/` project (9 scenarios), once | 79 | 36,634 | 32,308 |
+
+The full runs of T23 and E19 did not record their cost; `eval14/` is run both
+ways with it.
+
+- **The one conflict missed** (`marina_direct`, 1 of 3 runs): the 8
+  translations of the new rule scattered and it was rejected. Nothing about
+  symbols: the translations that agreed used `berth_freed`, the symbol of the
+  old rule.
+- **The new rules got the old symbols.** Even without any assumed fact or
+  link, 35 of the 36 conflicts of `eval11/` and 18 of 18 of `eval13/` are
+  found: the new rule and the old one share a symbol. In the login example
+  the added rule became `is_admin => (not account_locked)`, with one new
+  symbol and the `account_locked` of the lockout rule.
+- A change that only removes asked the LLM nothing (0 requests; 72 of the 198
+  runs).
+- The development specs, run the usual way: 15 of 15 conflicts, and the
+  conflict of `auth_change` in 3 of 3.
+- The command line: the second run on `specs/auth_change` found the saved
+  base and formalized only the one new scenario
+  (`experiments/examples/auth_incremental/`).
+
+**Raw data.** [experiments/results/T24_eval11_incremental.json](experiments/results/T24_eval11_incremental.json),
+T24_eval13_incremental.json and T24_specs.json, each with its table.
+
+---
+
+## E20 — Held-out `eval14/`: the same changes checked both ways (2026-11-24)
+
+**Question.** Does a change checked on a saved model of the specs (T24) find
+what the full run finds, on projects it was not built on, and what does it
+save?
+
+**Setup.** `eval14/` was written first (881d1bb) and the design frozen in
+373ae4c. Six OpenSpec projects in new domains (tennis club, brewery, music
+school, driving school, climbing hall, flower shop), each with two spec files
+and seven existing scenarios, and six changes:
+
+| Version | The change | Must report |
+|---|---|---|
+| `clean` | adds a requirement with both of its cases | nothing about the change |
+| `direct` | adds a requirement for the trigger of an existing scenario, with the opposite outcome in other words ("switches the floodlights on" / "keeps the floodlights dark") | that conflict |
+| `overlap` | adds a requirement for a state, which forbids in the same words what a scenario in the other spec file demands | that conflict |
+| `modified` | rewrites a requirement so that it clashes with a scenario in the other spec file | that conflict |
+| `gap` | adds a requirement that covers one of two cases | a gap for its event |
+| `removed` | removes the requirement that held one of two complementary cases | a gap, as the change's |
+
+The 36 changes were run both ways, 3 times each, in one cluster job (47
+minutes): the full way, 108 runs in 32 minutes; and the new way, 18 bases
+(each project's specs, for each run) and 108 changes on them, in 13 minutes.
+
+**Results.**
+
+| | The full run | On a saved model (`--incremental`) |
+|---|---|---|
+| planted conflicts found | 54 of 54 | 50 of 54 |
+| `direct` | 18 of 18 | 17 of 18 |
+| `overlap` | 18 of 18 | 15 of 18 |
+| `modified` | 18 of 18 | 18 of 18 |
+| planted conflicts, doubtful ones set aside | 51 of 54 | 45 of 54 |
+| planted gaps found (`gap`, `removed`) | 36 of 36 | 36 of 36 |
+| clean changes with a conflict or a gap about them | 0 of 18 | 0 of 18 |
+| other conflicts about a change | 3 | 1 |
+| labels kept | 108 of 108 runs | 108 of 108 |
+| **what a change asked of the LLM, on average** | **68 requests** | **9 requests** |
+| tokens read / written | 32,431 / 28,806 | 4,934 / 3,816 |
+| the specs of a project, once | | 61 requests, 28,641 / 25,969 tokens |
+
+- **A change costs about a seventh.** By kind of change, in requests: a
+  removal 60 against 0, a rewritten scenario 60 against 9, one added scenario
+  69 against 8 to 10, two added scenarios 79 against 20. The first change to
+  a project also pays for its base, about one full run.
+- **The 4 conflicts missed by the new way are two cases.**
+  `drivingschool_overlap`, 0 of 3: the new rule is "WHEN a person is younger
+  than 17 THEN the system does not create any learner file". Read on its own,
+  with the symbols of the base in front of it, the read step gave it the
+  trigger `registration_attempted`, an event of the base that the rule does
+  not name. Its 8 translations then disagreed on where that event goes
+  (`registration_attempted => (and (< person_age 17) (not ...))`, `(<
+  person_age 17) => (not ...)`), and the rule was rejected in 2 runs and
+  ambiguous in the third, with a first reading that cannot clash. In the full
+  run the same rule was read as a state rule and found in 3 of 3.
+  `brewery_direct`, 1 of 3: the translations of the new rule scattered.
+- **The new rules did get the old symbols**: no miss came from a new symbol
+  where an old one was meant, and 44 of 54 conflicts are found by the new way
+  without any assumed fact (the full run: 37 of 54).
+- **More planted conflicts are marked doubtful the new way** (5 against 3):
+  `florist_modified` in both ("WHEN the flower truck is being unloaded" read
+  as an event), `musicschool_modified` in 2 runs of the new way only.
+- **The other conflicts about a change** are fair: in `drivingschool_modified`
+  the rewritten rule "does not book any lesson" also clashes with "opens the
+  booking of road lessons" (3 runs of the full way, 1 of the new way with
+  another rule).
+
+**Decision.** The new way stays an option, `--incremental`, and the full run
+stays the default: it finds less (50 against 54 here, 35 against 36 and 18
+against 18 on the development sets), which was the rule set before the test
+(plan.md). Its use is cost: a change is checked with about 9 requests where
+the full run needs 68, and its findings were never wrong where the full
+run's were right. `eval14/` is development data from now on; the next design
+needs `eval15/`.
+
+**Raw data.** [experiments/results/E20_eval14_full.json](experiments/results/E20_eval14_full.json)
+and E20_eval14_incremental.json, each with its table.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |
