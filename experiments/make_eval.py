@@ -1,6 +1,6 @@
-"""make_eval.py: writes the evaluation sets eval/ to eval12/, size/ and size2/. No LLM, no GPU.
+"""make_eval.py: writes the evaluation sets eval/ to eval13/, size/ and size2/. No LLM, no GPU.
 
-    python -m experiments.make_eval eval12     (only the sets named; all if none)
+    python -m experiments.make_eval eval13     (only the sets named; all if none)
 
 change_dev/ is development data for the change check: the OpenSpec-format
 specs of eval9/ and eval10/ as projects with a change (see as_projects).
@@ -107,6 +107,34 @@ scenario", as it is after the change:
     gaps       scenarios: a gap must be reported in which their event happens
     covered    (clean) the added scenarios, whose event has both cases
                covered: a gap in which it happens is a false alarm
+
+eval13/ is of the same kind (written 2026-11-24, after E18, before a gap that
+a removal opens was tied to the change): six more OpenSpec projects, with nine
+existing scenarios each. Among them is one conflict that the specs have before
+any change ("unlock the room door" / "do not unlock any room door"); no change
+touches the two scenarios it is between. Six versions:
+
+    clean      the change adds a requirement that covers both of its cases.
+    modified   it rewrites a requirement so that it clashes with a scenario
+               in another spec file (as in eval11).
+    removed    it REMOVES the requirement that held one of two complementary
+               cases; the other case is in a requirement of its own. A gap
+               for their event must be reported as the change's.
+    narrowed   it rewrites a requirement and drops one of its two
+               complementary scenarios (as in eval11): the same gap.
+    retired    it REMOVES the only requirement for an event. Nothing may be
+               reported about the change: nobody reacts to that event now,
+               by decision.
+    sibling    it rewrites a requirement: one scenario gets a harmless
+               addition, the other is word for word the same, and that one is
+               part of the old conflict. Nothing may be reported about the
+               change.
+
+expected.json has, besides the keys above:
+
+    old        the conflict that the specs had before the change. It must not
+               be shown as the change's.
+    nothing    true: no conflict and no gap may be reported about the change
 """
 
 import json
@@ -2240,6 +2268,236 @@ SETS = {"eval": SPECS, "eval2": SPECS2, "eval3": SPECS3, "eval4": SPECS4, "eval5
         "eval12": SPECS12, "size": SPECS_SIZE, "size2": SPECS_SIZE2}
 
 
+def _project13(capabilities: tuple, first, second, doors, pair, single, ban, notice, added, removal: dict) -> dict:
+    """One eval13 project from its nine existing scenarios and what the changes say.
+
+    capabilities  the names of its two spec files, with their purpose: ((name, purpose), (name, purpose))
+    first, second two requirements with one scenario each: the two complementary cases of one event
+    doors         a requirement with two complementary scenarios; its first one is in the old conflict
+    pair          a requirement with two complementary scenarios (the "narrowed" change drops the second)
+    single        the only requirement for its event (the "retired" change removes it)
+    ban           a state requirement that forbids what the first scenario of `doors` demands: the old conflict
+    notice        a state requirement, and the words that the "modified" change adds to it: it then
+                  forbids what `first` demands
+    added         the requirement that the "clean" change adds
+    removal       the words for the changes: their names and reasons, and the reworded sibling scenario
+    """
+    (a, a_purpose), (b, b_purpose) = capabilities
+    notice_requirement, notice_extra = notice
+
+    def name(capability: str, requirement: tuple, scenario: int = 0) -> str:
+        return f"{capability}/{requirement[0]}/{requirement[2][scenario][0]}"
+
+    old = [[name(a, doors), name(b, ban)]]
+    notice_name, notice_sentence, [(notice_scenario, notice_text)] = notice_requirement
+    reworded = (doors[0], doors[1], [doors[2][0], (doors[2][1][0], doors[2][1][1] + removal["sibling_extra"])])
+    changes = {
+        "clean": {"name": removal["clean"][0], "why": removal["clean"][1],
+                  "delta": {b: {"ADDED": [added]}},
+                  "expected": {"covered": [name(b, added, 0), name(b, added, 1)], "nothing": True}},
+        "modified": {"name": removal["modified"][0], "why": removal["modified"][1],
+                     "delta": {b: {"MODIFIED": [(notice_name, notice_sentence,
+                                                 [(notice_scenario, notice_text + notice_extra)])]}},
+                     "expected": {"conflicts": [[name(b, notice_requirement), name(a, first)]]}},
+        "removed": {"name": removal["removed"][0], "why": removal["removed"][1],
+                    "delta": {a: {"REMOVED": [(second[0], removal["removed"][1], "None.")]}},
+                    "expected": {"gaps": [name(a, first)]}},
+        "narrowed": {"name": removal["narrowed"][0], "why": removal["narrowed"][1], "narrow": (b, pair[0])},
+        "retired": {"name": removal["retired"][0], "why": removal["retired"][1],
+                    "delta": {b: {"REMOVED": [(single[0], removal["retired"][1], "None.")]}},
+                    "expected": {"nothing": True}},
+        "sibling": {"name": removal["sibling"][0], "why": removal["sibling"][1],
+                    "delta": {a: {"MODIFIED": [reworded]}},
+                    "expected": {"nothing": True}},
+    }
+    return {"specs": {a: (a_purpose, [first, second, doors]), b: (b_purpose, [pair, single, ban, notice_requirement])},
+            "old": old, "changes": changes}
+
+
+PROJECTS13 = {
+    "dorm": _project13(
+        (("rooms", "Students move into a dormitory and open their rooms with a card."),
+         ("house", "What the dormitory offers besides the rooms, and when it is closed.")),
+        ("Move-in with deposit", "The system SHALL hand out a room when the deposit is paid.", [
+            ("Deposit paid", "WHEN a student arrives to move in AND the deposit is paid THEN the system assigns a room and activates the student's card")]),
+        ("Move-in without deposit", "The system SHALL hold back the room until the deposit is paid.", [
+            ("Deposit not paid", "WHEN a student arrives to move in AND the deposit is not paid THEN the system sends the student to the housing office")]),
+        ("Room doors", "The system SHALL control the room doors by card.", [
+            ("Valid card", "WHEN a student holds the card to a room door AND the card is valid for that room THEN the system unlocks the room door"),
+            ("Other card", "WHEN a student holds the card to a room door AND the card is not valid for that room THEN the system keeps the room door locked")]),
+        ("Guests", "The system SHALL register overnight guests.", [
+            ("Guest nights left", "WHEN a student registers an overnight guest AND the student has guest nights left THEN the system issues a guest pass"),
+            ("No guest nights left", "WHEN a student registers an overnight guest AND the student has no guest nights left THEN the system refuses the registration")]),
+        ("Bicycle cellar", "The system SHALL manage the bicycle cellar.", [
+            ("Place in the cellar", "WHEN a student asks for a place in the bicycle cellar THEN the system assigns a stand and adds the student to the cellar list")]),
+        ("Winter break", "The system SHALL close the house over the winter break.", [
+            ("House closed", "WHEN the house is closed for the winter break THEN the system does not unlock any room door")]),
+        (("Fire drills", "The system SHALL announce fire drills.", [
+            ("Drill running", "WHEN a fire drill is running THEN the system shows a notice on the hall screens")]),
+         " and does not assign any room"),
+        ("Registered mail", "The system SHALL tell students about registered mail.", [
+            ("Student in the house", "WHEN registered mail arrives for a student AND the student is in the house THEN the system informs the student at once"),
+            ("Student away", "WHEN registered mail arrives for a student AND the student is not in the house THEN the system keeps the mail at the desk and sends an email")]),
+        {"clean": ("add-registered-mail", "Registered letters were left lying at the desk for weeks."),
+         "modified": ("no-move-in-during-drills", "A student moved in during a fire drill and was not counted."),
+         "removed": ("drop-housing-office-referral", "The housing office has closed its counter."),
+         "narrowed": ("drop-guest-refusal", "Refusals are now handled by the house tutors."),
+         "retired": ("close-bicycle-cellar", "The bicycle cellar is turned into a storage room."),
+         "sibling": ("record-door-attempts", "Security wants to know about attempts with a wrong card."),
+         "sibling_extra": " and records the attempt"}),
+    "courses": _project13(
+        (("enrolment", "People enrol in the courses of a language school and pay for them."),
+         ("school", "Lessons, certificates, and what the school announces.")),
+        ("Enrolment with a test", "The system SHALL place people by their test result.", [
+            ("Test taken", "WHEN a person enrols in a course AND the person has taken the placement test THEN the system assigns the person to a group and sends the timetable")]),
+        ("Enrolment without a test", "The system SHALL ask new people to take the placement test.", [
+            ("Test not taken", "WHEN a person enrols in a course AND the person has not taken the placement test THEN the system books a placement test for the person")]),
+        ("Course fees", "The system SHALL collect the course fee.", [
+            ("Card accepted", "WHEN a student pays the course fee AND the card is accepted THEN the system issues a receipt"),
+            ("Card declined", "WHEN a student pays the course fee AND the card is not accepted THEN the system asks for another means of payment")]),
+        ("Missed lessons", "The system SHALL handle lessons that a student cannot attend.", [
+            ("Notice in time", "WHEN a student cancels a lesson AND the lesson is more than 24 hours away THEN the system offers a replacement lesson"),
+            ("Late notice", "WHEN a student cancels a lesson AND the lesson is not more than 24 hours away THEN the system counts the lesson as taken")]),
+        ("Certificates", "The system SHALL issue certificates.", [
+            ("Course completed", "WHEN a student completes a course THEN the system issues a certificate of attendance")]),
+        ("Audit", "The system SHALL freeze the books during an audit.", [
+            ("Audit running", "WHEN the accounts of the school are being audited THEN the system does not issue any receipt")]),
+        (("Teacher absence", "The system SHALL announce lessons that do not take place.", [
+            ("Teacher ill", "WHEN a teacher is ill THEN the system shows the cancelled lessons in the app")]),
+         " and does not assign anyone to a group"),
+        ("Conversation club", "The system SHALL take sign-ups for the conversation club.", [
+            ("Places left", "WHEN a student signs up for the conversation club AND places are left THEN the system adds the student to the club list"),
+            ("Club full", "WHEN a student signs up for the conversation club AND no places are left THEN the system suggests the next club date")]),
+        {"clean": ("add-conversation-club", "Students asked for a place to practise speaking."),
+         "modified": ("no-new-groups-while-a-teacher-is-ill", "New students were put into groups that had no teacher."),
+         "removed": ("drop-placement-test-booking", "Placement tests are now taken on the website before enrolment."),
+         "narrowed": ("drop-late-notice-rule", "Counting a cancelled lesson as taken led to many complaints."),
+         "retired": ("stop-certificates", "Certificates are issued by the examination board from now on."),
+         "sibling": ("hold-place-after-declined-card", "Students lost their place when a card payment failed."),
+         "sibling_extra": " and keeps the place for three days"}),
+    "bloodbank": _project13(
+        (("donors", "Donors check in to give blood and hear about their test results."),
+         ("operations", "Orders of the hospitals, the fridges, and what the staff is told.")),
+        ("Donors who may give", "The system SHALL admit donors who may give blood.", [
+            ("Last donation long ago", "WHEN a donor checks in AND the last donation of the donor is more than 8 weeks ago THEN the system prints a donation form and calls the donor")]),
+        ("Donors who must wait", "The system SHALL turn away donors who gave blood recently.", [
+            ("Last donation recent", "WHEN a donor checks in AND the last donation of the donor is not more than 8 weeks ago THEN the system tells the donor the next possible date")]),
+        ("Test results", "The system SHALL tell donors their test results.", [
+            ("Normal result", "WHEN a test result arrives AND the result is normal THEN the system sends the donor a letter of thanks"),
+            ("Abnormal result", "WHEN a test result arrives AND the result is not normal THEN the system asks the donor to call the doctor")]),
+        ("Hospital orders", "The system SHALL serve the orders of the hospitals.", [
+            ("In stock", "WHEN a hospital orders blood AND the blood group is in stock THEN the system reserves the units and prints a delivery note"),
+            ("Not in stock", "WHEN a hospital orders blood AND the blood group is not in stock THEN the system asks the neighbouring blood bank")]),
+        ("Fridges", "The system SHALL watch the fridges.", [
+            ("Fridge too warm", "WHEN a fridge reports a temperature above 6 degrees THEN the system alerts the technician on duty")]),
+        ("Postal strike", "The system SHALL hold back the post during a strike.", [
+            ("Strike", "WHEN the postal service is on strike THEN the system does not send any letter")]),
+        (("Stocktaking", "The system SHALL announce the stocktaking.", [
+            ("Stocktaking running", "WHEN the stocktaking is running THEN the system shows a notice to the staff")]),
+         " and does not print any donation form"),
+        ("Donation drives", "The system SHALL plan donation drives at companies.", [
+            ("Bus free", "WHEN a company asks for a donation drive AND the donation bus is free on that day THEN the system books the bus and confirms the date"),
+            ("Bus not free", "WHEN a company asks for a donation drive AND the donation bus is not free on that day THEN the system offers the company another date")]),
+        {"clean": ("add-donation-drives", "Companies ask for donation drives on their premises."),
+         "modified": ("no-donations-during-stocktaking", "Donations taken during the stocktaking were counted twice."),
+         "removed": ("drop-next-date-notice", "The donor app now shows the next possible date."),
+         "narrowed": ("stop-asking-the-neighbours", "The neighbouring blood bank has closed."),
+         "retired": ("retire-fridge-alarm", "The new fridges call the technician themselves."),
+         "sibling": ("block-donors-with-abnormal-results", "A donor with an abnormal result came back and donated again."),
+         "sibling_extra": " and blocks further donations"}),
+    "permits": _project13(
+        (("applications", "Builders apply for building permits and get a decision."),
+         ("office", "Site visits, old files, and when the permit office holds back.")),
+        ("Complete applications", "The system SHALL take in complete applications.", [
+            ("All plans attached", "WHEN a builder submits an application AND all plans are attached THEN the system registers the application and assigns a case officer")]),
+        ("Incomplete applications", "The system SHALL send back incomplete applications.", [
+            ("Plans missing", "WHEN a builder submits an application AND not all plans are attached THEN the system returns the application to the builder")]),
+        ("Decisions", "The system SHALL make decisions known.", [
+            ("Permit granted", "WHEN a case officer decides an application AND the permit is granted THEN the system publishes the decision on the notice board"),
+            ("Permit refused", "WHEN a case officer decides an application AND the permit is not granted THEN the system sends the reasons to the builder")]),
+        ("Site visits", "The system SHALL plan site visits.", [
+            ("Inspector available", "WHEN a case officer asks for a site visit AND an inspector is available that week THEN the system books the visit and informs the builder"),
+            ("No inspector", "WHEN a case officer asks for a site visit AND no inspector is available that week THEN the system puts the visit on the waiting list")]),
+        ("Old files", "The system SHALL fetch old files on request.", [
+            ("File requested", "WHEN a citizen asks to see an old file THEN the system orders the file from the archive")]),
+        ("Election silence", "The system SHALL publish nothing during an election campaign.", [
+            ("Campaign running", "WHEN an election campaign is running THEN the system does not publish any decision on the notice board")]),
+        (("Staff training", "The system SHALL announce days on which the office is closed for training.", [
+            ("Office closed", "WHEN the office is closed for staff training THEN the system shows the closing on the website")]),
+         " and does not register any application"),
+        ("Objections", "The system SHALL take objections from neighbours.", [
+            ("Period open", "WHEN a neighbour files an objection AND the objection period is open THEN the system adds the objection to the case"),
+            ("Period over", "WHEN a neighbour files an objection AND the objection period is not open THEN the system rejects the objection and explains why")]),
+        {"clean": ("add-objections", "Neighbours had no way to object online."),
+         "modified": ("no-registration-on-training-days", "Applications that came in on training days got a wrong date."),
+         "removed": ("drop-return-of-incomplete-applications", "Incomplete applications are now completed by phone."),
+         "narrowed": ("drop-visit-waiting-list", "The waiting list for site visits was never looked at."),
+         "retired": ("close-file-requests", "Old files are now public on the archive's own website."),
+         "sibling": ("send-refusals-by-registered-mail", "Builders claimed they never got the reasons."),
+         "sibling_extra": " by registered mail"}),
+    "newsroom": _project13(
+        (("articles", "Reporters hand in articles, and editors review and publish them."),
+         ("desk", "Photos, corrections, and the state of the newsroom and its website.")),
+        ("Articles with sources", "The system SHALL pass on articles that name their sources.", [
+            ("Source list attached", "WHEN a reporter submits an article AND the article has a source list THEN the system sends the article to the editor on duty")]),
+        ("Articles without sources", "The system SHALL send back articles that name no sources.", [
+            ("No source list", "WHEN a reporter submits an article AND the article has no source list THEN the system returns the article to the reporter")]),
+        ("Review", "The system SHALL act on the review of an editor.", [
+            ("Approved", "WHEN an editor reviews an article AND the article is approved THEN the system publishes the article on the website"),
+            ("Not approved", "WHEN an editor reviews an article AND the article is not approved THEN the system sends the notes of the editor to the reporter")]),
+        ("Photos", "The system SHALL find photos for articles.", [
+            ("Photo in the archive", "WHEN an editor asks for a photo AND a fitting photo is in the archive THEN the system attaches the photo to the article"),
+            ("No photo in the archive", "WHEN an editor asks for a photo AND no fitting photo is in the archive THEN the system sends a request to the photo desk")]),
+        ("Corrections", "The system SHALL follow up on errors that readers report.", [
+            ("Error reported", "WHEN a reader reports an error in an article THEN the system opens a correction case for the article")]),
+        ("Maintenance", "The system SHALL keep the website unchanged during maintenance.", [
+            ("Maintenance mode", "WHEN the website is in maintenance mode THEN the system does not publish any article on the website")]),
+        (("Night hours", "The system SHALL tell reporters whom to reach at night.", [
+            ("No editor on duty", "WHEN no editor is on duty THEN the system shows the night contact to the reporters")]),
+         " and does not send any article to the editor on duty"),
+        ("Interview room", "The system SHALL plan the use of the interview room.", [
+            ("Room free", "WHEN a reporter asks for the interview room AND the room is free at that time THEN the system books the room for the reporter"),
+            ("Room not free", "WHEN a reporter asks for the interview room AND the room is not free at that time THEN the system offers the reporter the next free hour")]),
+        {"clean": ("add-interview-room", "Two interviews were planned in the same room at the same time."),
+         "modified": ("hold-articles-at-night", "Articles sent at night were lost in an empty inbox."),
+         "removed": ("drop-return-of-unsourced-articles", "Source lists are now enforced by the editor program itself."),
+         "narrowed": ("drop-photo-desk-requests", "The photo desk has been merged into the archive."),
+         "retired": ("retire-reader-corrections", "Corrections are handled by the reader editor's own tool."),
+         "sibling": ("back-to-draft-after-review", "Rejected articles stayed in the review queue."),
+         "sibling_extra": " and sets the article back to draft"}),
+    "makerspace": _project13(
+        (("machines", "Members of a makerspace use machines and buy material."),
+         ("space", "Hand tools, visitors, and what happens in the rooms.")),
+        ("Trained members", "The system SHALL let trained members use the machines.", [
+            ("Training done", "WHEN a member logs in at a machine AND the member has completed the training for that machine THEN the system switches the machine on and starts the timer")]),
+        ("Untrained members", "The system SHALL keep untrained members off the machines.", [
+            ("Training missing", "WHEN a member logs in at a machine AND the member has not completed the training for that machine THEN the system shows the next training dates")]),
+        ("Material", "The system SHALL sell material to members.", [
+            ("Credit sufficient", "WHEN a member takes material from the store AND the credit of the member covers the price THEN the system books the price to the account of the member"),
+            ("Credit too low", "WHEN a member takes material from the store AND the credit of the member does not cover the price THEN the system asks the member to top up the account")]),
+        ("Tool loans", "The system SHALL lend hand tools.", [
+            ("Tool on the shelf", "WHEN a member asks to borrow a tool AND the tool is on the shelf THEN the system records the loan and shows the return date"),
+            ("Tool lent out", "WHEN a member asks to borrow a tool AND the tool is not on the shelf THEN the system adds the member to the queue for the tool")]),
+        ("Tours", "The system SHALL arrange tours for visitors.", [
+            ("Tour request", "WHEN a visitor asks for a tour THEN the system proposes a date with a volunteer")]),
+        ("Year-end closing", "The system SHALL keep the accounts unchanged while the year is closed.", [
+            ("Accounts being closed", "WHEN the accounts of the year are being closed THEN the system does not book anything to the account of any member")]),
+        (("Safety inspection", "The system SHALL announce the yearly safety inspection.", [
+            ("Inspection running", "WHEN the yearly safety inspection is running THEN the system shows a notice at the entrance")]),
+         " and does not switch any machine on"),
+        ("Open evenings", "The system SHALL take sign-ups for open evenings.", [
+            ("Places left", "WHEN a guest signs up for an open evening AND places are left THEN the system confirms the place by email"),
+            ("Evening full", "WHEN a guest signs up for an open evening AND no places are left THEN the system offers the guest the next open evening")]),
+        {"clean": ("add-open-evenings", "Guests turned up at open evenings that were already full."),
+         "modified": ("no-machines-during-inspection", "The inspector found a machine running during the inspection."),
+         "removed": ("drop-training-dates-screen", "Training dates are now printed on a poster next to each machine."),
+         "narrowed": ("drop-tool-queue", "Nobody answered the messages of the tool queue."),
+         "retired": ("stop-tours", "There are no volunteers left to give tours."),
+         "sibling": ("return-material-when-credit-is-low", "Material taken without credit was never paid for."),
+         "sibling_extra": " and puts the material back on the stock list"}),
+}
+
+
 def as_projects(specs: dict) -> dict:
     """Old OpenSpec-format specs as projects with a change: development data for the change check.
 
@@ -2293,7 +2551,8 @@ def as_projects(specs: dict) -> dict:
 
 # Folder -> the OpenSpec projects written into it, each with one change.
 # change_dev is made from eval9 and eval10, which have been read (E15, E16).
-PROJECT_SETS = {"eval11": PROJECTS11, "change_dev": as_projects({**SPECS9, **SPECS10})}
+PROJECT_SETS = {"eval11": PROJECTS11, "eval13": PROJECTS13,
+                "change_dev": as_projects({**SPECS9, **SPECS10})}
 
 
 def document(name: str, spec: dict, rules: list) -> str:
@@ -2378,6 +2637,8 @@ def write_projects(root: Path, projects: dict) -> int:
                     for name, reason, migration in parts["REMOVED"]:
                         lines += [f"### Requirement: {name}", "", f"**Reason**: {reason}", "", f"**Migration**: {migration}", ""]
                 _write(change_folder / "specs" / capability / "spec.md", lines)
+            if "old" in project:  # a conflict that the specs have before any change (eval13)
+                expected = {**expected, "old": project["old"]}
             (folder / "expected.json").write_text(
                 json.dumps({"conflicts": [], "gaps": [], "covered": [], **expected}) + "\n", encoding="utf-8")
             written += 1
