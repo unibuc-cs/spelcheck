@@ -684,6 +684,7 @@ how much weight the finding carries:
 | "Ambiguity: ..." | not a proof, a question to the author | a fair question, though some are asked about clear rules |
 | "Gap: ..." | proven: an event happens and no rule applies | certain. Ask yourself whether that case was left out on purpose |
 | "Gap (doubtful: ...)" | proven, but the assumed facts say its situation cannot happen (3.3) | little: usually two symbols for one yes/no question |
+| "Gap (opened by removing X1): ..." | proven, when a change is checked: a rule that the change removes used to cover this situation (part 5) | certain. The change left this case open |
 | "Gap (no event happens): ..." | proven: nothing happens, and no rule applies (2.4) | certain, but rarely something to fix. Almost every spec has this gap, so it is shown once, after the other gaps |
 | "Scenario, allowed: ..." or "Scenario, ruled out: ..." | proven: the rules allow this situation, or make it impossible (2.4) | the proof is certain. Which scenarios are shown is the model's choice, and whether one is a problem is for you, the author, to decide |
 
@@ -898,8 +899,8 @@ eval12  34/36   ███████████████████░   9
 | planted ambiguities, one model | about half (14 to 20 of 36), but 7 of 36 on `eval10` |
 | planted ambiguities, with the second model | 30 and 32 of 36, at the price of up to one extra question per spec |
 | how much assumed facts and links matter | a great deal: without them `eval8` gives 9 of 21, with them 18 |
-| planted gaps (`eval8` to `eval10`) | 18 of 18 found in each, now that the question is asked once for each event; before, 0 of 18 |
-| false gaps (`eval8` to `eval10`) | in 4, 3 and 5 of 18 runs on clean specs. Explained below |
+| planted gaps (`eval8` to `eval10`, `eval12`) | 18 of 18 found in the first three and 17 of 18 in `eval12`, now that the question is asked once for each event; before, 0 of 18 |
+| false gaps (the same sets) | in 4, 3, 5 and 0 of 18 runs on clean specs. Explained below |
 | longer specs, 30 and 100 requirements | they went as well as the small ones. Explained below |
 | changes checked against existing specs (`eval11`, `eval13`) | 54 of 54 planted conflicts and 71 of 72 planted gaps found, among them all 18 gaps opened by a removed requirement. The conflict that the specs had before was never blamed on a change. Explained below |
 

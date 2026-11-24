@@ -62,8 +62,8 @@ Where the project stands:
   in other words, it found 34 of 36. That is with a newer step, the questions
   about two outcomes, which also reports more conflicts that nobody planted
   (3 of 18 clean runs);
-- it found every planted gap on the three sets that have them, and reported a
-  gap that is not one in 3 to 5 of 18 clean runs;
+- it found 71 of the 72 planted gaps on the four sets that have them, and
+  reported a gap that is not one in 0 to 5 of 18 clean runs;
 - it finds about half of the planted ambiguities, and 30 to 32 of 36 with a
   second model, at the price of up to one extra question per spec;
 - for a change to specs that already exist, it found all 54 conflicts and 71
@@ -397,6 +397,7 @@ The title of each finding says how far to trust it. These are real titles:
 | "doubtful: ..." | proven, but probably an artefact of the formulas | the two cases below |
 | "depends on the reading of R3" | proven with the first reading of R3, which is ambiguous; gone with its other reading | "Gap (no event happens, depends on the reading of R3)", the gap at 6 failed attempts in the login spec ([Ambiguities](#ambiguities)) |
 | "found with k of K symbol sets" | optional: the spec was translated K times, each time with other symbols, and k of them found it | "Conflict (found with 3 of 3 symbol sets): Conflict between removal and retention" |
+| "opened by removing X1" | only when a change is checked: a rule that the change removes used to cover this situation | "Gap (opened by removing X1): Missing rule for unauthorized check-in" ([Checking a change](#checking-a-change-against-existing-specs)) |
 
 A conflict is marked *doubtful* in two cases, and a gap in the second one. A
 marked finding stays in the report.
@@ -578,7 +579,7 @@ The output is written next to the spec, or into `--out`:
 | `formal.json` | the spec as logic: symbols, assumed facts, rules (`formal_2.json` ... with `--symbol-sets`) |
 | `findings.json` | what the solver proved, with its wording |
 | `report.md` | the same, in plain language (also printed) |
-| `merged.md` | only with `--change`: the specs with the change applied, every scenario labelled. The output goes into the change's folder |
+| `merged.md` | only with `--change`: the specs with the change applied, every scenario labelled. What the change removes is still in it, under the labels X1, X2, ...; the checks leave it out. The output goes into the change's folder |
 
 A 5-rule spec takes under a minute, and about a minute with 3 symbol sets. A
 spec of 100 requirements took about 10 minutes; the read step has room for
@@ -618,7 +619,7 @@ Some notes on these numbers:
 
 - Assumed facts and links carry a large part of the result. Without them,
   `eval3/` gives 10 of 21.
-- The questions about two outcomes were added last, and `eval12/` is the
+- The questions about two outcomes were added late, and `eval12/` is the
   first set tested with them. Asked on the saved runs of `eval3/` to
   `eval10/`, they raise the planted conflicts found there from 129 to 142 of
   153. They also report conflicts that nobody planted: the clean runs with
@@ -639,9 +640,10 @@ Some notes on these numbers:
   fact (research.md 4.3).
 - Gaps are measured from `eval8/` on. A clean spec there has two
   complementary requirements, such as "... AND the slot is free" and
-  "... AND the slot is taken", and its gap version has only one of them. All
-  18 planted gaps were found in each of the three sets. On the clean specs,
-  where both cases are covered, 4, 3 and 5 of 18 runs still reported a gap.
+  "... AND the slot is taken", and its gap version has only one of them. On
+  `eval8/`, `eval9/` and `eval10/` all 18 planted gaps were found, and 17 of
+  18 on `eval12/`. On the clean specs, where both cases are covered, 4, 3, 5
+  and 0 of 18 runs still reported a gap.
   Each time the model had made two symbols, `slot_is_free` and
   `slot_is_taken`, and for Z3 a slot can then be neither. The doubtful mark
   caught 2 of 13 such gaps in the runs made with it (research.md 4.2).
