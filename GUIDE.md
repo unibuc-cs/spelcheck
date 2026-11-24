@@ -61,8 +61,8 @@ we cannot, do we say so clearly?
 The same tool also checks a *change* against specs that already exist, which
 is how OpenSpec projects work. That is part 5.
 
-To give an idea of the size: about 3,000 lines of Python now, half of them comments
-and prompts, one local model (Qwen3.8, 27B), and results measured on 261 versions
+To give an idea of the size: about 3,100 lines of Python now, half of them comments
+and prompts, one local model (Qwen3.8, 27B), and results measured on 297 versions
 of small specs and on 30 changes. The results are in part 6.
 
 ---
@@ -322,7 +322,7 @@ a finding:
 | What goes wrong | Example | The repair | What the report shows |
 |---|---|---|---|
 | a sentence has two meanings, and the model silently picks one | "reaches 5": exactly 5, or 5 or more? | the ambiguity check (3.1) | an **Ambiguity**: a question to the author |
-| two rules say opposite things in different words, and Z3 sees two unrelated symbols | "grant access" and "deny access" | assumed facts and links (3.2) | "Conflict (**if the assumed facts hold**)" |
+| two rules say opposite things in different words, and Z3 sees two unrelated symbols | "grant access" and "deny access" | assumed facts: voted, links, and questions about two outcomes (3.2) | "Conflict (**if the assumed facts hold**)" |
 | the logic is one snapshot with yes/no symbols, so findings appear that are not real | two events "at the same moment" | the doubtful mark (3.3) | "Conflict (**doubtful**: ...)" |
 | another run picks other symbols, and gives other findings | a conflict found in one run and missed in the next | several symbol sets (3.4) | "**found with 3 of 3** symbol sets" |
 
@@ -538,6 +538,54 @@ means "not retained" where D4 says "retained", and the conflict between D2 and
 D4 is found. The report says "if the assumed facts hold" and quotes the link,
 so the reader can judge whether "remove" really means that.
 
+#### Questions about two outcomes
+
+Voted facts come from an open question ("which facts connect these
+symbols?"), and the answers often do not mention the pair that matters. Take
+these two rules of a canteen spec (`experiments/sets/eval7/canteen_overlap`):
+
+```
+C1   "WHEN a student taps the card at the till AND the card balance covers the meal,
+      THE Canteen System SHALL take the price from the balance."
+     (=> (and card_tapped (>= card_balance meal_price)) payment_taken)
+
+C6   "WHILE the canteen is closed for holidays, THE Canteen System SHALL refuse all payments."
+     (=> canteen_closed_for_holidays payment_refused)
+```
+
+A student who taps the card during the holidays falls under both. Z3 sees no
+conflict, because `payment_taken` and `payment_refused` are two symbols and no
+voted fact said that they exclude each other. That was a miss in 3 of 3 runs.
+So the pair is asked about directly, in four steps:
+
+1. **Our code and Z3 pick the pairs of rules worth asking about.** Both rules
+   must be able to apply in the same situation, they must not react to two
+   different events (that conflict would be doubtful anyway, see 3.3), and
+   what they demand must share no symbol. C1 and C6 qualify. This spec has
+   four such pairs.
+2. **The model is asked eight times about the two outcomes alone.** It does
+   not see the requirements, only this:
+
+   ```
+   Statement A:   TRUE: payment_taken (The system has deducted the meal price from the card balance)
+   Statement B:   TRUE: payment_refused (The system has declined the payment request)
+   Question:      can A and B both hold in the same snapshot?   possible / impossible / unclear
+   ```
+
+3. **Our code counts.** If more than half of the answers say "impossible",
+   that becomes an assumed fact. Here all eight did:
+   `(not (and payment_taken payment_refused))`, "A payment cannot be
+   successfully taken and refused at the same time."
+4. **Z3 proves the conflict** between C1 and C6 in search 2, like any conflict
+   that needs a fact, and the report quotes the fact.
+
+Of the other three pairs, two were called possible ("send a reminder" and
+"refuse all payments" can both happen). The third was called impossible:
+"refuse all payments" against "add the top-up to the balance". Nobody had
+planted that conflict, and it is a fair one. This is the price of the step: it
+finds conflicts said in other words, and it also reports more conflicts than
+we planted (6.2).
+
 ### 3.3 Marking the findings that are probably not real
 
 The formulas describe one snapshot of the system, with no "before" and no
@@ -616,7 +664,7 @@ look arbitrary. Now each one has a reason:
 | 3 cluster | the 8 translations are grouped by meaning, with Z3 | 3.1 |
 | 4 facts | 8 answers propose facts, and they vote, with Z3 | 3.2 |
 | 5 links | a rule with a symbol of its own is said again in the other rules' terms | 3.2 |
-| 6 probe | questions about concrete situations (`probe.py`) | 3.1 and 3.2 |
+| 6 probe | questions about concrete situations, and about pairs of outcomes (`probe.py`) | 3.1 and 3.2 |
 | 7 second | optional: a second model translates every rule | 3.1 |
 
 ---
@@ -770,9 +818,12 @@ OpenSpec style. Every spec comes in three to five versions:
 Each version is a folder with two files: `spec.md`, which the tool reads, and
 `expected.json`, which holds the answer. For `lockers_overlap` it says
 `{"conflicts": [[1, 6], [3, 6]]}`: rule 6 clashes with rule 1 and with rule 3.
-There are ten sets, `eval` to `eval10`, with 261 versions in all.
+There are eleven such sets, `eval` to `eval10` and `eval12`, with 297
+versions in all. In `eval12` every planted conflict says the opposite outcome
+in other words ("switch the heater on" against "cut the power to the
+heater"), which is the kind the earlier sets missed.
 
-An eleventh set, `eval11`, tests the change check of part 5. It has six small
+One more set, `eval11`, tests the change check of part 5. It has six small
 OpenSpec projects, and each comes with five changes: one that is harmless,
 two that clash with an existing scenario (a new requirement, and a rewritten
 one), and two that leave a case open (a new requirement with one of its two
@@ -791,7 +842,7 @@ material, and the next change needs a new set.
 ### 6.2 The results
 
 ```
-planted conflicts found, on 10 sets the design had not seen
+planted conflicts found, on 11 sets the design had not seen
 
 eval    44/48   ██████████████████░░   92%
 eval2   31/36   █████████████████░░░   86%
@@ -803,14 +854,20 @@ eval7   13/18   ██████████████░░░░░░   7
 eval8   18/21   █████████████████░░░   86%
 eval9   18/18   ████████████████████  100%
 eval10  18/18   ████████████████████  100%
+eval12  34/36   ███████████████████░   94%
 ```
+
+`eval12` was the first set tested with the questions about two outcomes of
+3.2. Without them it gives 27 of 36. Added to the saved runs of `eval3` to
+`eval10`, they raise the sum of those eight lines from 129 to 142 of 153.
 
 | Question | Answer |
 |---|---|
 | Kiro's first example (`order`) | its 2 conflicts and its gap were found in 190 of 190 runs |
 | Kiro's second example (`delete_property`) | found in 3 of the last 3 runs. It was the hard one: 1 of 40 before links existed |
 | planted conflicts | 61% to 100% found (the chart above) |
-| false alarms | at most 1 in 18 clean runs, when doubtful conflicts are set aside. In `eval9`, 2 runs found a conflict that is real: we wrote it into a clean spec by mistake |
+| false alarms, up to `eval10` | at most 1 in 18 clean runs, when doubtful conflicts are set aside. In `eval9`, 2 runs found a conflict that is real: we wrote it into a clean spec by mistake |
+| false alarms, with the questions about two outcomes | more: 3 of 18 clean runs on `eval12`, and 13 of 144 on the saved runs of `eval3` to `eval10` (3 without the questions). Explained below |
 | planted ambiguities, one model | about half (14 to 20 of 36), but 7 of 36 on `eval10` |
 | planted ambiguities, with the second model | 30 and 32 of 36, at the price of up to one extra question per spec |
 | how much assumed facts and links matter | a great deal: without them `eval8` gives 9 of 21, with them 18 |
@@ -818,6 +875,22 @@ eval10  18/18   ████████████████████  10
 | false gaps (`eval8` to `eval10`) | in 4, 3 and 5 of 18 runs on clean specs. Explained below |
 | longer specs, 30 and 100 requirements | they went as well as the small ones. Explained below |
 | changes checked against existing specs (`eval11`) | all 36 planted conflicts and all 36 planted gaps found; nothing was reported about the 18 harmless changes. Explained below |
+
+**Conflicts that nobody planted.** The questions about two outcomes find the
+conflicts we had been missing, and others with them. On `eval12` they added 27
+such conflicts in 108 runs. 24 of these are one pair of rules in a cloakroom
+spec: "WHEN a guest shows a token THEN the system releases the coat" against
+"WHEN a coat has been on its hook for more than 30 days THEN the system adds
+the coat to the list of unclaimed coats". A guest who collects a coat late
+falls under both, and all eight answers say that a coat cannot be released
+and on that list at once. Over time there is no clash, so this one is an
+artefact of the single snapshot (3.3), and no mark catches it yet. On the
+older sets most of the added conflicts are of two fairer kinds: rules that
+really can apply together with nothing saying which one wins ("start the
+selected program" against "stop all brushes" when the emergency button is
+pressed), and a planted rule that also clashes with a third rule. Every one
+of them says "if the assumed facts hold" and quotes the fact, so it can be
+judged in a moment. We kept the step on, because it gains more than it costs.
 
 **The false gaps.** A clean spec covers both cases of an event, for example
 "a resident books a time slot AND the slot is free" and "... AND the slot is
@@ -872,7 +945,8 @@ The project has five goals. This is where each one stands:
 
 | Limit | Example |
 |---|---|
-| "remove" against "keep" is missed in about half of the cases (found in 10 of 21 runs) | "delete the listing" against "keep every listing for seven years". This is the main cause of missed conflicts, and it is explained below the table |
+| "remove" against "keep" is still missed when "keep for N years" becomes only a number (found in 13 of 21 runs, 10 before the questions about two outcomes) | "delete the listing" against "keep every listing for seven years". It is explained below the table |
+| the questions about two outcomes also report conflicts that nobody planted | "release the coat" against "list the coat as unclaimed after 30 days" (6.2) |
 | one model finds only half of the ambiguities | it is confident where a person would stop and ask |
 | two words for one yes/no question give a false gap | "the slot is free" and "the slot is taken" as two symbols: in 3 to 5 of 18 clean runs (6.2) |
 | a fact or a link can be wrong, even with a majority behind it | which is why the report quotes every one that a conflict depends on |
@@ -898,6 +972,10 @@ for seven years. Z3 cannot see it, because the model wrote the two rules about
 two unrelated things. `listing_deleted` is a yes/no fact about a listing, and
 `listing_retention_years` is a number, a setting of the system. Both can hold
 at once (the listing is deleted, the setting is 7), so no conflict is found.
+The questions about two outcomes of 3.2 do not settle it: asked whether "the
+listing is deleted" and "the retention period is 7 years" can both hold, 7 of
+8 answers said yes, because the second statement is a setting and not a fact
+about the listing.
 The link step of 3.2 does not help either: asked to say "delete the listing"
 with the symbols of the other rules, the model has only the number of years to
 work with, and it answers that this cannot be expressed.
@@ -949,7 +1027,9 @@ The full list is in research.md, section 5.
    and a real OpenSpec project with its changes.
 2. **The change check, further**: the gap that a removed requirement opens,
    and a way to check a change without formalizing all the specs again.
-3. **The choice of symbols**, which is where the remaining misses come from.
+3. **What is left of the choice of symbols**: retention periods that become
+   only a number, and a mark for the conflicts that exist only because the
+   logic is one snapshot.
 
 ---
 
@@ -988,13 +1068,13 @@ that section 2 described:
 | File | Lines | What to look for |
 |---|---|---|
 | `speccheck/llm.py` | 70 | one function, `ask`: a prompt goes in, N answers come out as JSON |
-| `speccheck/logic.py` | 250 | `model` and `impossible`, the two questions for Z3 (1.2), and `same_meaning` |
+| `speccheck/logic.py` | 260 | `model` and `impossible`, the two questions for Z3 (1.2), and `same_meaning` |
 | `speccheck/checks.py` | 720 | `_search` forces rules to apply (2.3); `find_conflicts` runs the two searches (3.2); `_try_other_readings` (3.1); then `find_gaps` and `find_scenarios` (2.4) |
 | `speccheck/formalize.py` | 720 | the seven steps of 3.5. The prompts at the top show what the LLM is asked |
-| `speccheck/probe.py` | 430 | the questions about concrete situations (3.1 and 3.2) |
+| `speccheck/probe.py` | 590 | the questions about concrete situations (3.1 and 3.2), and `outcomes`, the questions about two outcomes (3.2) |
 | `speccheck/explain.py` | 360 | `evidence` writes the *Proven* lines; the wording prompt is above it |
 | `speccheck/cli.py` | 140 | the three stages, called one after the other |
-| `speccheck/change.py` | 280 | part 5: `merge` applies a change to the specs and labels the scenarios; `about_change` selects the findings |
+| `speccheck/change.py` | 270 | part 5: `merge` applies a change to the specs and labels the scenarios; `about_change` selects the findings |
 
 About half of each file is comments, docstrings and prompts.
 
@@ -1004,9 +1084,9 @@ The folders:
 speccheck/          the tool (the 8 files above; refine.py is the review that is switched off)
 specs/              3 small specs the prompts were developed on, with their saved output,
                     and auth_change, the example of part 5
-tests/              53 tests that need no LLM
+tests/              58 tests that need no LLM
 experiments/
-  sets/             the 10 evaluation sets, eval to eval10 (261 spec versions), two long specs,
+  sets/             the 11 evaluation sets, eval to eval10 and eval12 (297 spec versions), two long specs,
                     and for the change check eval11 and change_dev (old specs as projects)
   results/          every experiment: the raw data (.json) and its tables (.md)
   examples/         saved runs that the documents quote

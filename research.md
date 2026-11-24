@@ -31,6 +31,7 @@ its entries. How each mechanism works is in [plan.md](plan.md), section 5.
   | `eval9/` | 30 | 6 conflicts, 12 ambiguities, 6 gaps | E15 |
   | `eval10/` | 30 | 6 conflicts, 12 ambiguities, 6 gaps | E16 |
   | `eval11/` | 30 changes on 6 OpenSpec projects (2.4) | 12 conflicts, 12 gaps | E17 |
+  | `eval12/` | 36 | 12 conflicts said in other words, 12 ambiguities, 6 gaps | E18 |
   | `size/` | 4 versions of one spec of 30 requirements | 2 conflicts, 1 gap | E13 |
   | `size2/` | 4 versions of one spec of 100 requirements | 2 conflicts, 1 gap | E14 (not held-out: no design was tuned on it) |
 
@@ -61,6 +62,7 @@ The order spec gives the blog's two conflicts and its gap in every run we made
 | E13, `eval8/` | 18 of 21 (86%) | 0 of 18 |
 | E15, `eval9/` | 18 of 18 (100%) | 2 of 18, a real conflict we wrote by mistake |
 | E16, `eval10/` | 18 of 18 (100%) | 0 of 18 |
+| E18, `eval12/`, all conflicts said in other words; with the questions about outcomes (3.13) | 34 of 36 (94%) | 3 of 18 |
 
 From E8 on, conflicts marked doubtful (3.7) are set aside. Counted, they give
 false alarms in 9, 6, 11, 8, 0, 4, 5 and 0 of 18 clean runs (E8 to E13, E15, E16). In
@@ -68,6 +70,11 @@ E10 the mark also hit a planted conflict (4.2); counted, E10 finds 14 of 18.
 The 2 runs of E15 found a conflict in `shelter_clean` that is real: an animal
 adopted after 90 days in the shelter must be removed from the website and
 featured on its home page.
+
+Since E18 the pipeline also asks about pairs of outcomes (3.13). Added to the
+saved runs of E8 to E16, that check raises their sum from 129 to 142 of 153
+planted conflicts, and the clean runs with a false alarm from 3 to 13 of 144
+(T22, 4.6).
 
 ### 2.3 Both examples of the Kiro blog are found by the solver
 
@@ -247,6 +254,33 @@ about 206 symbols:
 - the solver stage takes 35 s per model, a full run with the wording about 10
   minutes.
 
+### 3.13 A question about two outcomes finds conflicts said in other words (T22, E18)
+
+Of the 153 planted conflicts of E8 to E16, 21 were missed. In 13 of them the
+two rules demand opposite things with two different symbols ("take the price"
+as `payment_taken`, "refuse all payments" as `payment_refused`), and no
+assumed fact connects the two. The open question of step 4, "which facts
+connect these symbols?", often does not mention the pair that matters.
+
+Check 4 of step 6 asks about exactly those pairs. For two rules that can
+apply together, do not react to two different events, and demand things that
+share no symbol, the model is asked 8 times whether both outcomes can hold in
+one snapshot. It sees the two outcomes only, not the requirements. If more
+than half of the answers say "impossible", that is one more assumed fact, and
+Z3 proves the conflict with it.
+
+| | Without the check | With it |
+|---|---|---|
+| the saved runs of E8 to E16, doubtful conflicts set aside (T22) | 129 of 153 | 142 of 153 |
+| held-out `eval12/`, all 12 conflicts said in other words (E18) | 27 of 36 | 34 of 36 |
+
+- **What it recovers:** 13 of the 21 old misses and 7 of the 9 on `eval12/`,
+  among them retention periods ("delete the token record" against "keep
+  every token record for two years").
+- **What it asks:** 2 to 4 pairs for a spec of six rules; 9% (T22) and 14%
+  (E18) of the pairs were called impossible.
+- **Its price** is more conflicts that nobody planted (4.6).
+
 ---
 
 ## 4. What does not work yet
@@ -275,7 +309,7 @@ Planted ambiguities on the held-out `eval4/` (E9), 9 per kind:
   `eval9/`, but 7 of 36 on `eval10/` (E16), where the 8 translations agreed on
   all 9 planted "if" rules.
 
-### 4.2 The choice of symbols is still the fragile step (E1 to E3, E10 to E13, E16, T10, T12, T14, T20)
+### 4.2 The choice of symbols is still the fragile step (E1 to E3, E10 to E13, E16, E18, T10, T12, T14, T20, T22)
 
 - With symbols drawn again on every run, the login spec's conflicts are found
   in 3 to 9 of 10 runs instead of 10 of 10 (E1 to E3).
@@ -289,6 +323,7 @@ Planted ambiguities on the held-out `eval4/` (E9), 9 per kind:
   after every prompt change.
 - **Two symbols for one thing.** "Take the price" (`payment_taken`) against
   "refuse all payments" (`payment_refused`) was missed in 3 of 3 runs (E12).
+  The questions about outcomes now find it, in 3 of 3 of the same runs (3.13).
 - **Two symbols for two complementary conditions give false gaps** ("the
   slot is free" / "taken", "the car passes" / "fails"): in 3 to 5 of 18 clean
   runs per set (E13, E15, E16). To Z3 the slot can be neither. A gap that the
@@ -304,7 +339,11 @@ Planted ambiguities on the held-out `eval4/` (E9), 9 per kind:
   `listing_retention_years = 7`, that nothing clashes with (E11, E12); or the
   translations of the "keep" rule scattered and it was rejected (E13). A
   prompt sentence calling "remove" and "keep" opposites made it worse and was
-  dropped (T14).
+  dropped (T14). With the questions about outcomes it is 13 of 21 on the same
+  runs (T22), and 4 of 6 runs for the two retention conflicts of `eval12/`
+  (E18). A retention period that became only a number is still hit or miss:
+  "the payslips are deleted" together with `payslip_retention_years = 10` was
+  called impossible by 8 of 8 answers in one run and by 4 of 8 in another.
 
 ### 4.3 Wrong facts and links exist (T6, T8, T10, E9)
 
@@ -346,9 +385,36 @@ Planted ambiguities on the held-out `eval4/` (E9), 9 per kind:
   and the read step's room, about 140 scenarios (3.12), bounds the size of a
   project.
 
-### 4.6 The evaluation is small
+### 4.6 The questions about outcomes also report conflicts that nobody planted (T22, E18)
 
-Ten sets with 60 base specs (261 versions), two longer specs and six OpenSpec
+With check 4 (3.13), the clean runs with a conflict that was not planted went
+from 3 to 13 of 144 on the saved runs of E8 to E16, and from 0 to 3 of 18 on
+`eval12/` (doubtful conflicts set aside). Over all versions such conflicts
+went from 32 to 88, and from 1 to 28. They are of three kinds:
+
+- **Two rules that really can apply together, with nothing saying which one
+  wins.** "Start the selected program" against "stop all brushes" when the
+  emergency button is pressed. 7 of the 10 new clean runs of T22 are of this
+  kind; the tool is right, and the spec is not as clean as we thought.
+- **The planted rule also clashes with a third rule.** "Refuse all payments"
+  clashes with "take the price", as planted, and with "add the top-up to the
+  balance" too (20 of the 56 added conflicts of T22).
+- **Artefacts of the one snapshot.** "Release the coat when the guest shows
+  the token" against "add a coat to the list of unclaimed coats after 30
+  days": a coat collected late falls under both, and 8 of 8 answers say that
+  a coat cannot be released and on that list at once. Over time there is no
+  clash. This one pair gives 24 of the 27 added conflicts of `eval12/`, and
+  all 3 of its clean runs with a conflict.
+
+Each of these conflicts says "if the assumed facts hold" and quotes the fact,
+so a reader can judge it. Two more limits: an outcome that is not one definite
+state ("a payslip younger than ten years is retained") is not asked about;
+and at most 40 pairs are asked about, while the specs of 30 and 100
+requirements have several hundred.
+
+### 4.7 The evaluation is small
+
+Eleven sets with 66 base specs (297 versions), two longer specs and six OpenSpec
 projects with 30 changes, all written by us; 63 to 90 runs per experiment; one main model. One leak is known: an
 example in the read prompt came from the domain of an `eval3/` spec (D4). And
 one clean spec, `shelter_clean` in `eval9/`, has a conflict we did not plan
@@ -402,8 +468,9 @@ the prompts, so it can be scored again without a GPU.
 | E15 | `eval9/`, held-out, with the parentheses repair of the facts vote (T19) | 90 runs | 18 of 18 conflicts, planted gaps 18 of 18; the repair added 17 facts, all bounds, and changed no finding (on the saved runs: 3 planted conflicts gained in one run) (2.2) |
 | E16 | `eval10/`, held-out, with the doubtful mark on gaps (T20) | 90 runs | 18 of 18 conflicts and no other conflict at all; planted gaps 18 of 18; the mark set aside none of the 5 false gaps (4.2) |
 | E17 | `eval11/`, held-out: 30 changes on 6 OpenSpec projects, checked against the specs that exist (T21) | 90 runs | 36 of 36 planted conflicts, 36 of 36 planted gaps, nothing else reported about a change; labels kept in 90 of 90 runs (2.4) |
+| E18 | `eval12/`, held-out: conflicts said in other words, with the questions about pairs of outcomes (T22) | 108 runs | 34 of 36 conflicts (27 without the questions); 3 of 18 clean runs with a conflict that was not planted (0 without) (3.13, 4.6) |
 
-The trials (T1 to T21) were run on development data between these
+The trials (T1 to T22) were run on development data between these
 experiments. Among the last: T17 compared temperatures 0.3, 0.5 and 0.7 (3.1);
 T18 found that the first read answer, at temperature 0, was usable for all
 204 specs, so the read step's retry is never needed on them; T19 found that
@@ -412,7 +479,9 @@ in the formula (mostly missing outer parentheses) and almost never for an
 invented symbol. The vote now repairs the parentheses (E15). T20 added the
 typical case "one of two things is always the case" to the facts prompt and a
 doubtful mark on gaps that the facts rule out (4.2, E16). T21 built the check
-of an OpenSpec change on old specs turned into projects (2.4). research_log.md
+of an OpenSpec change on old specs turned into projects (2.4). T22 sorted the
+21 conflicts missed in E8 to E16 by cause, and added the questions about
+pairs of outcomes to the saved runs (3.13). research_log.md
 has them in order, together with the bugs that
 changed results before they were fixed (L1 to L10) and the open threats to
 validity. To score a saved run again: `python -m experiments.evaluate --rescore

@@ -48,7 +48,7 @@ project deals with what can go wrong there:
 | What goes wrong | What speccheck does about it | More |
 |---|---|---|
 | a sentence has two meanings, and the model picks one | it looks for a second reading and, if the words do not decide between them, reports an *ambiguity*: a question to the author | [Ambiguities](#ambiguities) |
-| two rules say opposite things in different words | it lets the model propose *assumed facts* ("access cannot be both granted and denied"), keeps those that a majority of answers agree on, and uses them only to find more conflicts | [Assumed facts and links](#assumed-facts-and-links) |
+| two rules say opposite things in different words | it lets the model propose *assumed facts* ("access cannot be both granted and denied"), and asks it directly whether the outcomes of two rules can both hold. It keeps what a majority of answers agree on, and uses it only to find more conflicts | [Assumed facts and links](#assumed-facts-and-links) |
 | the logic has no time, so some proven conflicts are not real | it marks them *doubtful* instead of hiding them | [How sure is a finding](#how-sure-is-a-finding) |
 | the findings depend on the symbols the model chose | it can formalize the spec several times and say how often each finding came up | [Several symbol sets](#several-symbol-sets) |
 
@@ -58,6 +58,10 @@ Where the project stands:
 - on 10 sets of specs it was not built on, it found 61 to 100% of the
   conflicts we had planted, with at most 1 false alarm in 18 clean runs
   (doubtful conflicts set aside);
+- on an eleventh set, where every planted conflict says the opposite outcome
+  in other words, it found 34 of 36. That is with a newer step, the questions
+  about two outcomes, which also reports more conflicts that nobody planted
+  (3 of 18 clean runs);
 - it found every planted gap on the three sets that have them, and reported a
   gap that is not one in 3 to 5 of 18 clean runs;
 - it finds about half of the planted ambiguities, and 30 to 32 of 36 with a
@@ -338,7 +342,26 @@ with which the *other* rules say what they demand. For D2, 8 of 8 answers say
 A link is tested before it is used. The LLM is asked 8 times whether the
 record could still be in the database in a system that does everything D2
 demands, and more than half of the answers must say "impossible". With this
-link, Z3 proves the conflict between D2 and D4. The steps are in
+link, Z3 proves the conflict between D2 and D4.
+
+**Questions about two outcomes.** The voted facts come from an open question,
+and the answers often leave out the pair that matters. In a canteen spec
+(`experiments/sets/eval7/canteen_overlap`), "take the price from the balance"
+became `payment_taken` and "refuse all payments" became `payment_refused`. No
+voted fact connected the two, so the conflict between these rules was missed
+in 3 of 3 runs. Now our code picks every pair of rules that can apply together
+and whose outcomes share no symbol, and the LLM is asked 8 times about the two
+outcomes alone, without the requirements:
+
+```
+Statement A:   TRUE: payment_taken (The system has deducted the meal price from the card balance)
+Statement B:   TRUE: payment_refused (The system has declined the payment request)
+Question:      can A and B both hold in the same snapshot?    → 8 of 8 answers: impossible
+New fact:      (not (and payment_taken payment_refused))
+               "A payment cannot be successfully taken and refused at the same time."
+```
+
+With this fact Z3 proves the conflict. The steps of all three are in
 [GUIDE.md, section 3.2](GUIDE.md#32-telling-the-solver-what-the-words-mean).
 
 Facts and links are the LLM's guesses, so they are handled with care:
@@ -554,7 +577,7 @@ Nothing in the code or in the prompts is about orders.
 |---|---|---|
 | `specs/order`, `specs/delete_property` | Kiro EARS | the two examples of the Kiro blog |
 | `specs/auth_openspec` | OpenSpec (`### Requirement` / `#### Scenario`) | another format; two conflicts we planted |
-| `experiments/sets/`: `eval` to `eval10` | both | 60 specs in new domains. Each has a clean version and versions with one planted defect, 261 versions in all. Each set was written before it was used, as a test the prompts had not seen |
+| `experiments/sets/`: `eval` to `eval10`, `eval12` | both | 66 specs in new domains. Each has a clean version and versions with one planted defect, 297 versions in all. Each set was written before it was used, as a test the prompts had not seen |
 | `specs/auth_change`, `experiments/sets/eval11` | OpenSpec projects: specs that exist, and a change | the login example as a change, and 6 projects in new domains with 5 changes each |
 
 ## How reliable is it
@@ -573,11 +596,22 @@ Each line is a test on specs the prompts had not seen, with 3 runs per spec:
 | `eval8/` (E13), doubtful conflicts set aside | 18 of 21 | 0 of 18 | 20 of 36 |
 | `eval9/` (E15), doubtful conflicts set aside | 18 of 18 | 2 of 18, a real conflict we wrote by mistake | 18 of 36 |
 | `eval10/` (E16) | 18 of 18 | 0 of 18, even counting doubtful conflicts | 7 of 36 |
+| `eval12/` (E18), conflicts said in other words; with the questions about two outcomes | 34 of 36 (27 without them) | 3 of 18 (0 without them) | 16 of 36 |
 
 Some notes on these numbers:
 
 - Assumed facts and links carry a large part of the result. Without them,
   `eval3/` gives 10 of 21.
+- The questions about two outcomes were added last, and `eval12/` is the
+  first set tested with them. Asked on the saved runs of `eval3/` to
+  `eval10/`, they raise the planted conflicts found there from 129 to 142 of
+  153. They also report conflicts that nobody planted: the clean runs with
+  one go from 3 to 13 of 144 on those runs, and from 0 to 3 of 18 on
+  `eval12/`. Some of these are fair findings (two rules that can apply
+  together, with nothing saying which one wins), and some are artefacts of
+  the single snapshot. Each one says "if the assumed facts hold" and quotes
+  the fact. We kept the step on, because it gains more than it costs
+  (research.md 3.13 and 4.6).
 - On `eval3/` and `eval4/`, every doubtful conflict was a false alarm. On
   `eval5/` one planted conflict was marked too ("WHEN a member is suspended"
   was read as an event), so with doubtful conflicts counted, E10 finds 14 of 18.
@@ -628,7 +662,8 @@ Some notes on these numbers:
 | An assumed fact or link can be wrong, even with a majority | the report quotes every one a conflict depends on, so you can judge |
 | Some proven conflicts are artefacts of the model | two events at the same moment ("a visitor signs up" while "a subscriber changes the address"); "at least 24 hours" and "less than 24 hours" as two symbols, both true. These are marked *doubtful* |
 | The *doubtful* mark needs the LLM to name the event each rule reacts to | a state taken for an event ("WHEN a member is suspended") marks a real conflict too |
-| "Remove" against "keep" is missed in about half of the cases | "delete the listing" becomes a yes/no symbol, `listing_deleted`, and "keep every listing for seven years" becomes a number of years. For Z3 nothing connects the two, so both rules can be obeyed. The main cause of missed conflicts (GUIDE.md, section 6.4) |
+| "Remove" against "keep" is still missed when "keep for N years" becomes only a number | "delete the listing" becomes a yes/no symbol, `listing_deleted`, and "keep every listing for seven years" becomes a number of years. For Z3 nothing connects the two, and the question about the two outcomes is answered "possible" as often as not (GUIDE.md, section 6.4) |
+| The questions about two outcomes also report conflicts that nobody planted | "release the coat when the guest shows the token" against "list a coat as unclaimed after 30 days": in one snapshot a coat collected late falls under both. No mark catches this kind yet. On a long spec only the first 40 pairs of rules are asked about |
 | Gaps depend on the symbols, and on the events the LLM marks | "free" and "taken" as two symbols give a false gap, and it is rarely marked doubtful. The gap in which no event happens, which almost every spec has, is marked as such and is rarely something to fix |
 | One snapshot, no time | "then", "after" and "until" are not modelled |
 | The change check does not own every effect of a change | a gap opened by a REMOVED requirement is found but stays among the findings that are not shown. Every scenario of a MODIFIED requirement counts as changed, so an old conflict of such a scenario is shown as the change's |
@@ -648,15 +683,15 @@ research.md, section 5.
 | `speccheck/llm.py` | the one place that calls the model (answers forced into a JSON schema) |
 | `speccheck/logic.py` | symbols to Z3 variables, formula parsing, solver questions |
 | `speccheck/formalize.py` | stage 1: read, sample, cluster, facts, links; several symbol sets |
-| `speccheck/probe.py` | stage 1, step 6: questions about concrete situations |
+| `speccheck/probe.py` | stage 1, step 6: questions about concrete situations, and about the outcomes of two rules |
 | `speccheck/checks.py` | stage 2: conflicts, gaps, scenarios; which findings depend on a reading; merging several symbol sets |
 | `speccheck/explain.py` | stage 3: wording, the scenario judge, the Markdown report |
 | `speccheck/cli.py` | runs the three stages |
 | `speccheck/change.py` | for `--change`: applies an OpenSpec change to the specs, labels the scenarios, selects the findings about the change |
 | `speccheck/refine.py` | optional LLM review, off by default |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the vLLM servers on the cluster: the main model, the second model |
-| `tests/` | 53 tests of everything that needs no LLM |
-| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10`, `size` and `size2`; for the change check `eval11` and `change_dev`; and the script that writes them |
+| `tests/` | 58 tests of everything that needs no LLM |
+| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10` and `eval12`, `size` and `size2`; for the change check `eval11` and `change_dev`; and the script that writes them |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs and scores the evaluation; re-scores saved runs without a GPU |
 | `experiments/stability.py`, `fact_threshold.py` | the earlier experiments |

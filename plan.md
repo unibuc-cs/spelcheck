@@ -25,7 +25,7 @@ projects have them (5.10).
 | **G1** A minimal working prototype of Kiro's formal analysis: spec, formal check, answer in plain language | **Done.** Conflicts, gaps, ambiguities and scenarios, as in Kiro's formal part. Gaps are asked once for each event, and all 18 planted gaps of `eval8/` were found. Both Kiro blog examples found by the solver (`delete_property`: 3 of 3 in the last runs; a wrong voted fact can still hide it). Ambiguities: about half with one model; with the optional second reader 30 and 32 of 36 (held-out `eval4/`, `eval7/`), at up to one extra question per spec |
 | **G2** Data-driven: any spec, any format | **Done for the prototype.** 63 base specs in two formats (Kiro EARS, OpenSpec), no change to code or prompts; specs of 30 and of 100 requirements went as well as the small ones (E13, E14), and the read step has room for about 140. An OpenSpec *change* is checked against the specs that exist (`--change`, 5.10): on held-out `eval11/`, 36 of 36 planted conflicts and 36 of 36 planted gaps, and nothing else reported about a change (E17). Not tried: a real OpenSpec project |
 | **G3** Code and documents a person can read | **Done** for the current state. GUIDE.md and README.md were revised after a point-by-point review (2026-11-22): each mechanism is a short list of steps on one real example |
-| **G4** Research for a paper, on the local model | **Well under way.** 11 held-out tests (E5, E7 to E13, E15 to E17); on the 10 with plain specs: 61 to 100% of planted conflicts found; with doubtful conflicts set aside, at most 1 false alarm in 18 clean runs, apart from a real conflict we wrote into an `eval9/` clean spec by mistake (2 runs, E15). Planted gaps 18 of 18 in each of the last three sets (E13, E15, E16). Still small: one main model, specs written by us |
+| **G4** Research for a paper, on the local model | **Well under way.** 12 held-out tests (E5, E7 to E13, E15 to E18). On the 10 before the questions about outcomes: 61 to 100% of planted conflicts found; with doubtful conflicts set aside, at most 1 false alarm in 18 clean runs, apart from a real conflict we wrote into an `eval9/` clean spec by mistake (2 runs, E15). With those questions (E18, conflicts said in other words): 34 of 36, and 3 of 18 clean runs with a conflict that was not planted. Planted gaps 18 of 18 in each of the last three sets (E13, E15, E16). Still small: one main model, specs written by us |
 | **G5** Only the formal part | **Done.** An LLM review of the text was built, measured, and switched off |
 
 In short: the pipeline works end to end, finds what Kiro's blog finds, and
@@ -34,8 +34,12 @@ holds up on specs it was not built on. Conflicts that are likely artefacts
 *doubtful*, and with those set aside almost no false alarms are left. The mark
 depends on knowing which event each rule reacts to, and the read step names it.
 
-The conflicts that are still missed come from the choice of symbols, mostly
-"remove" against "keep". A second local model, used as an independent reader,
+Conflicts said in other words ("take the price" against "refuse all
+payments") were the main misses. Since step 32 the model is asked about such
+pairs of outcomes, which finds most of them and also reports more conflicts
+that nobody planted (5.7, research.md 3.13 and 4.6). What is still missed is
+mostly a retention period that became only a number.
+A second local model, used as an independent reader,
 finds most of the ambiguities, at the cost of more questions to the author.
 A finding that holds with only one reading of an ambiguous rule now says so,
 and each ambiguity says what its other reading would change (5.9).
@@ -46,26 +50,33 @@ checked too: the report shows what the change breaks (5.10).
 
 ## 2. What is next
 
-The check of an OpenSpec change is built (step 31, 5.10). Three candidates
-follow, in this order:
+The check of an OpenSpec change is built (step 31, 5.10), and so are the
+questions about pairs of outcomes (step 32, 5.7). Three candidates follow, in
+this order:
 
 1. **A larger evaluation** (G4): another main model, the second reader on
    more sets, specs we did not write, and results counted per planted
    conflict (the runs of one spec mostly agree, so more specs help more than
    more runs). For the change check: a real OpenSpec project with its
-   history of changes. All eleven sets have been read (`eval11/` in E17), so
-   a new design needs `eval12/`, written first.
+   history of changes. All twelve sets have been read (`eval12/` in E18), so
+   a new design needs `eval13/`, written first.
 2. **The change check, further** (G2). Three things it does not do (5.10): a
    gap opened by a REMOVED requirement is not attributed to the change; every
    change costs a full run, because nothing is cached; and a project is
    bounded by the read step's room, about 140 scenarios.
 3. **The choice of symbols** (G1), which is where the remaining misses and
    false alarms come from:
-   - "remove" against "keep" (found in 10 of 21 runs), and two symbols for
-     one outcome that stay unlinked (research.md 4.2). Two prompt
-     sentences were tried and dropped (T12, T14). A real repair would have
-     the LLM judge requirements against each other, which this project
-     leaves out on purpose.
+   - two symbols for one outcome ("take the price", "refuse all payments").
+     Done in step 32: the questions about pairs of outcomes find 13 of the 21
+     conflicts that were missed on `eval3/` to `eval10/`, and 34 of 36 on
+     `eval12/` (T22, E18). What is left: a retention period that became only
+     a number ("keep for ten years" as `payslip_retention_years = 10`) is
+     found in some runs and not in others; and on a long spec only the first
+     40 pairs are asked about, of several hundred.
+   - the price of step 32: more conflicts that nobody planted, among them
+     artefacts of the one snapshot ("release the coat" against "list the
+     coat as unclaimed after 30 days"; research.md 4.6). A mark for them, as
+     for two events at once, has not been tried.
    - two symbols for complementary conditions ("the slot is free", "the slot
      is taken"). They give doubtful conflicts, and since step 26 also the
      false alarms of the gap search (3 to 5 of 18 clean runs per set). Tried
@@ -109,6 +120,15 @@ conflicts, no other conflict at all, 18 of 18 planted gaps (E16). It also
 helps little, because the model rarely votes such a fact: none of the 5
 false gaps of `eval10/` was marked. The false gaps from two complementary
 symbols stay, as a known limit, and are not tried again.
+
+Decided on 2026-11-24: **the questions about pairs of outcomes stay on by
+default** (step 32, 5.7). On the saved runs of `eval3/` to `eval10/` they
+raise the planted conflicts found from 132 to 145 of 153, and the clean runs
+with a conflict that was not planted from 3 to 13 of 144 (T22). On held-out
+`eval12/`: 27 to 34 of 36, and 0 to 3 of 18 (E18). The gain is larger than the
+loss, and each added conflict quotes the fact it rests on. The rule for such
+decisions from now on: when the gains are larger than the losses, the new
+version becomes the default, and the loss is written down as a limit.
 
 Decided on 2026-11-24: **an OpenSpec change is checked by merging it into the
 specs and running the pipeline as it is** (5.10). The prompts did not change:
@@ -220,11 +240,11 @@ The code, in the order to read it:
 | `speccheck/llm.py` | 70 | One function: prompt + JSON schema in, N parsed answers out | the model server |
 | `speccheck/logic.py` | 250 | Symbols to Z3 variables; parses formulas; asks the solver, including the test "do these two rules mean the same?" | Z3 |
 | `speccheck/formalize.py` | 720 | Stage 1: text to `formal.json` (steps 1 to 5, then 6 and 7); `formalize_sets` for K symbol sets | `llm`, `logic`, `probe` |
-| `speccheck/probe.py` | 430 | Stage 1, step 6: three checks by questions about one requirement | `llm`, `logic` |
+| `speccheck/probe.py` | 590 | Stage 1, step 6: four checks by simple questions, three about one requirement and one about the outcomes of two | `llm`, `logic` |
 | `speccheck/checks.py` | 720 | Stage 2: `formal.json` to findings; which findings depend on a reading; scenarios; `combine` for K formal models | `logic` |
 | `speccheck/explain.py` | 370 | Stage 3: findings to plain words; the scenario judge; builds `report.md` | `llm` |
 | `speccheck/cli.py` | 140 | Runs the three stages, writes the files; with `--change`, on the specs of an OpenSpec project with a change applied | all |
-| `speccheck/change.py` | 280 | For `--change`: applies an OpenSpec change to the specs that exist, labels the scenarios, and says which findings involve the change (5.10) | `logic` |
+| `speccheck/change.py` | 270 | For `--change`: applies an OpenSpec change to the specs that exist, labels the scenarios, and says which findings involve the change (5.10) | `logic` |
 
 About half of each file is comments, docstrings and prompts.
 
@@ -407,6 +427,12 @@ link (a fact)    (confirmed and record_removed) => (not record_retained)
 - a link is kept even when the voted facts already imply it: a fact may be
   rejected later (check 3)
 
+**Questions about pairs of outcomes: a third source of facts** (`probe.py`,
+step 6, check 4)
+- for two rules that can apply together and demand things with no symbol in
+  common, the model is asked whether both outcomes can hold; "impossible"
+  from more than half of the answers is an assumed fact (5.7)
+
 **Facts that contradict a requirement** (check 3, 5.7)
 - voted facts can be wrong in a way that hides conflicts: with "a deleted
   property has its record removed" and "a removed record is not retained", D4
@@ -497,7 +523,7 @@ formal model K ─► findings ─┘
 - gaps cannot be matched (a gap is a situation over one model's own symbols):
   the gaps of the first model are kept
 
-### 5.7 Three checks by questions (`probe.py`, step 6)
+### 5.7 Four checks by questions (`probe.py`, step 6)
 
 - all 8 samples can agree and still be wrong: one model tends to make the same
   choice every time
@@ -550,6 +576,47 @@ verdict        more than half say "contradicts" → the fact is left out
   to obey; if so, our code cuts the facts down to the smallest set that still
   does it
 - "more than half" against a voted fact: it already has a majority behind it
+
+**Check 4: can what two requirements demand both be the case?**
+
+The first three checks are about one requirement. This one is about two, and
+it adds assumed facts. From `experiments/sets/eval7/canteen_overlap`:
+
+```
+C1   "WHEN a student taps the card at the till AND the card balance covers the meal,
+      THE Canteen System SHALL take the price from the balance."
+     (and card_tapped (>= card_balance meal_price)) => payment_taken
+C6   "WHILE the canteen is closed for holidays, THE Canteen System SHALL refuse all payments."
+     canteen_closed_for_holidays => payment_refused
+
+pair        C1 and C6 can apply together; payment_taken and payment_refused
+            are two symbols, so to Z3 both can be true: no conflict
+question    Statement A: TRUE: payment_taken (The system has deducted the meal price ...)
+            Statement B: TRUE: payment_refused (The system has declined the payment request)
+            Can A and B both hold in the same snapshot?  possible / impossible / unclear
+answers     8 of 8 "impossible"
+fact        (not (and payment_taken payment_refused))
+            "A payment cannot be successfully taken and refused at the same time."
+conflict    C1 and C6, "if the assumed facts hold"                    (5.3, run 2)
+```
+
+- our code and Z3 pick the pairs. A pair is asked about when both rules can
+  apply in one situation that the facts allow; they do not react to two
+  different events (that conflict would be doubtful anyway); what they demand
+  shares no symbol, and no fact already excludes the two; and what each
+  demands is one definite state of its symbols (not "x or y")
+- the model sees the two outcomes only, as facts with their descriptions. It
+  does not see the requirements: as in step 4, it is asked what the symbols
+  mean, not what the system should do
+- more than half of the 8 answers "impossible" → an assumed fact, used like
+  the others: add-only, and quoted by every conflict that needs it
+- in this spec 4 pairs were asked about. "Refuse all payments" was also
+  called impossible together with "add the top-up to the balance" (C3), a
+  conflict nobody planted, and possible together with the other two
+- at most 40 pairs are asked about, the first ones in the document
+  (`MAX_PAIRS`). A spec of six rules has 2 to 5; one of 100 requirements has
+  several hundred
+- what it finds and what it costs: research.md 3.13 and 4.6
 
 ### 5.8 A second reader (`formalize.py`, step 7, optional)
 
@@ -691,6 +758,7 @@ Neither file has a conflict on its own. Together they do. Run on
 | `symbols[].event` | true for something that happens at one moment (5.2) |
 | `rules[].trigger` | the event the rule reacts to (5.2), or empty |
 | `rules[].probes` | step 6: each other reading, the situations asked about, and the answers |
+| `outcome_pairs` | step 6, check 4: each pair of rules asked about, and the count of its answers. A fact that came from one has `between`: the ids of the two rules |
 | `rules[].second` | step 7, if it ran: the second model's reading, its support ("7/8"), and whether it means the same as the translation |
 
 It is the only input of `checks.py`, so the solver stage can be re-run without a GPU.
@@ -817,7 +885,7 @@ SLURM:    experiments/slurm/serve.sbatch → vllm serve Qwen/Qwen3.8-27B-FP8   (
 | Formal model: schema, implications, background assertions | the same three parts: symbols, rules, assumed facts |
 | Ambiguity from the entropy of sampled formalizations | the same |
 | Conflicts as minimal rule sets | the same, for conflicts triggered by up to three rules |
-| Background assertions kept by a frequency threshold | kept by majority vote, and only allowed to add findings; plus links (step 5) |
+| Background assertions kept by a frequency threshold | kept by majority vote, and only allowed to add findings; plus links (step 5) and facts from questions about pairs of outcomes (step 6) |
 | Completeness gaps | the same idea, asked once for each event, plus one gap with no event |
 | Surprising accepted / rejected scenarios, picked by an LLM judge | the same; at most 3 are shown |
 | (not stated) | several symbol sets: each finding says with how many it was found |
@@ -914,6 +982,12 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       `--change` (5.10); development run on old specs as projects and on
       `specs/auth_change` (T21); held-out `eval11/` (E17): 36 of 36 planted
       conflicts, 36 of 36 planted gaps, nothing else reported about a change
+- [x] **Step 32 — conflicts said in other words**: the 21 misses of `eval3/`
+      to `eval10/` sorted by cause (T22); `eval12/` written first; probe
+      check 4 asks whether the outcomes of two rules can both hold; on the
+      saved runs 132 → 145 of 153 conflicts, clean runs with an unplanted
+      conflict 3 → 13 of 144; held-out `eval12/` (E18): 27 → 34 of 36, and
+      0 → 3 of 18. Kept on by default
 - [x] **Documentation pass 2**: GUIDE.md reviewed point by point and rewritten (a new
       2.4 on gaps and scenarios; the ambiguity check, voted facts and links as steps on
       one real example), then shortened from 1112 to 893 lines; README.md reworded in the

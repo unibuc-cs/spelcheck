@@ -2414,10 +2414,12 @@ is the same runs scored without the facts that check 4 added.
 - **The 3 clean runs with a conflict** are the 3 runs of `cloakroom_clean`.
 - Ambiguities, gaps and false gaps are the same with and without the check.
 
-**Decision.** Not taken yet: keep the check on, keep it as an option that is
-off by default, or drop it. It finds most of the conflicts that were missed
-(13 of 21 in T22, 7 of 9 here), and it reports more conflicts that nobody
-planted (clean runs with one: 3 to 13 of 144 in T22, 0 to 3 of 18 here). `eval12/` is development data from now on; the next design needs
+**Decision.** The check stays, on by default. It finds most of the conflicts
+that were missed (13 of 21 in T22, 7 of 9 here). The price is more conflicts
+that nobody planted (clean runs with one: 3 to 13 of 144 in T22, 0 to 3 of 18
+here); each of them says "if the assumed facts hold" and quotes the fact it
+rests on. The gain was judged larger than the loss. The other two choices
+were to make the check an option that is off by default, or to drop it. `eval12/` is development data from now on; the next design needs
 `eval13/`.
 
 **Raw data.** [experiments/results/E18_eval12.json](experiments/results/E18_eval12.json)
