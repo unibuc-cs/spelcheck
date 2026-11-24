@@ -57,7 +57,7 @@ model, and a language model does make mistakes. So most of the work, and most
 of the code, deals with one question: can we trust the translation, and when
 we cannot, do we say so clearly?
 
-To give an idea of the size: about 2,400 lines of Python now, half of them comments
+To give an idea of the size: about 2,700 lines of Python now, half of them comments
 and prompts, one local model (Qwen3.8, 27B), and results measured on 261 versions
 of small specs. The results are in part 5.
 
@@ -319,7 +319,7 @@ a finding:
 |---|---|---|---|
 | a sentence has two meanings, and the model silently picks one | "reaches 5": exactly 5, or 5 or more? | the ambiguity check (3.1) | an **Ambiguity**: a question to the author |
 | two rules say opposite things in different words, and Z3 sees two unrelated symbols | "grant access" and "deny access" | assumed facts and links (3.2) | "Conflict (**if the assumed facts hold**)" |
-| the logic has no time, only one snapshot, so conflicts appear that are not real | two events "at the same moment" | the doubtful mark (3.3) | "Conflict (**doubtful**: ...)" |
+| the logic is one snapshot with yes/no symbols, so findings appear that are not real | two events "at the same moment" | the doubtful mark (3.3) | "Conflict (**doubtful**: ...)" |
 | another run picks other symbols, and gives other findings | a conflict found in one run and missed in the next | several symbol sets (3.4) | "**found with 3 of 3** symbol sets" |
 
 The next four sections take them one by one.
@@ -534,10 +534,10 @@ means "not retained" where D4 says "retained", and the conflict between D2 and
 D4 is found. The report says "if the assumed facts hold" and quotes the link,
 so the reader can judge whether "remove" really means that.
 
-### 3.3 Marking the conflicts that are probably not real
+### 3.3 Marking the findings that are probably not real
 
 The formulas describe one snapshot of the system, with no "before" and no
-"after". This produces conflicts that are correct as logic and meaningless in
+"after". This produces findings that are correct as logic and meaningless in
 practice. They come in two shapes.
 
 The first shape is two events in the same instant. Take a newsletter spec:
@@ -567,9 +567,20 @@ fact        (not (and at_least_24h less_than_24h))        this situation cannot 
 
 The two conditions became two separate yes/no symbols, so Z3 can make both
 true. A conflict whose situation the assumed facts rule out is marked as
-doubtful too, and so is a gap (5.2).
+doubtful too.
 
-In both cases the conflict stays in the report, with the word "doubtful" and
+A gap can have this second shape as well. In a laundry spec, "the slot is
+free" and "the slot is taken" became two symbols, and Z3 can make both false:
+
+```
+situation   resident_books_slot = true, slot_is_free = false, slot_is_taken = false     no rule applies: a gap
+fact        (or slot_is_free slot_is_taken)                                             this situation cannot happen
+```
+
+Such a gap is marked as doubtful when the model has proposed that fact. It
+rarely does, so most gaps of this kind stay unmarked (5.2).
+
+In every case the finding stays in the report, with the word "doubtful" and
 the reason. It is marked and not deleted because the mark is itself a guess:
 in the evaluation it also landed, a few times, on real conflicts that we had
 planted.
@@ -620,7 +631,7 @@ how much weight the finding carries:
 | "... (found with k of K symbol sets)" | k of the K formalizations found it | the higher k, the better |
 | "Ambiguity: ..." | not a proof, a question to the author | a fair question, though some are asked about clear rules |
 | "Gap: ..." | proven: an event happens and no rule applies | certain. Ask yourself whether that case was left out on purpose |
-| "Gap (doubtful: ...)" | proven, but the assumed facts say its situation cannot happen (5.2) | little: usually two symbols for one yes/no question |
+| "Gap (doubtful: ...)" | proven, but the assumed facts say its situation cannot happen (3.3) | little: usually two symbols for one yes/no question |
 | "Gap (no event happens): ..." | proven: nothing happens, and no rule applies (2.4) | certain, but rarely something to fix. Almost every spec has this gap, so it is shown once, after the other gaps |
 | "Scenario, allowed: ..." or "Scenario, ruled out: ..." | proven: the rules allow this situation, or make it impossible (2.4) | the proof is certain. Which scenarios are shown is the model's choice, and whether one is a problem is for you, the author, to decide |
 
@@ -704,17 +715,13 @@ eval10  18/18   ████████████████████  10
 | false gaps (`eval8` to `eval10`) | in 4, 3 and 5 of 18 runs on clean specs. Explained below |
 | longer specs, 30 and 100 requirements | they went as well as the small ones. Explained below |
 
-**The false gaps.** A clean spec in `eval8` covers both cases of an event, for
-example "a resident books a time slot AND the slot is free" and "... AND the
-slot is taken". Nothing is left open, so a gap for that event is a false
-alarm. The tool reported one in 4 of the 18 runs on clean specs, always for
-the same reason: the model had made two symbols, `slot_is_free` and
-`slot_is_taken`, and to Z3 a slot can then be neither free nor taken. With one
-symbol, and "taken" written as `(not slot_is_free)`, the false gap does not
-appear. A voted fact "the slot is free or taken" rules that situation out, and
-then the gap is marked doubtful. But the model rarely proposes such a fact:
-only 2 of 13 false gaps were marked (`eval8` to `eval10`). This is a known
-limit.
+**The false gaps.** A clean spec covers both cases of an event, for example
+"a resident books a time slot AND the slot is free" and "... AND the slot is
+taken". Nothing is left open, so a gap for that event is a false alarm. All
+of them had the cause shown in 3.3: two symbols, `slot_is_free` and
+`slot_is_taken`, where one symbol and its negation would do. The doubtful
+mark was added later. In the runs made with it, it caught only 2 of 13 false
+gaps, so this is a known limit.
 
 **Longer specs.** All the specs counted above have at most six requirements.
 To see what a longer document does, we wrote two more, each in four versions
@@ -738,11 +745,13 @@ documents, so a first sign, not a measurement.
 
 The project has five goals. This is where each one stands:
 
-| Goal                                                      | Status |
-|-----------------------------------------------------------|---|
+| Goal | Status |
+|---|---|
 | G1: a minimal working prototype of Kiro's formal analysis | done |
-| G2: it works on any spec, in any format                   | partly: 2 formats and 51 specs. A whole OpenSpec project is still missing (see 5.6) |
-| G3: only the formal part                                  | done: an LLM review of the text was built, measured, and switched off |
+| G2: it works on any spec, in any format | partly: 2 formats, 63 small specs, and two long ones. A whole OpenSpec project, where a change is checked against the existing specs, is planned next (5.6) |
+| G3: code and documents a person can read | done for the current state |
+| G4: research for a paper, on the local model | well under way: 10 tests on specs the design had not seen. Still one main model, and specs written by us |
+| G5: only the formal part | done: an LLM review of the text was built, measured, and switched off |
 
 ### 5.4 What does not work yet
 
@@ -750,6 +759,7 @@ The project has five goals. This is where each one stands:
 |---|---|
 | "remove" against "keep" is missed in about half of the cases (found in 10 of 21 runs) | "delete the listing" against "keep every listing for seven years". This is the main cause of missed conflicts, and it is explained below the table |
 | one model finds only half of the ambiguities | it is confident where a person would stop and ask |
+| two words for one yes/no question give a false gap | "the slot is free" and "the slot is taken" as two symbols: in 3 to 5 of 18 clean runs (5.2) |
 | a fact or a link can be wrong, even with a majority behind it | which is why the report quotes every one that a conflict depends on |
 | there is no time | "then", "after" and "until" are not modelled: the logic is one snapshot |
 | the evaluation is small | the specs were written by us, and there is one main model |
@@ -819,11 +829,22 @@ The full list is in research.md, section 5.
 
 ### 5.6 What is next
 
-1. **Check a change against the specs that already exist.** A real OpenSpec
-   project has existing specs and a change on top of them. This is the
-   recommended next step, and it was postponed on purpose.
+1. **Check a change against the specs that already exist.** This is next. In
+   an OpenSpec project the specs say what the system does today, and new work
+   arrives as a *change*, a folder that holds only the difference:
+
+   ```
+   existing   "WHEN failed attempts reach 5 THEN the account is locked"
+   change     ADDED: "WHEN an administrator fails 5 times THEN the account stays unlocked"
+   ```
+
+   Neither file has a conflict on its own. Together they do. The plan: our
+   code applies the change to the existing specs, the pipeline checks the
+   result like any other spec, and the report keeps the findings that involve
+   an added or modified requirement. The details are in plan.md, section 2.1.
+   Its test set, `eval11`, is written; nothing else is built yet.
 2. **A larger evaluation**, with another main model and specs we did not
-   write. All ten sets have been used, so an eleventh has to be written first.
+   write.
 3. **The choice of symbols**, which is where the remaining misses come from.
 
 ---
@@ -862,12 +883,12 @@ that section 2 described:
 
 | File | Lines | What to look for |
 |---|---|---|
-| `speccheck/llm.py` | 60 | one function, `ask`: a prompt goes in, N answers come out as JSON |
+| `speccheck/llm.py` | 70 | one function, `ask`: a prompt goes in, N answers come out as JSON |
 | `speccheck/logic.py` | 250 | `model` and `impossible`, the two questions for Z3 (1.2), and `same_meaning` |
-| `speccheck/checks.py` | 690 | `_search` forces rules to apply (2.3); `find_conflicts` runs the two searches (3.2); `_try_other_readings` (3.1); then `find_gaps` and `find_scenarios` (2.4) |
-| `speccheck/formalize.py` | 680 | the seven steps of 3.5. The prompts at the top show what the LLM is asked |
+| `speccheck/checks.py` | 720 | `_search` forces rules to apply (2.3); `find_conflicts` runs the two searches (3.2); `_try_other_readings` (3.1); then `find_gaps` and `find_scenarios` (2.4) |
+| `speccheck/formalize.py` | 720 | the seven steps of 3.5. The prompts at the top show what the LLM is asked |
 | `speccheck/probe.py` | 430 | the questions about concrete situations (3.1 and 3.2) |
-| `speccheck/explain.py` | 350 | `evidence` writes the *Proven* lines; the wording prompt is above it |
+| `speccheck/explain.py` | 360 | `evidence` writes the *Proven* lines; the wording prompt is above it |
 | `speccheck/cli.py` | 110 | the three stages, called one after the other |
 
 About half of each file is comments, docstrings and prompts.
@@ -879,7 +900,8 @@ speccheck/          the tool (the 7 files above; refine.py is the review that is
 specs/              3 small specs the prompts were developed on, with their saved output
 tests/              44 tests that need no LLM
 experiments/
-  sets/             the 10 evaluation sets, eval to eval10 (261 spec versions), and two long specs
+  sets/             the 10 evaluation sets, eval to eval10 (261 spec versions), two long specs,
+                    and eval11, the test set for the change check (5.6)
   results/          every experiment: the raw data (.json) and its tables (.md)
   examples/         saved runs that the documents quote
   evaluate.py       runs the pipeline on a set and scores it
@@ -902,6 +924,6 @@ experiments/
 | assumed fact | true by the meaning of the words, guessed by the LLM, may only add findings | "access cannot be granted and denied" |
 | link | an assumed fact that says one rule in the other rules' terms | "removed means not retained" |
 | event, trigger | something that happens at one moment; the event a rule reacts to | `order_submitted` |
-| doubtful | a proven conflict that looks like an artefact | two events at once |
+| doubtful | a proven conflict or gap that looks like an artefact | two events at once |
 | symbol set | the symbols of one formalization | `--symbol-sets 3` |
 | formal model | one `formal.json`: symbols, assumed facts and rules | `specs/order/formal.json` |

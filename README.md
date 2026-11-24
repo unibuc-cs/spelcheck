@@ -51,11 +51,16 @@ project deals with what can go wrong there:
 Where the project stands:
 
 - it finds what the Kiro blog finds, on both of the blog's examples;
-- on 8 sets of specs it was not built on, it found 61 to 100% of the conflicts
-  we had planted, with at most 1 false alarm in 18 clean runs (doubtful
-  conflicts set aside);
+- on 10 sets of specs it was not built on, it found 61 to 100% of the
+  conflicts we had planted, with at most 1 false alarm in 18 clean runs
+  (doubtful conflicts set aside);
+- it found every planted gap on the three sets that have them, and reported a
+  gap that is not one in 3 to 5 of 18 clean runs;
 - it finds about half of the planted ambiguities, and 30 to 32 of 36 with a
   second model, at the price of up to one extra question per spec.
+
+Next comes the check of an OpenSpec *change* against the specs that already
+exist. It is planned in [plan.md](plan.md), section 2.1, and not built yet.
 
 | Read next | For |
 |---|---|
@@ -366,7 +371,8 @@ The title of each finding says how far to trust it. These are real titles:
 | "depends on the reading of R3" | proven with the first reading of R3, which is ambiguous; gone with its other reading | "Gap (no event happens, depends on the reading of R3)", the gap at 6 failed attempts in the login spec ([Ambiguities](#ambiguities)) |
 | "found with k of K symbol sets" | optional: the spec was translated K times, each time with other symbols, and k of them found it | "Conflict (found with 3 of 3 symbol sets): Conflict between removal and retention" |
 
-A conflict is marked *doubtful* in two cases. It stays in the report, marked.
+A conflict is marked *doubtful* in two cases, and a gap in the second one. A
+marked finding stays in the report.
 
 The first case is two events at the same moment. A situation is one snapshot,
 so Z3 may let two events happen at once, while requirements are written for
@@ -395,10 +401,17 @@ fact        (not (and at_least_24h less_than_24h))        → this situation can
 mark        doubtful: "the assumed facts say this situation cannot happen"
 ```
 
-A gap gets the same mark when the assumed facts rule out its situation: with
-`slot_is_free` and `slot_is_taken` as two symbols, "a resident books a slot"
-is uncovered when the slot is neither, and the fact
-`(or slot_is_free slot_is_taken)` says that cannot happen.
+For a gap, the two symbols are both false. In a laundry spec, "the slot is
+free" and "the slot is taken" each have a rule:
+
+```
+situation   resident_books_slot = true, slot_is_free = false, slot_is_taken = false    → no rule applies: a gap
+fact        (or slot_is_free slot_is_taken)                                            → this situation cannot happen
+mark        doubtful: "the assumed facts say this situation cannot happen"
+```
+
+The model rarely proposes a fact like this one, so most such gaps stay
+unmarked ([Known limits](#known-limits)).
 
 ## Several symbol sets
 
@@ -524,17 +537,14 @@ Some notes on these numbers:
 - `delete_property`, the blog's second example, was found in 3 of the last 3
   runs. It was missed in 4 of 7 earlier runs, 3 times because of a wrong voted
   fact (research.md 4.3).
-- Gaps were measured for the first time on `eval8/`. A clean spec there has
-  two complementary requirements, such as "... AND the slot is free" and
+- Gaps are measured from `eval8/` on. A clean spec there has two
+  complementary requirements, such as "... AND the slot is free" and
   "... AND the slot is taken", and its gap version has only one of them. All
-  18 planted gaps were found. On the clean specs, where both cases are
-  covered, 4 of 18 runs still reported a gap. Each time the model had made
-  two symbols, `slot_is_free` and `slot_is_taken`, and for Z3 a slot can then
-  be neither. On `eval9/` and `eval10/` too, all 18 planted gaps were found,
-  with such a false gap in 3 and 5 of 18 clean runs. A gap is marked doubtful
-  when the assumed facts rule its situation out, but the model rarely votes
-  the fact that would ("the slot is free or taken"): only 2 of 13 false gaps
-  were marked (research.md 4.2).
+  18 planted gaps were found in each of the three sets. On the clean specs,
+  where both cases are covered, 4, 3 and 5 of 18 runs still reported a gap.
+  Each time the model had made two symbols, `slot_is_free` and
+  `slot_is_taken`, and for Z3 a slot can then be neither. The doubtful mark
+  caught 2 of 13 such gaps in the runs made with it (research.md 4.2).
 - All these specs have at most six requirements. To see what a longer document
   does, we wrote one spec of 30 requirements (`experiments/sets/size`) and one
   of 100 (`experiments/sets/size2`), each with three defect versions. Both
@@ -561,7 +571,7 @@ Some notes on these numbers:
 | "Remove" against "keep" is missed in about half of the cases | "delete the listing" becomes a yes/no symbol, `listing_deleted`, and "keep every listing for seven years" becomes a number of years. For Z3 nothing connects the two, so both rules can be obeyed. The main cause of missed conflicts (GUIDE.md, section 5.4) |
 | Gaps depend on the symbols, and on the events the LLM marks | "free" and "taken" as two symbols give a false gap, and it is rarely marked doubtful. The gap in which no event happens, which almost every spec has, is marked as such and is rarely something to fix |
 | One snapshot, no time | "then", "after" and "until" are not modelled |
-| One document | checking a change against specs that already exist is the next step (plan.md) |
+| One document | checking a change against specs that already exist is the next step (plan.md, section 2.1) |
 
 ## Optional: an LLM review of the text (off by default)
 
@@ -583,8 +593,8 @@ research.md, section 5.
 | `speccheck/cli.py` | runs the three stages |
 | `speccheck/refine.py` | optional LLM review, off by default |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the vLLM servers on the cluster: the main model, the second model |
-| `tests/` | 42 tests of everything that needs no LLM |
-| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10`, `size` and `size2`, and the script that writes them |
+| `tests/` | 44 tests of everything that needs no LLM |
+| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10`, `size` and `size2`, the set `eval11` for the planned change check, and the script that writes them |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs and scores the evaluation; re-scores saved runs without a GPU |
 | `experiments/stability.py`, `fact_threshold.py` | the earlier experiments |
