@@ -8,8 +8,9 @@
 | [2](#2-the-basic-pipeline-on-one-small-spec) | the basic pipeline, followed on a spec of five rules |
 | [3](#3-four-ways-the-translation-goes-wrong-and-the-four-repairs) | the four things that go wrong, and the repair for each |
 | [4](#4-how-sure-is-a-finding) | how much to trust a finding |
-| [5](#5-where-we-are) | how we measure, the results, the limits, what comes next |
-| [6](#6-what-to-open-next) | what to run and read, in order, and a small glossary |
+| [5](#5-checking-a-change-against-the-specs-that-exist) | the same check for a change to specs that already exist (OpenSpec) |
+| [6](#6-where-we-are) | how we measure, the results, the limits, what comes next |
+| [7](#7-what-to-open-next) | what to run and read, in order, and a small glossary |
 
 ---
 
@@ -57,9 +58,12 @@ model, and a language model does make mistakes. So most of the work, and most
 of the code, deals with one question: can we trust the translation, and when
 we cannot, do we say so clearly?
 
-To give an idea of the size: about 2,700 lines of Python now, half of them comments
+The same tool also checks a *change* against specs that already exist, which
+is how OpenSpec projects work. That is part 5.
+
+To give an idea of the size: about 3,000 lines of Python now, half of them comments
 and prompts, one local model (Qwen3.8, 27B), and results measured on 261 versions
-of small specs. The results are in part 5.
+of small specs and on 30 changes. The results are in part 6.
 
 ---
 
@@ -578,7 +582,7 @@ fact        (or slot_is_free slot_is_taken)                                     
 ```
 
 Such a gap is marked as doubtful when the model has proposed that fact. It
-rarely does, so most gaps of this kind stay unmarked (5.2).
+rarely does, so most gaps of this kind stay unmarked (6.2).
 
 In every case the finding stays in the report, with the word "doubtful" and
 the reason. It is marked and not deleted because the mark is itself a guess:
@@ -642,9 +646,102 @@ time the explanation is there.
 
 ---
 
-## 5. Where we are
+## 5. Checking a change against the specs that exist
 
-### 5.1 How we measure
+So far the tool checked one document. Real projects rarely start from an
+empty page: the specs already say what the system does, and new work arrives
+as a *change*. OpenSpec keeps a project that way:
+
+```
+openspec/specs/auth/spec.md                               what the system does today
+openspec/changes/admin-never-locked/specs/auth/spec.md    the change: only what is added, modified or removed
+```
+
+The example is in `specs/auth_change`. The spec that exists has four
+scenarios. One of them:
+
+```
+### Requirement: Account Lockout
+#### Scenario: Lockout threshold
+- **WHEN** the number of failed attempts on an account reaches 5
+- **THEN** the system locks the account
+```
+
+The change adds one requirement:
+
+```
+## ADDED Requirements
+### Requirement: Administrator Access
+#### Scenario: Administrators are never locked out
+- **WHEN** the account belongs to an administrator
+- **THEN** the system does not lock the account
+```
+
+Read alone, the change is fine, and so is the spec. The conflict exists only
+between the two: an administrator's account with 5 failed attempts. This
+command finds it:
+
+```
+python -m speccheck --change specs/auth_change/openspec/changes/admin-never-locked --base-url ...
+```
+
+It works in four steps:
+
+1. **Our code merges.** It applies the change to the specs, the way OpenSpec
+   itself does when a change is archived: requirements are matched by their
+   name, and added, replaced, removed or renamed. The result is one document,
+   `merged.md`. In it our code writes a label into the header of every
+   scenario, from `#### Scenario R1: Valid credentials` to
+   `#### Scenario R5: Administrators are never locked out`, and it remembers
+   that R5 is the one the change added.
+2. **The LLM and Z3 do what they always do.** The merged document goes
+   through the three stages of part 2, with the repairs of part 3. Nothing in
+   the prompts or in the solver stage knows about changes. The model uses the
+   labels as the ids of the rules, so the rules come back as R1 to R5.
+3. **Our code selects.** Z3 proved four things about the merged document, and
+   only one of them involves a rule of the change:
+
+   | Finding | Rules | About the change? |
+   |---|---|---|
+   | conflict: 5 failed attempts on an administrator's account | R3, R5 | yes: R5 was added |
+   | conflict: a correct password for a locked account (3.2) | R1, R4 | no: both rules were there before |
+   | ambiguity: "reaches 5" (3.1) | R3 | no |
+   | gap: no event happens | none | no |
+
+   A conflict, an ambiguity or a scenario is about the change when one of its
+   rules was added or modified. A gap is about the change when such a rule
+   reacts to the event that happens in it.
+4. **The LLM words what was kept.** The report shows the one conflict, says
+   that 3 other findings are in `findings.json`, and ends with a table that
+   tells where each rule comes from:
+
+   > **1. Conflict: Administrator Account Lock Conflict**
+   >
+   > Requirement R3 states that the system must lock an account when the
+   > number of failed attempts reaches 5. However, Requirement R5 states that
+   > the system must not lock an account if it belongs to an administrator. [...]
+   >
+   > | Rule | Spec | Requirement | Scenario | |
+   > |---|---|---|---|---|
+   > | R3 | auth | Account Lockout | Lockout threshold | |
+   > | R5 | auth | Administrator Access | Administrators are never locked out | **added** |
+
+Three things to know about it:
+
+- The merged document is formalized as a whole, again for every change. That
+  is what gives the old and the new rules the same symbols, and without
+  shared symbols Z3 sees no conflict (3.2).
+- Every scenario of a modified requirement counts as changed, also one whose
+  text stayed the same. An old conflict of such a scenario is shown too.
+- A requirement that a change removes can leave a case open. That gap is
+  found, but the removed rule is not in the merged document, so nothing ties
+  the gap to the change and it stays among the other findings.
+
+---
+
+## 6. Where we are
+
+### 6.1 How we measure
 
 To say how good the tool is, we need specs for which the right answer is
 known, so we make them ourselves. We write a small clean spec, and then
@@ -675,6 +772,12 @@ Each version is a folder with two files: `spec.md`, which the tool reads, and
 `{"conflicts": [[1, 6], [3, 6]]}`: rule 6 clashes with rule 1 and with rule 3.
 There are ten sets, `eval` to `eval10`, with 261 versions in all.
 
+An eleventh set, `eval11`, tests the change check of part 5. It has six small
+OpenSpec projects, and each comes with five changes: one that is harmless,
+two that clash with an existing scenario (a new requirement, and a rewritten
+one), and two that leave a case open (a new requirement with one of its two
+cases, and a rewritten one that lost a scenario).
+
 Two more terms. A conflict reported on a clean spec is a *false alarm*. And
 because the model answers a little differently each time, every version is run
 three times, so all the numbers are counts of runs.
@@ -685,7 +788,7 @@ design change and used once, like an exam. The research notes call it a
 *held-out set*. After its results have been read it only counts as practice
 material, and the next change needs a new set.
 
-### 5.2 The results
+### 6.2 The results
 
 ```
 planted conflicts found, on 10 sets the design had not seen
@@ -714,6 +817,7 @@ eval10  18/18   ████████████████████  10
 | planted gaps (`eval8` to `eval10`) | 18 of 18 found in each, now that the question is asked once for each event; before, 0 of 18 |
 | false gaps (`eval8` to `eval10`) | in 4, 3 and 5 of 18 runs on clean specs. Explained below |
 | longer specs, 30 and 100 requirements | they went as well as the small ones. Explained below |
+| changes checked against existing specs (`eval11`) | all 36 planted conflicts and all 36 planted gaps found; nothing was reported about the 18 harmless changes. Explained below |
 
 **The false gaps.** A clean spec covers both cases of an event, for example
 "a resident books a time slot AND the slot is free" and "... AND the slot is
@@ -722,6 +826,17 @@ of them had the cause shown in 3.3: two symbols, `slot_is_free` and
 `slot_is_taken`, where one symbol and its negation would do. The doubtful
 mark was added later. In the runs made with it, it caught only 2 of 13 false
 gaps, so this is a known limit.
+
+**Changes.** In the 90 runs on `eval11`, Z3 proved 246 findings about the
+merged documents. 72 of them involved a rule of the change, and those are
+exactly the 72 defects we had planted. The other 174 were about the existing
+requirements alone (171 gaps, 90 of them of the kind "no event happens", and
+3 ambiguities), and the reports leave them out. The labels of step 1 came back as
+rule ids in every run, which the selection depends on. Two reservations: the
+planted conflicts were worded to be easy to find ("opens the gate" against
+"does not open the gate"), because this set tests the merge and the
+selection; and one of them was marked doubtful in 3 of 3 runs, because "WHEN
+the projector is out of order" was taken for an event (3.3).
 
 **Longer specs.** All the specs counted above have at most six requirements.
 To see what a longer document does, we wrote two more, each in four versions
@@ -741,27 +856,28 @@ the optional second model cannot be used yet on a spec this long: its server
 has too little room for a prompt with some 200 symbols. These are two
 documents, so a first sign, not a measurement.
 
-### 5.3 The goals
+### 6.3 The goals
 
 The project has five goals. This is where each one stands:
 
 | Goal | Status |
 |---|---|
 | G1: a minimal working prototype of Kiro's formal analysis | done |
-| G2: it works on any spec, in any format | partly: 2 formats, 63 small specs, and two long ones. A whole OpenSpec project, where a change is checked against the existing specs, is planned next (5.6) |
+| G2: it works on any spec, in any format | done for the prototype: 2 formats, 63 small specs, two long ones, and changes checked against existing specs (part 5). A real OpenSpec project has not been tried |
 | G3: code and documents a person can read | done for the current state |
-| G4: research for a paper, on the local model | well under way: 10 tests on specs the design had not seen. Still one main model, and specs written by us |
+| G4: research for a paper, on the local model | well under way: 11 tests on specs the design had not seen. Still one main model, and specs written by us |
 | G5: only the formal part | done: an LLM review of the text was built, measured, and switched off |
 
-### 5.4 What does not work yet
+### 6.4 What does not work yet
 
 | Limit | Example |
 |---|---|
 | "remove" against "keep" is missed in about half of the cases (found in 10 of 21 runs) | "delete the listing" against "keep every listing for seven years". This is the main cause of missed conflicts, and it is explained below the table |
 | one model finds only half of the ambiguities | it is confident where a person would stop and ask |
-| two words for one yes/no question give a false gap | "the slot is free" and "the slot is taken" as two symbols: in 3 to 5 of 18 clean runs (5.2) |
+| two words for one yes/no question give a false gap | "the slot is free" and "the slot is taken" as two symbols: in 3 to 5 of 18 clean runs (6.2) |
 | a fact or a link can be wrong, even with a majority behind it | which is why the report quotes every one that a conflict depends on |
 | there is no time | "then", "after" and "until" are not modelled: the logic is one snapshot |
+| the change check does not own every effect of a change | a gap opened by a removed requirement stays among the other findings; and every change costs a full run (part 5) |
 | the evaluation is small | the specs were written by us, and there is one main model |
 
 **"Remove" against "keep", on a real case.** One of the planted conflicts
@@ -786,7 +902,7 @@ The link step of 3.2 does not help either: asked to say "delete the listing"
 with the symbols of the other rules, the model has only the number of years to
 work with, and it answers that this cannot be expressed.
 
-### 5.5 What we tried and dropped
+### 6.5 What we tried and dropped
 
 Some of the most useful lessons came from things that did not work. Three of
 them explain decisions you will meet in the code:
@@ -809,7 +925,7 @@ We added one more, right after it:
 > "keep every email for a year" are both about email_stored (plus the email's
 > age for "a year").
 
-The hope was that A4 and A6 from 5.4 would then be written about one fact,
+The hope was that A4 and A6 from 6.4 would then be written about one fact,
 whether the listing is stored. Two things happened instead:
 
 - A4 kept its own symbol, `listing_deleted`, so the conflict was still missed
@@ -827,29 +943,17 @@ judgement and not a proof, which this project leaves out on purpose.
 
 The full list is in research.md, section 5.
 
-### 5.6 What is next
+### 6.6 What is next
 
-1. **Check a change against the specs that already exist.** This is next. In
-   an OpenSpec project the specs say what the system does today, and new work
-   arrives as a *change*, a folder that holds only the difference:
-
-   ```
-   existing   "WHEN failed attempts reach 5 THEN the account is locked"
-   change     ADDED: "WHEN an administrator fails 5 times THEN the account stays unlocked"
-   ```
-
-   Neither file has a conflict on its own. Together they do. The plan: our
-   code applies the change to the existing specs, the pipeline checks the
-   result like any other spec, and the report keeps the findings that involve
-   an added or modified requirement. The details are in plan.md, section 2.1.
-   Its test set, `eval11`, is written; nothing else is built yet.
-2. **A larger evaluation**, with another main model and specs we did not
-   write.
+1. **A larger evaluation**, with another main model, specs we did not write,
+   and a real OpenSpec project with its changes.
+2. **The change check, further**: the gap that a removed requirement opens,
+   and a way to check a change without formalizing all the specs again.
 3. **The choice of symbols**, which is where the remaining misses come from.
 
 ---
 
-## 6. What to open next
+## 7. What to open next
 
 Start by running the commands of 2.6. Then open one spec in its four forms,
 side by side, and follow a single rule through them:
@@ -889,19 +993,21 @@ that section 2 described:
 | `speccheck/formalize.py` | 720 | the seven steps of 3.5. The prompts at the top show what the LLM is asked |
 | `speccheck/probe.py` | 430 | the questions about concrete situations (3.1 and 3.2) |
 | `speccheck/explain.py` | 360 | `evidence` writes the *Proven* lines; the wording prompt is above it |
-| `speccheck/cli.py` | 110 | the three stages, called one after the other |
+| `speccheck/cli.py` | 140 | the three stages, called one after the other |
+| `speccheck/change.py` | 280 | part 5: `merge` applies a change to the specs and labels the scenarios; `about_change` selects the findings |
 
 About half of each file is comments, docstrings and prompts.
 
 The folders:
 
 ```
-speccheck/          the tool (the 7 files above; refine.py is the review that is switched off)
-specs/              3 small specs the prompts were developed on, with their saved output
-tests/              44 tests that need no LLM
+speccheck/          the tool (the 8 files above; refine.py is the review that is switched off)
+specs/              3 small specs the prompts were developed on, with their saved output,
+                    and auth_change, the example of part 5
+tests/              53 tests that need no LLM
 experiments/
   sets/             the 10 evaluation sets, eval to eval10 (261 spec versions), two long specs,
-                    and eval11, the test set for the change check (5.6)
+                    and for the change check eval11 and change_dev (old specs as projects)
   results/          every experiment: the raw data (.json) and its tables (.md)
   examples/         saved runs that the documents quote
   evaluate.py       runs the pipeline on a set and scores it
@@ -926,4 +1032,5 @@ experiments/
 | event, trigger | something that happens at one moment; the event a rule reacts to | `order_submitted` |
 | doubtful | a proven conflict or gap that looks like an artefact | two events at once |
 | symbol set | the symbols of one formalization | `--symbol-sets 3` |
+| change | in an OpenSpec project, a folder with what is added, modified or removed in the specs | `specs/auth_change/openspec/changes/admin-never-locked` |
 | formal model | one `formal.json`: symbols, assumed facts and rules | `specs/order/formal.json` |

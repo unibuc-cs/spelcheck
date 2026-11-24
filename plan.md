@@ -4,7 +4,9 @@ speccheck reads a requirements document written in natural language and
 reports what is wrong with it. It follows the formal part of
 [Kiro's requirements analysis](https://kiro.dev/blog/deep-spec-analysis/): an
 LLM turns the text into logic, the Z3 solver checks the logic, and the results
-come back in plain language, each with "A) keep as-is / B) change".
+come back in plain language, each with "A) keep as-is / B) change". It can
+also check a *change* against the specs that already exist, as OpenSpec
+projects have them (5.10).
 
 | File | Read it for |
 |---|---|
@@ -21,9 +23,9 @@ come back in plain language, each with "A) keep as-is / B) change".
 | Goal | Status |
 |---|---|
 | **G1** A minimal working prototype of Kiro's formal analysis: spec, formal check, answer in plain language | **Done.** Conflicts, gaps, ambiguities and scenarios, as in Kiro's formal part. Gaps are asked once for each event, and all 18 planted gaps of `eval8/` were found. Both Kiro blog examples found by the solver (`delete_property`: 3 of 3 in the last runs; a wrong voted fact can still hide it). Ambiguities: about half with one model; with the optional second reader 30 and 32 of 36 (held-out `eval4/`, `eval7/`), at up to one extra question per spec |
-| **G2** Data-driven: any spec, any format | **Partly.** 63 base specs in two formats (Kiro EARS, OpenSpec), no change to code or prompts; specs of 30 and of 100 requirements went as well as the small ones (E13, E14), and the read step now has room for about 140. Missing: a whole OpenSpec *project*, where a change is checked against the specs that already exist. That is next: planned in 2.1, test set `eval11/` written |
+| **G2** Data-driven: any spec, any format | **Done for the prototype.** 63 base specs in two formats (Kiro EARS, OpenSpec), no change to code or prompts; specs of 30 and of 100 requirements went as well as the small ones (E13, E14), and the read step has room for about 140. An OpenSpec *change* is checked against the specs that exist (`--change`, 5.10): on held-out `eval11/`, 36 of 36 planted conflicts and 36 of 36 planted gaps, and nothing else reported about a change (E17). Not tried: a real OpenSpec project |
 | **G3** Code and documents a person can read | **Done** for the current state. GUIDE.md and README.md were revised after a point-by-point review (2026-11-22): each mechanism is a short list of steps on one real example |
-| **G4** Research for a paper, on the local model | **Well under way.** 10 held-out tests (E5, E7 to E13, E15, E16): 61 to 100% of planted conflicts found; with doubtful conflicts set aside, at most 1 false alarm in 18 clean runs, apart from a real conflict we wrote into an `eval9/` clean spec by mistake (2 runs, E15). Planted gaps 18 of 18 in each of the last three sets (E13, E15, E16). Still small: one main model, specs written by us |
+| **G4** Research for a paper, on the local model | **Well under way.** 11 held-out tests (E5, E7 to E13, E15 to E17); on the 10 with plain specs: 61 to 100% of planted conflicts found; with doubtful conflicts set aside, at most 1 false alarm in 18 clean runs, apart from a real conflict we wrote into an `eval9/` clean spec by mistake (2 runs, E15). Planted gaps 18 of 18 in each of the last three sets (E13, E15, E16). Still small: one main model, specs written by us |
 | **G5** Only the formal part | **Done.** An LLM review of the text was built, measured, and switched off |
 
 In short: the pipeline works end to end, finds what Kiro's blog finds, and
@@ -37,26 +39,26 @@ The conflicts that are still missed come from the choice of symbols, mostly
 finds most of the ambiguities, at the cost of more questions to the author.
 A finding that holds with only one reading of an ambiguous rule now says so,
 and each ambiguity says what its other reading would change (5.9).
-Real OpenSpec projects, where specs already exist, have not been touched yet:
-that is the next step (2.1).
+A change to specs that already exist, as OpenSpec projects have them, can be
+checked too: the report shows what the change breaks (5.10).
 
 ---
 
 ## 2. What is next
 
-There are three candidates, in this order. The first is next, and its plan is
-in 2.1.
+The check of an OpenSpec change is built (step 31, 5.10). Three candidates
+follow, in this order:
 
-1. **Check an OpenSpec change against the specs that already exist** (G2).
-   This would close G2, and it is the most original part for a paper, because
-   Kiro, as documented, reads one document. The plan is in 2.1; its test set,
-   `eval11/`, is written, and nothing else is built yet.
-2. **A larger evaluation** (G4): another main model, the second reader on
+1. **A larger evaluation** (G4): another main model, the second reader on
    more sets, specs we did not write, and results counted per planted
    conflict (the runs of one spec mostly agree, so more specs help more than
-   more runs). All ten sets have been read (`eval10/` in E16). `eval11/` is
-   reserved for the change check; anything else needs a set of its own,
-   written first.
+   more runs). For the change check: a real OpenSpec project with its
+   history of changes. All eleven sets have been read (`eval11/` in E17), so
+   a new design needs `eval12/`, written first.
+2. **The change check, further** (G2). Three things it does not do (5.10): a
+   gap opened by a REMOVED requirement is not attributed to the change; every
+   change costs a full run, because nothing is cached; and a project is
+   bounded by the read step's room, about 140 scenarios.
 3. **The choice of symbols** (G1), which is where the remaining misses and
    false alarms come from:
    - "remove" against "keep" (found in 10 of 21 runs), and two symbols for
@@ -70,74 +72,6 @@ in 2.1.
      once (step 30): a gap the assumed facts rule out is marked doubtful, but
      the facts rarely say that one of the two always holds, so only 2 of 13
      were marked (T20, E16). This is a known limit now.
-
-### 2.1 The plan for the change check (step 31, not built yet)
-
-**What it answers.** In an OpenSpec project the specs say what the system
-does today, and new work arrives as a *change*, a folder that holds only the
-difference. Does this change contradict what already exists, or leave a case
-open?
-
-```
-openspec/specs/auth/spec.md                        existing
-    "WHEN failed attempts reach 5 THEN the account is locked"
-openspec/changes/admin-bypass/specs/auth/spec.md   the change
-    ## ADDED Requirements
-    "WHEN an administrator fails 5 times THEN the account stays unlocked"
-```
-
-Neither file has a conflict on its own. Together they do.
-
-**How it runs.** `python -m speccheck --change openspec/changes/admin-bypass`
-
-| Step | Who | What |
-|---|---|---|
-| 1 merge | our code (`change.py`, new) | applies the change to the specs as `openspec archive` does: RENAMED, REMOVED, MODIFIED, ADDED, matched by the requirement's name. It writes all spec files into one document, `merged.md`, gives every scenario a label (R1, R2, ...), and notes which labels the change added or modified |
-| 2 formalize and check | the LLM and Z3 | the merged document goes through the pipeline like any spec. Prompts, `formalize.py` and `checks.py` do not change |
-| 3 select | our code | keeps the findings that involve the change (below). The others are counted in one line of the report and stay in `findings.json` |
-| 4 word | the LLM | as today. The report also says, for each rule, which spec file it is from and whether it is existing, added or modified |
-
-A finding involves the change when:
-- a conflict or a scenario has at least one added or modified rule;
-- an ambiguity is about an added or modified rule;
-- a gap is for an event that an added or modified rule reacts to.
-
-**Two choices that keep it small.**
-- The merged spec is formalized again for every change, and nothing is
-  cached. All rules then share one set of symbols, which the conflict search
-  needs. A change costs one normal run, and the read step has room for about
-  140 scenarios (E14).
-- The labels are written into the document by our code. The read step already
-  uses a document's own labels as rule ids. Our code checks that every label
-  came back and stops if one did not.
-
-**Limits, by design.**
-- A REMOVED requirement can open a gap. The removed rule is not in the merged
-  spec, so that gap is among the other findings and is not attributed to the
-  change. A scenario dropped by MODIFIED is attributed, because its
-  requirement is a modified one.
-- Findings among the existing requirements alone are not shown. They are not
-  the change's fault.
-
-**How it is tested.** `eval11/` was written first (`make_eval.py`): six
-OpenSpec projects in new domains, each with two or three spec files and six
-existing scenarios, and each with five changes whose right answer is known:
-
-| Version | The change | Must report |
-|---|---|---|
-| `clean` | adds a requirement that covers both of its cases (3 of the 6 also remove an unrelated requirement) | nothing about the change |
-| `direct` or `overlap` | adds a requirement that clashes with an existing scenario | that conflict |
-| `modified` | rewrites an existing requirement so that it clashes with a scenario in another spec file | that conflict |
-| `gap` | adds a requirement that covers one of two cases | a gap for its event |
-| `narrowed` | rewrites a requirement and drops one of its two complementary scenarios | a gap for its event |
-
-For development, the OpenSpec-format specs of `eval9/` and `eval10/` will be
-turned into projects (their planted defect becomes the change), so nothing is
-tuned on `eval11/` before the frozen run.
-
-**Size.** `speccheck/change.py` (new, about 150 lines), a `--change` option
-in `cli.py`, a few lines in `explain.py` for the report, the scoring in
-`evaluate.py`, and tests for the merge.
 
 Small things that are open:
 
@@ -175,6 +109,13 @@ conflicts, no other conflict at all, 18 of 18 planted gaps (E16). It also
 helps little, because the model rarely votes such a fact: none of the 5
 false gaps of `eval10/` was marked. The false gaps from two complementary
 symbols stay, as a known limit, and are not tried again.
+
+Decided on 2026-11-24: **an OpenSpec change is checked by merging it into the
+specs and running the pipeline as it is** (5.10). The prompts did not change:
+the scenario labels that our code writes into the merged document came back
+as rule ids in 159 of 159 runs (T21, E17). Kept simple on purpose: every
+scenario of a modified requirement counts as changed, nothing is cached, and
+a gap opened by a removed requirement is not attributed to the change.
 
 Time ("then", "after", "until") is not planned. The model is one snapshot.
 
@@ -276,13 +217,14 @@ The code, in the order to read it:
 
 | File | Lines | Job | Uses |
 |---|---|---|---|
-| `speccheck/llm.py` | 60 | One function: prompt + JSON schema in, N parsed answers out | the model server |
+| `speccheck/llm.py` | 70 | One function: prompt + JSON schema in, N parsed answers out | the model server |
 | `speccheck/logic.py` | 250 | Symbols to Z3 variables; parses formulas; asks the solver, including the test "do these two rules mean the same?" | Z3 |
-| `speccheck/formalize.py` | 680 | Stage 1: text to `formal.json` (steps 1 to 5, then 6 and 7); `formalize_sets` for K symbol sets | `llm`, `logic`, `probe` |
+| `speccheck/formalize.py` | 720 | Stage 1: text to `formal.json` (steps 1 to 5, then 6 and 7); `formalize_sets` for K symbol sets | `llm`, `logic`, `probe` |
 | `speccheck/probe.py` | 430 | Stage 1, step 6: three checks by questions about one requirement | `llm`, `logic` |
-| `speccheck/checks.py` | 690 | Stage 2: `formal.json` to findings; which findings depend on a reading; scenarios; `combine` for K formal models | `logic` |
-| `speccheck/explain.py` | 350 | Stage 3: findings to plain words; the scenario judge; builds `report.md` | `llm` |
-| `speccheck/cli.py` | 110 | Runs the three stages, writes the files | all |
+| `speccheck/checks.py` | 720 | Stage 2: `formal.json` to findings; which findings depend on a reading; scenarios; `combine` for K formal models | `logic` |
+| `speccheck/explain.py` | 370 | Stage 3: findings to plain words; the scenario judge; builds `report.md` | `llm` |
+| `speccheck/cli.py` | 140 | Runs the three stages, writes the files; with `--change`, on the specs of an OpenSpec project with a change applied | all |
+| `speccheck/change.py` | 280 | For `--change`: applies an OpenSpec change to the specs that exist, labels the scenarios, and says which findings involve the change (5.10) | `logic` |
 
 About half of each file is comments, docstrings and prompts.
 
@@ -671,6 +613,48 @@ gap         "6 failed attempts, no password submitted": no rule applies
 
 On the saved runs of `eval2/` to `eval7/`: research.md 3.9.
 
+### 5.10 Does a change fit the specs that exist? (`change.py`, `cli.py --change`)
+
+In an OpenSpec project the specs say what the system does today, and new work
+arrives as a *change*, a folder that holds only the difference. The question
+is what the change breaks in the specs that exist.
+
+```
+openspec/specs/auth/spec.md                        existing
+    "WHEN the number of failed attempts on an account reaches 5 THEN the system locks the account"
+openspec/changes/admin-never-locked/specs/auth/spec.md      the change
+    ## ADDED Requirements
+    "WHEN the account belongs to an administrator THEN the system does not lock the account"
+```
+
+Neither file has a conflict on its own. Together they do. Run on
+`specs/auth_change`:
+
+| Step | Who | What |
+|---|---|---|
+| 1 merge | our code (`change.merge`) | applies the change to the specs: RENAMED, then REMOVED, MODIFIED, ADDED, matched by the requirement's name. Writes all spec files into one document, `merged.md`, with a label in every scenario header (`#### Scenario R3: Lockout threshold`), and notes that R5 is added |
+| 2 formalize and check | the LLM and Z3 | `merged.md` goes through the pipeline like any spec. The read step uses the labels as rule ids. Prompts, `formalize.py` and `checks.py` know nothing about changes |
+| 3 select | our code (`change.about_change`) | of 2 conflicts, 1 ambiguity and 1 gap, keeps the conflict of R3 with R5. The other three involve existing rules only; they are counted in the report and stay in `findings.json` |
+| 4 word | the LLM | as always. The report ends with a table: each rule, its spec file, requirement and scenario, and whether the change added or modified it |
+
+- a finding is about the change when: a conflict or a scenario has an added
+  or modified rule; an ambiguity is about such a rule; a gap is for an event
+  that such a rule reacts to (its trigger, or an event in its condition)
+- every scenario of a MODIFIED requirement counts as modified, also one whose
+  text is the same: a change that drops one of two complementary scenarios
+  must own the gap this opens
+- the merged spec is formalized again for every change, with nothing cached,
+  so that all rules share one set of symbols. A change costs one normal run
+- if a label does not come back as a rule id, the tool stops: it could not
+  tell the change's rules from the others (`change.changed_rules`)
+- the read step may take a requirement's SHALL sentence for a rule of its
+  own, without a label. It counts as changed when it is the sentence of an
+  added or modified requirement
+- a delta that names a requirement which is not there, or adds one that is,
+  is refused, as `openspec archive` refuses it
+- not covered: a REMOVED requirement can open a gap. The removed rule is not
+  in the merged spec, so the gap is found but stays among the other findings
+
 ---
 
 ## 6. The data between the pieces
@@ -746,6 +730,8 @@ It is the only input of `checks.py`, so the solver stage can be re-run without a
   It is doubtful when it has `doubted_by`, as a conflict is.
 - After stage 3 every finding also has `title`, `explanation`, `option_a`,
   `option_b`.
+- With `--change`, every finding has `about_change` (5.10). Those with
+  `false` come last and are not worded.
 
 ### `report.md`
 
@@ -763,6 +749,13 @@ The remarks in brackets appear only when they apply; a doubtful conflict says
 "doubtful: needs two events at the same moment" or "doubtful: the assumed facts
 say this situation cannot happen", and a doubtful gap says the latter. A conflict or gap that is gone with the
 other reading of an ambiguous rule says "depends on the reading of R3".
+
+With `--change`, the output goes into the change's folder, together with
+`merged.md` (the specs with the change applied, every scenario labelled). The
+report shows only the findings about the change. Under its first line it says
+what the change adds, modifies and removes, and how many other findings were
+left out; it ends with a table of the rules: label, spec file, requirement,
+scenario, and "added" or "modified".
 
 ---
 
@@ -830,7 +823,7 @@ SLURM:    experiments/slurm/serve.sbatch → vllm serve Qwen/Qwen3.8-27B-FP8   (
 | (not stated) | several symbol sets: each finding says with how many it was found |
 | (not stated) | optional second reader: a model of another family must confirm each translation |
 | Refinement: an LLM rewrites the criteria before formalization | not part of the pipeline. An optional review exists, off by default (below) |
-| Reads one `requirements.md` | reads one document |
+| Reads one `requirements.md` | reads one document, or an OpenSpec change together with the specs that exist: only the findings that involve the change are reported (5.10) |
 | (not stated) | one snapshot, no time: "then", "after", "until" are not modelled |
 
 **The optional review**
@@ -916,10 +909,11 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       `eval10/` (E16): 18 of 18 conflicts, no other conflict, 18 of 18 planted
       gaps, but none of the 5 false gaps marked. Kept, and the false gaps
       recorded as a known limit
-- [ ] **Step 31 — check an OpenSpec change against the existing specs**: plan
-      in 2.1 and `eval11/` (30 changes on 6 projects) written first, done;
-      then `change.py`, the `--change` option, a development run on old
-      specs, and the frozen held-out run
+- [x] **Step 31 — check an OpenSpec change against the existing specs**:
+      `eval11/` (30 changes on 6 projects) written first; `change.py` and
+      `--change` (5.10); development run on old specs as projects and on
+      `specs/auth_change` (T21); held-out `eval11/` (E17): 36 of 36 planted
+      conflicts, 36 of 36 planted gaps, nothing else reported about a change
 - [x] **Documentation pass 2**: GUIDE.md reviewed point by point and rewritten (a new
       2.4 on gaps and scenarios; the ambiguity check, voted facts and links as steps on
       one real example), then shortened from 1112 to 893 lines; README.md reworded in the

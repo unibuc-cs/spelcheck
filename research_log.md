@@ -2133,6 +2133,141 @@ again. `eval10/` is development data from now on; the next design needs
 
 ---
 
+## T21 — The check of an OpenSpec change, on development data (2026-11-24)
+
+**Question.** Kiro, as documented, reads one requirements document. In an
+OpenSpec project the specs say what the system does today
+(`openspec/specs/<capability>/spec.md`), and new work arrives as a change that
+holds only the difference (`openspec/changes/<name>/specs/.../spec.md`, with
+`## ADDED`, `## MODIFIED`, `## REMOVED` and `## RENAMED Requirements`). Can
+the pipeline say what a change breaks in the specs that exist, without being
+changed itself?
+
+**Design** (plan.md 5.10; the held-out set `eval11/` was written first,
+f4215c9):
+
+1. Our code (`speccheck/change.py`) applies the change to the specs, matching
+   requirements by name, and writes one document. In it every scenario header
+   gets a label: `#### Scenario R4: Locked account`.
+2. The merged document is formalized and checked like any spec. The prompts,
+   `formalize.py` and `checks.py` are untouched. The read prompt already says
+   "Use the document's own label as id", so the rules come back with the
+   labels as ids, and our code knows which rules the change added or modified.
+3. Our code keeps the findings that involve the change: a conflict, a
+   scenario or an ambiguity with an added or modified rule, and a gap for an
+   event that such a rule reacts to. If a label does not come back, the tool
+   stops.
+
+**Setup.** There were no specs with changes, so development data was made
+from sets that had been read. `make_eval.py change_dev` turns the six
+OpenSpec-format specs of `eval9/` and `eval10/` into projects: the clean spec
+is what exists, and each planted version becomes a change (a MODIFIED
+requirement). That gives 22 cases: 4 with a conflict, 12 with an ambiguity, 6
+with a gap; two versions that add a requirement without a scenario were left
+out. The login spec was laid out by hand as a project, `specs/auth_change`:
+four scenarios exist, and the change adds "administrators are never locked
+out". 3 runs each, 1 symbol set, temperature 0.7; with the three development
+specs and one report, one cluster job of 19 minutes.
+
+**Results.**
+
+- **The labels came back in 69 of 69 runs**, and the read step made no rule
+  without a label (the SHALL sentence under a requirement's header was never
+  taken for a rule).
+- **`change_dev/`:** planted conflicts 12 of 12 (3 of 12 without assumed facts
+  and links), planted gaps 18 of 18, planted ambiguities 13 of 36.
+- **`specs/auth_change`:** the conflict between R3 (lock at 5 failed
+  attempts) and the added R5 in 3 of 3 runs. The conflict between R1 and R4,
+  which the spec had before the change, was found in 3 of 3 and left out in 3
+  of 3.
+- **2 other conflicts about a change**, both in `shelter_gap`: the real
+  conflict of `shelter_clean` (E15). One of its two scenarios belongs to the
+  requirement that the change rewrites, so it counts as changed although its
+  text is the same.
+- **45 gaps about a change in 66 runs**, 18 of them planted. The others are
+  cases that the rewritten requirement does leave open: a counted event ("for
+  the second time") at another count, or a condition that a reworded scenario
+  added.
+- The three development specs gave 15 of 15 conflicts, as expected: no prompt
+  changed.
+
+**Decision.** Frozen as built (58599e4). Noted and not changed: every
+scenario of a modified requirement counts as changed, also one whose text
+stayed the same.
+
+**Raw data.** [experiments/results/T21_change_dev.json](experiments/results/T21_change_dev.json)
+and T21_specs.json, each with its table; the saved run of the example is in
+`specs/auth_change/`.
+
+---
+
+## E17 — Held-out `eval11/`: the check of an OpenSpec change (2026-11-24)
+
+**Question.** Does the change check of T21 hold on projects it was not built
+on?
+
+**Setup.** `eval11/` was written first (f4215c9) and the design frozen in
+58599e4. The set has six OpenSpec projects in new domains (museum, coworking
+space, marina, cinema, conference, food bank). Each has two or three spec
+files with six existing scenarios, in OpenSpec's own format: a SHALL sentence
+under each requirement, and scenarios with WHEN / THEN bullets. Each project
+comes with five changes:
+
+| Version | The change | Must report |
+|---|---|---|
+| `clean` | adds a requirement with both of its cases (3 of the 6 also remove an unrelated requirement; 1 puts it into a new spec file) | nothing about the change |
+| `direct` (3), `overlap` (3) | adds a requirement that clashes with an existing scenario | that conflict |
+| `modified` | rewrites a requirement so that it clashes with a scenario in another spec file | that conflict |
+| `gap` | adds a requirement that covers one of two cases | a gap for its event |
+| `narrowed` | rewrites a requirement and drops one of its two complementary scenarios | a gap for its event |
+
+The planted conflicts negate an existing outcome in its own words ("opens the
+gate" / "does not open the gate"), on purpose: the set tests the merge and
+the selection of findings, not the choice of symbols. 90 runs (3 per case, 1
+symbol set, temperature 0.7) on one cluster job, 2 GPUs, 22 minutes.
+
+**Results.** Only findings about the change count, as in the tool's report.
+
+| Configuration | Planted conflicts | direct | overlap | modified | Clean changes with a conflict about the change | Other conflicts about the change |
+|---|---|---|---|---|---|---|
+| default | 36/36 | 9/9 | 9/9 | 18/18 | 0/18 | 0 |
+| doubtful conflicts set aside | 33/36 | 9/9 | 9/9 | 15/18 | 0/18 | 0 |
+| without assumed facts and links | 33/36 | 9/9 | 9/9 | 15/18 | 0/18 | 0 |
+
+Planted gaps: 36 of 36 (`gap` 18 of 18, `narrowed` 18 of 18). Clean changes
+with a gap on a covered event: 0 of 18.
+
+- **The labels came back in 90 of 90 runs**, and no rule without a label was
+  made.
+- **Everything shown was planted.** The 90 reports would show 72 findings, 36
+  conflicts and 36 gaps, and all 72 are the planted ones. 174 findings were
+  left out: 90 gaps in which no event happens, 81 gaps on events of existing
+  rules, and 3 ambiguities of existing rules. No conflict among existing
+  rules was found.
+- **3 planted conflicts are marked doubtful**, all in `cinema_modified`:
+  "WHEN the projector of a hall is out of order" was read as an event,
+  `projector_fault`, in 3 of 3 runs. The clash with "a customer asks for a
+  seat" then seems to need two events at once. This is the limit seen in E10
+  (a state read as an event). The same conflict is the only one that needs an
+  assumed fact.
+- **No ambiguity was flagged on a rule of a change.** None was planted.
+
+**What this does not show.**
+- The conflicts were worded to be found. What the earlier sets measure about
+  the choice of symbols ("remove" against "keep") applies to changes as well.
+- A gap opened by a REMOVED requirement is not attributed to the change. The
+  set has no such case.
+- The projects are small and written by us. No real OpenSpec project was
+  tried.
+
+**Decision.** The check stays as built. `eval11/` is development data from
+now on; the next design needs `eval12/`.
+
+**Raw data.** [experiments/results/E17_eval11.json](experiments/results/E17_eval11.json)
+(with its table, E17_eval11.md).
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

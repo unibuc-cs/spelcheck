@@ -20,6 +20,10 @@ spec text ──formalize.py──► formal.json ──checks.py──► findi
              LLM + Z3                     Z3 only                      LLM
 ```
 
+It also checks an OpenSpec *change* against the specs that already exist, and
+reports what the change breaks
+([Checking a change against existing specs](#checking-a-change-against-existing-specs)).
+
 ## The project in one minute
 
 The model rewrites each requirement as "when *condition* then *demand*", using
@@ -57,10 +61,10 @@ Where the project stands:
 - it found every planted gap on the three sets that have them, and reported a
   gap that is not one in 3 to 5 of 18 clean runs;
 - it finds about half of the planted ambiguities, and 30 to 32 of 36 with a
-  second model, at the price of up to one extra question per spec.
-
-Next comes the check of an OpenSpec *change* against the specs that already
-exist. It is planned in [plan.md](plan.md), section 2.1, and not built yet.
+  second model, at the price of up to one extra question per spec;
+- for a change to specs that already exist, it found all 36 conflicts and all
+  36 gaps we had planted in 30 changes it was not built on, and reported
+  nothing about the harmless ones.
 
 | Read next | For |
 |---|---|
@@ -447,6 +451,48 @@ question the Kiro blog shows for this spec:
 The saved run is in
 [experiments/examples/delete_property_links](experiments/examples/delete_property_links).
 
+## Checking a change against existing specs
+
+In an OpenSpec project the specs say what the system does today, and new work
+arrives as a *change*, a folder that holds only the difference.
+`specs/auth_change` is the login spec laid out that way:
+
+```
+openspec/specs/auth/spec.md                               what exists: 4 scenarios, one of them
+    "WHEN the number of failed attempts on an account reaches 5 THEN the system locks the account"
+
+openspec/changes/admin-never-locked/specs/auth/spec.md    the change
+    ## ADDED Requirements
+    "WHEN the account belongs to an administrator THEN the system does not lock the account"
+```
+
+Neither file has a conflict on its own. With `--change`, speccheck first
+applies the change to the specs, as OpenSpec does when a change is archived,
+and writes the result as one document in which every scenario has a label
+(R1 to R5 here). That document goes through the three stages like any spec.
+Then our code keeps the findings that involve a rule the change added or
+modified. This is the top of the report:
+
+> Change `admin-never-locked`, checked against the specs that exist: 1
+> scenario(s) added, 0 in modified requirements.
+>
+> Only findings that involve an added or modified rule (R5) are shown. 3 other
+> finding(s), among the existing requirements alone, are in findings.json.
+>
+> **1. Conflict: Administrator Account Lock Conflict**
+>
+> Requirement R3 states that the system must lock an account when the number
+> of failed attempts reaches 5. However, Requirement R5 states that the system
+> must not lock an account if it belongs to an administrator. In the situation
+> where an administrator's account has reached 5 failed attempts, the system
+> is forced to both lock and not lock the account, which is impossible.
+
+The 3 findings that are not shown were there before the change: R1 against R4
+(the conflict of [Assumed facts and links](#assumed-facts-and-links)), the
+ambiguity of R3, and the gap in which no event happens. The report ends with
+a table that says, for each rule, which spec file and requirement it comes
+from. The steps are in [GUIDE.md, part 5](GUIDE.md#5-checking-a-change-against-the-specs-that-exist).
+
 ## Run it
 
 ```
@@ -460,6 +506,7 @@ report has the proven facts, without wording and without scenarios.
 
 ```
 python -m speccheck specs/order/requirements.md --formal specs/order/formal.json --out out
+python -m speccheck --change specs/auth_change/openspec/changes/admin-never-locked --formal specs/auth_change/formal.json --out out
 python -m pytest tests
 ```
 
@@ -471,6 +518,7 @@ ssh -N -L 18200:hpc-nodegpu01:18200 <user>@hpc-ctrl01.acc-ub.local
 export OPENAI_API_KEY=<content of ~/speccheck/api_key on the cluster>
 python -m speccheck path/to/your_spec.md --base-url http://localhost:18200/v1
 python -m speccheck path/to/your_spec.md --base-url http://localhost:18200/v1 --symbol-sets 3
+python -m speccheck --change path/to/openspec/changes/<name> --base-url http://localhost:18200/v1
 ```
 
 **With the second model.** It is optional and finds more ambiguities. It needs
@@ -491,6 +539,7 @@ The output is written next to the spec, or into `--out`:
 | `formal.json` | the spec as logic: symbols, assumed facts, rules (`formal_2.json` ... with `--symbol-sets`) |
 | `findings.json` | what the solver proved, with its wording |
 | `report.md` | the same, in plain language (also printed) |
+| `merged.md` | only with `--change`: the specs with the change applied, every scenario labelled. The output goes into the change's folder |
 
 A 5-rule spec takes under a minute, and about a minute with 3 symbol sets. A
 spec of 100 requirements took about 10 minutes; the read step has room for
@@ -506,6 +555,7 @@ Nothing in the code or in the prompts is about orders.
 | `specs/order`, `specs/delete_property` | Kiro EARS | the two examples of the Kiro blog |
 | `specs/auth_openspec` | OpenSpec (`### Requirement` / `#### Scenario`) | another format; two conflicts we planted |
 | `experiments/sets/`: `eval` to `eval10` | both | 60 specs in new domains. Each has a clean version and versions with one planted defect, 261 versions in all. Each set was written before it was used, as a test the prompts had not seen |
+| `specs/auth_change`, `experiments/sets/eval11` | OpenSpec projects: specs that exist, and a change | the login example as a change, and 6 projects in new domains with 5 changes each |
 
 ## How reliable is it
 
@@ -556,6 +606,16 @@ Some notes on these numbers:
 - The samples are drawn at temperature 0.7. At 0.3 and 0.5, on `eval8/`, the
   conflicts and gaps did not change, and fewer ambiguities of "only" were
   found (T17), so 0.7 stays.
+- The check of a change was tested on `eval11/` (E17): six OpenSpec projects,
+  each with five changes. One change is harmless, two clash with an existing
+  scenario (a new requirement, and a rewritten one), and two leave a case
+  open (a new requirement with one of its two cases, and a rewritten one that
+  lost a scenario). In 90 runs all 36 planted conflicts and all 36 planted
+  gaps were found, and nothing was reported about the harmless changes. The
+  reports left out 174 findings about the existing requirements alone. The
+  planted conflicts were worded to be easy to find ("opens the gate" against
+  "does not open the gate"), because this set tests the merge and the
+  selection of findings; one of them was marked doubtful in 3 of 3 runs.
 - The numbers are small: the specs were written by us, and there is one main
   model. The details are in [research.md](research.md).
 
@@ -568,10 +628,11 @@ Some notes on these numbers:
 | An assumed fact or link can be wrong, even with a majority | the report quotes every one a conflict depends on, so you can judge |
 | Some proven conflicts are artefacts of the model | two events at the same moment ("a visitor signs up" while "a subscriber changes the address"); "at least 24 hours" and "less than 24 hours" as two symbols, both true. These are marked *doubtful* |
 | The *doubtful* mark needs the LLM to name the event each rule reacts to | a state taken for an event ("WHEN a member is suspended") marks a real conflict too |
-| "Remove" against "keep" is missed in about half of the cases | "delete the listing" becomes a yes/no symbol, `listing_deleted`, and "keep every listing for seven years" becomes a number of years. For Z3 nothing connects the two, so both rules can be obeyed. The main cause of missed conflicts (GUIDE.md, section 5.4) |
+| "Remove" against "keep" is missed in about half of the cases | "delete the listing" becomes a yes/no symbol, `listing_deleted`, and "keep every listing for seven years" becomes a number of years. For Z3 nothing connects the two, so both rules can be obeyed. The main cause of missed conflicts (GUIDE.md, section 6.4) |
 | Gaps depend on the symbols, and on the events the LLM marks | "free" and "taken" as two symbols give a false gap, and it is rarely marked doubtful. The gap in which no event happens, which almost every spec has, is marked as such and is rarely something to fix |
 | One snapshot, no time | "then", "after" and "until" are not modelled |
-| One document | checking a change against specs that already exist is the next step (plan.md, section 2.1) |
+| The change check does not own every effect of a change | a gap opened by a REMOVED requirement is found but stays among the findings that are not shown. Every scenario of a MODIFIED requirement counts as changed, so an old conflict of such a scenario is shown as the change's |
+| Every change is a full run | the specs are formalized again for each change, so that old and new rules share their symbols. A project is bounded by the read step's room, about 140 scenarios |
 
 ## Optional: an LLM review of the text (off by default)
 
@@ -591,10 +652,11 @@ research.md, section 5.
 | `speccheck/checks.py` | stage 2: conflicts, gaps, scenarios; which findings depend on a reading; merging several symbol sets |
 | `speccheck/explain.py` | stage 3: wording, the scenario judge, the Markdown report |
 | `speccheck/cli.py` | runs the three stages |
+| `speccheck/change.py` | for `--change`: applies an OpenSpec change to the specs, labels the scenarios, selects the findings about the change |
 | `speccheck/refine.py` | optional LLM review, off by default |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the vLLM servers on the cluster: the main model, the second model |
-| `tests/` | 44 tests of everything that needs no LLM |
-| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10`, `size` and `size2`, the set `eval11` for the planned change check, and the script that writes them |
+| `tests/` | 53 tests of everything that needs no LLM |
+| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10`, `size` and `size2`; for the change check `eval11` and `change_dev`; and the script that writes them |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs and scores the evaluation; re-scores saved runs without a GPU |
 | `experiments/stability.py`, `fact_threshold.py` | the earlier experiments |

@@ -30,6 +30,7 @@ its entries. How each mechanism works is in [plan.md](plan.md), section 5.
   | `eval8/` | 30 | 7 conflicts, 12 ambiguities, 6 gaps | E13 |
   | `eval9/` | 30 | 6 conflicts, 12 ambiguities, 6 gaps | E15 |
   | `eval10/` | 30 | 6 conflicts, 12 ambiguities, 6 gaps | E16 |
+  | `eval11/` | 30 changes on 6 OpenSpec projects (2.4) | 12 conflicts, 12 gaps | E17 |
   | `size/` | 4 versions of one spec of 30 requirements | 2 conflicts, 1 gap | E13 |
   | `size2/` | 4 versions of one spec of 100 requirements | 2 conflicts, 1 gap | E14 (not held-out: no design was tuned on it) |
 
@@ -74,6 +75,40 @@ Kiro finds `delete_property` with an LLM stage, not with its solver (C1). Ours
 found it in 1 of 40 runs, then in 8 of 8 after the links step (3.3, E5), in 3
 of 7 after a change to the read prompt (4.3), and in 3 of 3 in the last runs
 (T11).
+
+### 2.4 It checks a change against the specs that already exist (T21, E17)
+
+In an OpenSpec project the specs say what the system does today, and a
+*change* holds only what is added, modified or removed. With `--change`, our
+code applies the change to the specs and labels every scenario in the merged
+document; the pipeline checks that document as it is, with no change to the
+prompts or to the solver stage; and our code keeps the findings that involve
+an added or modified rule (plan.md 5.10).
+
+On the held-out `eval11/`, six projects with five changes each (E17):
+
+| | Found |
+|---|---|
+| planted conflicts, an added requirement against an existing scenario | 18 of 18 |
+| planted conflicts, a rewritten requirement against a scenario in another spec file | 18 of 18 (15 with doubtful ones set aside) |
+| planted gaps, an added requirement that covers one of two cases | 18 of 18 |
+| planted gaps, a requirement rewritten without one of its two scenarios | 18 of 18 |
+| clean changes with a conflict or a false gap reported about them | 0 of 18 |
+
+- **The labels came back as rule ids in every run**, 159 of 159 (T21, E17).
+  The check depends on that, and it needed no new prompt: the read prompt
+  already said to use a document's own labels.
+- **Everything shown was planted.** Of 246 findings in the 90 runs, 72 were
+  about the change, and they are the 72 planted ones. The 174 others (171
+  gaps and 3 ambiguities among the existing requirements) were left out.
+- **It is not a harder test of finding conflicts.** The planted conflicts
+  negate an existing outcome in its own words, on purpose: the set tests the
+  merge and the selection. What 4.2 says about the choice of symbols holds
+  for changes too. One planted conflict was marked doubtful in 3 of 3 runs,
+  because "WHEN the projector of a hall is out of order" was read as an
+  event (4.2).
+- **On old specs turned into changes** (development data, T21): 12 of 12
+  planted conflicts, 18 of 18 gaps, 13 of 36 ambiguities.
 
 ---
 
@@ -296,10 +331,25 @@ Planted ambiguities on the held-out `eval4/` (E9), 9 per kind:
   a translation prompt has 4,234 tokens, and its server allows 6,144 for
   prompt and answer, with 4,096 kept for the answer (E14).
 
-### 4.5 The evaluation is small
+### 4.5 The change check has three limits by design (T21, E17)
 
-Ten sets with 60 base specs (261 versions) and two longer specs, all written
-by us; 63 to 90 runs per experiment; one main model. One leak is known: an
+- **A removed requirement.** A change that removes a requirement can leave a
+  case open. The gap is found, but the removed rule is not in the merged
+  document, so nothing ties the gap to the change. Not tested.
+- **A modified requirement counts as a whole.** All its scenarios count as
+  changed, also those whose text stayed the same, so that a change which
+  drops one of two complementary scenarios owns the gap. The price: an old
+  conflict of an unchanged scenario is shown as the change's (2 development
+  runs, T21).
+- **Every change is a full run.** The merged spec is formalized again each
+  time, so that old and new rules share their symbols. Nothing is cached,
+  and the read step's room, about 140 scenarios (3.12), bounds the size of a
+  project.
+
+### 4.6 The evaluation is small
+
+Ten sets with 60 base specs (261 versions), two longer specs and six OpenSpec
+projects with 30 changes, all written by us; 63 to 90 runs per experiment; one main model. One leak is known: an
 example in the read prompt came from the domain of an `eval3/` spec (D4). And
 one clean spec, `shelter_clean` in `eval9/`, has a conflict we did not plan
 (E15).
@@ -351,8 +401,9 @@ the prompts, so it can be scored again without a GPU.
 | E14 | one spec of 100 requirements, read answer up to 24576 tokens | 12 runs | read answer 16,799 tokens; 6 of 6 conflicts, the gap 3 of 3; solver stage 35 s (3.12) |
 | E15 | `eval9/`, held-out, with the parentheses repair of the facts vote (T19) | 90 runs | 18 of 18 conflicts, planted gaps 18 of 18; the repair added 17 facts, all bounds, and changed no finding (on the saved runs: 3 planted conflicts gained in one run) (2.2) |
 | E16 | `eval10/`, held-out, with the doubtful mark on gaps (T20) | 90 runs | 18 of 18 conflicts and no other conflict at all; planted gaps 18 of 18; the mark set aside none of the 5 false gaps (4.2) |
+| E17 | `eval11/`, held-out: 30 changes on 6 OpenSpec projects, checked against the specs that exist (T21) | 90 runs | 36 of 36 planted conflicts, 36 of 36 planted gaps, nothing else reported about a change; labels kept in 90 of 90 runs (2.4) |
 
-The trials (T1 to T20) were run on development data between these
+The trials (T1 to T21) were run on development data between these
 experiments. Among the last: T17 compared temperatures 0.3, 0.5 and 0.7 (3.1);
 T18 found that the first read answer, at temperature 0, was usable for all
 204 specs, so the read step's retry is never needed on them; T19 found that
@@ -360,7 +411,8 @@ T18 found that the first read answer, at temperature 0, was usable for all
 in the formula (mostly missing outer parentheses) and almost never for an
 invented symbol. The vote now repairs the parentheses (E15). T20 added the
 typical case "one of two things is always the case" to the facts prompt and a
-doubtful mark on gaps that the facts rule out (4.2, E16). research_log.md
+doubtful mark on gaps that the facts rule out (4.2, E16). T21 built the check
+of an OpenSpec change on old specs turned into projects (2.4). research_log.md
 has them in order, together with the bugs that
 changed results before they were fixed (L1 to L10) and the open threats to
 validity. To score a saved run again: `python -m experiments.evaluate --rescore
