@@ -175,6 +175,8 @@ def find_ambiguities(rules: list[dict]) -> list[dict]:
             # A situation in which the two interpretations demand different things.
             "differs_when": rule.get("differs_when", {}),
         }
+        if rule.get("empty"):  # its translation demands nothing (formalize._judge)
+            finding["found_by"] = "empty"
         if "answers" in rule:  # how the answers to the questions fell
             finding["answers"] = rule["answers"]
         if finding["found_by"] == "models":  # how many answers of the second model confirm

@@ -59,6 +59,11 @@ logic shown in brackets after each reading tells you precisely how the two \
 differ; say that difference in plain words. Do not ask that question for a \
 conflict or a gap.
 
+If the finding says that a requirement could not be written in logic, it is \
+not an ambiguity: say that this requirement was not checked and why, and do \
+not ask a question. option_a leaves it unchecked, and option_b states what \
+it demands as one plain, observable outcome.
+
 A conflict or a gap may say that a requirement is ambiguous and that, with \
 its other reading, the finding is gone. It is still a conflict or a gap: the \
 title and the explanation are about it. Add one sentence saying that it \
@@ -207,6 +212,13 @@ def evidence(finding: dict, formal: dict) -> str:
         forbidder, other = finding["rules"]
         return (f"The requirements rule out this situation:{situation(finding['when'])}"
                 f"\nRequirement {other} would apply in it, but requirement {forbidder} makes it impossible.")
+    # A requirement whose translation demands nothing: not a question about two
+    # readings, but a requirement that the checks could not use.
+    if finding.get("found_by") == "empty":
+        return (f"Requirement {finding['rule']} could not be written in logic: no symbol of the "
+                f"formal model stands for what it demands, so its translation demands nothing."
+                + "".join(f"\nIts translation: {reading}" for reading in finding["readings"][:1])
+                + "\nIt was left out of the conflict and gap checks.")
     # ambiguity
     if finding.get("found_by") == "questions":
         answers = finding["answers"]
@@ -305,6 +317,10 @@ def render(findings: list[dict], models: list[dict], title: str, note: list[str]
     notes = [f for f in findings if f["type"] == "review"]
     counts = {kind: sum(f["type"] == kind for f in solver)
               for kind in ("conflict", "gap", "ambiguity", "scenario")}
+    # Requirements whose translation demands nothing are listed with the
+    # ambiguities, and counted apart: they were not checked.
+    unchecked = sum(f.get("found_by") == "empty" for f in solver)
+    counts["ambiguity"] -= unchecked
     doubtful = {kind: sum(f["type"] == kind and bool(f.get("doubted_by") or f.get("simultaneous_events"))
                           for f in solver)
                 for kind in ("conflict", "gap")}
@@ -318,6 +334,7 @@ def render(findings: list[dict], models: list[dict], title: str, note: list[str]
         + f", {counts['gap']} gap(s)"
         + (f" ({doubtful['gap']} doubtful)" if doubtful["gap"] else "") + ", "
         f"{counts['ambiguity']} ambiguity(ies)"
+        + (f", {unchecked} requirement(s) not checked" if unchecked else "")
         + (f", {counts['scenario']} scenario(s) to confirm" if counts["scenario"] else "") + "."
         + (f" Review of the text: {len(notes)} note(s)." if notes else ""),
         *([""] if note else []), *note,
@@ -341,6 +358,8 @@ def render(findings: list[dict], models: list[dict], title: str, note: list[str]
     for number, finding in enumerate(solver, start=1):
         if finding["type"] == "scenario":
             kind = "Scenario, allowed" if finding["verdict"] == "accepted" else "Scenario, ruled out"
+        elif finding.get("found_by") == "empty":
+            kind = "Not checked"
         else:
             kind = finding["type"].capitalize()
         remarks = []

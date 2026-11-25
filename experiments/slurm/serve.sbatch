@@ -54,6 +54,11 @@ echo "$VLLM_API_KEY" > "$KEY_FILE"
 # --data-parallel-size      one full copy of the model per GPU; vLLM spreads requests over them
 # --max-num-seqs            requests handled at once per replica. The default (1024) is more
 #                           than this model's state cache can hold, and startup fails
+# --gpu-memory-utilization  the share of each GPU's memory that the server takes when it starts.
+#                           If another process holds memory on one of the GPUs, the server
+#                           refuses to start ("Free memory on device ... is less than desired").
+#                           Then ask for a smaller share:
+#                               sbatch --export=ALL,GPU_MEMORY=0.75 serve.sbatch
 # --enable-prefix-caching   our prompts share a long prefix (the spec and the symbol list)
 # --reasoning-parser        keeps any <think> text out of the answer field
 # enable_thinking=false     answer directly; the JSON we ask for is short and structured
@@ -64,7 +69,7 @@ vllm serve "$MODEL" \
   --max-model-len 32768 \
   --max-num-seqs 128 \
   --gdn-prefill-backend triton \
-  --gpu-memory-utilization 0.85 \
+  --gpu-memory-utilization "${GPU_MEMORY:-0.85}" \
   --enable-prefix-caching \
   --reasoning-parser qwen3 \
   --default-chat-template-kwargs '{"enable_thinking": false}' \

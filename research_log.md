@@ -3233,6 +3233,103 @@ script is experiments/real/translations.py.
 
 ---
 
+## T28 — Development: a rule that demands nothing, and reading in pieces (2026-11-25)
+
+**Question.** T27 found that the symbols of the read step do not fit real
+rules. Two remedies are built (plan.md 2.1). Do they do what they are meant
+to, and what do they cost on our own documents?
+
+**The two changes.** `eval16/` was written and committed first (cc0396f).
+
+1. *A rule that demands nothing is rejected.* In step 3, if the "then" part
+   of the chosen translation is always true, the rule gets the status
+   "rejected" and the mark `empty`, whatever the agreement of its
+   translations. The report lists it as "Not checked", and counts it apart
+   from the ambiguities.
+2. *A long document is read in pieces.* A document of more than 2,500
+   characters is cut at its headings into pieces of about that size
+   (`formalize._pieces`): a section stays whole if it fits and is cut at its
+   sub-headings if not, parts that follow each other are put together again
+   while they fit, and a part of a few lines goes with its neighbour. The
+   first piece is read as before. Every later piece is read with the symbols
+   so far, by the read of `--incremental` (`READ_MORE`). Our specs up to
+   `eval15/` are shorter and are read in one piece, as before.
+
+**The first real batch** (the 16 changes of E23, one run each):
+
+| | Before (E23) | Now |
+|---|---|---|
+| runs that finished | 11 of 16 | 12 of 16 |
+| pieces for a document | 1 | 3 to 13 |
+| symbols that are not events, for each outcome | 0.40 to 1.25 | 0.78 to 1.93 |
+| rules | 366 | 411 |
+| accepted / ambiguous / rejected | 219 / 79 / 68 | 242 / 86 / 83 |
+| chosen translation demands nothing | 75, of them 45 accepted | 7, none accepted |
+| **rules of no use to the checks** (no agreed translation, or one that demands nothing) | **192 of 366 (52%)** | **169 of 411 (41%)** |
+| without agreement because there is no symbol for the outcome | 50 | 12 |
+| ... because the translations use different symbols | 73 | 106 |
+| ... because only the condition differs | 16 | 43 |
+| conflicts / gaps about a change | 29 / 10 | 25 / 5 |
+| requests to the LLM for a change | 140 | 179 |
+
+- **Reading in pieces gives the rules their symbols.** The spec that had 33
+  symbols for 82 outcomes now has 158, and the rules that demand nothing fell
+  from 75 to 7.
+- **It does not make the translations agree.** As many rules are accepted as
+  before (59%, 60%). What was lost to a missing symbol is now lost to a
+  choice among symbols: with more symbols there are more that overlap (106
+  rules, 73 before), and more conditions differ (43, 16 before).
+- **Four runs stopped, with other causes than before.** Three of the five
+  stops of E23 were our parser's (fixed since). Now three runs stop because
+  one of the read answers has an unusable symbol list (a name declared
+  twice, an enum with one value, a name that is not a word), and one because
+  a label came back changed ("R5b"). With one read answer for each piece
+  there are more answers that can go wrong.
+
+**Our own longer documents.**
+
+| | Before | Now |
+|---|---|---|
+| `mixed/` (3 runs): planted conflicts, planted gaps | 9 of 9, 9 of 9 (E22) | 9 of 9, 9 of 9 |
+| other conflicts about the change | 0 | 4 |
+| the old conflict marked doubtful | 0 of 3 | 3 of 3 |
+| the spec of 100 requirements: planted conflicts, planted gap | 6 of 6, 3 of 3 in 12 runs (E14) | 2 of 2, 1 of 1 in 4 runs |
+| unexpected conflicts | 2 in 12 runs | 4 in 4 runs |
+
+- Everything planted is still found.
+- **A state is read as an event in a later piece.** "WHEN a protest against a
+  result is open THEN ..." got the trigger `protest_open` in 3 of 3 runs. The
+  old conflict of `mixed/` then needs two events at once and is marked
+  doubtful. This is the weakness of the read of `--incremental` (research.md
+  4.5), which now reads every piece but the first.
+- **More conflicts that nobody planted.** In `mixed/`, 3 of the 4 are one
+  pair, set against each other by a question about two outcomes ("a runner
+  cannot be cleared to start if the start gate is not opened"), in 3 of 3
+  runs; it was not there in E22.
+
+**The three development specs** are read in one piece, and no rule of theirs
+was marked empty. 13 of 15 planted conflicts were found, 15 of 15 in T25:
+`delete_property` and a rejected rule of the login spec, the variation
+between runs that these specs have always had.
+
+**The wording of a rule that demands nothing** was read for two real ones:
+"Not checked: ...", the reason, no question, and a proposal to state one
+observable outcome.
+
+**Also in this session.** The server did not start twice: another account's
+process held 15 GiB on one of the two GPUs. `serve.sbatch` can now be asked
+for a smaller share of the memory (`GPU_MEMORY=0.75`).
+
+**Frozen** with the commit of this entry: the two changes as described.
+Development shows a gain on real specs and a cost on our own long ones; the
+held-out runs (E24) decide by the rule of plan.md 2.1.
+
+**Raw data.** experiments/results/T28_mixed.json, T28_size2.json and
+T28_specs.json with their tables; T28_real_batch1.md (its .json holds the
+project's spec text and is not in the repository).
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

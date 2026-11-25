@@ -109,6 +109,9 @@ def main() -> None:
         print(f"   answers that are not formulas over the listed symbols: {malformed} of {answers} "
               f"({100 * malformed / answers:.1f}%), in {with_malformed} rules")
         print(f"   rules whose chosen translation demands nothing: {sum(hollow.values())} {dict(hollow)}")
+        useless = total - status["accepted"] + hollow["accepted"]
+        print(f"   rules of no use to the checks (no agreed translation, or one that demands nothing): "
+              f"{useless} of {total} ({100 * useless / total:.0f}%)")
         print(f"   the {total - status['accepted']} rules without an agreed translation, by what their translations differ in:")
         for name, count in causes.most_common():
             print(f"      {count:4}  {name}")
