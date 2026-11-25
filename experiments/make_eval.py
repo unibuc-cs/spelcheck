@@ -1,6 +1,6 @@
-"""make_eval.py: writes the evaluation sets eval/ to eval15/, size/, size2/ and mixed/. No LLM, no GPU.
+"""make_eval.py: writes the evaluation sets eval/ to eval16/, size/, size2/ and mixed/. No LLM, no GPU.
 
-    python -m experiments.make_eval eval15     (only the sets named; all if none)
+    python -m experiments.make_eval eval16     (only the sets named; all if none)
 
 change_dev/ is development data for the change check: the OpenSpec-format
 specs of eval9/ and eval10/ as projects with a change (see as_projects).
@@ -195,6 +195,26 @@ time (PROJECTS_MIXED says which part plants what):
 The specs also have one conflict from before the change ("old"), and a fourth
 spec file that the change does not touch. Expected about the change: 3
 conflicts and 3 gaps.
+
+eval16/ (written 2026-11-25, after E23 and T27, before a rule that demands
+nothing is rejected and before a long document is read in pieces) has six
+specs written the way real tool specs are, after what E23 showed about them:
+14 scenarios each, in OpenSpec format, most with two or three outcomes ("THEN
+the tool writes a new snapshot AND records the snapshot in the index AND
+prints the size of the snapshot"), with commands, messages and exit codes in
+quotes. The domains are invented (a backup tool, a package registry, a log
+shipping agent, a thumbnail service, a build runner, a file sync client).
+Four versions each, planted as in size/ and size2/:
+
+    clean      nothing planted
+    direct     one scenario added for the condition of an existing one, with
+               an outcome that cannot hold together with its outcome
+    overlap    one scenario added for a state, which forbids, in the same
+               words, one of the outcomes of an existing scenario
+    gap        one of two complementary scenarios removed
+
+A clean spec has no rule for a special case of another rule's condition: a
+conflict reported there is a false alarm.
 """
 
 import json
@@ -2323,9 +2343,144 @@ PROJECTS11 = {
 }
 
 # Folder -> the specs written into it.
+def _spec16(intro: str, rules: list, direct: tuple, direct_with: int, overlap: tuple, overlap_with: int,
+            second_case: int, covered: list) -> dict:
+    """One eval16 spec: 14 scenarios and its three planted versions.
+
+    direct, direct_with    the scenario that the direct version adds, and the number of the
+                           scenario it clashes with (numbers count from 1, in the document)
+    overlap, overlap_with  the same for the overlap version
+    second_case            the scenario that the gap version removes: the second of two
+                           complementary cases. The one before it is then left alone
+    covered                the scenarios whose event has both of its cases in the clean spec
+    """
+    added = len(rules) + 1
+    return {"format": "openspec", "intro": intro, "rules": rules, "covered": covered,
+            "variants": {"direct": ({"add": direct}, {"conflicts": [[direct_with, added]]}),
+                         "overlap": ({"add": overlap}, {"conflicts": [[overlap_with, added]]}),
+                         "gap": ({"remove": second_case}, {"gaps": [second_case - 1]})}}
+
+
+SPECS16 = {
+    "backup": _spec16(
+        "A command-line tool, `bak`, copies folders into a repository of snapshots.",
+        [("Init", "New repository", "WHEN the user runs `bak init` AND the repository folder is empty THEN the tool creates the repository layout AND writes a `config.toml` with the default settings AND prints the path of the repository"),
+         ("Init", "Folder in use", "WHEN the user runs `bak init` AND the repository folder is not empty THEN the tool prints \"repository folder is not empty\" AND exits with code 1"),
+         ("Run", "Destination reachable", "WHEN the user runs `bak run` AND the destination is reachable THEN the tool writes a new snapshot AND records the snapshot in the index AND prints the size of the snapshot"),
+         ("Run", "Destination not reachable", "WHEN the user runs `bak run` AND the destination is not reachable THEN the tool prints \"destination not reachable\" AND exits with code 2 AND leaves the index unchanged"),
+         ("Run", "Plan", "WHEN the user runs `bak plan` THEN the tool lists the files that would be copied AND writes nothing to the destination"),
+         ("Restore", "Snapshot found", "WHEN the user runs `bak restore <id>` AND the snapshot exists THEN the tool copies the files of the snapshot to the target folder AND prints the number of files restored"),
+         ("Restore", "Snapshot missing", "WHEN the user runs `bak restore <id>` AND the snapshot does not exist THEN the tool prints \"no such snapshot\" AND lists the ids of the last five snapshots AND exits with code 3"),
+         ("Restore", "Mount", "WHEN the user runs `bak mount <id>` THEN the tool shows the snapshot as a read-only folder AND prints the path of that folder"),
+         ("Prune", "Old snapshots", "WHEN the user runs `bak prune` AND the repository has more than 30 snapshots THEN the tool deletes the oldest snapshots down to 30 AND prints the ids that were deleted"),
+         ("Prune", "Nothing to prune", "WHEN the user runs `bak prune` AND the repository has at most 30 snapshots THEN the tool prints \"nothing to prune\" AND deletes nothing"),
+         ("Verify", "Checksums match", "WHEN the user runs `bak verify` AND every checksum matches THEN the tool prints \"repository is intact\" AND exits with code 0"),
+         ("Verify", "Checksum mismatch", "WHEN the user runs `bak verify` AND a checksum does not match THEN the tool prints the path of each damaged file AND marks the snapshot as damaged in the index AND exits with code 4"),
+         ("Logging", "Verbose", "WHEN the `--verbose` flag is given THEN the tool prints one line for every file it reads"),
+         ("Logging", "Failed runs", "WHEN a run fails for the third time in a row THEN the tool sends a notification to the address in `config.toml`")],
+        ("Retries", "Wait for the destination", "WHEN the user runs `bak run` AND the destination is not reachable THEN the tool waits until the destination answers AND exits with code 0"), 4,
+        ("Locking", "Repository locked", "WHEN the repository is locked by another process THEN the tool does not write any snapshot"), 3,
+        10, [1, 3, 6, 9, 11]),
+    "registry": _spec16(
+        "A private registry stores the packages of a company and serves them to its build machines.",
+        [("Publish", "New version", "WHEN a maintainer publishes a package version AND the version does not exist yet THEN the registry stores the archive AND adds the version to the package index AND returns status 201"),
+         ("Publish", "Version exists", "WHEN a maintainer publishes a package version AND the version exists already THEN the registry rejects the upload AND returns status 409 AND leaves the stored archive unchanged"),
+         ("Publish", "Upload too large", "WHEN an upload grows beyond 50 megabytes THEN the registry returns status 413 AND deletes the partial upload"),
+         ("Install", "Version published", "WHEN a client requests a package version AND the version is published THEN the registry sends the archive AND increases the download counter"),
+         ("Install", "Version not published", "WHEN a client requests a package version AND the version is not published THEN the registry returns status 404 AND lists the published versions of the package in the answer"),
+         ("Yank", "Version yanked", "WHEN a maintainer yanks a version THEN the registry marks the version as yanked AND keeps the archive in storage AND removes the version from the list of installable versions"),
+         ("Yank", "Version restored", "WHEN a maintainer restores a yanked version THEN the registry removes the yanked mark AND adds the version to the list of installable versions"),
+         ("Tokens", "Token created", "WHEN a maintainer creates a token AND the maintainer has fewer than 10 tokens THEN the registry issues the token AND shows the token once"),
+         ("Tokens", "Token limit", "WHEN a maintainer creates a token AND the maintainer has 10 tokens THEN the registry refuses with \"token limit reached\" AND issues no token"),
+         ("Tokens", "Unused token", "WHEN a token has not been used for 90 days THEN the registry revokes the token AND sends a notice to the maintainer"),
+         ("Search", "Matches", "WHEN a client searches for a name AND at least one package matches THEN the registry returns the matching packages sorted by downloads"),
+         ("Search", "No match", "WHEN a client searches for a name AND no package matches THEN the registry returns an empty list AND status 200"),
+         ("Abuse", "Rate limit", "WHEN a client sends more than 100 requests in a minute THEN the registry answers with status 429 AND adds a `Retry-After` header"),
+         ("Abuse", "Failed sign-ins", "WHEN a maintainer fails to sign in for the fifth time in an hour THEN the registry locks the account of the maintainer for one hour")],
+        ("Overwrites", "Republish", "WHEN a maintainer publishes a package version AND the version exists already THEN the registry replaces the stored archive AND returns status 200"), 2,
+        ("Maintenance", "Read-only mode", "WHEN the registry is in read-only mode THEN the registry does not store any archive"), 1,
+        12, [1, 4, 8, 11]),
+    "logship": _spec16(
+        "An agent reads log files on a server and ships them in batches to a collector.",
+        [("Sources", "Valid configuration", "WHEN the agent starts AND the configuration file is valid THEN the agent opens every source file listed in it AND remembers the last read position of each file AND writes \"agent started\" to its own log"),
+         ("Sources", "Invalid configuration", "WHEN the agent starts AND the configuration file is not valid THEN the agent prints the line of the first error AND exits with code 78"),
+         ("Sources", "Rotation", "WHEN a source file is rotated THEN the agent finishes reading the old file AND opens the new file at its beginning"),
+         ("Shipping", "Collector reachable", "WHEN a batch is ready AND the collector is reachable THEN the agent sends the batch AND waits for the acknowledgement AND deletes the batch from the buffer"),
+         ("Shipping", "Collector not reachable", "WHEN a batch is ready AND the collector is not reachable THEN the agent keeps the batch in the buffer AND tries again after 30 seconds"),
+         ("Shipping", "Malformed batch", "WHEN the collector rejects a batch as malformed THEN the agent moves the batch to the dead-letter folder AND writes the reason to its own log"),
+         ("Buffer", "Buffer full", "WHEN the buffer grows beyond 500 megabytes THEN the agent stops reading the source files AND raises the `buffer_full` alert"),
+         ("Buffer", "Buffer drained", "WHEN the buffer falls below 400 megabytes THEN the agent resumes reading the source files AND clears the `buffer_full` alert"),
+         ("Filters", "Drop filter", "WHEN a log line matches a drop filter THEN the agent discards the line AND counts it in the `dropped_lines` metric"),
+         ("Filters", "Secrets", "WHEN a log line contains a field marked as secret THEN the agent replaces the value of the field by `***` before the line is sent"),
+         ("Shutdown", "Buffer empty", "WHEN the agent receives the stop signal AND the buffer is empty THEN the agent saves the read positions AND exits with code 0"),
+         ("Shutdown", "Buffer not empty", "WHEN the agent receives the stop signal AND the buffer is not empty THEN the agent sends the remaining batches for at most 10 seconds AND saves the read positions AND exits with code 0"),
+         ("Health", "Health endpoint", "WHEN the health endpoint is queried THEN the agent answers with its version AND the size of the buffer AND the time of the last acknowledged batch"),
+         ("Health", "Collector down", "WHEN sending a batch fails for the tenth time in a row THEN the agent raises the `collector_down` alert")],
+        ("Data loss", "Drop on outage", "WHEN a batch is ready AND the collector is not reachable THEN the agent deletes the batch from the buffer AND counts it in the `lost_batches` metric"), 5,
+        ("Maintenance window", "Shipping paused", "WHEN shipping is paused by the operator THEN the agent does not send any batch"), 4,
+        12, [1, 4, 11]),
+    "thumbs": _spec16(
+        "A service stores uploaded images and renders thumbnails of them on request.",
+        [("Upload", "Supported format", "WHEN a client uploads an image AND the format is supported THEN the service stores the original AND returns the id of the image AND queues the standard sizes for rendering"),
+         ("Upload", "Unsupported format", "WHEN a client uploads an image AND the format is not supported THEN the service returns status 415 AND names the supported formats in the answer AND stores nothing"),
+         ("Upload", "Metadata", "WHEN a client asks for the metadata of an image THEN the service returns the width AND the height AND the format of the original"),
+         ("Rendering", "Cached size", "WHEN a thumbnail is requested AND the size was rendered before THEN the service sends the cached thumbnail AND sets the `X-Cache` header to `hit`"),
+         ("Rendering", "New size", "WHEN a thumbnail is requested AND the size was not rendered before THEN the service renders the thumbnail AND stores it in the cache AND sets the `X-Cache` header to `miss`"),
+         ("Rendering", "Slow rendering", "WHEN rendering a thumbnail takes longer than 5 seconds THEN the service cancels the rendering AND returns status 504"),
+         ("Purge", "No legal hold", "WHEN an owner deletes an image AND the image has no legal hold THEN the service deletes the original AND deletes every cached thumbnail AND returns status 204"),
+         ("Purge", "Legal hold", "WHEN an owner deletes an image AND the image has a legal hold THEN the service refuses with status 423 AND keeps the original"),
+         ("Cache", "Disk pressure", "WHEN the cache grows beyond 80 percent of its disk THEN the service evicts the thumbnails that were not requested for the longest time"),
+         ("Cache", "Cache cleared", "WHEN the operator runs `thumbs cache clear` THEN the service deletes every cached thumbnail AND prints the number of files deleted"),
+         ("Usage", "Paid plan", "WHEN an account asks for its usage AND the account has a paid plan THEN the service returns the bytes stored AND the bytes left in the quota"),
+         ("Usage", "No paid plan", "WHEN an account asks for its usage AND the account has no paid plan THEN the service returns the bytes stored AND a link to the plans"),
+         ("Watermarks", "Watermark option", "WHEN an account switches the `watermark` option on THEN the service asks for the watermark image AND shows a preview"),
+         ("Abuse", "Unknown images", "WHEN a client requests a thumbnail of an unknown image for the twentieth time in a minute THEN the service blocks the address of the client for ten minutes")],
+        ("Freshness", "Always render", "WHEN a thumbnail is requested AND the size was rendered before THEN the service renders the thumbnail again AND sets the `X-Cache` header to `miss`"), 4,
+        ("Legal", "Frozen account", "WHEN the account of an owner is frozen THEN the service does not delete any original"), 7,
+        12, [1, 4, 7, 11]),
+    "runner": _spec16(
+        "A build runner takes the commits of a repository and runs their pipeline.",
+        [("Queue", "Pipeline file present", "WHEN a commit is pushed AND the branch has a pipeline file THEN the runner creates a job AND puts the job in the queue AND reports the status `queued` to the repository"),
+         ("Queue", "No pipeline file", "WHEN a commit is pushed AND the branch has no pipeline file THEN the runner creates no job AND reports the status `skipped` to the repository"),
+         ("Running", "Cache found", "WHEN a job starts AND its cache key is found THEN the runner restores the cache AND prints \"cache restored\" in the job log"),
+         ("Running", "Cache not found", "WHEN a job starts AND its cache key is not found THEN the runner starts with an empty workspace AND prints \"cache miss\" in the job log"),
+         ("Running", "Step fails", "WHEN a step exits with a code other than 0 THEN the runner stops the job AND reports the status `failed` AND keeps the workspace for 24 hours"),
+         ("Running", "Last step passes", "WHEN the last step of a job exits with code 0 THEN the runner reports the status `passed` AND uploads the artifacts AND saves the cache"),
+         ("Limits", "Job too long", "WHEN a job passes 60 minutes of run time THEN the runner kills the job AND reports the status `timed out`"),
+         ("Limits", "Log too long", "WHEN a job log grows beyond 10 megabytes THEN the runner truncates the log AND adds the line \"log truncated\""),
+         ("Cancel", "Running job", "WHEN a user cancels a job AND the job is running THEN the runner stops the current step AND reports the status `cancelled` AND deletes the workspace"),
+         ("Cancel", "Queued job", "WHEN a user cancels a job AND the job is not running THEN the runner removes the job from the queue AND reports the status `cancelled`"),
+         ("Secrets", "Masking", "WHEN a line of a job log contains the value of a secret THEN the runner replaces the value by `[masked]`"),
+         ("Secrets", "Forks", "WHEN a maintainer approves the pipeline of a fork THEN the runner records the name of the maintainer AND shows the approval on the pull request"),
+         ("Retries", "Lost connection", "WHEN a build machine loses its connection during a job THEN the runner puts the job back in the queue AND reports the status `queued`"),
+         ("Retries", "Third retry", "WHEN the same job is put back in the queue for the third time THEN the runner reports the status `failed` AND notifies the author of the commit")],
+        ("Debugging", "Keep going", "WHEN a step exits with a code other than 0 THEN the runner continues with the next step AND reports the status `unstable`"), 5,
+        ("Freeze", "Deploy freeze", "WHEN a deploy freeze is in force THEN the runner does not upload any artifacts"), 6,
+        10, [1, 3, 9]),
+    "filesync": _spec16(
+        "A client keeps the folders of two devices of one user the same.",
+        [("Pairing", "Valid code", "WHEN the user enters a pairing code AND the code is valid THEN the client stores the key of the other device AND shows the name of the other device AND starts the first sync"),
+         ("Pairing", "Invalid code", "WHEN the user enters a pairing code AND the code is not valid THEN the client shows \"pairing code not accepted\" AND stores no key"),
+         ("Sync", "Other device online", "WHEN a local file changes AND the other device is online THEN the client sends the new version AND waits for the confirmation AND marks the file as synced"),
+         ("Sync", "Other device offline", "WHEN a local file changes AND the other device is not online THEN the client marks the file as pending AND adds the file to the outbox"),
+         ("Sync", "Device returns", "WHEN the other device comes online THEN the client sends every file in the outbox in the order of their changes"),
+         ("Conflicts", "Changed on both devices", "WHEN the client finds that a file was changed on both devices since the last sync THEN the client keeps both versions AND renames the older one with the suffix `.conflict` AND shows a notification"),
+         ("Conflicts", "Conflict resolved", "WHEN the user resolves a conflict THEN the client deletes the version that was not chosen AND marks the file as synced"),
+         ("Ignore", "New pattern", "WHEN the user adds a pattern to `.fsyignore` THEN the client lists the files that match the pattern AND asks whether to remove them from the other device"),
+         ("Pause", "Sync paused", "WHEN the user pauses the sync THEN the client finishes the transfer in progress AND shows the status `paused`"),
+         ("Pause", "Low battery", "WHEN the battery of the device falls below 15 percent THEN the client lowers the sync frequency to once an hour"),
+         ("Deletions", "Trash enabled", "WHEN a file is deleted locally AND the trash is enabled THEN the client moves the copy on the other device to the trash AND keeps it there for 30 days"),
+         ("Deletions", "Trash not enabled", "WHEN a file is deleted locally AND the trash is not enabled THEN the client deletes the copy on the other device AND writes the deletion to the history"),
+         ("Errors", "Repeated failure", "WHEN the transfer of a file fails for the fifth time in a row THEN the client stops retrying the file AND lists the file under `needs attention`"),
+         ("Errors", "Disk full", "WHEN the other device reports that its disk is full THEN the client shows \"no space on the other device\" AND pauses the sync")],
+        ("Offline", "Drop offline changes", "WHEN a local file changes AND the other device is not online THEN the client discards the change AND marks the file as synced"), 4,
+        ("Metered network", "Metered connection", "WHEN the device is on a metered connection THEN the client does not send any new version"), 3,
+        12, [1, 3, 11]),
+}
+
 SETS = {"eval": SPECS, "eval2": SPECS2, "eval3": SPECS3, "eval4": SPECS4, "eval5": SPECS5,
         "eval6": SPECS6, "eval7": SPECS7, "eval8": SPECS8, "eval9": SPECS9, "eval10": SPECS10,
-        "eval12": SPECS12, "size": SPECS_SIZE, "size2": SPECS_SIZE2}
+        "eval12": SPECS12, "size": SPECS_SIZE, "size2": SPECS_SIZE2, "eval16": SPECS16}
 
 
 def _project13(capabilities: tuple, first, second, doors, pair, single, ban, notice, added, removal: dict) -> dict:
@@ -3250,11 +3405,13 @@ def document(name: str, spec: dict, rules: list) -> str:
 
 
 def scenario_lines(scenario: str, text: str) -> list[str]:
-    """One OpenSpec scenario, from "WHEN a AND b THEN c": a header and one bullet for each part."""
+    """One OpenSpec scenario, from "WHEN a AND b THEN c AND d": a header and one bullet for each part."""
     when, then = text.split(" THEN ")
     first, *others = when.removeprefix("WHEN ").split(" AND ")
+    outcome, *more = then.split(" AND ")  # several outcomes: "THEN a AND b" (eval16)
     return ([f"#### Scenario: {scenario}", "", f"- **WHEN** {first}"]
-            + [f"- **AND** {part}" for part in others] + [f"- **THEN** {then}"])
+            + [f"- **AND** {part}" for part in others] + [f"- **THEN** {outcome}"]
+            + [f"- **AND** {part}" for part in more])
 
 
 def requirement_lines(requirement: tuple) -> list[str]:

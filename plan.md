@@ -116,6 +116,55 @@ this order:
      the facts rarely say that one of the two always holds, so only 2 of 13
      were marked (T20, E16). This is a known limit now.
 
+### 2.1 The plan for step 38: rules that demand nothing, and reading in pieces (not built yet)
+
+T27 found that on real specs the symbols of the read step do not fit the
+rules. Two of its remedies are built in this step.
+
+**1. A rule that demands nothing is not accepted.** When no listed symbol
+stands for what a rule demands, the translations say `... => true`. Eight of
+them agree, and today the rule is accepted (45 of 366 real rules in E23).
+From now on step 3 looks at the chosen translation: if its "then" part is
+always true, the rule is rejected and marked `empty`. The report shows it as
+a requirement that was not checked, not as an ambiguity. No LLM is asked, and
+nothing changes where there is no such rule (none in E14, E21, E22).
+
+**2. A long document is read in pieces.** Today the read step lists the rules
+and the symbols of the whole document in one answer, and for a real spec the
+list comes out too short (0.4 to 1.25 symbols for each outcome, 1.4 to 1.6 on
+our specs). From now on:
+
+1. Our code cuts a document of more than 2,500 characters into pieces of at
+   most 2,500, at its headings: a section stays whole if it fits, and is cut
+   at its own sub-headings if not. A code block is never cut. Our specs up to
+   `eval15/` are shorter and are read as before.
+2. The LLM reads the first piece as today. It reads every later piece with
+   the symbols so far in front of it, and adds only what is missing. This is
+   the read of `--incremental` (5.10), with the same prompt addition.
+3. Our code puts the rules and the symbols of the pieces together. If a later
+   piece numbers its rules again from R1 (a document without labels), its
+   rules are numbered on.
+
+Everything after the read step is as before. The limit of about 140
+scenarios for one read answer no longer applies.
+
+**How it is tested.**
+
+1. **`eval16/` first** (make_eval.py): six specs written the way real tool
+   specs are, 14 scenarios each with two or three outcomes, in a clean, a
+   direct, an overlap and a gap version. The second batch of the real project
+   (16 changes that were not run yet) is held out too.
+2. **Development**: the first real batch (E23), `mixed/`, the spec of 100
+   requirements and the three development specs.
+3. **Freeze, then held-out**: `eval16/` and the second real batch, each with
+   the design before and after.
+4. **The rule, set now.** The two changes stay if, on the second real batch,
+   fewer rules are without a usable translation (no agreed translation, or one
+   that demands nothing) and no more runs stop, and if on `eval16/` the
+   planted conflicts and gaps found do not go down and the clean specs get no
+   more false alarms. If one of the two changes does harm and the other does
+   not, the one that does harm is taken out.
+
 Small things that are open:
 
 - **Long documents** (E14). A spec of 100 requirements works: its read answer
@@ -1134,6 +1183,13 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       and one change that adds, rewrites, removes and renames (no design
       change). E22: 9 of 9 planted conflicts and 9 of 9 planted gaps in 3
       runs, both ways, and nothing else about the change
+- [ ] **Step 38 — rules that demand nothing, and reading in pieces**:
+      `eval16/` written first (done); a rule whose chosen translation demands
+      nothing is rejected and reported as not checked; a document of more
+      than 2,500 characters is read in pieces, each with the symbols so far
+      (plan in 2.1). Development on the first real batch, `mixed/` and the
+      long spec; held-out `eval16/` and the second real batch, before and
+      after
 - [ ] **Step 37 — a real OpenSpec project**: the OpenSpec tool's own
       repository, each archived change against the spec files it touches
       (`experiments/real/`). First batch, 16 of a pool of 48 changes (E23): 5
