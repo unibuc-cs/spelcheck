@@ -795,7 +795,8 @@ Some notes on these numbers:
     apply, and nothing says which wins.
 
   So on a real project the tool is not usable as it is. The scripts are in
-  `experiments/real/`.
+  `experiments/real/`. Only the table of this run is in
+  `experiments/results/`: its raw data holds the text of the project's specs.
 - The numbers are small: the specs were written by us, and there is one main
   model. The details are in [research.md](research.md).
 
