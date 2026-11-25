@@ -174,7 +174,8 @@ change that only removes gives the model nothing to read. The two new ones:
     status     the same with a yes/no property ("a game is a practice game",
                next to "a player starts a game").
 
-mixed/ (written 2026-11-25, after E21; no design change goes with it) is one
+mixed/ (written 2026-11-25, after E21; no design change goes with it; run in
+E22) is one
 larger OpenSpec project, a city marathon: four spec files, 28 requirements,
 39 scenarios, and ONE change that does everything the sets above do one at a
 time (PROJECTS_MIXED says which part plants what):

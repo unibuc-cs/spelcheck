@@ -1096,6 +1096,14 @@ it found 71, so the new instruction cost nothing and gained little. It did not
 remove the cause either: the model still tied some new rules to a saved event,
 and one such rule came out ambiguous in 3 of 3 runs (6.4).
 
+All these projects are small, and each change does one thing. So we also
+wrote one larger project, `mixed`: a city marathon with 39 scenarios in four
+spec files, and a single change that adds four requirements, rewrites three,
+removes two and renames one. Three of its parts each plant a conflict, three
+each plant a gap, and the rest must give nothing. In 3 runs each way, the tool
+found the 3 conflicts and the 3 gaps every time and reported nothing else
+about the change. The report is in `experiments/examples/marathon_mixed`.
+
 **Longer specs.** All the specs counted above have at most six requirements.
 To see what a longer document does, we wrote two more, each in four versions
 (clean, direct, overlap, gap) and run three times:
@@ -1274,7 +1282,8 @@ specs/              3 small specs the prompts were developed on, with their save
 tests/              70 tests that need no LLM
 experiments/
   sets/             the 11 evaluation sets, eval to eval10 and eval12 (297 spec versions), two long specs,
-                    and for the change check eval11, eval13, eval14, eval15 and change_dev (old specs as projects)
+                    and for the change check eval11, eval13, eval14, eval15, mixed (one larger project)
+                    and change_dev (old specs as projects)
   results/          every experiment: the raw data (.json) and its tables (.md)
   examples/         saved runs that the documents quote
   evaluate.py       runs the pipeline on a set and scores it

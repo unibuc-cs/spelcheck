@@ -2973,6 +2973,83 @@ rules is a lot to read. One run of one document, so a first sign.
 
 ---
 
+## E22 — A larger project, and one change that does everything at once (2026-11-25)
+
+**Question.** Every change of `eval11/` to `eval15/` does one thing to a
+project of 7 to 9 scenarios. Does the check still work when the project is
+larger and one change adds, rewrites, removes and renames at the same time?
+
+**Setup.** `mixed/` was written and committed before it was run (4f33e59); no
+design change goes with it. One invented project, a city marathon: four spec
+files (`registration`, `race-day`, `results`, `volunteers`), 28 requirements,
+39 scenarios. The specs have one conflict from before the change ("publishes
+the finish time" against "does not publish any finish time" while a protest
+is open). One change, `rules-for-next-season`, touches three of the four
+files:
+
+| The change... | Planted about it |
+|---|---|
+| adds "Charity places", with both of its cases | nothing |
+| adds "No refunds": "WHEN a runner withdraws from the race THEN the system keeps the entry fee", next to "... refunds the entry fee" | conflict |
+| adds "Unpaid fees": "WHEN the entry fee of a runner is unpaid THEN the system does not hand out any bib", against a scenario of the other spec file | conflict |
+| adds "Pacers", with one of two cases | gap |
+| rewrites "Heat warning": "... and does not open any start gate" | conflict |
+| rewrites "Certificates": one scenario gets a harmless addition, the other is word for word the same | nothing |
+| rewrites "Payment": the scenario "payment not accepted" is gone | gap |
+| removes "Registration when full", one of two cases | gap |
+| removes "Transfers", the only requirement for its event | nothing |
+| renames "Corrections" to "Time corrections" | nothing |
+
+Both ways, 3 runs each, and the tool itself once each way, in one cluster job
+(26 minutes).
+
+**Results.**
+
+| | The full run | On a saved model (`--incremental`) |
+|---|---|---|
+| planted conflicts found (3 in each of 3 runs) | 9 of 9 | 9 of 9 |
+| planted gaps found | 9 of 9 | 9 of 9 |
+| gaps about the change, all | 9 | 9 |
+| other conflicts about the change | 0 | 0 |
+| the old conflict: found / shown as the change's | 3 of 3 / 0 of 3 | 3 of 3 / 0 of 3 |
+| ambiguity flags on rules of the change | 0 | 0 |
+| labels kept | 3 of 3 runs | 3 of 3 |
+| planted conflicts found without assumed facts and links | 6 of 9 | 6 of 9 |
+| requests to the LLM for the change | 346 | 83 |
+| tokens read / written | 294,295 / 143,584 | 57,434 / 38,823 |
+| the specs of the project, once | | 336 requests, 263,239 / 134,682 tokens |
+
+- **Everything planted was found, and nothing else was reported about the
+  change**, both ways. The gaps about the change are exactly the three
+  planted ones in every run: the removed event, the addition with both
+  cases, the harmless rewording and the rename gave no gap and no conflict.
+- **The two gaps that come from a removal say so** ("opened by removing X1",
+  "opened by removing X2"), also the one whose scenario was dropped inside a
+  rewritten requirement.
+- **"Refunds" against "keeps the entry fee" needs an assumed fact** in all
+  runs (3 of the 9 conflicts); the other two are proven from the rules alone.
+- **Cost.** One run of 41 rules takes 346 requests, about 2.5 minutes for
+  each of three runs in parallel. The saved-model way takes 83 requests for
+  the change, a quarter. That is more for each new rule than on the small
+  projects (9 to 11 for one rule), because every new rule is asked about
+  together with many old ones (5.7).
+- **The tool's own run, the full way** (`experiments/examples/marathon_mixed`)
+  shows one more conflict: "assigns a bib number" (registration) against
+  "does not hand out any bib" (the new rule), marked "if the assumed facts
+  hold". It rests on a link that restates "assigns a bib number" as "hands
+  out the bib", which is wrong, and which the report quotes. So an unplanted
+  conflict about the change appeared in 1 of the 4 full runs made.
+
+One project, 3 runs each way: it shows that the pieces work together, not how
+often.
+
+**Raw data.** experiments/results/E22_mixed_full.json and
+E22_mixed_incremental.json, each with its table;
+experiments/examples/marathon_mixed and marathon_mixed_incremental (the
+reports).
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

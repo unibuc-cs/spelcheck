@@ -182,6 +182,18 @@ compared with the full run on two held-out sets, 36 changes each:
 - It is still an option. On one held-out set it found less than the full
   run, on the other the same.
 
+**A larger project, and a change that does everything at once** (E22). All of
+the above is on projects of 7 to 9 scenarios with a change that does one
+thing. `mixed/` is one project of 39 scenarios in four spec files, with one
+change that adds four requirements, rewrites three, removes two and renames
+one. Planted about it are 3 conflicts and 3 gaps; five of its parts must
+give nothing, and the specs have one conflict from before. In 3 runs each
+way, the full run and the saved-model way both found all 9 conflicts and all
+9 gaps, reported no other conflict or gap about the change, and never blamed
+the old conflict on it. A run costs 346 requests to the LLM, and 83 on a
+saved model. The tool's own run showed one more conflict, from a wrong link
+that the report quotes. It is one project.
+
 ---
 
 ## 3. What makes it work
@@ -503,8 +515,8 @@ requirements have several hundred.
 
 ### 4.7 The evaluation is small
 
-Eleven sets with 66 base specs (297 versions), two longer specs and twenty-four OpenSpec
-projects with 138 changes, all written by us; 63 to 90 runs per experiment; one main model. One leak is known: an
+Eleven sets with 66 base specs (297 versions), two longer specs and twenty-five OpenSpec
+projects with 139 changes, all written by us; 63 to 90 runs per experiment; one main model. One leak is known: an
 example in the read prompt came from the domain of an `eval3/` spec (D4). And
 one clean spec, `shelter_clean` in `eval9/`, has a conflict we did not plan
 (E15).
@@ -561,6 +573,7 @@ the prompts, so it can be scored again without a GPU.
 | E19 | `eval13/`, held-out: 36 changes on 6 OpenSpec projects, with removals and an old conflict (T23) | 108 runs | gaps opened by a removal 18 of 18; the old conflict never shown as the change's; 18 of 18 conflicts, 17 of 18 gaps of a dropped scenario (2.4) |
 | E20 | `eval14/`, held-out: 36 changes on 6 OpenSpec projects, each checked the full way and on a saved model of the specs (T24) | 108 + 108 runs | conflicts 54 of 54 against 50 of 54, gaps 36 of 36 both; a change costs 68 requests against 9 (2.4) |
 | E21 | `eval15/`, held-out: 36 changes on 6 OpenSpec projects, checked the full way, and on a saved model with the read prompt before and after T25 | 3 x 108 runs | conflicts 72 of 72 (full), 71 and 72 of 72 (saved model, before and after); gaps 18 of 18 in all three; a change costs 68 requests against 11 (2.4) |
+| E22 | `mixed/`: one project of 39 scenarios, one change that adds, rewrites, removes and renames at once; the full way and on a saved model | 3 + 3 runs | 9 of 9 planted conflicts and 9 of 9 planted gaps both ways, nothing else about the change (2.4) |
 
 The trials (T1 to T26) were run on development data between these
 experiments. Among the last: T17 compared temperatures 0.3, 0.5 and 0.7 (3.1);

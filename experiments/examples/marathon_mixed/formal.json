@@ -1,0 +1,3221 @@
+{
+  "symbols": [
+    {
+      "name": "bib_collected",
+      "sort": "Bool",
+      "values": [],
+      "description": "A runner is collecting a bib",
+      "event": true
+    },
+    {
+      "name": "runner_cleared_to_start",
+      "sort": "Bool",
+      "values": [],
+      "description": "The runner is cleared to start the race",
+      "event": false
+    },
+    {
+      "name": "bib_handed_out",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system hands out the bib",
+      "event": false
+    },
+    {
+      "name": "timing_chip_handed_out",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system hands out the timing chip",
+      "event": false
+    },
+    {
+      "name": "runner_sent_to_medical_desk",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system sends the runner to the medical desk",
+      "event": false
+    },
+    {
+      "name": "start_wave_called",
+      "sort": "Bool",
+      "values": [],
+      "description": "A start wave is called",
+      "event": true
+    },
+    {
+      "name": "runner_belongs_to_wave",
+      "sort": "Bool",
+      "values": [],
+      "description": "The runner belongs to the called start wave",
+      "event": false
+    },
+    {
+      "name": "start_gate_opened",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system opens the start gate for the runner",
+      "event": false
+    },
+    {
+      "name": "right_wave_shown",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system shows the runner the right wave",
+      "event": false
+    },
+    {
+      "name": "checkpoint_passed",
+      "sort": "Bool",
+      "values": [],
+      "description": "A runner passes a checkpoint",
+      "event": true
+    },
+    {
+      "name": "split_time_recorded",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system records the split time of the runner",
+      "event": false
+    },
+    {
+      "name": "checkpoint_cutoff_passed",
+      "sort": "Bool",
+      "values": [],
+      "description": "The cut-off time of a checkpoint has passed",
+      "event": false
+    },
+    {
+      "name": "checkpoint_closed",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system closes the checkpoint",
+      "event": false
+    },
+    {
+      "name": "heat_warning_in_force",
+      "sort": "Bool",
+      "values": [],
+      "description": "A heat warning is in force",
+      "event": false
+    },
+    {
+      "name": "warning_shown_at_start_area",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system shows the warning at the start area",
+      "event": false
+    },
+    {
+      "name": "runner_dropped_out",
+      "sort": "Bool",
+      "values": [],
+      "description": "A runner drops out of the race",
+      "event": true
+    },
+    {
+      "name": "runner_injured",
+      "sort": "Bool",
+      "values": [],
+      "description": "The runner is injured",
+      "event": false
+    },
+    {
+      "name": "medical_team_called",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system calls the medical team",
+      "event": false
+    },
+    {
+      "name": "sweep_bus_sent",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system sends the sweep bus",
+      "event": false
+    },
+    {
+      "name": "chip_lost",
+      "sort": "Bool",
+      "values": [],
+      "description": "A runner loses a timing chip",
+      "event": true
+    },
+    {
+      "name": "chip_lost_count",
+      "sort": "Int",
+      "values": [],
+      "description": "The number of times the runner has lost a timing chip",
+      "event": false
+    },
+    {
+      "name": "runner_charged_for_chip",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system charges the runner for the chip",
+      "event": false
+    },
+    {
+      "name": "pacer_requested",
+      "sort": "Bool",
+      "values": [],
+      "description": "A runner asks for a pacer",
+      "event": true
+    },
+    {
+      "name": "pacer_free",
+      "sort": "Bool",
+      "values": [],
+      "description": "A pacer for the target time is free",
+      "event": false
+    },
+    {
+      "name": "pacer_assigned",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system assigns the pacer to the runner",
+      "event": false
+    },
+    {
+      "name": "runner_registered",
+      "sort": "Bool",
+      "values": [],
+      "description": "A runner registers for the race",
+      "event": true
+    },
+    {
+      "name": "places_left",
+      "sort": "Bool",
+      "values": [],
+      "description": "Places are left for the race",
+      "event": false
+    },
+    {
+      "name": "registration_confirmed",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system confirms the registration",
+      "event": false
+    },
+    {
+      "name": "bib_number_assigned",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system assigns a bib number",
+      "event": false
+    },
+    {
+      "name": "runner_on_waiting_list",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system puts the runner on the waiting list",
+      "event": false
+    },
+    {
+      "name": "certificate_uploaded",
+      "sort": "Bool",
+      "values": [],
+      "description": "A runner uploads a medical certificate",
+      "event": true
+    },
+    {
+      "name": "certificate_valid",
+      "sort": "Bool",
+      "values": [],
+      "description": "The medical certificate is valid",
+      "event": false
+    },
+    {
+      "name": "new_certificate_requested",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system asks the runner for a new certificate",
+      "event": false
+    },
+    {
+      "name": "payment_attempted",
+      "sort": "Bool",
+      "values": [],
+      "description": "A runner pays the entry fee",
+      "event": true
+    },
+    {
+      "name": "payment_accepted",
+      "sort": "Bool",
+      "values": [],
+      "description": "The payment is accepted",
+      "event": false
+    },
+    {
+      "name": "receipt_sent",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system sends the runner a receipt",
+      "event": false
+    },
+    {
+      "name": "another_payment_method_requested",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system asks for another payment method",
+      "event": false
+    },
+    {
+      "name": "runner_withdrew",
+      "sort": "Bool",
+      "values": [],
+      "description": "A runner withdraws from the race",
+      "event": true
+    },
+    {
+      "name": "entry_fee_refunded",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system refunds the entry fee",
+      "event": false
+    },
+    {
+      "name": "deadline_missed",
+      "sort": "Bool",
+      "values": [],
+      "description": "A runner misses the payment deadline",
+      "event": true
+    },
+    {
+      "name": "deadline_missed_count",
+      "sort": "Int",
+      "values": [],
+      "description": "The number of times the runner has missed the payment deadline",
+      "event": false
+    },
+    {
+      "name": "registration_cancelled",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system cancels the registration of the runner",
+      "event": false
+    },
+    {
+      "name": "registration_transferred",
+      "sort": "Bool",
+      "values": [],
+      "description": "A runner transfers the registration to another runner",
+      "event": true
+    },
+    {
+      "name": "confirmation_sent_to_new_runner",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system sends the new runner a confirmation",
+      "event": false
+    },
+    {
+      "name": "runner_is_club_member",
+      "sort": "Bool",
+      "values": [],
+      "description": "The runner is a member of a running club",
+      "event": false
+    },
+    {
+      "name": "club_discount_applied",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system applies the club discount to the entry fee",
+      "event": false
+    },
+    {
+      "name": "charity_place_requested",
+      "sort": "Bool",
+      "values": [],
+      "description": "A runner asks for a charity place",
+      "event": true
+    },
+    {
+      "name": "charity_places_left",
+      "sort": "Bool",
+      "values": [],
+      "description": "The charity has places left",
+      "event": false
+    },
+    {
+      "name": "charity_place_reserved",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system reserves a charity place for the runner",
+      "event": false
+    },
+    {
+      "name": "another_charity_proposed",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system proposes another charity to the runner",
+      "event": false
+    },
+    {
+      "name": "entry_fee_kept",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system keeps the entry fee",
+      "event": false
+    },
+    {
+      "name": "entry_fee_unpaid",
+      "sort": "Bool",
+      "values": [],
+      "description": "The entry fee of a runner is unpaid",
+      "event": false
+    },
+    {
+      "name": "finish_line_crossed",
+      "sort": "Bool",
+      "values": [],
+      "description": "A runner crosses the finish line",
+      "event": true
+    },
+    {
+      "name": "finish_time_published",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system publishes the finish time of the runner",
+      "event": false
+    },
+    {
+      "name": "protest_open",
+      "sort": "Bool",
+      "values": [],
+      "description": "A protest against a result is open",
+      "event": false
+    },
+    {
+      "name": "certificate_requested",
+      "sort": "Bool",
+      "values": [],
+      "description": "A runner asks for a certificate",
+      "event": true
+    },
+    {
+      "name": "result_final",
+      "sort": "Bool",
+      "values": [],
+      "description": "The result of the runner is final",
+      "event": false
+    },
+    {
+      "name": "certificate_sent_by_email",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system sends the certificate by email",
+      "event": false
+    },
+    {
+      "name": "split_times_added",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system adds the split times to the certificate",
+      "event": false
+    },
+    {
+      "name": "final_results_date_told",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system tells the runner the date of the final results",
+      "event": false
+    },
+    {
+      "name": "race_results_final",
+      "sort": "Bool",
+      "values": [],
+      "description": "The results of the race are final",
+      "event": false
+    },
+    {
+      "name": "runners_ranked_in_age_groups",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system ranks the runners in their age groups",
+      "event": false
+    },
+    {
+      "name": "warning_received",
+      "sort": "Bool",
+      "values": [],
+      "description": "A runner receives a warning from a referee",
+      "event": true
+    },
+    {
+      "name": "warning_count",
+      "sort": "Int",
+      "values": [],
+      "description": "The number of warnings the runner has received",
+      "event": false
+    },
+    {
+      "name": "runner_disqualified",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system disqualifies the runner",
+      "event": false
+    },
+    {
+      "name": "photo_requested",
+      "sort": "Bool",
+      "values": [],
+      "description": "A runner asks for the finish photo",
+      "event": true
+    },
+    {
+      "name": "photo_available",
+      "sort": "Bool",
+      "values": [],
+      "description": "The finish photo is available",
+      "event": false
+    },
+    {
+      "name": "photo_link_sent",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system sends the runner a link to the photo",
+      "event": false
+    },
+    {
+      "name": "photo_ready_time_told",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system tells the runner when the photos will be ready",
+      "event": false
+    },
+    {
+      "name": "finish_time_below_record",
+      "sort": "Bool",
+      "values": [],
+      "description": "The finish time of a runner is below the course record",
+      "event": false
+    },
+    {
+      "name": "new_course_record_announced",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system announces a new course record",
+      "event": false
+    },
+    {
+      "name": "time_corrected",
+      "sort": "Bool",
+      "values": [],
+      "description": "A referee corrects a finish time",
+      "event": true
+    },
+    {
+      "name": "runner_informed_of_new_time",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system informs the runner of the new time",
+      "event": false
+    },
+    {
+      "name": "volunteer_signed_up",
+      "sort": "Bool",
+      "values": [],
+      "description": "A volunteer signs up for a shift",
+      "event": true
+    },
+    {
+      "name": "shift_places_left",
+      "sort": "Bool",
+      "values": [],
+      "description": "The shift has places left",
+      "event": false
+    },
+    {
+      "name": "volunteer_assigned_to_shift",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system assigns the volunteer to the shift",
+      "event": false
+    },
+    {
+      "name": "another_shift_offered",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system offers the volunteer another shift",
+      "event": false
+    },
+    {
+      "name": "volunteer_checked_in",
+      "sort": "Bool",
+      "values": [],
+      "description": "A volunteer checks in",
+      "event": true
+    },
+    {
+      "name": "volunteer_has_shift_today",
+      "sort": "Bool",
+      "values": [],
+      "description": "The volunteer has a shift on that day",
+      "event": false
+    },
+    {
+      "name": "volunteer_badge_printed",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system prints the volunteer badge",
+      "event": false
+    },
+    {
+      "name": "next_shift_date_shown",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system shows the volunteer the date of the next shift",
+      "event": false
+    },
+    {
+      "name": "shift_missed",
+      "sort": "Bool",
+      "values": [],
+      "description": "A volunteer misses a shift",
+      "event": true
+    },
+    {
+      "name": "shift_missed_count",
+      "sort": "Int",
+      "values": [],
+      "description": "The number of times the volunteer has missed a shift",
+      "event": false
+    },
+    {
+      "name": "volunteer_removed_from_shifts",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system removes the volunteer from the remaining shifts",
+      "event": false
+    },
+    {
+      "name": "shift_finished",
+      "sort": "Bool",
+      "values": [],
+      "description": "A volunteer finishes a shift",
+      "event": true
+    },
+    {
+      "name": "meal_voucher_issued",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system issues a meal voucher",
+      "event": false
+    },
+    {
+      "name": "briefing_started",
+      "sort": "Bool",
+      "values": [],
+      "description": "The briefing of a shift has started",
+      "event": false
+    },
+    {
+      "name": "briefing_room_shown",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system shows the briefing room on the volunteer screens",
+      "event": false
+    },
+    {
+      "name": "tshirt_requested",
+      "sort": "Bool",
+      "values": [],
+      "description": "A volunteer asks for a T-shirt",
+      "event": true
+    },
+    {
+      "name": "size_in_stock",
+      "sort": "Bool",
+      "values": [],
+      "description": "The T-shirt size is in stock",
+      "event": false
+    },
+    {
+      "name": "tshirt_handed_out",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system hands out the T-shirt",
+      "event": false
+    },
+    {
+      "name": "size_noted_for_delivery",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system notes the size for the next delivery",
+      "event": false
+    }
+  ],
+  "background": [
+    {
+      "id": "F1",
+      "text": "What R1 demands, in the terms of the other requirements: If a runner is in the process of collecting their bib and has been cleared to start, the system must hand out the bib.",
+      "formula": "(=> (and (and bib_collected runner_cleared_to_start) (and bib_handed_out timing_chip_handed_out)) bib_handed_out)",
+      "support": "8/8",
+      "restates": "R1",
+      "antecedent": "(and bib_collected runner_cleared_to_start)",
+      "consequent": "bib_handed_out",
+      "check": {
+        "when": {
+          "bib_collected": true,
+          "bib_handed_out": false,
+          "runner_cleared_to_start": true
+        },
+        "answers": {
+          "possible": 0,
+          "impossible": 8,
+          "unclear": 0
+        },
+        "verdict": "confirmed"
+      }
+    },
+    {
+      "id": "F2",
+      "text": "What R2 demands, in the terms of the other requirements: If a runner collects a bib and is not cleared to start the race, the system must call the medical team.",
+      "formula": "(=> (and (and bib_collected (not runner_cleared_to_start)) runner_sent_to_medical_desk) medical_team_called)",
+      "support": "6/8",
+      "restates": "R2",
+      "antecedent": "(and bib_collected (not runner_cleared_to_start))",
+      "consequent": "medical_team_called",
+      "check": {
+        "when": {
+          "bib_collected": true,
+          "medical_team_called": false,
+          "runner_cleared_to_start": false
+        },
+        "answers": {
+          "possible": 6,
+          "impossible": 2,
+          "unclear": 0
+        },
+        "verdict": "rejected"
+      }
+    },
+    {
+      "id": "F3",
+      "text": "What R7 demands, in the terms of the other requirements: If a heat warning is in force, the start gate must not be opened.",
+      "formula": "(=> (and heat_warning_in_force (and warning_shown_at_start_area (not start_gate_opened))) (not start_gate_opened))",
+      "support": "8/8",
+      "restates": "R7",
+      "antecedent": "heat_warning_in_force",
+      "consequent": "(not start_gate_opened)",
+      "check": {
+        "when": {
+          "heat_warning_in_force": true,
+          "start_gate_opened": true
+        },
+        "answers": {
+          "possible": 0,
+          "impossible": 8,
+          "unclear": 0
+        },
+        "verdict": "confirmed"
+      }
+    },
+    {
+      "id": "F4",
+      "text": "What R12 demands, in the terms of the other requirements: If a runner registers while places are still available, the system must confirm the registration for the new runner and hand out the bib.",
+      "formula": "(=> (and (and runner_registered places_left) (and registration_confirmed bib_number_assigned)) (and confirmation_sent_to_new_runner bib_handed_out))",
+      "support": "5/8",
+      "restates": "R12",
+      "antecedent": "(and runner_registered places_left)",
+      "consequent": "(and confirmation_sent_to_new_runner bib_handed_out)",
+      "check": {
+        "when": {
+          "bib_handed_out": false,
+          "confirmation_sent_to_new_runner": false,
+          "places_left": true,
+          "runner_registered": true
+        },
+        "answers": {
+          "possible": 0,
+          "impossible": 8,
+          "unclear": 0
+        },
+        "verdict": "confirmed"
+      }
+    },
+    {
+      "id": "F5",
+      "text": "What X3 demands, in the terms of the other requirements: Whenever a runner transfers their registration to another runner, the system must confirm the registration.",
+      "formula": "(=> (and registration_transferred confirmation_sent_to_new_runner) registration_confirmed)",
+      "support": "8/8",
+      "restates": "X3",
+      "antecedent": "registration_transferred",
+      "consequent": "registration_confirmed",
+      "check": {
+        "when": {
+          "registration_confirmed": false,
+          "registration_transferred": true
+        },
+        "answers": {
+          "possible": 0,
+          "impossible": 8,
+          "unclear": 0
+        },
+        "verdict": "confirmed"
+      }
+    },
+    {
+      "id": "F6",
+      "text": "What R21 demands, in the terms of the other requirements: When a runner withdraws from the race, the system must not refund the entry fee.",
+      "formula": "(=> (and runner_withdrew entry_fee_kept) (not entry_fee_refunded))",
+      "support": "8/8",
+      "restates": "R21",
+      "antecedent": "runner_withdrew",
+      "consequent": "(not entry_fee_refunded)",
+      "check": {
+        "when": {
+          "entry_fee_refunded": true,
+          "runner_withdrew": true
+        },
+        "answers": {
+          "possible": 0,
+          "impossible": 8,
+          "unclear": 0
+        },
+        "verdict": "confirmed"
+      }
+    },
+    {
+      "id": "F7",
+      "text": "What R31 demands, in the terms of the other requirements: If a runner's finish time is below the course record, the system must inform the runner of the new time.",
+      "formula": "(=> (and finish_time_below_record new_course_record_announced) runner_informed_of_new_time)",
+      "support": "5/8",
+      "restates": "R31",
+      "antecedent": "finish_time_below_record",
+      "consequent": "runner_informed_of_new_time",
+      "check": {
+        "when": {
+          "finish_time_below_record": true,
+          "runner_informed_of_new_time": false
+        },
+        "answers": {
+          "possible": 7,
+          "impossible": 1,
+          "unclear": 0
+        },
+        "verdict": "rejected"
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "R1",
+      "text": "WHEN a runner collects the bib AND the runner is cleared to start THEN the system hands out the bib and the timing chip",
+      "trigger": "bib_collected",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a runner is collecting a bib and is cleared to start the race, the system must hand out both the bib and the timing chip.",
+      "antecedent": "(and bib_collected runner_cleared_to_start)",
+      "consequent": "(and bib_handed_out timing_chip_handed_out)",
+      "probes": [
+        {
+          "reading": "The system hands out the bib if the runner is collecting it, and the system hands out the timing chip if the runner is cleared to start, provided the runner is collecting the bib.",
+          "antecedent": "bib_collected",
+          "consequent": "(and bib_handed_out (=> runner_cleared_to_start timing_chip_handed_out))",
+          "situations": [
+            {
+              "when": {
+                "bib_collected": true,
+                "bib_handed_out": false,
+                "runner_cleared_to_start": false,
+                "timing_chip_handed_out": false
+              },
+              "translation_says": "obeyed"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R2",
+      "text": "WHEN a runner collects the bib AND the runner is not cleared to start THEN the system sends the runner to the medical desk",
+      "trigger": "bib_collected",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a runner is collecting their bib and is not cleared to start the race, the system must send that runner to the medical desk.",
+      "antecedent": "(and bib_collected (not runner_cleared_to_start))",
+      "consequent": "runner_sent_to_medical_desk",
+      "probes": [
+        {
+          "reading": "The system sends the runner to the medical desk only if the runner is collecting a bib and is not cleared to start.",
+          "antecedent": "runner_sent_to_medical_desk",
+          "consequent": "(and bib_collected (not runner_cleared_to_start))",
+          "situations": [
+            {
+              "when": {
+                "bib_collected": false,
+                "runner_cleared_to_start": false,
+                "runner_sent_to_medical_desk": true
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "bib_collected": true,
+                "runner_cleared_to_start": false,
+                "runner_sent_to_medical_desk": false
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        },
+        {
+          "reading": "If a runner is collecting a bib, then the system sends the runner to the medical desk only if the runner is not cleared to start.",
+          "antecedent": "bib_collected",
+          "consequent": "(=> runner_sent_to_medical_desk (not runner_cleared_to_start))",
+          "situations": [
+            {
+              "when": {
+                "bib_collected": true,
+                "runner_cleared_to_start": true,
+                "runner_sent_to_medical_desk": true
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "bib_collected": true,
+                "runner_cleared_to_start": false,
+                "runner_sent_to_medical_desk": false
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R3",
+      "text": "WHEN a start wave is called AND the runner belongs to the wave THEN the system opens the start gate for the runner",
+      "trigger": "start_wave_called",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "When a start wave is called and the runner belongs to that specific wave, the system must open the start gate for that runner.",
+      "antecedent": "(and start_wave_called runner_belongs_to_wave)",
+      "consequent": "start_gate_opened",
+      "probes": []
+    },
+    {
+      "id": "R4",
+      "text": "WHEN a start wave is called AND the runner does not belong to the wave THEN the system shows the runner the right wave",
+      "trigger": "start_wave_called",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "When a start wave is called for a runner who is not part of that specific wave, the system must display the correct wave information for that runner.",
+      "antecedent": "(and start_wave_called (not runner_belongs_to_wave))",
+      "consequent": "right_wave_shown",
+      "probes": [
+        {
+          "reading": "The system shows the runner the right wave only if a start wave is called and the runner does not belong to that wave.",
+          "antecedent": "right_wave_shown",
+          "consequent": "(and start_wave_called (not runner_belongs_to_wave))",
+          "situations": [
+            {
+              "when": {
+                "right_wave_shown": true,
+                "runner_belongs_to_wave": false,
+                "start_wave_called": false
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "right_wave_shown": false,
+                "runner_belongs_to_wave": false,
+                "start_wave_called": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        },
+        {
+          "reading": "If a start wave is called, then the system shows the runner the right wave only if the runner does not belong to the wave.",
+          "antecedent": "(and start_wave_called right_wave_shown)",
+          "consequent": "(not runner_belongs_to_wave)",
+          "situations": [
+            {
+              "when": {
+                "right_wave_shown": true,
+                "runner_belongs_to_wave": true,
+                "start_wave_called": true
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "right_wave_shown": false,
+                "runner_belongs_to_wave": false,
+                "start_wave_called": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R5",
+      "text": "WHEN a runner passes a checkpoint THEN the system records the split time of the runner",
+      "trigger": "checkpoint_passed",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "Whenever a runner passes a checkpoint, the system must record the split time for that runner.",
+      "antecedent": "checkpoint_passed",
+      "consequent": "split_time_recorded",
+      "probes": [
+        {
+          "reading": "The requirement implies that if the system records a split time, it must be because the runner passed a checkpoint (the recording is a direct and exclusive consequence of the pass event).",
+          "antecedent": "split_time_recorded",
+          "consequent": "checkpoint_passed",
+          "situations": [
+            {
+              "when": {
+                "checkpoint_passed": false,
+                "split_time_recorded": true
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "checkpoint_passed": true,
+                "split_time_recorded": false
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        },
+        {
+          "reading": "The system records the split time if and only if the runner passes a checkpoint, establishing a strict equivalence between the event and the system action.",
+          "antecedent": "(and checkpoint_passed split_time_recorded)",
+          "consequent": "(or (not checkpoint_passed) (not split_time_recorded))",
+          "situations": [
+            {
+              "when": {
+                "checkpoint_passed": true,
+                "split_time_recorded": true
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "checkpoint_passed": true,
+                "split_time_recorded": false
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R6",
+      "text": "WHEN the cut-off time of a checkpoint has passed THEN the system closes the checkpoint",
+      "trigger": "",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "When the cut-off time of a checkpoint has passed, the system must close that checkpoint.",
+      "antecedent": "checkpoint_cutoff_passed",
+      "consequent": "checkpoint_closed",
+      "probes": [
+        {
+          "reading": "The system closes the checkpoint only if the cut-off time has passed, implying that the passage of the cut-off time is a necessary condition for closure, but not necessarily sufficient (e.g., the system might wait for a manual confirmation or a specific signal even after the time has passed).",
+          "antecedent": "checkpoint_closed",
+          "consequent": "checkpoint_cutoff_passed",
+          "situations": [
+            {
+              "when": {
+                "checkpoint_closed": true,
+                "checkpoint_cutoff_passed": false
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "checkpoint_closed": false,
+                "checkpoint_cutoff_passed": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R7",
+      "text": "WHEN a heat warning is in force THEN the system shows the warning at the start area and does not open any start gate",
+      "trigger": "",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a heat warning is currently in force, the system must display the warning at the start area and must not open any start gate for runners.",
+      "antecedent": "heat_warning_in_force",
+      "consequent": "(and warning_shown_at_start_area (not start_gate_opened))",
+      "probes": [
+        {
+          "reading": "The system shows the warning at the start area and does not open any start gate only when a heat warning is in force.",
+          "antecedent": "(and warning_shown_at_start_area (not start_gate_opened))",
+          "consequent": "heat_warning_in_force",
+          "situations": [
+            {
+              "when": {
+                "heat_warning_in_force": false,
+                "start_gate_opened": false,
+                "warning_shown_at_start_area": true
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "heat_warning_in_force": true,
+                "start_gate_opened": false,
+                "warning_shown_at_start_area": false
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R8",
+      "text": "WHEN a runner drops out AND the runner is injured THEN the system calls the medical team",
+      "trigger": "runner_dropped_out",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a runner drops out of the race and is injured, the system must call the medical team.",
+      "antecedent": "(and runner_dropped_out runner_injured)",
+      "consequent": "medical_team_called",
+      "probes": [
+        {
+          "reading": "If a runner drops out of the race, the system must call the medical team, and the runner is injured.",
+          "antecedent": "runner_dropped_out",
+          "consequent": "(and medical_team_called runner_injured)",
+          "situations": [
+            {
+              "when": {
+                "medical_team_called": false,
+                "runner_dropped_out": true,
+                "runner_injured": false
+              },
+              "translation_says": "obeyed"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R9",
+      "text": "WHEN a runner drops out AND the runner is not injured THEN the system sends the sweep bus",
+      "trigger": "runner_dropped_out",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a runner drops out of the race and is not injured, the system must send the sweep bus.",
+      "antecedent": "(and runner_dropped_out (not runner_injured))",
+      "consequent": "sweep_bus_sent",
+      "probes": [
+        {
+          "reading": "The system sends the sweep bus only if the runner drops out and is not injured.",
+          "antecedent": "sweep_bus_sent",
+          "consequent": "(and runner_dropped_out (not runner_injured))",
+          "situations": [
+            {
+              "when": {
+                "runner_dropped_out": false,
+                "runner_injured": false,
+                "sweep_bus_sent": true
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "runner_dropped_out": true,
+                "runner_injured": false,
+                "sweep_bus_sent": false
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        },
+        {
+          "reading": "If a runner drops out, the system sends the sweep bus unless the runner is injured.",
+          "antecedent": "(and runner_dropped_out runner_injured)",
+          "consequent": "(not sweep_bus_sent)",
+          "situations": [
+            {
+              "when": {
+                "runner_dropped_out": true,
+                "runner_injured": true,
+                "sweep_bus_sent": true
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "runner_dropped_out": true,
+                "runner_injured": false,
+                "sweep_bus_sent": false
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R10",
+      "text": "WHEN a runner loses a timing chip for the second time THEN the system charges the runner for the chip",
+      "trigger": "chip_lost",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "The system charges the runner for the timing chip when a runner loses a timing chip and the count of lost chips is exactly two.",
+      "antecedent": "(and chip_lost (= chip_lost_count 2))",
+      "consequent": "runner_charged_for_chip",
+      "probes": [
+        {
+          "reading": "The system charges the runner for the chip when a runner loses a timing chip and the count of lost chips is at least two.",
+          "antecedent": "(and chip_lost (>= chip_lost_count 2))",
+          "consequent": "runner_charged_for_chip",
+          "situations": [
+            {
+              "when": {
+                "chip_lost": true,
+                "chip_lost_count": 3,
+                "runner_charged_for_chip": false
+              },
+              "translation_says": "obeyed"
+            }
+          ],
+          "answers": {
+            "translation": 6,
+            "other": 2,
+            "either": 0
+          }
+        },
+        {
+          "reading": "The system charges the runner for the chip when a runner loses a timing chip and the count of lost chips is more than two.",
+          "antecedent": "(and chip_lost (> chip_lost_count 2))",
+          "consequent": "runner_charged_for_chip",
+          "situations": [
+            {
+              "when": {
+                "chip_lost": true,
+                "chip_lost_count": 3,
+                "runner_charged_for_chip": false
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "chip_lost": true,
+                "chip_lost_count": 2,
+                "runner_charged_for_chip": false
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R11",
+      "text": "WHEN a runner asks for a pacer AND a pacer for the target time is free THEN the system assigns the pacer to the runner",
+      "trigger": "pacer_requested",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a runner requests a pacer and a pacer for the desired target time is currently available, the system must assign that pacer to the runner.",
+      "antecedent": "(and pacer_requested pacer_free)",
+      "consequent": "pacer_assigned",
+      "probes": [
+        {
+          "reading": "The system assigns the pacer to the runner if a pacer for the target time is free, regardless of whether the runner explicitly asked for one.",
+          "antecedent": "pacer_free",
+          "consequent": "pacer_assigned",
+          "situations": [
+            {
+              "when": {
+                "pacer_assigned": false,
+                "pacer_free": true,
+                "pacer_requested": false
+              },
+              "translation_says": "obeyed"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        },
+        {
+          "reading": "The system assigns the pacer to the runner only if the runner asks for a pacer, provided that a pacer for the target time is free.",
+          "antecedent": "pacer_assigned",
+          "consequent": "(and pacer_requested pacer_free)",
+          "situations": [
+            {
+              "when": {
+                "pacer_assigned": true,
+                "pacer_free": false,
+                "pacer_requested": false
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "pacer_assigned": false,
+                "pacer_free": true,
+                "pacer_requested": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R12",
+      "text": "WHEN a runner registers AND places are left THEN the system confirms the registration and assigns a bib number",
+      "trigger": "runner_registered",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a runner registers for the race and there are places available, the system must confirm the registration and assign a bib number.",
+      "antecedent": "(and runner_registered places_left)",
+      "consequent": "(and registration_confirmed bib_number_assigned)",
+      "probes": [
+        {
+          "reading": "The system confirms the registration and assigns a bib number only if the runner registers and places are left.",
+          "antecedent": "(and registration_confirmed bib_number_assigned)",
+          "consequent": "(and runner_registered places_left)",
+          "situations": [
+            {
+              "when": {
+                "bib_number_assigned": true,
+                "places_left": false,
+                "registration_confirmed": true,
+                "runner_registered": false
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "bib_number_assigned": false,
+                "places_left": true,
+                "registration_confirmed": false,
+                "runner_registered": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        },
+        {
+          "reading": "If a runner registers, the system confirms the registration and assigns a bib number only if places are left.",
+          "antecedent": "(and runner_registered (and registration_confirmed bib_number_assigned))",
+          "consequent": "places_left",
+          "situations": [
+            {
+              "when": {
+                "bib_number_assigned": true,
+                "places_left": false,
+                "registration_confirmed": true,
+                "runner_registered": true
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "bib_number_assigned": false,
+                "places_left": true,
+                "registration_confirmed": false,
+                "runner_registered": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "X1",
+      "text": "WHEN a runner registers AND no places are left THEN the system puts the runner on the waiting list",
+      "trigger": "runner_registered",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "When a runner registers for the race and there are no places left, the system must put the runner on the waiting list.",
+      "antecedent": "(and runner_registered (not places_left))",
+      "consequent": "runner_on_waiting_list",
+      "probes": [
+        {
+          "reading": "The system puts the runner on the waiting list only if the runner registers and no places are left.",
+          "antecedent": "runner_on_waiting_list",
+          "consequent": "(and runner_registered (not places_left))",
+          "situations": [
+            {
+              "when": {
+                "places_left": false,
+                "runner_on_waiting_list": true,
+                "runner_registered": false
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "places_left": false,
+                "runner_on_waiting_list": false,
+                "runner_registered": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        },
+        {
+          "reading": "If a runner registers, then the system puts the runner on the waiting list only if no places are left.",
+          "antecedent": "(and runner_registered runner_on_waiting_list)",
+          "consequent": "(not places_left)",
+          "situations": [
+            {
+              "when": {
+                "places_left": true,
+                "runner_on_waiting_list": true,
+                "runner_registered": true
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "places_left": false,
+                "runner_on_waiting_list": false,
+                "runner_registered": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R13",
+      "text": "WHEN a runner uploads a medical certificate AND the certificate is valid THEN the system marks the runner as cleared to start",
+      "trigger": "certificate_uploaded",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a runner uploads a medical certificate and that certificate is valid, the system must clear the runner to start the race.",
+      "antecedent": "(and certificate_uploaded certificate_valid)",
+      "consequent": "runner_cleared_to_start",
+      "probes": [
+        {
+          "reading": "The system clears the runner to start only if the runner has uploaded a medical certificate and that certificate is valid.",
+          "antecedent": "runner_cleared_to_start",
+          "consequent": "(and certificate_uploaded certificate_valid)",
+          "situations": [
+            {
+              "when": {
+                "certificate_uploaded": false,
+                "certificate_valid": false,
+                "runner_cleared_to_start": true
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "certificate_uploaded": true,
+                "certificate_valid": true,
+                "runner_cleared_to_start": false
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 7,
+            "other": 1,
+            "either": 0
+          }
+        },
+        {
+          "reading": "If a runner uploads a medical certificate, the system clears the runner to start only if the certificate is valid.",
+          "antecedent": "(and certificate_uploaded (not certificate_valid))",
+          "consequent": "(not runner_cleared_to_start)",
+          "situations": [
+            {
+              "when": {
+                "certificate_uploaded": true,
+                "certificate_valid": false,
+                "runner_cleared_to_start": true
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "certificate_uploaded": true,
+                "certificate_valid": true,
+                "runner_cleared_to_start": false
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 7,
+            "other": 1,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R14",
+      "text": "WHEN a runner uploads a medical certificate AND the certificate is not valid THEN the system asks the runner for a new certificate",
+      "trigger": "certificate_uploaded",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a runner uploads a medical certificate and that certificate is not valid, the system must ask the runner for a new certificate.",
+      "antecedent": "(and certificate_uploaded (not certificate_valid))",
+      "consequent": "new_certificate_requested",
+      "probes": [
+        {
+          "reading": "If a runner uploads a medical certificate, the system asks for a new certificate if and only if the certificate is not valid.",
+          "antecedent": "certificate_uploaded",
+          "consequent": "(= new_certificate_requested (not certificate_valid))",
+          "situations": [
+            {
+              "when": {
+                "certificate_uploaded": true,
+                "certificate_valid": true,
+                "new_certificate_requested": true
+              },
+              "translation_says": "obeyed"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        },
+        {
+          "reading": "The system asks for a new certificate whenever the certificate is not valid, regardless of whether the runner has uploaded it.",
+          "antecedent": "(not certificate_valid)",
+          "consequent": "new_certificate_requested",
+          "situations": [
+            {
+              "when": {
+                "certificate_uploaded": false,
+                "certificate_valid": false,
+                "new_certificate_requested": false
+              },
+              "translation_says": "obeyed"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R15",
+      "text": "WHEN a runner pays the entry fee AND the payment is accepted THEN the system sends the runner a receipt",
+      "trigger": "payment_attempted",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "When a runner attempts to pay the entry fee and that payment is successfully accepted, the system must send the runner a receipt.",
+      "antecedent": "(and payment_attempted payment_accepted)",
+      "consequent": "receipt_sent",
+      "probes": [
+        {
+          "reading": "The system sends a receipt only if the payment is accepted, regardless of whether a payment attempt was explicitly recorded.",
+          "antecedent": "payment_accepted",
+          "consequent": "receipt_sent",
+          "situations": [
+            {
+              "when": {
+                "payment_accepted": true,
+                "payment_attempted": false,
+                "receipt_sent": false
+              },
+              "translation_says": "obeyed"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "X2",
+      "text": "WHEN a runner pays the entry fee AND the payment is not accepted THEN the system asks for another payment method",
+      "trigger": "payment_attempted",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a runner attempts to pay the entry fee and that payment is rejected, the system must request a different payment method.",
+      "antecedent": "(and payment_attempted (not payment_accepted))",
+      "consequent": "another_payment_method_requested",
+      "probes": []
+    },
+    {
+      "id": "R16",
+      "text": "WHEN a runner withdraws from the race THEN the system refunds the entry fee",
+      "trigger": "runner_withdrew",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "When a runner withdraws from the race, the system must refund the entry fee.",
+      "antecedent": "runner_withdrew",
+      "consequent": "entry_fee_refunded",
+      "probes": [
+        {
+          "reading": "The system refunds the entry fee only if the runner has withdrawn from the race.",
+          "antecedent": "entry_fee_refunded",
+          "consequent": "runner_withdrew",
+          "situations": [
+            {
+              "when": {
+                "entry_fee_refunded": true,
+                "runner_withdrew": false
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "entry_fee_refunded": false,
+                "runner_withdrew": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R17",
+      "text": "WHEN a runner misses the payment deadline for the second time THEN the system cancels the registration of the runner",
+      "trigger": "deadline_missed",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "When a runner misses the payment deadline and the count of missed deadlines is two, the system must cancel the runner's registration.",
+      "antecedent": "(and deadline_missed (= deadline_missed_count 2))",
+      "consequent": "registration_cancelled",
+      "probes": [
+        {
+          "reading": "When a runner misses the payment deadline and the count of missed deadlines is at least two, the system must cancel the runner's registration.",
+          "antecedent": "(and deadline_missed (>= deadline_missed_count 2))",
+          "consequent": "registration_cancelled",
+          "situations": [
+            {
+              "when": {
+                "deadline_missed": true,
+                "deadline_missed_count": 3,
+                "registration_cancelled": false
+              },
+              "translation_says": "obeyed"
+            }
+          ],
+          "answers": {
+            "translation": 7,
+            "other": 1,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "X3",
+      "text": "WHEN a runner transfers the registration to another runner THEN the system sends the new runner a confirmation",
+      "trigger": "registration_transferred",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a runner transfers their registration to another runner, the system must send a confirmation to the new runner.",
+      "antecedent": "registration_transferred",
+      "consequent": "confirmation_sent_to_new_runner",
+      "probes": [
+        {
+          "reading": "The system sends a confirmation to the new runner only if the runner transfers the registration to another runner.",
+          "antecedent": "confirmation_sent_to_new_runner",
+          "consequent": "registration_transferred",
+          "situations": [
+            {
+              "when": {
+                "confirmation_sent_to_new_runner": true,
+                "registration_transferred": false
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "confirmation_sent_to_new_runner": false,
+                "registration_transferred": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R18",
+      "text": "WHEN a runner is a member of a running club THEN the system applies the club discount to the entry fee",
+      "trigger": "",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a runner is a member of a running club, the system must apply the club discount to their entry fee.",
+      "antecedent": "runner_is_club_member",
+      "consequent": "club_discount_applied",
+      "probes": [
+        {
+          "reading": "The system applies the club discount to the entry fee only if the runner is a member of a running club.",
+          "antecedent": "club_discount_applied",
+          "consequent": "runner_is_club_member",
+          "situations": [
+            {
+              "when": {
+                "club_discount_applied": true,
+                "runner_is_club_member": false
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "club_discount_applied": false,
+                "runner_is_club_member": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R19",
+      "text": "WHEN a runner asks for a charity place AND the charity has places left THEN the system reserves a charity place for the runner",
+      "trigger": "charity_place_requested",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a runner asks for a charity place and the specific charity still has available places, the system must reserve a place for that runner.",
+      "antecedent": "(and charity_place_requested charity_places_left)",
+      "consequent": "charity_place_reserved",
+      "probes": [
+        {
+          "reading": "If a runner asks for a charity place, the system reserves a charity place for the runner only if the charity has places left.",
+          "antecedent": "charity_place_requested",
+          "consequent": "(=> charity_place_reserved charity_places_left)",
+          "situations": [
+            {
+              "when": {
+                "charity_place_requested": true,
+                "charity_place_reserved": true,
+                "charity_places_left": false
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "charity_place_requested": true,
+                "charity_place_reserved": false,
+                "charity_places_left": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R20",
+      "text": "WHEN a runner asks for a charity place AND the charity has no places left THEN the system proposes another charity to the runner",
+      "trigger": "charity_place_requested",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "When a runner requests a charity place and there are no remaining places for that charity, the system must propose an alternative charity.",
+      "antecedent": "(and charity_place_requested (not charity_places_left))",
+      "consequent": "another_charity_proposed",
+      "probes": [
+        {
+          "reading": "The system proposes another charity whenever the runner asks for a charity place, regardless of whether the current charity has places left, but the proposal is specifically triggered by the lack of places in the context of the request.",
+          "antecedent": "charity_place_requested",
+          "consequent": "another_charity_proposed",
+          "situations": [
+            {
+              "when": {
+                "another_charity_proposed": false,
+                "charity_place_requested": true,
+                "charity_places_left": true
+              },
+              "translation_says": "obeyed"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R21",
+      "text": "WHEN a runner withdraws from the race THEN the system keeps the entry fee",
+      "trigger": "runner_withdrew",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "When a runner withdraws from the race, the system must keep the entry fee.",
+      "antecedent": "runner_withdrew",
+      "consequent": "entry_fee_kept",
+      "probes": [
+        {
+          "reading": "The system keeps the entry fee only if the runner has withdrawn from the race.",
+          "antecedent": "entry_fee_kept",
+          "consequent": "runner_withdrew",
+          "situations": [
+            {
+              "when": {
+                "entry_fee_kept": true,
+                "runner_withdrew": false
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "entry_fee_kept": false,
+                "runner_withdrew": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R22",
+      "text": "WHEN the entry fee of a runner is unpaid THEN the system does not hand out any bib",
+      "trigger": "",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a runner's entry fee is unpaid, the system must not hand out the bib.",
+      "antecedent": "entry_fee_unpaid",
+      "consequent": "(not bib_handed_out)",
+      "probes": []
+    },
+    {
+      "id": "R23",
+      "text": "WHEN a runner crosses the finish line THEN the system publishes the finish time of the runner",
+      "trigger": "finish_line_crossed",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "Whenever a runner crosses the finish line, the system must publish that runner's finish time.",
+      "antecedent": "finish_line_crossed",
+      "consequent": "finish_time_published",
+      "probes": [
+        {
+          "reading": "The system publishes the finish time only if the runner has crossed the finish line.",
+          "antecedent": "finish_time_published",
+          "consequent": "finish_line_crossed",
+          "situations": [
+            {
+              "when": {
+                "finish_line_crossed": false,
+                "finish_time_published": true
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "finish_line_crossed": true,
+                "finish_time_published": false
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R24",
+      "text": "WHEN a protest against a result is open THEN the system does not publish any finish time",
+      "trigger": "",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a protest against a result is currently open, the system must not publish the finish time of the runner.",
+      "antecedent": "protest_open",
+      "consequent": "(not finish_time_published)",
+      "probes": []
+    },
+    {
+      "id": "R25",
+      "text": "WHEN a runner asks for a certificate AND the result of the runner is final THEN the system sends the certificate by email and adds the split times",
+      "trigger": "certificate_requested",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "When a runner requests a certificate and their race result is already final, the system must email the certificate to them and include the split times in it.",
+      "antecedent": "(and certificate_requested result_final)",
+      "consequent": "(and certificate_sent_by_email split_times_added)",
+      "probes": []
+    },
+    {
+      "id": "R26",
+      "text": "WHEN a runner asks for a certificate AND the result of the runner is not final THEN the system tells the runner the date of the final results",
+      "trigger": "certificate_requested",
+      "status": "accepted",
+      "clusters": [
+        7,
+        1
+      ],
+      "entropy": 0.377,
+      "reading": "When a runner requests a certificate and the race results are not yet final, the system must inform the runner of the date when the final results will be available.",
+      "antecedent": "(and certificate_requested (not result_final))",
+      "consequent": "final_results_date_told",
+      "probes": [
+        {
+          "reading": "The system tells the runner the date of the final results only if the runner asks for a certificate and the result is not final.",
+          "antecedent": "final_results_date_told",
+          "consequent": "(and certificate_requested (not result_final))",
+          "situations": [
+            {
+              "when": {
+                "certificate_requested": false,
+                "final_results_date_told": true,
+                "result_final": false
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "certificate_requested": true,
+                "final_results_date_told": false,
+                "result_final": false
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R27",
+      "text": "WHEN the results of the race are final THEN the system ranks the runners in their age groups",
+      "trigger": "",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "Once the race results are finalized, the system must rank the runners within their respective age groups.",
+      "antecedent": "race_results_final",
+      "consequent": "runners_ranked_in_age_groups",
+      "probes": [
+        {
+          "reading": "The system ranks the runners in their age groups only if the results of the race are final.",
+          "antecedent": "runners_ranked_in_age_groups",
+          "consequent": "race_results_final",
+          "situations": [
+            {
+              "when": {
+                "race_results_final": false,
+                "runners_ranked_in_age_groups": true
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "race_results_final": true,
+                "runners_ranked_in_age_groups": false
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R28",
+      "text": "WHEN a runner receives a warning from a referee for the third time THEN the system disqualifies the runner",
+      "trigger": "warning_received",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a runner receives a warning from a referee and the total number of warnings they have received is exactly three, the system must disqualify the runner.",
+      "antecedent": "(and warning_received (= warning_count 3))",
+      "consequent": "runner_disqualified",
+      "probes": [
+        {
+          "reading": "If a runner receives a warning from a referee and the total number of warnings they have received is at least three, the system must disqualify the runner.",
+          "antecedent": "(and warning_received (>= warning_count 3))",
+          "consequent": "runner_disqualified",
+          "situations": [
+            {
+              "when": {
+                "runner_disqualified": false,
+                "warning_count": 4,
+                "warning_received": true
+              },
+              "translation_says": "obeyed"
+            }
+          ],
+          "answers": {
+            "translation": 7,
+            "other": 1,
+            "either": 0
+          }
+        },
+        {
+          "reading": "If a runner receives a warning from a referee and the total number of warnings they have received is more than three, the system must disqualify the runner.",
+          "antecedent": "(and warning_received (> warning_count 3))",
+          "consequent": "runner_disqualified",
+          "situations": [
+            {
+              "when": {
+                "runner_disqualified": false,
+                "warning_count": 4,
+                "warning_received": true
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "runner_disqualified": false,
+                "warning_count": 3,
+                "warning_received": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R29",
+      "text": "WHEN a runner asks for the finish photo AND the photo is available THEN the system sends the runner a link to the photo",
+      "trigger": "photo_requested",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a runner requests a finish photo and that photo is available, the system must send the runner a link to the photo.",
+      "antecedent": "(and photo_requested photo_available)",
+      "consequent": "photo_link_sent",
+      "probes": [
+        {
+          "reading": "The system sends the link if the photo is available, regardless of whether the runner explicitly asked for it, as long as the runner has requested a photo at some point or the system proactively sends it when available.",
+          "antecedent": "photo_available",
+          "consequent": "photo_link_sent",
+          "situations": [
+            {
+              "when": {
+                "photo_available": true,
+                "photo_link_sent": false,
+                "photo_requested": false
+              },
+              "translation_says": "obeyed"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R30",
+      "text": "WHEN a runner asks for the finish photo AND the photo is not available THEN the system tells the runner when the photos will be ready",
+      "trigger": "photo_requested",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "When a runner asks for the finish photo and the photo is not available, the system must tell the runner when the photos will be ready.",
+      "antecedent": "(and photo_requested (not photo_available))",
+      "consequent": "photo_ready_time_told",
+      "probes": [
+        {
+          "reading": "If the runner asks for the finish photo, then the system tells the runner when the photos will be ready only if the photo is not available.",
+          "antecedent": "photo_requested",
+          "consequent": "(=> photo_ready_time_told (not photo_available))",
+          "situations": [
+            {
+              "when": {
+                "photo_available": true,
+                "photo_ready_time_told": true,
+                "photo_requested": true
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "photo_available": false,
+                "photo_ready_time_told": false,
+                "photo_requested": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 6,
+            "other": 2,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R31",
+      "text": "WHEN the finish time of a runner is below the course record THEN the system announces a new course record",
+      "trigger": "",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a runner's finish time is faster than the current course record, the system must announce a new course record.",
+      "antecedent": "finish_time_below_record",
+      "consequent": "new_course_record_announced",
+      "probes": [
+        {
+          "reading": "The system announces a new course record only if the runner's finish time is below the course record.",
+          "antecedent": "new_course_record_announced",
+          "consequent": "finish_time_below_record",
+          "situations": [
+            {
+              "when": {
+                "finish_time_below_record": false,
+                "new_course_record_announced": true
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "finish_time_below_record": true,
+                "new_course_record_announced": false
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R32",
+      "text": "WHEN a referee corrects a finish time THEN the system informs the runner of the new time",
+      "trigger": "time_corrected",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "Whenever a referee corrects a runner's finish time, the system must inform that runner of the updated time.",
+      "antecedent": "time_corrected",
+      "consequent": "runner_informed_of_new_time",
+      "probes": [
+        {
+          "reading": "The system informs the runner of the new time only if a referee has corrected the finish time.",
+          "antecedent": "runner_informed_of_new_time",
+          "consequent": "time_corrected",
+          "situations": [
+            {
+              "when": {
+                "runner_informed_of_new_time": true,
+                "time_corrected": false
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "runner_informed_of_new_time": false,
+                "time_corrected": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R33",
+      "text": "WHEN a volunteer signs up for a shift AND the shift has places left THEN the system assigns the volunteer to the shift",
+      "trigger": "volunteer_signed_up",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a volunteer signs up for a shift and places are still available in that shift, the system must assign the volunteer to that shift.",
+      "antecedent": "(and volunteer_signed_up shift_places_left)",
+      "consequent": "volunteer_assigned_to_shift",
+      "probes": [
+        {
+          "reading": "The system assigns the volunteer to the shift only if the volunteer signs up for a shift and the shift has places left.",
+          "antecedent": "volunteer_assigned_to_shift",
+          "consequent": "(and volunteer_signed_up shift_places_left)",
+          "situations": [
+            {
+              "when": {
+                "shift_places_left": false,
+                "volunteer_assigned_to_shift": true,
+                "volunteer_signed_up": false
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "shift_places_left": true,
+                "volunteer_assigned_to_shift": false,
+                "volunteer_signed_up": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 7,
+            "other": 1,
+            "either": 0
+          }
+        },
+        {
+          "reading": "If a volunteer signs up for a shift, the system assigns the volunteer to the shift only if the shift has places left.",
+          "antecedent": "(and volunteer_signed_up (not shift_places_left))",
+          "consequent": "(not volunteer_assigned_to_shift)",
+          "situations": [
+            {
+              "when": {
+                "shift_places_left": false,
+                "volunteer_assigned_to_shift": true,
+                "volunteer_signed_up": true
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "shift_places_left": true,
+                "volunteer_assigned_to_shift": false,
+                "volunteer_signed_up": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 7,
+            "other": 1,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R34",
+      "text": "WHEN a volunteer signs up for a shift AND the shift has no places left THEN the system offers the volunteer another shift",
+      "trigger": "volunteer_signed_up",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a volunteer signs up for a shift that is fully booked, the system must offer them a different shift.",
+      "antecedent": "(and volunteer_signed_up (not shift_places_left))",
+      "consequent": "another_shift_offered",
+      "probes": [
+        {
+          "reading": "If a volunteer signs up for a shift, the system offers another shift if and only if the shift has no places left.",
+          "antecedent": "volunteer_signed_up",
+          "consequent": "(= (not shift_places_left) another_shift_offered)",
+          "situations": [
+            {
+              "when": {
+                "another_shift_offered": true,
+                "shift_places_left": true,
+                "volunteer_signed_up": true
+              },
+              "translation_says": "obeyed"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R35",
+      "text": "WHEN a volunteer checks in AND the volunteer has a shift on that day THEN the system prints the volunteer badge",
+      "trigger": "volunteer_checked_in",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "Whenever a volunteer checks in and they have a scheduled shift on that specific day, the system must print their volunteer badge.",
+      "antecedent": "(and volunteer_checked_in volunteer_has_shift_today)",
+      "consequent": "volunteer_badge_printed",
+      "probes": [
+        {
+          "reading": "The system prints the volunteer badge if the volunteer checks in, provided that the volunteer has a shift on that day.",
+          "antecedent": "volunteer_checked_in",
+          "consequent": "(and volunteer_has_shift_today volunteer_badge_printed)",
+          "situations": [
+            {
+              "when": {
+                "volunteer_badge_printed": false,
+                "volunteer_checked_in": true,
+                "volunteer_has_shift_today": false
+              },
+              "translation_says": "obeyed"
+            }
+          ],
+          "answers": {
+            "translation": 7,
+            "other": 1,
+            "either": 0
+          }
+        },
+        {
+          "reading": "If a volunteer checks in, the system prints the volunteer badge only if the volunteer has a shift on that day.",
+          "antecedent": "(and volunteer_checked_in volunteer_badge_printed)",
+          "consequent": "volunteer_has_shift_today",
+          "situations": [
+            {
+              "when": {
+                "volunteer_badge_printed": true,
+                "volunteer_checked_in": true,
+                "volunteer_has_shift_today": false
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "volunteer_badge_printed": false,
+                "volunteer_checked_in": true,
+                "volunteer_has_shift_today": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R36",
+      "text": "WHEN a volunteer checks in AND the volunteer has no shift on that day THEN the system shows the volunteer the date of the next shift",
+      "trigger": "volunteer_checked_in",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "The system must display the date of the volunteer's next shift whenever a check-in event occurs and the volunteer does not have a scheduled shift for that specific day.",
+      "antecedent": "(and volunteer_checked_in (not volunteer_has_shift_today))",
+      "consequent": "next_shift_date_shown",
+      "probes": [
+        {
+          "reading": "The system shows the date of the next shift if the volunteer checks in, and separately, the system ensures the volunteer does not have a shift on that day (which is a precondition for the check-in to be valid in this context).",
+          "antecedent": "volunteer_checked_in",
+          "consequent": "(and next_shift_date_shown (not volunteer_has_shift_today))",
+          "situations": [
+            {
+              "when": {
+                "next_shift_date_shown": false,
+                "volunteer_checked_in": true,
+                "volunteer_has_shift_today": true
+              },
+              "translation_says": "obeyed"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R37",
+      "text": "WHEN a volunteer misses a shift for the second time THEN the system removes the volunteer from the remaining shifts",
+      "trigger": "shift_missed",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "When a volunteer misses a shift for the second time, the system removes the volunteer from the remaining shifts.",
+      "antecedent": "(and shift_missed (= shift_missed_count 2))",
+      "consequent": "volunteer_removed_from_shifts",
+      "probes": [
+        {
+          "reading": "The system removes the volunteer from the remaining shifts if the volunteer has missed a shift at least twice.",
+          "antecedent": "(and shift_missed (>= shift_missed_count 2))",
+          "consequent": "volunteer_removed_from_shifts",
+          "situations": [
+            {
+              "when": {
+                "shift_missed": true,
+                "shift_missed_count": 3,
+                "volunteer_removed_from_shifts": false
+              },
+              "translation_says": "obeyed"
+            }
+          ],
+          "answers": {
+            "translation": 6,
+            "other": 0,
+            "either": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "R38",
+      "text": "WHEN a volunteer finishes a shift THEN the system issues a meal voucher",
+      "trigger": "shift_finished",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "Whenever a volunteer finishes a shift, the system must issue a meal voucher.",
+      "antecedent": "shift_finished",
+      "consequent": "meal_voucher_issued",
+      "probes": [
+        {
+          "reading": "The system issues a meal voucher only if the volunteer has finished a shift.",
+          "antecedent": "meal_voucher_issued",
+          "consequent": "shift_finished",
+          "situations": [
+            {
+              "when": {
+                "meal_voucher_issued": true,
+                "shift_finished": false
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "meal_voucher_issued": false,
+                "shift_finished": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R39",
+      "text": "WHEN the briefing of a shift has started THEN the system shows the briefing room on the volunteer screens",
+      "trigger": "",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If the briefing of a shift has started, the system must display the briefing room on the volunteer screens.",
+      "antecedent": "briefing_started",
+      "consequent": "briefing_room_shown",
+      "probes": [
+        {
+          "reading": "The system shows the briefing room on the volunteer screens only if the briefing of a shift has started.",
+          "antecedent": "briefing_room_shown",
+          "consequent": "briefing_started",
+          "situations": [
+            {
+              "when": {
+                "briefing_room_shown": true,
+                "briefing_started": false
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "briefing_room_shown": false,
+                "briefing_started": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R40",
+      "text": "WHEN a volunteer asks for a T-shirt AND the size is in stock THEN the system hands out the T-shirt",
+      "trigger": "tshirt_requested",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a volunteer requests a T-shirt and the specific size is available in inventory, the system must hand out the T-shirt.",
+      "antecedent": "(and tshirt_requested size_in_stock)",
+      "consequent": "tshirt_handed_out",
+      "probes": [
+        {
+          "reading": "The system hands out the T-shirt if the size is in stock, regardless of whether the volunteer explicitly asked for it.",
+          "antecedent": "size_in_stock",
+          "consequent": "tshirt_handed_out",
+          "situations": [
+            {
+              "when": {
+                "size_in_stock": true,
+                "tshirt_handed_out": false,
+                "tshirt_requested": false
+              },
+              "translation_says": "obeyed"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        },
+        {
+          "reading": "The system hands out the T-shirt if the volunteer asks for it, regardless of whether the size is in stock.",
+          "antecedent": "tshirt_requested",
+          "consequent": "tshirt_handed_out",
+          "situations": [
+            {
+              "when": {
+                "size_in_stock": false,
+                "tshirt_handed_out": false,
+                "tshirt_requested": true
+              },
+              "translation_says": "obeyed"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R41",
+      "text": "WHEN a volunteer asks for a T-shirt AND the size is not in stock THEN the system notes the size for the next delivery",
+      "trigger": "tshirt_requested",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a volunteer asks for a T-shirt and the requested size is not in stock, the system must note the size for the next delivery.",
+      "antecedent": "(and tshirt_requested (not size_in_stock))",
+      "consequent": "size_noted_for_delivery",
+      "probes": [
+        {
+          "reading": "If a volunteer asks for a T-shirt, the system notes the size for the next delivery, and the size is not in stock.",
+          "antecedent": "tshirt_requested",
+          "consequent": "(and size_noted_for_delivery (not size_in_stock))",
+          "situations": [
+            {
+              "when": {
+                "size_in_stock": true,
+                "size_noted_for_delivery": false,
+                "tshirt_requested": true
+              },
+              "translation_says": "obeyed"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    }
+  ],
+  "outcome_pairs_skipped": 274,
+  "outcome_pairs": [
+    {
+      "rules": [
+        "R1",
+        "R6"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R1",
+        "R7"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R1",
+        "R18"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R1",
+        "R24"
+      ],
+      "answers": {
+        "possible": 7,
+        "impossible": 1,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R1",
+        "R27"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R1",
+        "R31"
+      ],
+      "answers": {
+        "possible": 7,
+        "impossible": 1,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R1",
+        "R39"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R2",
+        "R6"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R2",
+        "R7"
+      ],
+      "answers": {
+        "possible": 7,
+        "impossible": 1,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R2",
+        "R18"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R2",
+        "R22"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R2",
+        "R24"
+      ],
+      "answers": {
+        "possible": 7,
+        "impossible": 1,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R2",
+        "R27"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R2",
+        "R31"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R2",
+        "R39"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R3",
+        "R6"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R3",
+        "R18"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R3",
+        "R22"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R3",
+        "R24"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R3",
+        "R27"
+      ],
+      "answers": {
+        "possible": 7,
+        "impossible": 1,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R3",
+        "R31"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R3",
+        "R39"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R4",
+        "R6"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R4",
+        "R7"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R4",
+        "R18"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R4",
+        "R22"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R4",
+        "R24"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R4",
+        "R27"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R4",
+        "R31"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R4",
+        "R39"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R5",
+        "R6"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R5",
+        "R7"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R5",
+        "R18"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R5",
+        "R22"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R5",
+        "R24"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R5",
+        "R27"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R5",
+        "R31"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R5",
+        "R39"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R6",
+        "R7"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R6",
+        "R8"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    }
+  ]
+}

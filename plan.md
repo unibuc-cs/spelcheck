@@ -58,7 +58,10 @@ this order:
    more sets, specs we did not write, and results counted per planted
    conflict (the runs of one spec mostly agree, so more specs help more than
    more runs). For the change check: a real OpenSpec project with its
-   history of changes. All fifteen sets have been read (`eval15/` in E21), so
+   history of changes (started: the OpenSpec tool's own repository, each
+   archived change against the spec files it touches). A larger invented
+   project with a change that does everything at once is done (step 36).
+   All fifteen sets have been read (`eval15/` in E21), so
    a new design needs `eval16/`, written first.
 2. **The change check, further** (G2). The gap that a removal opens is done
    (step 33), and so is a way to check a change on a saved model of the
@@ -1107,6 +1110,11 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       depends on a reading (5 of 5 reports right), and the second model on
       the spec of 100 requirements (T26: it runs now, and flags 9 clear
       rules where the main model flags 2)
+- [x] **Step 36 — a larger project and a change that does everything at
+      once**: `mixed/`, a city marathon of 39 scenarios in four spec files,
+      and one change that adds, rewrites, removes and renames (no design
+      change). E22: 9 of 9 planted conflicts and 9 of 9 planted gaps in 3
+      runs, both ways, and nothing else about the change
 - [x] **Documentation pass 2**: GUIDE.md reviewed point by point and rewritten (a new
       2.4 on gaps and scenarios; the ambiguity check, voted facts and links as steps on
       one real example), then shortened from 1112 to 893 lines; README.md reworded in the

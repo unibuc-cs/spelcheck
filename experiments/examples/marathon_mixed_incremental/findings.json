@@ -1,0 +1,471 @@
+[
+  {
+    "type": "conflict",
+    "rules": [
+      "R1",
+      "N6"
+    ],
+    "when": {
+      "bib_collected": true,
+      "entry_fee_unpaid": true,
+      "runner_cleared_to_start": true
+    },
+    "about_change": true,
+    "situation": "A runner has collected the bib, the entry fee of the runner is unpaid, and the runner is cleared to start.",
+    "title": "Conflict between bib handout and unpaid fee",
+    "explanation": "Requirement R1 states that when a runner collects the bib and is cleared to start, the system must hand out the bib and the timing chip. However, Requirement N6 states that when the entry fee is unpaid, the system must not hand out any bib. In the situation where a runner has collected the bib, is cleared to start, but has not paid the entry fee, the system is forced to both hand out the bib and not hand out the bib, which is impossible.",
+    "option_a": "Keeping the requirements as written means the system will encounter a logical error and fail to function correctly whenever a cleared runner with an unpaid fee attempts to collect their bib.",
+    "option_b": "Modify Requirement R1 to include the condition that the entry fee is paid, so that the bib is only handed out when the fee is settled, or modify Requirement N6 to specify that the bib is withheld only if the fee is unpaid at the moment of collection, resolving the direct contradiction."
+  },
+  {
+    "type": "conflict",
+    "rules": [
+      "R3",
+      "N1"
+    ],
+    "when": {
+      "heat_warning_in_force": true,
+      "runner_belongs_to_wave": true,
+      "start_wave_called": true
+    },
+    "about_change": true,
+    "situation": "A heat warning is in force, a start wave has been called, and the runner belongs to the called start wave.",
+    "title": "Conflict between heat warning and start gate",
+    "explanation": "The requirements contain a direct contradiction regarding the start gate. Requirement R3 states that when a start wave is called and the runner belongs to that wave, the system must open the start gate for the runner. However, requirement N1 states that when a heat warning is in force, the system must not open any start gate. In the situation where a heat warning is active and a runner from the called wave is present, the system is required to both open and not open the gate, which is impossible.",
+    "option_a": "Keeping the requirements as written means the system will fail or behave unpredictably when a heat warning is active during a start wave, as it cannot simultaneously satisfy the command to open the gate and the prohibition against opening it.",
+    "option_b": "Modify requirement R3 to include an exception, such as: 'WHEN a start wave is called AND the runner belongs to the wave AND no heat warning is in force THEN the system opens the start gate for the runner'."
+  },
+  {
+    "type": "conflict",
+    "rules": [
+      "R17",
+      "N5"
+    ],
+    "facts": [
+      "F12"
+    ],
+    "when": {
+      "runner_withdrew": true
+    },
+    "about_change": true,
+    "situation": "A runner has withdrawn from the race.",
+    "title": "Conflicting refund policies",
+    "explanation": "The requirements contain a direct contradiction regarding what happens to the entry fee when a runner withdraws. Requirement R17 states that the system must refund the entry fee, while Requirement N5 states that the system must keep the entry fee. This conflict appears in the situation where a runner has withdrawn from the race, as the system cannot simultaneously refund and keep the same fee. This finding depends on the assumption that Requirement N5's instruction to \"keep the entry fee\" is interpreted as a prohibition against refunding it, which is the logical opposite of the action required by R17.",
+    "option_a": "Keeping the requirements as written means the system is logically unable to process a withdrawal because it is instructed to perform two mutually exclusive actions with the same money.",
+    "option_b": "Remove Requirement N5 to allow Requirement R17 to stand alone, ensuring that the entry fee is refunded when a runner withdraws."
+  },
+  {
+    "type": "gap",
+    "event": "entry_fee_paid",
+    "when": {
+      "bib_collected": false,
+      "briefing_started": false,
+      "certificate_requested": false,
+      "charity_place_requested": false,
+      "checkpoint_cutoff_passed": false,
+      "checkpoint_passed": false,
+      "entry_fee_paid": true,
+      "entry_fee_unpaid": false,
+      "finish_line_crossed": false,
+      "finish_photo_requested": false,
+      "finish_time_below_course_record": false,
+      "finish_time_corrected": false,
+      "heat_warning_in_force": false,
+      "medical_certificate_uploaded": false,
+      "pacer_requested": false,
+      "payment_accepted": false,
+      "payment_deadline_missed_count": 0,
+      "protest_open": false,
+      "race_results_final": false,
+      "referee_warning_received": false,
+      "runner_dropped_out": false,
+      "runner_is_club_member": false,
+      "runner_registered": false,
+      "runner_withdrew": false,
+      "shift_finished": false,
+      "shift_missed_count": 0,
+      "start_wave_called": false,
+      "timing_chip_lost_count": 0,
+      "tshirt_requested": false,
+      "volunteer_checked_in": false,
+      "volunteer_signed_up": false
+    },
+    "opened_by": [
+      "R16"
+    ],
+    "about_change": true,
+    "situation": "A runner has paid the entry fee, but the payment is not accepted, and the runner has not missed the payment deadline.",
+    "title": "Missing rule for rejected payment",
+    "explanation": "The requirements do not specify what the system must do when a runner pays the entry fee but the payment is not accepted. This gap appears in the situation where the entry fee is paid but the payment is not accepted, and no other conditions like missed deadlines or unpaid fees apply.",
+    "option_a": "Keeping the requirements as written means the system has no defined behavior for handling a rejected payment, leaving the runner without guidance on how to proceed.",
+    "option_b": "Add a requirement stating that when a runner pays the entry fee and the payment is not accepted, the system asks for another payment method."
+  },
+  {
+    "type": "gap",
+    "event": "pacer_requested",
+    "when": {
+      "bib_collected": false,
+      "briefing_started": false,
+      "certificate_requested": false,
+      "charity_place_requested": false,
+      "checkpoint_cutoff_passed": false,
+      "checkpoint_passed": false,
+      "entry_fee_unpaid": false,
+      "finish_line_crossed": false,
+      "finish_photo_requested": false,
+      "finish_time_below_course_record": false,
+      "finish_time_corrected": false,
+      "heat_warning_in_force": false,
+      "medical_certificate_uploaded": false,
+      "pacer_free": false,
+      "pacer_requested": true,
+      "payment_accepted": false,
+      "payment_deadline_missed_count": 0,
+      "protest_open": false,
+      "race_results_final": false,
+      "referee_warning_received": false,
+      "runner_dropped_out": false,
+      "runner_is_club_member": false,
+      "runner_registered": false,
+      "runner_withdrew": false,
+      "shift_finished": false,
+      "shift_missed_count": 0,
+      "start_wave_called": false,
+      "timing_chip_lost_count": 0,
+      "tshirt_requested": false,
+      "volunteer_checked_in": false,
+      "volunteer_signed_up": false
+    },
+    "about_change": true,
+    "situation": "A runner has asked for a pacer, but a pacer for the target time is not free, and no other specific race or volunteer events are occurring.",
+    "title": "Missing rule for unavailable pacer",
+    "explanation": "The requirements specify what happens when a runner asks for a pacer and one is available (N2), but they do not state what the system must do when a runner asks for a pacer and no pacer for the target time is free. This gap appears in the situation where a runner has asked for a pacer, but a pacer for the target time is not free.",
+    "option_a": "Keeping the requirements as written means the system has no defined behavior for a runner who requests a pacer when none are available for their target time.",
+    "option_b": "Add a requirement stating that when a runner asks for a pacer and a pacer for the target time is not free, the system informs the runner that no pacer is available or offers an alternative target time."
+  },
+  {
+    "type": "gap",
+    "event": "runner_registered",
+    "when": {
+      "bib_collected": false,
+      "briefing_started": false,
+      "certificate_requested": false,
+      "charity_place_requested": false,
+      "checkpoint_cutoff_passed": false,
+      "checkpoint_passed": false,
+      "entry_fee_unpaid": false,
+      "finish_line_crossed": false,
+      "finish_photo_requested": false,
+      "finish_time_below_course_record": false,
+      "finish_time_corrected": false,
+      "heat_warning_in_force": false,
+      "medical_certificate_uploaded": false,
+      "pacer_requested": false,
+      "payment_accepted": false,
+      "payment_deadline_missed_count": 0,
+      "places_left": false,
+      "protest_open": false,
+      "race_results_final": false,
+      "referee_warning_received": false,
+      "runner_dropped_out": false,
+      "runner_is_club_member": false,
+      "runner_registered": true,
+      "runner_withdrew": false,
+      "shift_finished": false,
+      "shift_missed_count": 0,
+      "start_wave_called": false,
+      "timing_chip_lost_count": 0,
+      "tshirt_requested": false,
+      "volunteer_checked_in": false,
+      "volunteer_signed_up": false
+    },
+    "opened_by": [
+      "R12"
+    ],
+    "about_change": true,
+    "situation": "A runner has registered, but no places are left for the race, and no other specific event or condition is active.",
+    "title": "Missing waiting list rule",
+    "explanation": "The requirements do not specify what the system must do when a runner registers while no places are left. This gap appears in the situation where a runner has registered and no places are left, as the previous rule covering this scenario was removed.",
+    "option_a": "Keeping the requirements as written means the system has no defined behavior for registering runners when the race is full.",
+    "option_b": "Add a requirement stating that when a runner registers and no places are left, the system puts the runner on the waiting list."
+  },
+  {
+    "type": "scenario",
+    "verdict": "accepted",
+    "rules": [
+      "N2"
+    ],
+    "when": {
+      "pacer_assigned": true,
+      "pacer_free": true,
+      "pacer_requested": false
+    },
+    "about_change": true,
+    "situation": "A pacer for the target time is free, and the system has assigned the pacer to the runner, but no runner has asked for a pacer.",
+    "surprise": 2,
+    "title": "Unrequested Pacer Assignment",
+    "explanation": "Requirement N2 states that the system assigns a pacer only when a runner asks for one and a pacer is free. The logic allows the system to assign a pacer even when no request has been made, provided a pacer is available. This defeats the purpose of the requirement, which is to provide pacers based on runner demand, and could lead to unnecessary resource allocation or confusion for runners who did not request assistance.",
+    "option_a": "Keep the requirements, allowing the system to assign pacers to runners even without a specific request if a pacer is free.",
+    "option_b": "Modify Requirement N2 to explicitly state that the system SHALL NOT assign a pacer unless a runner has asked for one."
+  },
+  {
+    "type": "scenario",
+    "verdict": "accepted",
+    "rules": [
+      "N3"
+    ],
+    "when": {
+      "charity_place_requested": false,
+      "charity_place_reserved": true,
+      "charity_places_left": false
+    },
+    "about_change": true,
+    "situation": "A runner has not asked for a charity place, the system has reserved a charity place for the runner, and the charity does not have places left.",
+    "surprise": 2,
+    "title": "Unrequested charity reservation",
+    "explanation": "The requirements allow the system to reserve a charity place for a runner even when the runner has not asked for one and the charity has no places left. This defeats the purpose of the charity place requirement, which is to offer places only when requested and available, and contradicts the logic that a reservation should only happen when places are left.",
+    "option_a": "Keep the requirements, so the behaviour stays allowed.",
+    "option_b": "Add a requirement that the system SHALL NOT reserve a charity place unless the runner has asked for it and the charity has places left."
+  },
+  {
+    "type": "scenario",
+    "verdict": "accepted",
+    "rules": [
+      "N4"
+    ],
+    "when": {
+      "another_charity_proposed": true,
+      "charity_place_requested": false,
+      "charity_places_left": false
+    },
+    "about_change": true,
+    "situation": "The system has proposed another charity to the runner, but no runner has asked for a charity place, and the charity does not have places left.",
+    "surprise": 2,
+    "title": "Unsolicited charity proposal",
+    "explanation": "Requirement N4 states that the system should propose another charity only when a runner asks for a charity place and the current charity has no places left. In this situation, the system performs the action demanded by N4 (proposing another charity) even though the runner did not ask for a place. This suggests the system might be spamming runners with charity offers without their consent, which is likely not intended.",
+    "option_a": "Keep the requirements, allowing the system to propose charities even if the runner did not explicitly ask for a place.",
+    "option_b": "Modify Requirement N4 to explicitly state that the system shall not propose another charity unless the runner has actively requested a charity place."
+  },
+  {
+    "type": "conflict",
+    "rules": [
+      "R21",
+      "R22"
+    ],
+    "when": {
+      "finish_line_crossed": true,
+      "protest_open": true
+    },
+    "about_change": false
+  },
+  {
+    "type": "conflict",
+    "rules": [
+      "R11",
+      "R18"
+    ],
+    "facts": [
+      "F4"
+    ],
+    "when": {
+      "payment_deadline_missed": true,
+      "payment_deadline_missed_count": 2,
+      "places_left": true,
+      "runner_registered": true
+    },
+    "simultaneous_events": [
+      "payment_deadline_missed",
+      "runner_registered"
+    ],
+    "about_change": false
+  },
+  {
+    "type": "gap",
+    "event": "payment_deadline_missed",
+    "when": {
+      "bib_collected": false,
+      "briefing_started": false,
+      "certificate_requested": false,
+      "charity_place_requested": false,
+      "checkpoint_cutoff_passed": false,
+      "checkpoint_passed": false,
+      "entry_fee_unpaid": false,
+      "finish_line_crossed": false,
+      "finish_photo_requested": false,
+      "finish_time_below_course_record": false,
+      "finish_time_corrected": false,
+      "heat_warning_in_force": false,
+      "medical_certificate_uploaded": false,
+      "pacer_requested": false,
+      "payment_accepted": false,
+      "payment_deadline_missed": true,
+      "payment_deadline_missed_count": 0,
+      "protest_open": false,
+      "race_results_final": false,
+      "referee_warning_received": false,
+      "runner_dropped_out": false,
+      "runner_is_club_member": false,
+      "runner_registered": false,
+      "runner_withdrew": false,
+      "shift_finished": false,
+      "shift_missed_count": 0,
+      "start_wave_called": false,
+      "timing_chip_lost_count": 0,
+      "tshirt_requested": false,
+      "volunteer_checked_in": false,
+      "volunteer_signed_up": false
+    },
+    "about_change": false
+  },
+  {
+    "type": "gap",
+    "event": "referee_warning_received",
+    "when": {
+      "bib_collected": false,
+      "briefing_started": false,
+      "certificate_requested": false,
+      "charity_place_requested": false,
+      "checkpoint_cutoff_passed": false,
+      "checkpoint_passed": false,
+      "entry_fee_unpaid": false,
+      "finish_line_crossed": false,
+      "finish_photo_requested": false,
+      "finish_time_below_course_record": false,
+      "finish_time_corrected": false,
+      "heat_warning_in_force": false,
+      "medical_certificate_uploaded": false,
+      "pacer_requested": false,
+      "payment_accepted": false,
+      "payment_deadline_missed_count": 0,
+      "protest_open": false,
+      "race_results_final": false,
+      "referee_warning_count": 0,
+      "referee_warning_received": true,
+      "runner_dropped_out": false,
+      "runner_is_club_member": false,
+      "runner_registered": false,
+      "runner_withdrew": false,
+      "shift_finished": false,
+      "shift_missed_count": 0,
+      "start_wave_called": false,
+      "timing_chip_lost_count": 0,
+      "tshirt_requested": false,
+      "volunteer_checked_in": false,
+      "volunteer_signed_up": false
+    },
+    "about_change": false
+  },
+  {
+    "type": "gap",
+    "event": "shift_missed",
+    "when": {
+      "bib_collected": false,
+      "briefing_started": false,
+      "certificate_requested": false,
+      "charity_place_requested": false,
+      "checkpoint_cutoff_passed": false,
+      "checkpoint_passed": false,
+      "entry_fee_unpaid": false,
+      "finish_line_crossed": false,
+      "finish_photo_requested": false,
+      "finish_time_below_course_record": false,
+      "finish_time_corrected": false,
+      "heat_warning_in_force": false,
+      "medical_certificate_uploaded": false,
+      "pacer_requested": false,
+      "payment_accepted": false,
+      "payment_deadline_missed_count": 0,
+      "protest_open": false,
+      "race_results_final": false,
+      "referee_warning_received": false,
+      "runner_dropped_out": false,
+      "runner_is_club_member": false,
+      "runner_registered": false,
+      "runner_withdrew": false,
+      "shift_finished": false,
+      "shift_missed": true,
+      "shift_missed_count": 0,
+      "start_wave_called": false,
+      "timing_chip_lost_count": 0,
+      "tshirt_requested": false,
+      "volunteer_checked_in": false,
+      "volunteer_signed_up": false
+    },
+    "about_change": false
+  },
+  {
+    "type": "gap",
+    "event": "timing_chip_lost",
+    "when": {
+      "bib_collected": false,
+      "briefing_started": false,
+      "certificate_requested": false,
+      "charity_place_requested": false,
+      "checkpoint_cutoff_passed": false,
+      "checkpoint_passed": false,
+      "entry_fee_unpaid": false,
+      "finish_line_crossed": false,
+      "finish_photo_requested": false,
+      "finish_time_below_course_record": false,
+      "finish_time_corrected": false,
+      "heat_warning_in_force": false,
+      "medical_certificate_uploaded": false,
+      "pacer_requested": false,
+      "payment_accepted": false,
+      "payment_deadline_missed_count": 0,
+      "protest_open": false,
+      "race_results_final": false,
+      "referee_warning_received": false,
+      "runner_dropped_out": false,
+      "runner_is_club_member": false,
+      "runner_registered": false,
+      "runner_withdrew": false,
+      "shift_finished": false,
+      "shift_missed_count": 0,
+      "start_wave_called": false,
+      "timing_chip_lost": true,
+      "timing_chip_lost_count": 0,
+      "tshirt_requested": false,
+      "volunteer_checked_in": false,
+      "volunteer_signed_up": false
+    },
+    "about_change": false
+  },
+  {
+    "type": "gap",
+    "when": {
+      "bib_collected": false,
+      "briefing_started": false,
+      "certificate_requested": false,
+      "charity_place_requested": false,
+      "checkpoint_cutoff_passed": false,
+      "checkpoint_passed": false,
+      "entry_fee_paid": false,
+      "entry_fee_unpaid": false,
+      "finish_line_crossed": false,
+      "finish_photo_requested": false,
+      "finish_time_below_course_record": false,
+      "finish_time_corrected": false,
+      "heat_warning_in_force": false,
+      "medical_certificate_uploaded": false,
+      "pacer_requested": false,
+      "payment_deadline_missed": false,
+      "protest_open": false,
+      "race_results_final": false,
+      "referee_warning_received": false,
+      "runner_dropped_out": false,
+      "runner_is_club_member": false,
+      "runner_registered": false,
+      "runner_withdrew": false,
+      "shift_finished": false,
+      "shift_missed": false,
+      "start_wave_called": false,
+      "timing_chip_lost": false,
+      "tshirt_requested": false,
+      "volunteer_checked_in": false,
+      "volunteer_signed_up": false
+    },
+    "quiet": true,
+    "about_change": false
+  }
+]

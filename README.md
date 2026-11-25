@@ -663,6 +663,7 @@ Nothing in the code or in the prompts is about orders.
 | `specs/auth_openspec` | OpenSpec (`### Requirement` / `#### Scenario`) | another format; two conflicts we planted |
 | `experiments/sets/`: `eval` to `eval10`, `eval12` | both | 66 specs in new domains. Each has a clean version and versions with one planted defect, 297 versions in all. Each set was written before it was used, as a test the prompts had not seen |
 | `specs/auth_change`, `experiments/sets/eval11`, `eval13`, `eval14`, `eval15` | OpenSpec projects: specs that exist, and a change | the login example as a change, and 24 projects in new domains with 5 or 6 changes each |
+| `experiments/sets/mixed` | one larger OpenSpec project (39 scenarios, four spec files) | one change that adds, rewrites, removes and renames at once |
 
 ## How reliable is it
 
@@ -760,6 +761,15 @@ Some notes on these numbers:
   gaps, and so did `--incremental`, with 11 requests for a change against 68.
   With the old prompt it found 71 of 72 there. So the new prompt cost nothing
   and gained little, and the LLM still tied some new rules to a saved event.
+- All those projects have 7 to 9 scenarios, and each change does one thing.
+  `mixed/` (E22) is one larger project, a city marathon with 39 scenarios in
+  four spec files, and one change that adds four requirements, rewrites
+  three, removes two and renames one. We planted 3 conflicts and 3 gaps in
+  it; its other parts must give nothing. In 3 runs each way, the full run and
+  `--incremental` both found all of them and reported nothing else about the
+  change (346 requests to the LLM for a run, 83 with `--incremental`). The
+  report of one run is in `experiments/examples/marathon_mixed`; that run
+  shows one conflict more, from a wrong link that the report quotes.
 - The numbers are small: the specs were written by us, and there is one main
   model. The details are in [research.md](research.md).
 
@@ -801,7 +811,7 @@ research.md, section 5.
 | `speccheck/refine.py` | optional LLM review, off by default |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the vLLM servers on the cluster: the main model, the second model |
 | `tests/` | 70 tests of everything that needs no LLM |
-| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10` and `eval12`, `size` and `size2`; for the change check `eval11`, `eval13`, `eval14`, `eval15` and `change_dev`; and the script that writes them |
+| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10` and `eval12`, `size` and `size2`; for the change check `eval11`, `eval13`, `eval14`, `eval15`, `mixed` and `change_dev`; and the script that writes them |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs and scores the evaluation; re-scores saved runs without a GPU |
 | `experiments/stability.py`, `fact_threshold.py` | the earlier experiments |
