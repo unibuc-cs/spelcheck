@@ -98,13 +98,13 @@ Small things that are open:
 
 - **Long documents** (E14). A spec of 100 requirements works: its read answer
   is 16,799 tokens, which the new limit of 24576 holds (about 140
-  requirements; the server's window of 32,768 tokens is the real bound). Three
-  things do not scale yet. The second reader cannot run: a translation prompt
-  with 206 symbols has 4,234 tokens, and its server allows 6,144 for prompt
-  and answer with 4,096 kept for the answer; the answers are about 60 tokens,
-  so a lower answer limit for translations would make room. A gap in the
-  report lists every other event as FALSE, about 70 lines at this size. And
-  the solver stage takes 35 s per model instead of under 1 s.
+  requirements; the server's window of 32,768 tokens is the real bound). Two
+  things do not scale yet. A gap in the report lists every other event as
+  FALSE, about 70 lines at this size. And the solver stage takes 35 s per
+  model instead of under 1 s. The second reader runs on such a spec since
+  T26 (the answer limit of a translation is 1,024 tokens now, not 4,096); on
+  one run it raised 9 ambiguity flags on 100 clear rules, where the main
+  model alone raises 2.
 
 Decided on 2026-11-22: **the samples stay at temperature 0.7** (T17). On
 `eval8/`, 0.3 and 0.5 changed nothing for conflicts, gaps or false alarms;
@@ -1104,7 +1104,9 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       of 36. Held-out `eval15/` three ways (E21): the full run 72 of 72, the
       saved-model way 71 of 72 before and 72 of 72 after. Kept; the cause is
       still there and is a limit. With it: the wording of a finding that
-      depends on a reading (5 of 5 reports right)
+      depends on a reading (5 of 5 reports right), and the second model on
+      the spec of 100 requirements (T26: it runs now, and flags 9 clear
+      rules where the main model flags 2)
 - [x] **Documentation pass 2**: GUIDE.md reviewed point by point and rewritten (a new
       2.4 on gaps and scenarios; the ambiguity check, voted facts and links as steps on
       one real example), then shortened from 1112 to 893 lines; README.md reworded in the

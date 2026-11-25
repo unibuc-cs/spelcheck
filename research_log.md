@@ -2933,6 +2933,46 @@ its table; experiments/examples/topup_reading.
 
 ---
 
+## T26 — The second model on the spec of 100 requirements (2026-11-25)
+
+**Question.** In E14 the second model (step 7) could not run on the spec of
+100 requirements: its server takes 6,144 tokens for prompt and answer, a
+translation prompt with the 206 symbols of that spec has 4,234, and every
+request reserved 4,096 for the answer. With the answer limit of a translation
+at 1,024 tokens (T25), does it run, and what does it report?
+
+**Setup.** The first saved run of each of the four versions of
+`experiments/sets/size2` (E14), so 4 formal models and 400 rules. The second
+model translates every rule 8 times (`--rescore ... --second-base-url`). One
+cluster job with the second model.
+
+**Results.**
+
+- **It runs.** No request failed. 396 of the 400 rules got 7 or 8 answers
+  (the other 4 had been rejected in step 3 and are not asked about). The four
+  models took 9 minutes.
+- **It flags many more rules, as on the small specs.** None of the 100
+  requirements has a planted ambiguity, so every flag is on a rule we wrote
+  to be clear:
+
+  | | Without the second model | With it |
+  |---|---|---|
+  | planted conflicts found (2 versions) | 2 of 2 | 2 of 2 |
+  | ambiguity flags on the clean version (100 rules, 1 run) | 2 | 9 |
+  | ambiguity flags on the other three versions | 10 | 46 |
+
+  That is about 14 flags for 100 rules, against 3. On the small specs the
+  second model also raised about twice as many flags as the main model alone
+  (E9, E12); here it is four times as many, on one run.
+
+**What it means.** The second model can now be used on a long spec. Whether
+it should be is another matter: a report with a dozen questions about clear
+rules is a lot to read. One run of one document, so a first sign.
+
+**Raw data.** experiments/results/T26_size2_second.json and its table.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

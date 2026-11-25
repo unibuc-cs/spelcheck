@@ -431,9 +431,12 @@ Planted ambiguities on the held-out `eval4/` (E9), 9 per kind:
 - **The plain-language wording** was checked by hand only (L9). On a long
   spec it buries a gap: each lists every other event as FALSE, about 70 lines
   at 100 requirements (E14).
-- **The second reader on a long spec** cannot run as it is: with 206 symbols
-  a translation prompt has 4,234 tokens, and its server allows 6,144 for
-  prompt and answer, with 4,096 kept for the answer (E14).
+- **The second reader on a long spec** was run once (T26). It could not run
+  in E14, because every request kept 4,096 tokens for an answer that needs
+  about 200; with 1,024 it fits its server's window. On one run of each
+  version of the spec of 100 requirements it raised 9 ambiguity flags on the
+  clean version, where the main model alone raises 2, and none of the 100
+  rules has a planted ambiguity.
 
 ### 4.5 The limits of the change check (T21, E17, T23, E19, E20, E21)
 

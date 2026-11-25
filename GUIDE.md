@@ -1109,10 +1109,11 @@ To see what a longer document does, we wrote two more, each in four versions
 
 At 100 requirements the read step's answer, which copies every requirement
 and lists every symbol, is about 16,800 tokens. The model is allowed 24,576,
-enough for about 140 requirements; beyond that the read step would fail. And
-the optional second model cannot be used yet on a spec this long: its server
-has too little room for a prompt with some 200 symbols. These are two
-documents, so a first sign, not a measurement.
+enough for about 140 requirements; beyond that the read step would fail. The
+optional second model can be used on a spec this long. Tried once, it asked
+about 9 of the 100 rules of the clean version, none of which we had made
+ambiguous; the main model alone asks about 2. These are two documents, so a
+first sign, not a measurement.
 
 ### 6.3 The goals
 

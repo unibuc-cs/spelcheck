@@ -720,8 +720,10 @@ Some notes on these numbers:
   went as well as the small ones: the planted conflicts were found in 6 of 6
   runs and the planted gap in 3 of 3. The clean version of the long one gave
   one false alarm in 3 runs, and its solver stage takes 35 seconds instead of
-  under one. The optional second model does not fit a spec that long yet
-  (research.md 4.4). Two documents are a first sign, not a measurement.
+  under one. The optional second model, tried once on the long one, flagged
+  9 of the 100 rules of the clean version as ambiguous, where the main model
+  alone flags 2 (research.md 4.4). Two documents are a first sign, not a
+  measurement.
 - The samples are drawn at temperature 0.7. At 0.3 and 0.5, on `eval8/`, the
   conflicts and gaps did not change, and fewer ambiguities of "only" were
   found (T17), so 0.7 stays.

@@ -48,7 +48,8 @@ export VLLM_API_KEY=$(cat "$HOME/speccheck/api_key")
 # --data-parallel-size      one copy per GPU; vLLM spreads requests over them
 # What is left of each GPU's 80 GiB holds the cache of the requests being
 # answered, and it is small (2.3 GiB with the defaults), hence:
-# --max-model-len 6144      our prompts are about 1000 tokens, plus up to 4096 for the answer
+# --max-model-len 6144      a translation prompt is about 1000 tokens for a small spec and about
+#                           4,300 for one of 100 requirements, plus up to 1024 for the answer
 # --kv-cache-dtype fp8      the cache in 8 bits: twice as many tokens fit
 # --dtype bfloat16          needed by the 8-bit cache (the model's config names no type,
 #                           and vLLM would pick float16)
