@@ -780,7 +780,9 @@ It works in four steps:
 then a case may be left open. In a spec for hospital visitors
 (`experiments/examples/visitors_removed`), two scenarios cover a check-in: the
 visitor is on the patient's list, or is not. A change rewrites the requirement
-and drops the second scenario. Three more steps deal with that:
+and drops the second scenario. To ask Z3 about the case that this scenario
+covered, the case must be written with the symbols of the rules that stay,
+and only the model writes formulas. Three more steps deal with that:
 
 1. **Our code keeps the dropped scenario in the merged document**, under a
    label of its own, X1. So the model formalizes it together with the rest,
@@ -798,8 +800,30 @@ and drops the second scenario. Three more steps deal with that:
    > exists because the previous rule that handled this specific scenario was
    > removed.
 
-If a change removes the only rule for an event, nothing is reported. Nobody
-reacts to that event any more, and that was the point of the change.
+The question of step 3 is the gap question of 2.4, asked about the situation
+of X1. Z3 gets a list of formulas and says whether all of them can be true at
+once:
+
+| In words | What Z3 is given | Where our code takes it from |
+|---|---|---|
+| a visitor checks in, and nothing else happens | `visitor_checks_in` is true; `visiting_time_ends` and `visitor_leaves_without_badge` are false | the model has three events: the one X1 reacts to is set to true, the other two to false |
+| the visitor is not on the list | `(and visitor_checks_in (not visitor_on_list))` | the "when" part of X1, as the model translated it in step 1 |
+| no remaining rule applies | `(not (and visitor_checks_in visitor_on_list))`, and the same for R2, R3 and R4 | the "when" part of every rule that stays, negated |
+
+Z3 answers yes and shows one such situation. Our code saves it in
+`findings.json`, with the rule whose removal opened it:
+
+```
+"type": "gap", "event": "visitor_checks_in", "opened_by": ["X1"],
+"when": {"visitor_checks_in": true, "visitor_on_list": false, ...}
+```
+
+Had Z3 answered no, some remaining rule would apply whenever X1 did, and the
+removal would have opened nothing.
+
+If a change removes the only rule for an event, the question is not asked and
+nothing is reported. Nobody reacts to that event any more, and that was the
+point of the change.
 
 **Not starting from zero for every change.** As described so far, the merged
 document is formalized as a whole for every change. That is what gives the
@@ -815,13 +839,61 @@ the whole project. With `--incremental` it goes another way:
    scenario, N1, "administrators are never locked out".
 3. **The model formalizes only that**, and it is shown the symbols of the
    saved model first, with one more instruction: use a listed symbol wherever
-   it fits, and add a new one only for a fact that has none. N1 came out as
-   `(=> is_admin (not account_locked))`: one new symbol, `is_admin`, and the
-   `account_locked` that the lockout rule already uses
-   (`experiments/examples/auth_incremental`).
+   it fits, and add a new one only for a fact that has none.
 4. **Our code puts the two together**: the saved rules, without the removed
    and the reworded ones, plus the new rules. The checks, the selection and
    the wording are the same as before.
+
+For the login example, this is everything the model is sent in step 3
+(`experiments/examples/auth_incremental`). The text of the four scenarios
+that exist is not in it:
+
+```
+Symbols of the system so far:
+- password_submitted: Bool, event - A user has submitted a password for authentication
+- password_correct: Bool - The submitted password matches the stored password for the account
+- access_granted: Bool - The system has granted access to the user
+- access_denied: Bool - The system has denied access to the user
+- failed_attempts_count: Int - The number of consecutive failed login attempts for the account
+- account_locked: Bool - The account is currently in a locked state
+
+Document:
+# auth Specification
+### Requirement: Administrator Access
+Administrators MUST always be able to reach the system.
+#### Scenario N1: Administrators are never locked out
+- **WHEN** the account belongs to an administrator
+- **THEN** the system does not lock the account
+```
+
+The six symbols are those of the saved model: the model chose these names
+itself when the specs were formalized. The document is `new.md`, which our
+code wrote in step 2. The model answers with the rule, and with the symbols it
+adds, here one:
+
+```
+rules:    N1  "WHEN the account belongs to an administrator THEN the system does not lock the account"
+symbols:  is_admin: Bool - The account belongs to an administrator
+```
+
+Then it translates N1 eight times, as every rule (3.1). All eight said
+`(=> is_admin (not account_locked))`: the new `is_admin`, and the
+`account_locked` that the lockout rule R3 already uses. Because the two rules
+share that symbol, the two questions of 2.3 find the conflict, for the pair R3
+and N1:
+
+| | What Z3 is given | Where our code takes it from | Z3 answers |
+|---|---|---|---|
+| question 1 | `(= failed_attempts_count 5)` and `is_admin` | the "when" part of R3, from the saved model, and that of N1, just translated | yes: 5 failed attempts on an administrator's account |
+| question 2 | the same, and all five rules | the four saved rules and N1 | no: `account_locked` would have to be true and false |
+
+```
+"type": "conflict", "rules": ["R3", "N1"], "about_change": true,
+"when": {"failed_attempts_count": 5, "is_admin": true}
+```
+
+N1 is a rule of the change, so the finding is about the change and goes into
+the report.
 
 Run on the same 36 changes, this way asked the model about a seventh of what
 the full way asks, and it found 50 of the 54 conflicts that the full way

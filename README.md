@@ -578,7 +578,9 @@ What to know before using `--incremental`:
 
 A saved run of the option is in `experiments/examples/auth_incremental`.
 
-The steps are in [GUIDE.md, part 5](GUIDE.md#5-checking-a-change-against-the-specs-that-exist).
+The steps are in [GUIDE.md, part 5](GUIDE.md#5-checking-a-change-against-the-specs-that-exist),
+with the message to the model and the questions to Z3 written out for both
+examples.
 
 ## Run it
 
