@@ -1,4 +1,4 @@
-"""make_eval.py: writes the evaluation sets eval/ to eval15/, size/ and size2/. No LLM, no GPU.
+"""make_eval.py: writes the evaluation sets eval/ to eval15/, size/, size2/ and mixed/. No LLM, no GPU.
 
     python -m experiments.make_eval eval15     (only the sets named; all if none)
 
@@ -173,6 +173,27 @@ change that only removes gives the model nothing to read. The two new ones:
                that event demands.
     status     the same with a yes/no property ("a game is a practice game",
                next to "a player starts a game").
+
+mixed/ (written 2026-11-25, after E21; no design change goes with it) is one
+larger OpenSpec project, a city marathon: four spec files, 28 requirements,
+39 scenarios, and ONE change that does everything the sets above do one at a
+time (PROJECTS_MIXED says which part plants what):
+
+    it adds       a requirement with both of its cases (nothing to report), one
+                  for the trigger of an existing scenario with the opposite
+                  outcome in other words (conflict), one for a state that
+                  forbids what a scenario in another spec file demands
+                  (conflict), and one with one of two cases (gap)
+    it rewrites   a requirement so that it clashes with an existing scenario
+                  (conflict), one with a harmless addition to one of its two
+                  scenarios (nothing), and one that loses a scenario (gap)
+    it removes    the requirement that held one of two cases (gap), and the
+                  only requirement for an event (nothing)
+    it renames    a requirement (nothing)
+
+The specs also have one conflict from before the change ("old"), and a fourth
+spec file that the change does not touch. Expected about the change: 3
+conflicts and 3 gaps.
 """
 
 import json
@@ -3011,6 +3032,141 @@ PROJECTS15 = {
 }
 
 
+def _marathon() -> dict:
+    """The project of mixed/: a city marathon, and one change that does several things at once."""
+    places = ("Registration with places left", "The system SHALL register a runner while places are left.", [
+        ("Places left", "WHEN a runner registers AND places are left THEN the system confirms the registration and assigns a bib number")])
+    full = ("Registration when full", "The system SHALL keep a waiting list when the race is full.", [
+        ("No places left", "WHEN a runner registers AND no places are left THEN the system puts the runner on the waiting list")])
+    payment = ("Payment", "The system SHALL take the entry fee.", [
+        ("Payment accepted", "WHEN a runner pays the entry fee AND the payment is accepted THEN the system sends the runner a receipt"),
+        ("Payment not accepted", "WHEN a runner pays the entry fee AND the payment is not accepted THEN the system asks for another payment method")])
+    withdrawal = ("Withdrawal", "The system SHALL let runners withdraw.", [
+        ("Runner withdraws", "WHEN a runner withdraws from the race THEN the system refunds the entry fee")])
+    transfers = ("Transfers", "The system SHALL let a runner pass the registration on.", [
+        ("Registration transferred", "WHEN a runner transfers the registration to another runner THEN the system sends the new runner a confirmation")])
+    bibs = ("Bib collection", "The system SHALL hand out bibs before the race.", [
+        ("Cleared to start", "WHEN a runner collects the bib AND the runner is cleared to start THEN the system hands out the bib and the timing chip"),
+        ("Not cleared to start", "WHEN a runner collects the bib AND the runner is not cleared to start THEN the system sends the runner to the medical desk")])
+    waves = ("Start waves", "The system SHALL start the runners in waves.", [
+        ("Runner in the wave", "WHEN a start wave is called AND the runner belongs to the wave THEN the system opens the start gate for the runner"),
+        ("Runner in another wave", "WHEN a start wave is called AND the runner does not belong to the wave THEN the system shows the runner the right wave")])
+    heat_text = "WHEN a heat warning is in force THEN the system shows the warning at the start area"
+    heat = ("Heat warning", "The system SHALL warn the runners of heat.", [("Warning in force", heat_text)])
+    finish = ("Finish times", "The system SHALL publish the times of the runners.", [
+        ("Runner finishes", "WHEN a runner crosses the finish line THEN the system publishes the finish time of the runner")])
+    protests = ("Protests", "The system SHALL hold back results that are under protest.", [
+        ("Protest open", "WHEN a protest against a result is open THEN the system does not publish any finish time")])
+    final = "WHEN a runner asks for a certificate AND the result of the runner is final THEN the system sends the certificate by email"
+    not_final = ("Result not final", "WHEN a runner asks for a certificate AND the result of the runner is not final THEN the system tells the runner the date of the final results")
+    certificates = ("Certificates", "The system SHALL send certificates to runners.", [("Result final", final), not_final])
+
+    # What the change adds.
+    charity = ("Charity places", "The system SHALL offer places that are sold through a charity.", [
+        ("Charity place free", "WHEN a runner asks for a charity place AND the charity has places left THEN the system reserves a charity place for the runner"),
+        ("Charity full", "WHEN a runner asks for a charity place AND the charity has no places left THEN the system proposes another charity to the runner")])
+    no_refund = ("No refunds", "The system SHALL keep the fees of runners who withdraw.", [
+        ("Fee kept", "WHEN a runner withdraws from the race THEN the system keeps the entry fee")])
+    unpaid = ("Unpaid fees", "The system SHALL hold back the bibs of runners who have not paid.", [
+        ("Fee unpaid", "WHEN the entry fee of a runner is unpaid THEN the system does not hand out any bib")])
+    pacers = ("Pacers", "The system SHALL give runners a pacer for their target time.", [
+        ("Pacer free", "WHEN a runner asks for a pacer AND a pacer for the target time is free THEN the system assigns the pacer to the runner")])
+
+    specs = {
+        "registration": ("Runners register for a city marathon and pay the entry fee.", [
+            places, full,
+            ("Medical certificate", "The system SHALL check the medical certificate of a runner.", [
+                ("Certificate valid", "WHEN a runner uploads a medical certificate AND the certificate is valid THEN the system marks the runner as cleared to start"),
+                ("Certificate not valid", "WHEN a runner uploads a medical certificate AND the certificate is not valid THEN the system asks the runner for a new certificate")]),
+            payment, withdrawal,
+            ("Payment deadline", "The system SHALL act on runners who do not pay in time.", [
+                ("Second missed deadline", "WHEN a runner misses the payment deadline for the second time THEN the system cancels the registration of the runner")]),
+            transfers,
+            ("Club discount", "The system SHALL give a discount to the members of running clubs.", [
+                ("Club member", "WHEN a runner is a member of a running club THEN the system applies the club discount to the entry fee")])]),
+        "race-day": ("The start, the course and the finish on the day of the race.", [
+            bibs, waves,
+            ("Checkpoints", "The system SHALL time the runners on the course.", [
+                ("Checkpoint passed", "WHEN a runner passes a checkpoint THEN the system records the split time of the runner")]),
+            ("Cut-off", "The system SHALL close the checkpoints in time.", [
+                ("Cut-off time passed", "WHEN the cut-off time of a checkpoint has passed THEN the system closes the checkpoint")]),
+            heat,
+            ("Drop-outs", "The system SHALL look after runners who drop out.", [
+                ("Runner injured", "WHEN a runner drops out AND the runner is injured THEN the system calls the medical team"),
+                ("Runner not injured", "WHEN a runner drops out AND the runner is not injured THEN the system sends the sweep bus")]),
+            ("Lost chips", "The system SHALL act on lost timing chips.", [
+                ("Second lost chip", "WHEN a runner loses a timing chip for the second time THEN the system charges the runner for the chip")])]),
+        "results": ("Times, rankings and certificates after the race.", [
+            finish, protests, certificates,
+            ("Age groups", "The system SHALL rank the runners.", [
+                ("Results final", "WHEN the results of the race are final THEN the system ranks the runners in their age groups")]),
+            ("Disqualification", "The system SHALL act on the warnings of the referees.", [
+                ("Third warning", "WHEN a runner receives a warning from a referee for the third time THEN the system disqualifies the runner")]),
+            ("Photos", "The system SHALL give runners their finish photo.", [
+                ("Photo available", "WHEN a runner asks for the finish photo AND the photo is available THEN the system sends the runner a link to the photo"),
+                ("Photo not available", "WHEN a runner asks for the finish photo AND the photo is not available THEN the system tells the runner when the photos will be ready")]),
+            ("Records", "The system SHALL announce records.", [
+                ("Course record", "WHEN the finish time of a runner is below the course record THEN the system announces a new course record")]),
+            ("Corrections", "The system SHALL tell runners when their time is corrected.", [
+                ("Time corrected", "WHEN a referee corrects a finish time THEN the system informs the runner of the new time")])]),
+        "volunteers": ("Volunteers sign up for shifts and work at the race.", [
+            ("Sign-up", "The system SHALL assign volunteers to shifts.", [
+                ("Shift has places", "WHEN a volunteer signs up for a shift AND the shift has places left THEN the system assigns the volunteer to the shift"),
+                ("Shift full", "WHEN a volunteer signs up for a shift AND the shift has no places left THEN the system offers the volunteer another shift")]),
+            ("Check-in", "The system SHALL check volunteers in.", [
+                ("Shift today", "WHEN a volunteer checks in AND the volunteer has a shift on that day THEN the system prints the volunteer badge"),
+                ("No shift today", "WHEN a volunteer checks in AND the volunteer has no shift on that day THEN the system shows the volunteer the date of the next shift")]),
+            ("No-shows", "The system SHALL act on volunteers who do not turn up.", [
+                ("Second missed shift", "WHEN a volunteer misses a shift for the second time THEN the system removes the volunteer from the remaining shifts")]),
+            ("Meals", "The system SHALL feed the volunteers.", [
+                ("Shift finished", "WHEN a volunteer finishes a shift THEN the system issues a meal voucher")]),
+            ("Briefing", "The system SHALL guide volunteers to their briefing.", [
+                ("Briefing started", "WHEN the briefing of a shift has started THEN the system shows the briefing room on the volunteer screens")]),
+            ("T-shirts", "The system SHALL give every volunteer a T-shirt.", [
+                ("Size in stock", "WHEN a volunteer asks for a T-shirt AND the size is in stock THEN the system hands out the T-shirt"),
+                ("Size not in stock", "WHEN a volunteer asks for a T-shirt AND the size is not in stock THEN the system notes the size for the next delivery")])]),
+    }
+
+    def name(capability: str, requirement: tuple, scenario: int = 0) -> str:
+        return f"{capability}/{requirement[0]}/{requirement[2][scenario][0]}"
+
+    delta = {
+        "registration": {
+            "ADDED": [charity,      # both cases: nothing to report
+                      no_refund,    # conflict with `withdrawal`: the same trigger, "refunds" / "keeps"
+                      unpaid],      # conflict with the first scenario of `bibs`, in the other spec file
+            "MODIFIED": [(payment[0], payment[1], payment[2][:1])],   # loses "Payment not accepted": a gap
+            "REMOVED": [(full[0], "The waiting list was never used.", "None."),            # a gap: registers, no places left
+                        (transfers[0], "Registrations are personal from now on.", "None.")],  # the only rule for its event: nothing
+        },
+        "race-day": {
+            "ADDED": [pacers],      # one of two cases: a gap
+            # conflict with the first scenario of `waves`
+            "MODIFIED": [(heat[0], heat[1], [("Warning in force", heat_text + " and does not open any start gate")])],
+        },
+        "results": {
+            # a harmless addition to one scenario, the other word for word the same: nothing
+            "MODIFIED": [(certificates[0], certificates[1], [("Result final", final + " and adds the split times"), not_final])],
+            "RENAMED": [("Corrections", "Time corrections")],   # nothing
+        },
+    }
+    expected = {
+        "conflicts": [[name("registration", withdrawal), name("registration", no_refund)],
+                      [name("race-day", bibs), name("registration", unpaid)],
+                      [name("race-day", heat), name("race-day", waves)]],
+        # A planted gap is named by a scenario that stays and reacts to the event of the gap.
+        "gaps": [name("race-day", pacers), name("registration", payment), name("registration", places)],
+        "covered": [name("registration", charity, 0), name("registration", charity, 1)],
+    }
+    return {"specs": specs, "old": [[name("results", finish), name("results", protests)]],
+            "changes": {"mixed": {"name": "rules-for-next-season",
+                                  "why": "The organisers went through the rules after this year's race.",
+                                  "delta": delta, "expected": expected}}}
+
+
+PROJECTS_MIXED = {"marathon": _marathon()}
+
+
 def as_projects(specs: dict) -> dict:
     """Old OpenSpec-format specs as projects with a change: development data for the change check.
 
@@ -3065,6 +3221,7 @@ def as_projects(specs: dict) -> dict:
 # Folder -> the OpenSpec projects written into it, each with one change.
 # change_dev is made from eval9 and eval10, which have been read (E15, E16).
 PROJECT_SETS = {"eval11": PROJECTS11, "eval13": PROJECTS13, "eval14": PROJECTS14, "eval15": PROJECTS15,
+                "mixed": PROJECTS_MIXED,
                 "change_dev": as_projects({**SPECS9, **SPECS10})}
 
 
@@ -3136,7 +3293,7 @@ def write_projects(root: Path, projects: dict) -> int:
             change_folder = folder / "openspec" / "changes" / change["name"]
             _write(change_folder / "proposal.md",
                    ["## Why", "", change["why"], "", "## What Changes", ""]
-                   + [f"- `{capability}`: {', '.join(f'{kind} {requirement[0]}' for kind in ('ADDED', 'MODIFIED', 'REMOVED') for requirement in parts.get(kind, []))}"
+                   + [f"- `{capability}`: {', '.join(f'{kind} {requirement[0]}' for kind in ('ADDED', 'MODIFIED', 'REMOVED', 'RENAMED') for requirement in parts.get(kind, []))}"
                       for capability, parts in delta.items()])
             for capability, parts in delta.items():
                 lines = ["## Purpose", "", parts["purpose"], ""] if "purpose" in parts else []
@@ -3145,6 +3302,10 @@ def write_projects(root: Path, projects: dict) -> int:
                         lines += [f"## {kind} Requirements", ""]
                         for requirement in parts[kind]:
                             lines += requirement_lines(requirement)
+                if "RENAMED" in parts:
+                    lines += ["## RENAMED Requirements", ""]
+                    for old, new in parts["RENAMED"]:
+                        lines += [f"- FROM: `### Requirement: {old}`", f"- TO: `### Requirement: {new}`", ""]
                 if "REMOVED" in parts:
                     lines += ["## REMOVED Requirements", ""]
                     for name, reason, migration in parts["REMOVED"]:
