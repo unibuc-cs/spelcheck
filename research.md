@@ -194,6 +194,22 @@ the old conflict on it. A run costs 346 requests to the LLM, and 83 on a
 saved model. The tool's own run showed one more conflict, from a wrong link
 that the report quotes. It is one project.
 
+**On a real project it does much worse** (E23, a first batch). The OpenSpec
+tool's own repository has 44 spec files and 108 archived changes. Each change
+was checked against the spec files it touches, as they were before it; 16
+changes, one run each, read by hand:
+
+| | |
+|---|---|
+| runs that stopped | 5 of 16 (3 for a parser bug, now fixed; 2 for a symbol name that is not a word) |
+| rules without an agreed translation | 147 of 366, 40% (our sets: about 3%) |
+| conflicts about the change | 29, in 3 of 11 changes |
+| proven from the rules alone | 3, and they look real: nothing says which of two shell-detection rules wins |
+| resting on a question about two outcomes | 26; the 4 that were read set a general rule against its own special case |
+| gaps about the change | 10, not judged |
+
+The limits behind this are in 4.8.
+
 ---
 
 ## 3. What makes it work
@@ -516,7 +532,8 @@ requirements have several hundred.
 ### 4.7 The evaluation is small
 
 Eleven sets with 66 base specs (297 versions), two longer specs and twenty-five OpenSpec
-projects with 139 changes, all written by us; 63 to 90 runs per experiment; one main model. One leak is known: an
+projects with 139 changes, all written by us (and a first batch of 16 changes
+of a real project, E23); 63 to 90 runs per experiment; one main model. One leak is known: an
 example in the read prompt came from the domain of an `eval3/` spec (D4). And
 one clean spec, `shelter_clean` in `eval9/`, has a conflict we did not plan
 (E15).
@@ -527,6 +544,33 @@ found in all 3 of their runs, 7 in none, and only 8 in some (T15, E13, E15,
 E16).
 
 ---
+
+### 4.8 What a real project shows (E23)
+
+A first batch of 16 changes of one real project, so a first sign.
+
+- **Real scenarios are longer than ours.** "THEN parse the markdown change
+  file AND extract change structure and deltas AND output valid JSON to
+  stdout": several outcomes, commands in quotes, file names. Two rules in
+  five did not get an agreed translation (79 ambiguous, 68 rejected, of
+  366). A rejected rule takes no part in the checks.
+- **Real specs put a general rule next to its special cases**, and the
+  questions about two outcomes (3.13) turn each such pair into a conflict:
+  26 of the 29 conflicts about a change. This is the weakness of 4.6, and
+  here it is most of the output.
+- **Names that are not words stop a run.** A symbol or a value such as
+  ".claude" or "add-auth" is refused, and the read step made one three times
+  in a row for 2 of 16 changes.
+- **Real spec files are not always what our parser expects.** A code block
+  that shows the format was read as a scenario (fixed). Five of 98 changes
+  name a requirement that the spec does not have, or already has, and are
+  refused. For 7 of 24 changes archived alone, our merge and the project's
+  own result differ.
+- **A whole project does not fit.** 44 spec files are far beyond one read
+  answer; a change was checked against the files it touches only, so a
+  conflict with a rule in another file cannot be seen.
+- **A gap is hard to read at this size**: it lists every other event as
+  FALSE, 20 to 40 lines.
 
 ## 5. What we tried and dropped
 
@@ -574,6 +618,7 @@ the prompts, so it can be scored again without a GPU.
 | E20 | `eval14/`, held-out: 36 changes on 6 OpenSpec projects, each checked the full way and on a saved model of the specs (T24) | 108 + 108 runs | conflicts 54 of 54 against 50 of 54, gaps 36 of 36 both; a change costs 68 requests against 9 (2.4) |
 | E21 | `eval15/`, held-out: 36 changes on 6 OpenSpec projects, checked the full way, and on a saved model with the read prompt before and after T25 | 3 x 108 runs | conflicts 72 of 72 (full), 71 and 72 of 72 (saved model, before and after); gaps 18 of 18 in all three; a change costs 68 requests against 11 (2.4) |
 | E22 | `mixed/`: one project of 39 scenarios, one change that adds, rewrites, removes and renames at once; the full way and on a saved model | 3 + 3 runs | 9 of 9 planted conflicts and 9 of 9 planted gaps both ways, nothing else about the change (2.4) |
+| E23 | a real OpenSpec project (the OpenSpec tool's own repository): 16 of its archived changes, each against the spec files it touches | 16 runs | 5 runs stopped; 40% of the rules without an agreed translation; 29 conflicts about a change, 3 of them from the rules alone (2.4, 4.8) |
 
 The trials (T1 to T26) were run on development data between these
 experiments. Among the last: T17 compared temperatures 0.3, 0.5 and 0.7 (3.1);

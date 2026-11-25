@@ -3050,6 +3050,99 @@ reports).
 
 ---
 
+## E23 — A real OpenSpec project, first batch (2026-11-25)
+
+**Question.** Every number so far is on specs we wrote. What does the change
+check do on a real project?
+
+**The project.** The OpenSpec tool keeps its own specs in its own format
+(github.com/Fission-AI/OpenSpec, MIT licence, cloned at f1cd852 without
+checking its files out; only its Markdown specs were read). It has 44 spec
+files with 395 KB of text, and 108 archived changes from 2025-08 to 2026-10,
+98 of them with spec deltas.
+
+**Setup** (experiments/real/). The project is far too large to formalize as
+one document, so each change is checked against the spec files it touches,
+as they were in the commit before the change was archived:
+
+1. `history.py` finds, for each archived change, the commit that archived it,
+   and writes the change next to the touched spec files of the commit before.
+2. `merge_check.py` applies each change with our merge, no LLM.
+3. `batch.py` takes the pool (our merge accepts the change; at least 5
+   scenarios before it; at least one scenario added or reworded; at most 60
+   scenarios after), 48 changes, and of those every third in date order: 16.
+4. The 16 were run the full way, once each (21 minutes). There is no planted
+   answer; the findings were read by hand.
+
+**What the merge does on real files** (no LLM).
+
+- 93 of the 98 changes merge. 5 are refused: a MODIFIED or ADDED section
+  names a requirement that the spec does not have, or already has.
+- 39 commits archive the 108 changes, up to 23 at once. For the 24 changes
+  that were archived alone and can be compared, our merge gives the same
+  scenarios as the project's own result in 17. Two of the other 7 were
+  looked at: in one the final spec does not match the archived delta (it was
+  edited by hand), in the other our parser puts scenarios under the wrong
+  requirement in a file with an unusual layout.
+
+**What the run did.**
+
+| | |
+|---|---|
+| runs that stopped | 5 of 16 |
+| rules in the 11 runs that finished | 366 |
+| of them accepted / ambiguous / rejected | 219 / 79 / 68 |
+| rules of the changes: accepted / ambiguous / rejected | 43 / 17 / 25 |
+| conflicts about the change | 29, in 3 of the 11 changes |
+| of them proven from the rules alone | 3 |
+| of them resting on a fact from a question about two outcomes | 26 |
+| gaps about the change | 10, in 6 changes |
+| changes with an ambiguity about them | 7 of 11 |
+| changes with nothing reported about them | 3 of 11 |
+| conflicts among the existing rules alone, not shown | 39 |
+| requests to the LLM for a change | 140 (188,311 tokens read, 94,283 written) |
+
+- **Five runs stopped.** Three stopped on a missing label. The spec shows its
+  own format in a code block ("#### Scenario: Short name", "- **WHEN** ..."),
+  our parser took that header for a scenario, the model rightly left it out,
+  and the run refuses a missing label. This is fixed (`change._marked`:
+  headers in a code block are text). Two stopped because the model made a
+  symbol or a value with a name that is not a word (".claude", "add-auth"),
+  three times in a row.
+- **40% of the rules did not get an agreed translation**, against about 3% on
+  our sets (4 of 126 new rules in E21). A real scenario has several outcomes
+  ("THEN ... AND ... AND ..."), quoted commands and file names, and the eight
+  translations differ in what they keep. Not looked into further.
+- **Nearly all conflicts come from the questions about two outcomes.** A real
+  spec has a general rule and its special cases side by side: "WHEN using the
+  legacy list command THEN continue to work as before ..." and "WHEN no
+  active changes exist THEN display: 'No active changes found.'". Asked
+  whether both outcomes can hold, the model says no ("a list cannot be
+  displayed if no active changes are found"), and that fact makes a conflict
+  of every such pair: 12 in one change, 14 in another. Four of the 26 were
+  read; all four are of this kind. Each says "if the assumed facts hold" and
+  quotes the fact.
+- **The three conflicts from the rules alone look real.** One requirement
+  says "WHEN `$SHELL` contains `bash` in the path THEN detect shell as
+  `bash`", the next "WHEN `$PSModulePath` environment variable is present
+  THEN detect shell as `powershell`". Nothing says which wins when both hold
+  (PowerShell started from a bash login). The third pair, bash against fish,
+  is the same form and far-fetched.
+- **The gaps were not judged.** Each lists every other event as FALSE, 20 to
+  40 lines here, which makes them hard to read (the limit of E14).
+
+**What it means.** On a real project the check, as it is, does not hold up:
+a third of the runs stop, two rules in five have no agreed translation, and
+most of what is reported is the known weakness of one step (research.md
+4.6), much stronger here than on our sets. One finding is the kind the tool
+is for. This is 16 changes of one project, read once.
+
+**Raw data.** experiments/results/E23_real_batch1.md (the table). The .json
+with every formal model holds the text of the project's specs and is not in
+the repository yet. The scripts are in experiments/real/.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

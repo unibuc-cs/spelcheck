@@ -58,9 +58,13 @@ this order:
    more sets, specs we did not write, and results counted per planted
    conflict (the runs of one spec mostly agree, so more specs help more than
    more runs). For the change check: a real OpenSpec project with its
-   history of changes (started: the OpenSpec tool's own repository, each
-   archived change against the spec files it touches). A larger invented
-   project with a change that does everything at once is done (step 36).
+   history of changes. A first batch is done (step 37): 16 changes of the
+   OpenSpec tool's own repository, each against the spec files it touches.
+   It went badly: 5 runs stopped, 40% of the rules had no agreed
+   translation, and 26 of 29 conflicts came from the questions about two
+   outcomes (research.md 4.8). 32 changes of the pool are left to run. A
+   larger invented project with a change that does everything at once is
+   done (step 36).
    All fifteen sets have been read (`eval15/` in E21), so
    a new design needs `eval16/`, written first.
 2. **The change check, further** (G2). The gap that a removal opens is done
@@ -1115,6 +1119,13 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       and one change that adds, rewrites, removes and renames (no design
       change). E22: 9 of 9 planted conflicts and 9 of 9 planted gaps in 3
       runs, both ways, and nothing else about the change
+- [ ] **Step 37 — a real OpenSpec project**: the OpenSpec tool's own
+      repository, each archived change against the spec files it touches
+      (`experiments/real/`). First batch, 16 of a pool of 48 changes (E23): 5
+      runs stopped, 147 of 366 rules without an agreed translation, 29
+      conflicts about a change of which 3 from the rules alone (they look
+      real). The parser now skips headers in code blocks. Open: the other 32
+      changes, why the translations disagree, names that are not words
 - [x] **Documentation pass 2**: GUIDE.md reviewed point by point and rewritten (a new
       2.4 on gaps and scenarios; the ambiguity check, voted facts and links as steps on
       one real example), then shortened from 1112 to 893 lines; README.md reworded in the

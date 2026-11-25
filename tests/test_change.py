@@ -351,3 +351,29 @@ def test_the_same_gap_without_a_removed_rule_is_nobodys():
     gap = next(f for f in analyze(model) if f["type"] == "gap" and f.get("event") == "visitor_checks_in")
     assert "opened_by" not in gap
     assert not about_change(gap, [model], [set()])
+
+
+def test_headers_in_a_code_block_are_text(tmp_path: Path):
+    """A spec that shows its own format in a code block does not get a requirement or a scenario from it."""
+    change = project(tmp_path, {"shop": """## ADDED Requirements
+
+### Requirement: Format
+
+The system SHALL accept scenarios written like this:
+
+```
+### Requirement: Example
+#### Scenario: Short name
+- **WHEN** ...
+- **THEN** ...
+```
+
+#### Scenario: Well-formed file
+
+- **WHEN** a file follows the format
+- **THEN** the system accepts the file
+"""})
+    merged = merge(change)
+    added = [(s["requirement"], s["scenario"]) for s in merged.scenarios.values() if s["status"] == "added"]
+    assert added == [("Format", "Well-formed file")]
+    assert "#### Scenario: Short name" in merged.text      # still there, as text

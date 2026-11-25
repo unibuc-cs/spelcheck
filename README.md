@@ -72,7 +72,11 @@ Where the project stands:
   change, the option `--incremental`, is off by default: it costs a sixth to a
   seventh. On one test set it found 50 conflicts where the full way found 54,
   on the next one all 72
-  ([The two ways to check a change](#the-two-ways-to-check-a-change)).
+  ([The two ways to check a change](#the-two-ways-to-check-a-change));
+- all of that is on specs we wrote. On a first batch of 16 changes of a real
+  project it did much worse: 5 runs stopped, 2 rules in 5 got no agreed
+  translation, and 26 of the 29 conflicts it reported look like artefacts.
+  The other 3 look real ([How reliable is it](#how-reliable-is-it)).
 
 | Read next | For |
 |---|---|
@@ -770,6 +774,28 @@ Some notes on these numbers:
   change (346 requests to the LLM for a run, 83 with `--incremental`). The
   report of one run is in `experiments/examples/marathon_mixed`; that run
   shows one conflict more, from a wrong link that the report quotes.
+- A real project (E23, a first batch). The OpenSpec tool keeps its own specs
+  in this format: 44 spec files and 108 archived changes. That is too large
+  to check as one document, so each change was checked against the spec
+  files it touches, as they were before it. Of 16 changes, run once:
+  - 5 runs stopped: 3 because our parser read the example in a code block as
+    a scenario (fixed since), 2 because the LLM made a symbol with a name
+    that is not a word (".claude");
+  - 147 of the 366 rules got no agreed translation (79 ambiguous, 68
+    rejected). On our sets that is about 3%. Real scenarios have several
+    outcomes, quoted commands and file names;
+  - 29 conflicts were reported about a change, in 3 of the 11 changes. 26 of
+    them rest on a question about two outcomes, and the 4 we read set a
+    general rule against its own special case ("the legacy list command
+    works as before" against "when no active changes exist, display 'No
+    active changes found.'");
+  - the other 3 are proven from the rules alone, and they look real: "WHEN
+    `$SHELL` contains `bash` ... detect shell as `bash`" and "WHEN
+    `$PSModulePath` ... is present ... detect shell as `powershell`" can both
+    apply, and nothing says which wins.
+
+  So on a real project the tool is not usable as it is. The scripts are in
+  `experiments/real/`.
 - The numbers are small: the specs were written by us, and there is one main
   model. The details are in [research.md](research.md).
 
@@ -787,6 +813,7 @@ Some notes on these numbers:
 | Gaps depend on the symbols, and on the events the LLM marks | "free" and "taken" as two symbols give a false gap, and it is rarely marked doubtful. The gap in which no event happens, which almost every spec has, is marked as such and is rarely something to fix |
 | One snapshot, no time | "then", "after" and "until" are not modelled |
 | A reworded scenario is the change's, whatever its new words are | if its old words gave the same finding, the finding is still shown as the change's |
+| Real specs are harder than the ones we wrote | on 16 changes of a real project, 2 rules in 5 got no agreed translation, 5 runs stopped, and most conflicts came from the questions about two outcomes, which report a general rule against its own special case. A whole real project is also too large to check at once: a change is checked against the spec files it touches |
 | The cheaper way to check a change reads a new rule with little around it | by default the specs are formalized again for each change, so that old and new rules share their symbols. `--incremental` avoids that. Shown only the saved symbols, the LLM sometimes ties a new rule to a saved event that the rule does not name. That cost 4 of 54 planted conflicts on `eval14/`, and none of 72 on `eval15/`, where one such rule was ambiguous in 3 of 3 runs. Either way, a project is bounded by the read step's room, about 140 scenarios |
 
 ## Optional: an LLM review of the text (off by default)
@@ -810,9 +837,10 @@ research.md, section 5.
 | `speccheck/change.py` | for `--change`: applies an OpenSpec change to the specs, labels the scenarios, sets apart what the change removes, selects the findings about the change |
 | `speccheck/refine.py` | optional LLM review, off by default |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the vLLM servers on the cluster: the main model, the second model |
-| `tests/` | 70 tests of everything that needs no LLM |
+| `tests/` | 71 tests of everything that needs no LLM |
 | `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10` and `eval12`, `size` and `size2`; for the change check `eval11`, `eval13`, `eval14`, `eval15`, `mixed` and `change_dev`; and the script that writes them |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs and scores the evaluation; re-scores saved runs without a GPU |
+| `experiments/real/` | the trial on a real OpenSpec project: each archived change next to the specs before it, from the git history |
 | `experiments/stability.py`, `fact_threshold.py` | the earlier experiments |
 | `experiments/examples/` | saved runs referred to above and in research_log.md |

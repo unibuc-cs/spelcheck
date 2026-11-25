@@ -1104,6 +1104,21 @@ each plant a gap, and the rest must give nothing. In 3 runs each way, the tool
 found the 3 conflicts and the 3 gaps every time and reported nothing else
 about the change. The report is in `experiments/examples/marathon_mixed`.
 
+**A real project.** Everything above is on specs we wrote. As a first look at
+real ones we took the OpenSpec tool's own repository, which has 44 spec files
+and 108 archived changes, and checked 16 of those changes, each against the
+spec files it touches. It went much worse than on our sets:
+
+| | On 16 real changes |
+|---|---|
+| runs that stopped | 5 (3 for a bug in our parser, now fixed) |
+| rules without an agreed translation | 2 in 5 (on our sets: about 1 in 30) |
+| conflicts reported about a change | 29, in 3 changes |
+| of them proven from the rules alone | 3. They look real: two rules for detecting the shell can both apply, and nothing says which wins |
+| of them resting on a question about two outcomes (3.2) | 26. The 4 we read set a general rule against its own special case |
+
+So the tool is not ready for a real project as it is (6.4).
+
 **Longer specs.** All the specs counted above have at most six requirements.
 To see what a longer document does, we wrote two more, each in four versions
 (clean, direct, overlap, gap) and run three times:
@@ -1145,6 +1160,7 @@ The project has five goals. This is where each one stands:
 | two words for one yes/no question give a false gap | "the slot is free" and "the slot is taken" as two symbols: in 3 to 5 of 18 clean runs (6.2) |
 | a fact or a link can be wrong, even with a majority behind it | which is why the report quotes every one that a conflict depends on |
 | there is no time | "then", "after" and "until" are not modelled: the logic is one snapshot |
+| real specs are harder than the ones we wrote | their scenarios have several outcomes, quoted commands and file names, and 2 rules in 5 got no agreed translation. They put a general rule next to its special cases, and the questions about two outcomes then report a conflict for each such pair. A whole project is too large to check at once (6.2) |
 | the cheaper way to check a change reads a new rule with little around it | shown only the saved symbols, the model sometimes ties a new rule to a saved event that the rule does not name. That cost 4 of 54 planted conflicts on `eval14`. On `eval15` it cost none, but one such rule was ambiguous in 3 of 3 runs (6.2). Either way, a project can have about 140 scenarios at most |
 | the evaluation is small | the specs were written by us, and there is one main model |
 
@@ -1279,7 +1295,7 @@ The folders:
 speccheck/          the tool (the 8 files above; refine.py is the review that is switched off)
 specs/              3 small specs the prompts were developed on, with their saved output,
                     and auth_change, the example of part 5
-tests/              70 tests that need no LLM
+tests/              71 tests that need no LLM
 experiments/
   sets/             the 11 evaluation sets, eval to eval10 and eval12 (297 spec versions), two long specs,
                     and for the change check eval11, eval13, eval14, eval15, mixed (one larger project)

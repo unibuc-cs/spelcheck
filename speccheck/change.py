@@ -225,11 +225,34 @@ def _document(specs: dict, name: str, on_base: bool) -> Merged:
                   removed, [body for body in removed_text if body])
 
 
+def _marked(lines: list[str]) -> list[tuple[str, bool]]:
+    """Each line with a mark: is it part of a fenced code block (``` or ~~~)?
+
+    A spec may show its own format as an example:
+
+        ```
+        #### Scenario: Short name
+        - **WHEN** ...
+        ```
+
+    The headers in such a block are text. Read as headers they give a scenario
+    that says nothing, which the LLM rightly leaves out, and the run then stops
+    for a missing label (3 of 16 changes of a real project, E23).
+    """
+    marked, inside = [], False
+    for line in lines:
+        fence = line.lstrip().startswith(("```", "~~~"))
+        marked.append((line, inside or fence))
+        if fence:
+            inside = not inside
+    return marked
+
+
 def _parsed(lines: list[str], status: str) -> _Requirement:
     """The lines below a requirement's header, split into its sentence and its scenarios."""
     sentence, scenarios = [], []
-    for line in lines:
-        header = SCENARIO.match(line)
+    for line, code in _marked(lines):
+        header = None if code else SCENARIO.match(line)
         if header:
             scenarios.append((header.group(1), [], status, None))
         elif scenarios:
@@ -272,11 +295,11 @@ def _requirements(lines: list[str]) -> tuple[list[str], dict]:
     next such header (or the next delta section, or the end).
     """
     preamble, requirements, current = [], {}, None
-    for line in lines:
-        header = REQUIREMENT.match(line)
+    for line, code in _marked(lines):
+        header = None if code else REQUIREMENT.match(line)
         if header:
             current = requirements.setdefault(header.group(1), [])
-        elif SECTION.match(line):
+        elif not code and SECTION.match(line):
             current = None
         elif current is not None:
             current.append(line)
@@ -299,9 +322,9 @@ def _sections(lines: list[str]) -> dict:
         elif kind:
             found[kind] = _requirements(chunk)[1]
 
-    for line in lines:
-        section = SECTION.match(line)
-        if section or line.strip().lower() == "## purpose":
+    for line, code in _marked(lines):
+        section = None if code else SECTION.match(line)
+        if section or (not code and line.strip().lower() == "## purpose"):
             close()
             kind, chunk = (section.group(1).upper() if section else "PURPOSE"), []
         else:
