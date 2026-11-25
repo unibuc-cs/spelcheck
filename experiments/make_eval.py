@@ -159,7 +159,7 @@ with them can be seen; direct, overlap and modified test that.
 eval15/ is of the same kind (written 2026-11-25, after E20, before the read
 step of the new way is told when a listed event is the trigger of a rule):
 six more OpenSpec projects with seven existing scenarios each, to be run the
-full way and the new way. In E20 the new way lost a conflict when it read a
+full way and the new way (held-out in E21; development data since). In E20 the new way lost a conflict when it read a
 rule about a state ("a person is younger than 17") next to the saved symbols:
 it tied the rule to a saved event that the rule does not name ("a person
 registers"). The changes of eval15 are aimed at that. Six versions. clean,

@@ -66,11 +66,12 @@ Where the project stands:
   reported a gap that is not one in 0 to 5 of 18 clean runs;
 - it finds about half of the planted ambiguities, and 30 to 32 of 36 with a
   second model, at the price of up to one extra question per spec;
-- for a change to specs that already exist, it found all 108 conflicts and
-  107 of the 108 gaps we had planted in 102 changes it was not built on, among
+- for a change to specs that already exist, it found all 180 conflicts and
+  125 of the 126 gaps we had planted in 138 changes it was not built on, among
   them every gap that a removed requirement opens. A cheaper way to check a
-  change, the option `--incremental`, is off by default: it costs about a
-  seventh and found 50 of 54 conflicts where the full way found 54
+  change, the option `--incremental`, is off by default: it costs a sixth to a
+  seventh. On one test set it found 50 conflicts where the full way found 54,
+  on the next one all 72
   ([The two ways to check a change](#the-two-ways-to-check-a-change)).
 
 | Read next | For |
@@ -272,14 +273,25 @@ Until the author answers, the checks use reading A, and some findings may
 exist only because of that choice. So each ambiguous rule is tried once more
 with its other reading, by the solver alone. A conflict or a gap that is gone
 with the other reading says so in its title, and the ambiguity lists what its
-other reading changes. In the login spec, the gap "6 failed attempts, no
-password submitted" exists only if R3 means "exactly 5":
+other reading changes. In a spec for topping up a phone
+(`experiments/examples/topup_reading`), R4 is "WHEN a customer enters a wrong
+PIN for the third time THEN the system locks the account for 24 hours". It was
+read as "exactly the third time", and the gap at the fourth wrong PIN exists
+only with that reading:
 
+> **4. Gap (depends on the reading of R4): Unclear PIN lock trigger**
+>
+> The requirements do not specify what the system must do when a customer
+> enters a wrong PIN for the fourth time. This gap exists only if R4 is read
+> to mean the account locks strictly when the count reaches three; the other
+> reading is that the account locks whenever a wrong PIN is entered and the
+> count of consecutive wrong entries is at least three.
+>
 > *Proven:* No requirement says what the system must do in this situation: [...]
-> But R3 is ambiguous (see its finding). With its other reading a requirement
-> applies in this situation. That reading: If the number of consecutive failed
-> login attempts for an account is at least 5, the system must place the
-> account in a locked state.
+> But R4 is ambiguous (see its finding). With its other reading a requirement
+> applies in this situation. That reading: The system locks the account for
+> 24 hours if the customer enters a wrong PIN and the count of consecutive
+> wrong entries is at least three.
 
 ## Assumed facts and links
 
@@ -398,7 +410,7 @@ The title of each finding says how far to trust it. These are real titles:
 | nothing more | proven from the rules alone | "Conflict: Backorder Requirement Conflict" (R2 against R3, order spec) |
 | "if the assumed facts hold" | proven only with an assumed fact | "Conflict (if the assumed facts hold): Conflict between correct password and locked account" |
 | "doubtful: ..." | proven, but probably an artefact of the formulas | the two cases below |
-| "depends on the reading of R3" | proven with the first reading of R3, which is ambiguous; gone with its other reading | "Gap (no event happens, depends on the reading of R3)", the gap at 6 failed attempts in the login spec ([Ambiguities](#ambiguities)) |
+| "depends on the reading of R4" | proven with the first reading of R4, which is ambiguous; gone with its other reading | "Gap (depends on the reading of R4): Unclear PIN lock trigger", the gap at the fourth wrong PIN in the top-up spec ([Ambiguities](#ambiguities)) |
 | "found with k of K symbol sets" | optional: the spec was translated K times, each time with other symbols, and k of them found it | "Conflict (found with 3 of 3 symbol sets): Conflict between removal and retention" |
 | "opened by removing X1" | only when a change is checked: a rule that the change removes used to cover this situation | "Gap (opened by removing X1): Missing rule for unauthorized check-in" ([Checking a change](#checking-a-change-against-existing-specs)) |
 
@@ -537,18 +549,19 @@ patient's list (`experiments/examples/visitors_removed`):
 ### The two ways to check a change
 
 There are two ways to run the check. The default is the full run. The option
-`--incremental` is cheaper and finds a little less, so it is off unless you
-ask for it.
+`--incremental` is cheaper. On one of the two sets it was tested on, it found
+less than the full run, so it is off unless you ask for it.
 
 | | Default: `--change DIR` | Option: `--change DIR --incremental` |
 |---|---|---|
 | What the LLM formalizes for a change | all the specs, with the change applied | only the scenarios that the change adds or rewords (labels N1, N2, ...) |
 | How old and new rules get the same symbols | they are read together, in one document | the specs were formalized once before; the read step is shown those symbols and told to use them |
-| Requests to the LLM for one change (measured, `eval14/`) | 68 | 9; none for a change that only removes |
-| Cost that comes once | none | one full run of the specs that exist, about 61 requests |
-| Planted conflicts found (`eval14/`, the same 36 changes) | 54 of 54 | 50 of 54 |
-| Planted gaps found | 36 of 36 | 36 of 36 |
-| Clean changes with something reported about them | 0 of 18 | 0 of 18 |
+| Requests to the LLM for one change (measured on `eval14/` and `eval15/`) | 68 | 9 and 11; none for a change that only removes |
+| Cost that comes once | none | one full run of the specs that exist, about 60 requests |
+| Planted conflicts found on `eval14/` (36 changes, both ways) | 54 of 54 | 50 of 54 |
+| Planted conflicts found on `eval15/` (36 changes, both ways, after a change to the read prompt) | 72 of 72 | 72 of 72 |
+| Planted gaps found (`eval14/`, `eval15/`) | 36 of 36, 18 of 18 | 36 of 36, 18 of 18 |
+| Clean changes with something reported about them | 0 of 18 on each set | 0 of 18 on each set |
 | Files written | `merged.md`, `formal.json`, `findings.json`, `report.md` | `new.md` in place of `merged.md`, and the saved model, `openspec/.speccheck/base.json` |
 | Cannot be combined with | | `--symbol-sets`, `--second-base-url`, `--review` |
 
@@ -567,12 +580,15 @@ What to know before using `--incremental`:
   or when one change is checked again and again while it is written. A single
   check after every archived change costs a full run each time, as the
   default does.
-- **What it misses.** In the test, the 4 conflicts it missed were two new
-  rules that were rejected because their translations disagreed. One was "WHEN
-  a person is younger than 17 THEN the system does not create any learner
-  file": read without the rest of the document, it was given the event "a
-  person registers" as its trigger, which it does not name. A finding it does
-  report is as sure as one of the full run.
+- **What it misses.** In the first test (`eval14/`) the 4 conflicts it missed
+  were two new rules that were rejected because their translations disagreed.
+  One was "WHEN a person is younger than 17 THEN the system does not create
+  any learner file": shown only the saved symbols, the LLM tied it to the
+  saved event "a person registers", which the rule does not name. The read
+  prompt was changed for that case, and in the second test (`eval15/`)
+  nothing was missed. The cause is not gone: the LLM still ties some new
+  rules to a saved event, and such a rule is reported as ambiguous more
+  often. A finding it does report is as sure as one of the full run.
 - **Keep the file out of version control** if the specs are edited by several
   people; it is a cache. This repository ignores `.speccheck/`.
 
@@ -646,7 +662,7 @@ Nothing in the code or in the prompts is about orders.
 | `specs/order`, `specs/delete_property` | Kiro EARS | the two examples of the Kiro blog |
 | `specs/auth_openspec` | OpenSpec (`### Requirement` / `#### Scenario`) | another format; two conflicts we planted |
 | `experiments/sets/`: `eval` to `eval10`, `eval12` | both | 66 specs in new domains. Each has a clean version and versions with one planted defect, 297 versions in all. Each set was written before it was used, as a test the prompts had not seen |
-| `specs/auth_change`, `experiments/sets/eval11`, `eval13`, `eval14` | OpenSpec projects: specs that exist, and a change | the login example as a change, and 18 projects in new domains with 5 or 6 changes each |
+| `specs/auth_change`, `experiments/sets/eval11`, `eval13`, `eval14`, `eval15` | OpenSpec projects: specs that exist, and a change | the login example as a change, and 24 projects in new domains with 5 or 6 changes each |
 
 ## How reliable is it
 
@@ -734,6 +750,14 @@ Some notes on these numbers:
   the same 36 gaps and 50 of the 54 conflicts: two new rules were rejected
   because their translations disagreed. So `--incremental` is the cheaper
   way, and the full run is the default.
+- The read prompt of `--incremental` was then changed for the rule it had
+  lost (a new rule is to be read by its own words), and the two ways were
+  compared again on `eval15/` (E21): six more projects and 36 changes, 12 of
+  which add a rule about a property of the person or thing that an existing
+  event is about. The full way found 72 of 72 planted conflicts and 18 of 18
+  gaps, and so did `--incremental`, with 11 requests for a change against 68.
+  With the old prompt it found 71 of 72 there. So the new prompt cost nothing
+  and gained little, and the LLM still tied some new rules to a saved event.
 - The numbers are small: the specs were written by us, and there is one main
   model. The details are in [research.md](research.md).
 
@@ -751,7 +775,7 @@ Some notes on these numbers:
 | Gaps depend on the symbols, and on the events the LLM marks | "free" and "taken" as two symbols give a false gap, and it is rarely marked doubtful. The gap in which no event happens, which almost every spec has, is marked as such and is rarely something to fix |
 | One snapshot, no time | "then", "after" and "until" are not modelled |
 | A reworded scenario is the change's, whatever its new words are | if its old words gave the same finding, the finding is still shown as the change's |
-| The cheaper way to check a change finds a little less | by default the specs are formalized again for each change, so that old and new rules share their symbols. `--incremental` avoids that, and missed 4 of 54 planted conflicts that the full run found. Either way, a project is bounded by the read step's room, about 140 scenarios |
+| The cheaper way to check a change reads a new rule with little around it | by default the specs are formalized again for each change, so that old and new rules share their symbols. `--incremental` avoids that. Shown only the saved symbols, the LLM sometimes ties a new rule to a saved event that the rule does not name. That cost 4 of 54 planted conflicts on `eval14/`, and none of 72 on `eval15/`, where one such rule was ambiguous in 3 of 3 runs. Either way, a project is bounded by the read step's room, about 140 scenarios |
 
 ## Optional: an LLM review of the text (off by default)
 
@@ -775,7 +799,7 @@ research.md, section 5.
 | `speccheck/refine.py` | optional LLM review, off by default |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the vLLM servers on the cluster: the main model, the second model |
 | `tests/` | 70 tests of everything that needs no LLM |
-| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10` and `eval12`, `size` and `size2`; for the change check `eval11`, `eval13`, `eval14` and `change_dev`; and the script that writes them |
+| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10` and `eval12`, `size` and `size2`; for the change check `eval11`, `eval13`, `eval14`, `eval15` and `change_dev`; and the script that writes them |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs and scores the evaluation; re-scores saved runs without a GPU |
 | `experiments/stability.py`, `fact_threshold.py` | the earlier experiments |

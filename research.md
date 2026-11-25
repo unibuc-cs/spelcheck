@@ -34,6 +34,7 @@ its entries. How each mechanism works is in [plan.md](plan.md), section 5.
   | `eval12/` | 36 | 12 conflicts said in other words, 12 ambiguities, 6 gaps | E18 |
   | `eval13/` | 36 changes on 6 OpenSpec projects, with removals (2.4) | 6 conflicts, 12 gaps; 1 old conflict in each project | E19 |
   | `eval14/` | 36 changes on 6 OpenSpec projects, run both ways (2.4) | 18 conflicts, 12 gaps | E20 |
+  | `eval15/` | 36 changes on 6 OpenSpec projects, run both ways; new rules about a property of what an existing event is about (2.4) | 24 conflicts, 6 gaps | E21 |
   | `size/` | 4 versions of one spec of 30 requirements | 2 conflicts, 1 gap | E13 |
   | `size2/` | 4 versions of one spec of 100 requirements | 2 conflicts, 1 gap | E14 (not held-out: no design was tuned on it) |
 
@@ -85,7 +86,7 @@ found it in 1 of 40 runs, then in 8 of 8 after the links step (3.3, E5), in 3
 of 7 after a change to the read prompt (4.3), and in 3 of 3 in the last runs
 (T11).
 
-### 2.4 It checks a change against the specs that already exist (T21, E17, T23, E19, T24, E20)
+### 2.4 It checks a change against the specs that already exist (T21, E17, T23, E19, T24, E20, T25, E21)
 
 In an OpenSpec project the specs say what the system does today, and a
 *change* holds only what is added, modified or removed. With `--change`, our
@@ -145,28 +146,41 @@ conflict that every project has before any change (E19):
   is a translation that lost a condition (E19).
 
 **A change can be checked without formalizing all the specs again** (T24,
-E20). With `--incremental` the specs that exist are formalized once and the
-model is saved; for a change only its new scenarios are formalized, and the
-read step is shown the saved symbols and told to use them. On the held-out
-`eval14/`, the same 36 changes both ways:
+E20, T25, E21). With `--incremental` the specs that exist are formalized once
+and the model is saved; for a change only its new scenarios are formalized,
+and the read step is shown the saved symbols and told to use them. It was
+compared with the full run on two held-out sets, 36 changes each:
 
-| | The full run | On a saved model |
-|---|---|---|
-| planted conflicts found | 54 of 54 | 50 of 54 |
-| planted gaps found | 36 of 36 | 36 of 36 |
-| clean changes with a finding about them | 0 of 18 | 0 of 18 |
-| requests to the LLM for a change, on average | 68 | 9 |
-| tokens read / written for a change | 32,431 / 28,806 | 4,934 / 3,816 |
+| | `eval14/`: the full run | `eval14/`: on a saved model | `eval15/`: the full run | `eval15/`: on a saved model |
+|---|---|---|---|---|
+| planted conflicts found | 54 of 54 | 50 of 54 | 72 of 72 | 72 of 72 |
+| planted gaps found | 36 of 36 | 36 of 36 | 18 of 18 | 18 of 18 |
+| clean changes with a finding about them | 0 of 18 | 0 of 18 | 0 of 18 | 0 of 18 |
+| requests to the LLM for a change, on average | 68 | 9 | 68 | 11 |
+| tokens read / written for a change | 32,431 / 28,806 | 4,934 / 3,816 | 31,516 / 27,972 | 5,791 / 4,604 |
 
-- **It costs about a seventh for a change**, after one full run for the
-  specs of the project (61 requests). A change that only removes asks the
-  LLM nothing.
-- **It finds a little less**: 50 of 54 here, and 35 of 36 and 18 of 18 on the
-  development sets (T24). No miss came from a new symbol where an old one was
-  meant. The misses are new rules whose 8 translations disagreed and that
-  were rejected: read without the rest of the document, a rule about a state
-  was given an event of the saved model as its trigger (4.5).
-- So it is an option, and the full run stays the default.
+- **It costs a sixth to a seventh for a change**, after one full run for the
+  specs of the project (about 60 requests). A change that only removes asks
+  the LLM nothing.
+- **On `eval14/` it found less**, 50 of 54. No miss came from a new symbol
+  where an old one was meant. Three misses were one rule: shown the saved
+  symbols, the read step tied "WHEN a person is younger than 17 THEN ..." to
+  the saved event "a person registers", as its trigger and in the description
+  of its new symbol ("the age of the person attempting to register"). The
+  translations then disagreed on whether the event belongs to the condition,
+  and the rule was rejected.
+- **One change to the read prompt** followed (T25): a rule is read by its own
+  words, a listed event is its trigger only when the rule names it, and a new
+  symbol is described by the fact alone. On the development sets the
+  saved-model way then found 54 of 54 (`eval14/`) and 36 of 36 (`eval11/`,
+  35 before).
+- **On `eval15/`**, written for this case and run after the change, it found
+  what the full run found. With the old sentence it found 71 of 72 there, so
+  the change gained one conflict and lost nothing, and it stays. It did not
+  remove the cause: the read step tied a new rule to a saved event as often
+  with it as without (4.5).
+- It is still an option. On one held-out set it found less than the full
+  run, on the other the same.
 
 ---
 
@@ -421,17 +435,26 @@ Planted ambiguities on the held-out `eval4/` (E9), 9 per kind:
   a translation prompt has 4,234 tokens, and its server allows 6,144 for
   prompt and answer, with 4,096 kept for the answer (E14).
 
-### 4.5 The limits of the change check (T21, E17, T23, E19)
+### 4.5 The limits of the change check (T21, E17, T23, E19, E20, E21)
 
 - **By default every change is a full run.** The merged spec is formalized
   again each time, so that old and new rules share their symbols. The saved
-  model of `--incremental` avoids that, and finds a little less: 4 of 54
-  conflicts were missed on `eval14/` that the full run found (2.4).
-- **A new rule read on its own can be read differently.** With the saved
-  symbols in front of it, "WHEN a person is younger than 17 THEN ..." got
-  the event "a person registers" as its trigger, which the rule does not
-  name; its translations then disagreed and it was rejected (E20, 3 of 3
-  runs).
+  model of `--incremental` avoids that. It found 4 of 54 conflicts less than
+  the full run on `eval14/`, and the same 72 of 72 on `eval15/` (2.4).
+- **A new rule read next to the saved symbols is tied to a saved event more
+  often than its words justify.** The sentences added to the read prompt
+  (T25) cured the case they were written on and no other. On `eval15/`, with
+  them as without (E21):
+  - a saved event became the trigger of a rule about a state in 6 of 36
+    cases ("WHEN an observing session is held in the lecture room THEN ..."
+    got "a guide starts an observing session");
+  - a new symbol was described through a saved event in 3 of 3 runs of one
+    case ("the number of items in the order being collected"; the full run
+    wrote "the number of items in the order"). The translations of that rule
+    then split, and it was ambiguous in 3 of 3 runs, against 1 of 3 in the
+    full run.
+
+  No conflict was lost to this on `eval15/`. On `eval14/` it cost 3 (E20).
 - **The specs of a project must fit one read answer**, about 140 scenarios
   (3.12), also for the saved model.
 - **The saved model lasts until the specs change.** Archiving a change
@@ -477,8 +500,8 @@ requirements have several hundred.
 
 ### 4.7 The evaluation is small
 
-Eleven sets with 66 base specs (297 versions), two longer specs and eighteen OpenSpec
-projects with 102 changes, all written by us; 63 to 90 runs per experiment; one main model. One leak is known: an
+Eleven sets with 66 base specs (297 versions), two longer specs and twenty-four OpenSpec
+projects with 138 changes, all written by us; 63 to 90 runs per experiment; one main model. One leak is known: an
 example in the read prompt came from the domain of an `eval3/` spec (D4). And
 one clean spec, `shelter_clean` in `eval9/`, has a conflict we did not plan
 (E15).
@@ -534,8 +557,9 @@ the prompts, so it can be scored again without a GPU.
 | E18 | `eval12/`, held-out: conflicts said in other words, with the questions about pairs of outcomes (T22) | 108 runs | 34 of 36 conflicts (27 without the questions); 3 of 18 clean runs with a conflict that was not planted (0 without) (3.13, 4.6) |
 | E19 | `eval13/`, held-out: 36 changes on 6 OpenSpec projects, with removals and an old conflict (T23) | 108 runs | gaps opened by a removal 18 of 18; the old conflict never shown as the change's; 18 of 18 conflicts, 17 of 18 gaps of a dropped scenario (2.4) |
 | E20 | `eval14/`, held-out: 36 changes on 6 OpenSpec projects, each checked the full way and on a saved model of the specs (T24) | 108 + 108 runs | conflicts 54 of 54 against 50 of 54, gaps 36 of 36 both; a change costs 68 requests against 9 (2.4) |
+| E21 | `eval15/`, held-out: 36 changes on 6 OpenSpec projects, checked the full way, and on a saved model with the read prompt before and after T25 | 3 x 108 runs | conflicts 72 of 72 (full), 71 and 72 of 72 (saved model, before and after); gaps 18 of 18 in all three; a change costs 68 requests against 11 (2.4) |
 
-The trials (T1 to T24) were run on development data between these
+The trials (T1 to T26) were run on development data between these
 experiments. Among the last: T17 compared temperatures 0.3, 0.5 and 0.7 (3.1);
 T18 found that the first read answer, at temperature 0, was usable for all
 204 specs, so the read step's retry is never needed on them; T19 found that
@@ -548,7 +572,10 @@ of an OpenSpec change on old specs turned into projects (2.4). T22 sorted the
 21 conflicts missed in E8 to E16 by cause, and added the questions about
 pairs of outcomes to the saved runs (3.13). T23 kept what a change removes in
 the merged document, to see which gap the removal opens (2.4). T24 formalized
-only the new scenarios of a change, on a saved model of the specs (2.4).
+only the new scenarios of a change, on a saved model of the specs (2.4). T25
+found why that way lost a conflict in E20, and changed the read prompt
+addition (2.4, 4.5). T26 ran the second model on the spec of 100 requirements
+(4.4).
 research_log.md
 has them in order, together with the bugs that
 changed results before they were fixed (L1 to L10) and the open threats to

@@ -1,0 +1,155 @@
+[
+  {
+    "type": "ambiguity",
+    "rule": "R4",
+    "status": "ambiguous",
+    "found_by": "questions",
+    "split": [
+      8
+    ],
+    "readings": [
+      "If the customer enters a wrong PIN and the count of consecutive wrong entries reaches three, the system must lock the account and set the lock duration to 24 hours. [in logic: (and wrong_pin_entered (= wrong_pin_count 3)) => (and account_locked (= lock_duration_hours 24))]",
+      "The system locks the account for 24 hours if the customer enters a wrong PIN and the count of consecutive wrong entries is at least three. [in logic: (and wrong_pin_entered (>= wrong_pin_count 3)) => (and account_locked (= lock_duration_hours 24))]"
+    ],
+    "differs_when": {
+      "account_locked": true,
+      "lock_duration_hours": 25,
+      "wrong_pin_count": 4,
+      "wrong_pin_entered": true
+    },
+    "answers": {
+      "translation": 3,
+      "other": 4,
+      "either": 1
+    },
+    "other_reading": {
+      "removes": [],
+      "adds": [],
+      "covers_gaps": 1
+    },
+    "situation": "The customer's account is locked, the duration in hours for which the account is locked is 25, the number of consecutive wrong PIN entries by the customer is 4, and a customer enters an incorrect PIN.",
+    "title": "Ambiguity in PIN lock trigger",
+    "explanation": "Requirement R4 is ambiguous because it is unclear whether the account must be locked for exactly 24 hours only when the third wrong PIN is entered, or whenever the count of consecutive wrong PINs is three or more. In the situation where a customer has entered a wrong PIN for the fourth time and the account is locked for 25 hours, the two readings of R4 differ in whether the requirement applies. Which did you mean?",
+    "option_a": "Keep the requirement as written, meaning the system must lock the account for 24 hours specifically when the count of consecutive wrong PIN entries reaches three.",
+    "option_b": "Reword the requirement to state that the system must lock the account for 24 hours whenever the count of consecutive wrong PIN entries is at least three."
+  },
+  {
+    "type": "gap",
+    "event": "customer_buys_credit",
+    "when": {
+      "balance": "2",
+      "customer_buys_credit": true,
+      "payment_accepted": false,
+      "wrong_pin_entered": false
+    },
+    "situation": "The customer's balance is 2 euros, a customer initiates a purchase of credit, the payment for the credit purchase is not accepted, and a customer does not enter an incorrect PIN.",
+    "title": "Missing rule for failed credit purchase",
+    "explanation": "The requirements do not specify what the system must do when a customer attempts to buy credit but the payment is not accepted. This gap appears in the situation where the balance is 2 euros, a credit purchase is initiated, the payment is rejected, and no wrong PIN is entered.",
+    "option_a": "Keeping the requirements as written means the system has no defined behavior for handling a failed credit purchase, leaving the outcome of the transaction and any user feedback unspecified.",
+    "option_b": "Add a requirement stating that when a customer buys credit and the payment is not accepted, the system must notify the customer of the failure and not alter the balance."
+  },
+  {
+    "type": "gap",
+    "event": "payment_accepted",
+    "when": {
+      "balance": "2",
+      "customer_buys_credit": false,
+      "payment_accepted": true,
+      "wrong_pin_entered": false
+    },
+    "situation": "The customer's balance is 2 euros, no customer is buying credit, the payment for a credit purchase is accepted, and no customer has entered a wrong PIN.",
+    "title": "Unspecified behavior for accepted payment without purchase",
+    "explanation": "The requirements do not specify what the system must do when a payment for credit is accepted but no customer is actually buying credit. This gap appears in the situation where the balance is 2 euros, no purchase is initiated, yet the payment is accepted, and no wrong PIN has been entered.",
+    "option_a": "Keeping the requirements as written means the system's behavior in this specific scenario is undefined and may vary or fail unpredictably.",
+    "option_b": "Add a requirement stating that if a payment is accepted but no credit purchase is initiated, the system must reject the payment or notify the customer of the error."
+  },
+  {
+    "type": "gap",
+    "event": "wrong_pin_entered",
+    "when": {
+      "balance": "2",
+      "payment_accepted": false,
+      "wrong_pin_count": 4,
+      "wrong_pin_entered": true
+    },
+    "depends_on_reading": {
+      "R4": "The system locks the account for 24 hours if the customer enters a wrong PIN and the count of consecutive wrong entries is at least three."
+    },
+    "situation": "The customer's credit balance is 2 euros, no payment for a credit purchase was accepted, the customer has entered a wrong PIN four times in a row, and the customer enters an incorrect PIN.",
+    "title": "Unclear PIN lock trigger",
+    "explanation": "The requirements do not specify what the system must do when a customer enters a wrong PIN for the fourth time. This gap exists only if R4 is read to mean the account locks strictly when the count reaches three; the other reading is that the account locks whenever a wrong PIN is entered and the count of consecutive wrong entries is at least three.",
+    "option_a": "Keeping the requirements as written means the system has no defined action for the fourth wrong PIN entry, leaving the account state undefined in this scenario.",
+    "option_b": "Change R4 to state that the system locks the account for 24 hours whenever a customer enters a wrong PIN and the count of consecutive wrong entries is three or more."
+  },
+  {
+    "type": "gap",
+    "when": {
+      "balance": "2",
+      "customer_buys_credit": false,
+      "payment_accepted": false,
+      "wrong_pin_entered": false
+    },
+    "quiet": true,
+    "situation": "The customer's balance is exactly 2 euros, no customer is buying credit, no payment for credit has been accepted, and no customer has entered a wrong PIN.",
+    "title": "Undefined behavior at 2 euro balance",
+    "explanation": "The requirements do not specify what the system must do when the balance is exactly 2 euros and no other triggering events are occurring. This gap appears in the situation where the balance is 2 euros, no credit purchase is happening, and no wrong PIN has been entered. This finding may be a false alarm because no event happens in this situation, so it likely just means the system waits.",
+    "option_a": "Keeping the requirements as written means the system has no defined action to take when the balance is exactly 2 euros and no other events are occurring.",
+    "option_b": "Add a requirement stating that the system does nothing when the balance is exactly 2 euros and no other triggering events are occurring."
+  },
+  {
+    "type": "scenario",
+    "verdict": "accepted",
+    "rules": [
+      "R1"
+    ],
+    "when": {
+      "credit_added_to_balance": true,
+      "customer_buys_credit": false,
+      "payment_accepted": true,
+      "text_message_sent": true
+    },
+    "situation": "The system adds the purchased credit to the customer's balance, no customer initiates a purchase of credit, the payment for the credit purchase is accepted, and the system sends a text message to the customer.",
+    "surprise": 2,
+    "title": "Credit added without customer purchase",
+    "explanation": "The requirements allow the system to add credit to a balance and send a confirmation text even when the customer has not initiated a purchase, provided the payment is accepted. This defeats the purpose of the top-up process, which is to add credit only when a customer actively buys it, and could lead to unauthorized or erroneous credit additions.",
+    "option_a": "Keep the requirements, so the behaviour stays allowed.",
+    "option_b": "Modify R1 to explicitly state that the system adds credit and sends a text message only when a customer initiates a purchase and the payment is accepted."
+  },
+  {
+    "type": "scenario",
+    "verdict": "accepted",
+    "rules": [
+      "R3"
+    ],
+    "when": {
+      "balance": "1/2",
+      "call_ended": true,
+      "call_in_progress": false
+    },
+    "situation": "The customer's credit balance is 1.50 euros, the system ends the current call, and no call is currently in progress for the customer.",
+    "surprise": 2,
+    "title": "Call ended without active call",
+    "explanation": "Requirement R3 states that the system ends a call only when the balance reaches zero during a call. In this situation, the balance is 1.50 euros (not zero) and no call is in progress, yet the system ends a call. This behavior is not required by R3 and contradicts the condition that a call must be in progress and the balance must be zero for the call to be ended.",
+    "option_a": "Keep the requirements as they are, allowing the system to end a call even when no call is in progress and the balance is not zero.",
+    "option_b": "Modify Requirement R3 to explicitly state that the system shall not end a call unless a call is currently in progress and the balance has reached zero."
+  },
+  {
+    "type": "scenario",
+    "verdict": "accepted",
+    "rules": [
+      "R4"
+    ],
+    "when": {
+      "account_locked": true,
+      "lock_duration_hours": 24,
+      "wrong_pin_count": 3,
+      "wrong_pin_entered": false
+    },
+    "situation": "The customer's account is locked, the lock duration is 24 hours, and the number of consecutive wrong PIN entries is 3, but a customer does not enter an incorrect PIN.",
+    "surprise": 2,
+    "title": "Lock without wrong PIN entry",
+    "explanation": "The requirements state that the account is locked for 24 hours only when a customer enters a wrong PIN for the third time. However, the logic allows a state where the account is locked for 24 hours with a wrong PIN count of 3, even though no incorrect PIN was actually entered in that specific instance. This contradicts the causal link intended by the security requirement, as the lock should be a direct result of the wrong entry.",
+    "option_a": "Keep the requirements, accepting that the account can be locked for 24 hours with a wrong PIN count of 3 even if no incorrect PIN is currently being entered.",
+    "option_b": "Modify Requirement R4 to explicitly state that the account is locked only if the third wrong PIN entry has just occurred, or clarify that the lock state persists only as a direct consequence of the third wrong entry."
+  }
+]

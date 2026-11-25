@@ -2831,6 +2831,108 @@ T25_eval11_incremental.json and T25_specs.json, each with its table.
 
 ---
 
+## E21 — Held-out `eval15/`: the changed read prompt, and the two ways again (2026-11-25)
+
+**Question.** Do the new sentences of `READ_MORE` (T25) help on projects they
+were not written on, and does the saved-model way now find what the full run
+finds?
+
+**Setup.** `eval15/` was written first (4883766) and the design frozen in
+f0cd5a7. Six OpenSpec projects in new domains (bakery, observatory, bowling
+alley, tailor, gliding club, escape room), each with two spec files and seven
+existing scenarios, and six changes. `clean`, `direct`, `modified` and `gap`
+are as in `eval14/`. The two new ones are aimed at the miss of E20:
+
+| Version | The change | Must report |
+|---|---|---|
+| `property` | adds a rule about a quantity of the person or thing an existing event is about ("WHEN the bar tab of a player is above 60 euros THEN the system does not hand out any pair of shoes", next to "WHEN a player asks for shoes AND ...") | the conflict with the scenario for that event |
+| `status` | the same with a yes/no property ("WHEN a game is a practice game THEN the system does not switch the lane screen on", next to "WHEN a player starts a game THEN the system switches the lane screen on") | that conflict |
+
+The 36 changes were run three ways, 3 times each, in one cluster job (60
+minutes): the saved-model way with the new sentences; the saved-model way
+with the old sentence (the code of commit 4883766, run from a git worktree);
+and the full run.
+
+**Results.**
+
+| | The full run | Saved model, old sentence | Saved model, new sentences |
+|---|---|---|---|
+| planted conflicts found | 72 of 72 | 71 of 72 | 72 of 72 |
+| `property` | 18 of 18 | 17 of 18 | 18 of 18 |
+| `status`, `direct`, `modified` | 18 of 18 each | 18 of 18 each | 18 of 18 each |
+| planted conflicts, doubtful ones set aside | 69 of 72 | 71 of 72 | 72 of 72 |
+| planted gaps found | 18 of 18 | 18 of 18 | 18 of 18 |
+| clean changes with a conflict or a gap about them | 0 of 18 | 0 of 18 | 0 of 18 |
+| other conflicts about a change | 2 | 0 | 0 |
+| new rules that were not accepted | 4 of 126 | 3 of 126 | 4 of 126 |
+| requests to the LLM for a change | 68 | 11 | 11 |
+| tokens read / written for a change | 31,516 / 27,972 | 5,666 / 4,520 | 5,791 / 4,604 |
+| the specs of a project, once | | 62 requests | 60 requests, 27,274 / 24,030 tokens |
+
+- **The new sentences lost nothing and gained one conflict**, 72 against 71.
+  The one that the old sentence missed is a run of `bakery_property` in which
+  the first of two readings was a mistranslation.
+- **They did not change what they were written against.** On `eval15/` the
+  read step ties a new rule to a saved event as often with them as without:
+  - a saved event as trigger of a `status` rule: 6 of 18 before, 6 of 18
+    now. "WHEN a batch of bread is baked for a wholesale customer THEN ..."
+    got `bread_taken_out_of_oven`, and "WHEN an observing session is held in
+    the lecture room THEN ..." got `guide_starts_observing_session`, in 3 of
+    3 runs each, both ways;
+  - a new symbol described through a saved event: in `bakery_property`,
+    "The number of items in the order being collected", 3 of 3 runs before
+    and 3 of 3 now (the full run: "The number of items in the order"). The
+    translations then split on whether "an order is collected" belongs to
+    the condition, and the rule was ambiguous in 3 of 3 runs both ways (the
+    full run: 1 of 3). Its conflict was still found, because the reading
+    with more translations was the right one.
+
+  So the gain of T25 on `eval14/` (the rule about "younger than 17") is not
+  seen as an effect on other rules.
+- **Tying a rule to a saved event also helped once.** In `bakery_status` the
+  full run made an event of its own from "is baked" (`bread_baked`), next to
+  the saved "a baker takes a batch out of the oven". The planted conflict
+  then needs two events at once and was marked doubtful, 3 of 3 runs. The
+  saved-model way used the saved event, and the conflict is not doubtful.
+- **The saved-model way found what the full run found**: 72 of 72 conflicts,
+  18 of 18 gaps, nothing about the clean changes, for 11 requests against 68.
+  A change costs more here than on `eval14/` (9) because no change of
+  `eval15/` only removes. By kind, in requests: one added scenario 6 to 12
+  against 65 to 71, two added scenarios 22 against 80.
+
+**The wording of a finding that depends on a reading** was checked in the same
+session, on three saved models that have such a finding with today's code: a
+gap with an event (`topup_gap` of E15, worded 3 times), a conflict
+(`fuel_direct` of E16) and a gap in which no event happens (a run of
+`auth_openspec` from T25). In 5 of 5 the title and the text are about the gap
+or the conflict, one sentence says that it exists only with the first
+reading and names the other one, and none asks "Which did you mean?". The
+first one, as saved in `experiments/examples/topup_reading`:
+
+> **4. Gap (depends on the reading of R4): Unclear PIN lock trigger**
+>
+> The requirements do not specify what the system must do when a customer
+> enters a wrong PIN for the fourth time. This gap exists only if R4 is read
+> to mean the account locks strictly when the count reaches three; the other
+> reading is that the account locks whenever a wrong PIN is entered and the
+> count of consecutive wrong entries is at least three.
+
+**Decision.** The new sentences stay: by the rule set before the test
+(plan.md) they had to find at least as many planted conflicts as the old
+one, with no fewer gaps and nothing more about clean changes. What they do
+not do is written down as a limit (research.md 4.5): the read step still
+ties some new rules to saved events, and such a rule comes out ambiguous
+more often. The wording paragraph stays. Whether `--incremental` becomes the
+default is not decided here: on `eval15/` it found as much as the full run,
+on `eval14/` (E20, old sentence) it found 50 against 54. `eval15/` is
+development data from now on; the next design needs `eval16/`.
+
+**Raw data.** experiments/results/E21_eval15_full.json,
+E21_eval15_incremental_before.json and E21_eval15_incremental.json, each with
+its table; experiments/examples/topup_reading.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

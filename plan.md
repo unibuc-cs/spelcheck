@@ -23,7 +23,7 @@ projects have them (5.10).
 | Goal | Status |
 |---|---|
 | **G1** A minimal working prototype of Kiro's formal analysis: spec, formal check, answer in plain language | **Done.** Conflicts, gaps, ambiguities and scenarios, as in Kiro's formal part. Gaps are asked once for each event, and all 18 planted gaps of `eval8/` were found. Both Kiro blog examples found by the solver (`delete_property`: 3 of 3 in the last runs; a wrong voted fact can still hide it). Ambiguities: about half with one model; with the optional second reader 30 and 32 of 36 (held-out `eval4/`, `eval7/`), at up to one extra question per spec |
-| **G2** Data-driven: any spec, any format | **Done for the prototype.** 63 base specs in two formats (Kiro EARS, OpenSpec), no change to code or prompts; specs of 30 and of 100 requirements went as well as the small ones (E13, E14), and the read step has room for about 140. An OpenSpec *change* is checked against the specs that exist (`--change`, 5.10): on held-out `eval11/`, 36 of 36 planted conflicts and 36 of 36 planted gaps, and nothing else reported about a change (E17). A gap that a removal opens is reported as the change's, 18 of 18 on held-out `eval13/`, and a conflict the specs had before is never blamed on the change (E19). With `--incremental` a change is checked on a saved model of the specs, for about a seventh of the cost, and finds a little less: 50 against 54 of 54 conflicts on held-out `eval14/` (E20). Not tried: a real OpenSpec project |
+| **G2** Data-driven: any spec, any format | **Done for the prototype.** 63 base specs in two formats (Kiro EARS, OpenSpec), no change to code or prompts; specs of 30 and of 100 requirements went as well as the small ones (E13, E14), and the read step has room for about 140. An OpenSpec *change* is checked against the specs that exist (`--change`, 5.10): on held-out `eval11/`, 36 of 36 planted conflicts and 36 of 36 planted gaps, and nothing else reported about a change (E17). A gap that a removal opens is reported as the change's, 18 of 18 on held-out `eval13/`, and a conflict the specs had before is never blamed on the change (E19). With `--incremental` a change is checked on a saved model of the specs, for a sixth to a seventh of the cost. It found 50 against 54 planted conflicts on held-out `eval14/` (E20) and, after one change to its read prompt, 72 against 72 on held-out `eval15/` (E21). Not tried: a real OpenSpec project |
 | **G3** Code and documents a person can read | **Done** for the current state. GUIDE.md and README.md were revised after a point-by-point review (2026-11-22): each mechanism is a short list of steps on one real example |
 | **G4** Research for a paper, on the local model | **Well under way.** 12 held-out tests (E5, E7 to E13, E15 to E18). On the 10 before the questions about outcomes: 61 to 100% of planted conflicts found; with doubtful conflicts set aside, at most 1 false alarm in 18 clean runs, apart from a real conflict we wrote into an `eval9/` clean spec by mistake (2 runs, E15). With those questions (E18, conflicts said in other words): 34 of 36, and 3 of 18 clean runs with a conflict that was not planted. Planted gaps 18 of 18 in each of the last three sets (E13, E15, E16). Still small: one main model, specs written by us |
 | **G5** Only the formal part | **Done.** An LLM review of the text was built, measured, and switched off |
@@ -58,14 +58,19 @@ this order:
    more sets, specs we did not write, and results counted per planted
    conflict (the runs of one spec mostly agree, so more specs help more than
    more runs). For the change check: a real OpenSpec project with its
-   history of changes. All fourteen sets have been read (`eval14/` in E20), so
-   a new design needs `eval15/`, written first.
+   history of changes. All fifteen sets have been read (`eval15/` in E21), so
+   a new design needs `eval16/`, written first.
 2. **The change check, further** (G2). The gap that a removal opens is done
    (step 33), and so is a way to check a change on a saved model of the
    specs (step 34, `--incremental`). What is left:
-   - the saved-model way misses a few conflicts that the full run finds (4
-     of 54 on `eval14/`): a new rule read on its own can get an event of the
-     saved model as its trigger and then be rejected (research.md 4.5);
+   - **the default.** On `eval15/` the saved-model way found what the full
+     run found, for a sixth of the cost; on `eval14/`, before step 35, it
+     found 50 against 54. Whether it becomes what `--change` does is open;
+   - the read step of that way ties a new rule to a saved event more often
+     than the words of the rule justify. One try at the prompt (step 35)
+     cured the case it was written on and no other (research.md 4.5). What
+     was not tried: showing the model the scenarios that exist, next to
+     their symbols;
    - the specs of a project must still fit one read answer, about 140
      scenarios. The same step that adds a change to a saved model could add
      the spec files one by one, which would lift that bound. Not tried.
@@ -89,53 +94,8 @@ this order:
      the facts rarely say that one of the two always holds, so only 2 of 13
      were marked (T20, E16). This is a known limit now.
 
-### 2.1 The plan for step 35: the conflicts that `--incremental` misses (not built yet)
-
-On `eval14/` the saved-model way missed 4 of the 54 planted conflicts (E20).
-Three of them are one rule, in its 3 runs: "WHEN a person is younger than 17
-THEN the system does not create any learner file". Read next to the saved
-symbols, the read step tied it to a saved event that the rule does not name:
-
-- its trigger became `registration_attempted`;
-- its new symbol was described as "the age of the person attempting to
-  register" (the full run wrote "the age of the person in years").
-
-The translations are shown that description. Some put the event into the
-"when" part and some did not, the 8 split 3/2/1, and the rule was rejected.
-The fourth miss is one run of another rule whose translations scattered, with
-no cause to act on.
-
-One try: the last sentence of the prompt addition `READ_MORE` ("The trigger of
-a rule may be a listed event.") is replaced by three. They say that a rule is
-read by its own words, that a listed event is its trigger only when its words
-name that happening, and that a symbol the model adds is described by the fact
-alone.
-
-1. **`eval15/` first**: six new projects with 36 changes, aimed at this case
-   (make_eval.py). Each has two changes that add a rule about a property of
-   the person or thing an existing event is about.
-2. **Development**: `eval14/` and `eval11/` the saved-model way with the new
-   sentences (50 of 54 and 35 of 36 before).
-3. **Freeze, then `eval15/`** three ways: the full run, the saved-model way
-   with the old sentence, and with the new ones.
-4. **The rule, set now**: the new sentences stay if on `eval15/` they find at
-   least as many planted conflicts as the old one, with no fewer gaps and
-   nothing more about clean changes. Otherwise they are taken out again, and
-   the misses stay a limit. Whether `--incremental` becomes the default is
-   another question, to be asked only if it then finds as much as the full
-   run.
-
-Two small things from the list below go with it: the wording of a finding
-that depends on a reading, and a lower answer limit for translations, so that
-the second model fits a long spec.
-
 Small things that are open:
 
-- **The wording of a finding that depends on a reading** (E13). The model now
-  names the two readings correctly, but in the one report we looked at it
-  wrote the gap as if it were the ambiguity, and ended with "Which did you
-  mean?". One sentence in the wording prompt would probably settle it; it
-  needs a run with the LLM to check.
 - **Long documents** (E14). A spec of 100 requirements works: its read answer
   is 16,799 tokens, which the new limit of 24576 holds (about 140
   requirements; the server's window of 32,768 tokens is the real bound). Three
@@ -174,6 +134,20 @@ with a conflict that was not planted from 3 to 13 of 144 (T22). On held-out
 loss, and each added conflict quotes the fact it rests on. The rule for such
 decisions from now on: when the gains are larger than the losses, the new
 version becomes the default, and the loss is written down as a limit.
+
+Decided on 2026-11-25: **the read step of `--incremental` is told to read a
+new rule by its own words** (step 35). On `eval14/` that way had lost a
+conflict because the read step, shown the saved symbols, tied a rule about a
+state to a saved event: as its trigger, and in the description of its new
+symbol. Three sentences in the prompt addition `READ_MORE` forbid both. On the
+development sets the conflicts found went from 50 to 54 of 54 and from 35 to
+36 of 36 (T25). On held-out `eval15/` the rule set before the test was met:
+72 of 72 against 71 with the old sentence, the same gaps, nothing about clean
+changes (E21). So they stay. They did not remove the cause, which is written
+down as a limit (research.md 4.5). The same day **the wording prompt got a
+paragraph for a finding that depends on a reading**: in 5 of 5 reports the
+text is now about the gap or the conflict, names the other reading in one
+sentence, and does not ask "Which did you mean?" (E21).
 
 Decided on 2026-11-24: **checking a change on a saved model of the specs is
 an option, `--incremental`; the full run stays the default** (step 34, 5.10).
@@ -300,11 +274,11 @@ The code, in the order to read it:
 |---|---|---|---|
 | `speccheck/llm.py` | 80 | One function: prompt + JSON schema in, N parsed answers out | the model server |
 | `speccheck/logic.py` | 250 | Symbols to Z3 variables; parses formulas; asks the solver, including the test "do these two rules mean the same?" | Z3 |
-| `speccheck/formalize.py` | 790 | Stage 1: text to `formal.json` (steps 1 to 5, then 6 and 7); `formalize_sets` for K symbol sets; with `base`, adds new rules to a formal model that exists | `llm`, `logic`, `probe` |
+| `speccheck/formalize.py` | 820 | Stage 1: text to `formal.json` (steps 1 to 5, then 6 and 7); `formalize_sets` for K symbol sets; with `base`, adds new rules to a formal model that exists | `llm`, `logic`, `probe` |
 | `speccheck/probe.py` | 600 | Stage 1, step 6: four checks by simple questions, three about one requirement and one about the outcomes of two | `llm`, `logic` |
 | `speccheck/checks.py` | 750 | Stage 2: `formal.json` to findings; which findings depend on a reading; scenarios; `combine` for K formal models | `logic` |
-| `speccheck/explain.py` | 370 | Stage 3: findings to plain words; the scenario judge; builds `report.md` | `llm` |
-| `speccheck/cli.py` | 180 | Runs the three stages, writes the files; with `--change`, on the specs of an OpenSpec project with a change applied | all |
+| `speccheck/explain.py` | 380 | Stage 3: findings to plain words; the scenario judge; builds `report.md` | `llm` |
+| `speccheck/cli.py` | 200 | Runs the three stages, writes the files; with `--change`, on the specs of an OpenSpec project with a change applied | all |
 | `speccheck/change.py` | 440 | For `--change`: applies an OpenSpec change to the specs that exist, labels the scenarios, and says which findings involve the change (5.10) | `logic` |
 
 About half of each file is comments, docstrings and prompts.
@@ -814,12 +788,14 @@ With `--incremental`:
 |---|---|---|
 | 1 base | the LLM and Z3, once | the specs that exist are formalized as one labelled document (`change.base_document`). The model is kept in `openspec/.speccheck/base.json` with a fingerprint of the specs, and made again only when they change |
 | 2 new part | our code (`change.merge(on_base=True)`) | writes the added and reworded scenarios of the change as a document of their own, `new.md`, labelled N1, N2, ... The scenarios that stay keep the labels of the base, the removed ones too; the old rule of a reworded scenario is "replaced" and dropped |
-| 3 formalize the new part | the LLM and Z3 (`formalize(base=...)`) | the read step sees the symbols of the base before the document and is told to use them where they fit (`READ_MORE`). Translations, links and the questions of step 6 are asked for the new rules only; the question about two outcomes for the pairs with a new rule; the facts question again only if a symbol was added |
+| 3 formalize the new part | the LLM and Z3 (`formalize(base=...)`) | the read step sees the symbols of the base before the document and is told to use them where they fit, and to read each rule by its own words: a listed event is its trigger only when the rule names it, and a new symbol is described by the fact alone (`READ_MORE`). Translations, links and the questions of step 6 are asked for the new rules only; the question about two outcomes for the pairs with a new rule; the facts question again only if a symbol was added |
 | 4 as before | Z3, our code, the LLM | removed rules set apart, the checks, the selection, the wording |
 
-- it is an option and off by default: on held-out `eval14/` it found 50 of
-  the 54 planted conflicts that the full run found (and the same 36 of 36
-  gaps), for 9 requests to the LLM for a change against 68 (research.md 2.4)
+- it is an option and off by default. On held-out `eval14/` it found 50 of
+  the 54 planted conflicts that the full run found; on held-out `eval15/`,
+  after the change of step 35 to its read prompt, 72 of 72. The gaps were the
+  same on both, and a change took 9 and 11 requests to the LLM against 68
+  (research.md 2.4)
 - the saved model records what it was made from: a fingerprint of the
   labelled text of the specs, and the name of the model. It is used while
   both are the same and made again, by one full run, when one is not: a spec
@@ -1121,11 +1097,14 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       T24); held-out `eval14/` both ways (E20): conflicts 54 of 54 against 50
       of 54, gaps 36 of 36 both, 68 requests for a change against 9. Kept as
       an option; the full run stays the default
-- [ ] **Step 35 — the conflicts that `--incremental` misses**: `eval15/`
-      written first (done); one change to the prompt addition of the read
-      step; development on `eval14/` and `eval11/`; held-out `eval15/` three
-      ways (plan in 2.1). With it: the wording of a finding that depends on a
-      reading, and the second model on a long spec
+- [x] **Step 35 — the conflicts that `--incremental` misses**: `eval15/`
+      written first; the cause found in the saved runs of E20 (a new rule
+      tied to a saved event); one change to the prompt addition of the read
+      step. Development (T25): `eval14/` 50 to 54 of 54, `eval11/` 35 to 36
+      of 36. Held-out `eval15/` three ways (E21): the full run 72 of 72, the
+      saved-model way 71 of 72 before and 72 of 72 after. Kept; the cause is
+      still there and is a limit. With it: the wording of a finding that
+      depends on a reading (5 of 5 reports right)
 - [x] **Documentation pass 2**: GUIDE.md reviewed point by point and rewritten (a new
       2.4 on gaps and scenarios; the ambiguity check, voted facts and links as steps on
       one real example), then shortened from 1112 to 893 lines; README.md reworded in the

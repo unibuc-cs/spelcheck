@@ -61,9 +61,9 @@ we cannot, do we say so clearly?
 The same tool also checks a *change* against specs that already exist, which
 is how OpenSpec projects work. That is part 5.
 
-To give an idea of the size: about 3,500 lines of Python now, half of them comments
+To give an idea of the size: about 3,700 lines of Python now, half of them comments
 and prompts, one local model (Qwen3.8, 27B), and results measured on 297 versions
-of small specs and on 102 changes. The results are in part 6.
+of small specs and on 138 changes. The results are in part 6.
 
 ---
 
@@ -405,16 +405,26 @@ is real output):
 
 > **1. Ambiguity: Ambiguity in lock threshold**
 >
-> Requirement R3 states that the system locks an account when the number of
-> failed attempts reaches 5, but it is unclear if this applies only when the
-> count is exactly 5 or whenever it is 5 or more. [...] Which did you mean?
+> Requirement R3 is ambiguous because it is unclear whether the account
+> should be locked when the number of failed attempts is exactly 5 or when it
+> is 5 or more. [...] Which did you mean?
 
 Until the author answers, the checks go on with reading A, so another finding
 may exist only because of that choice. The solver therefore tries each
-ambiguous rule once more with its other reading. In this spec the report has a
-gap at "6 failed attempts, no password submitted". With reading B, R3 applies
-there and the gap is gone, so the title of that gap ends with "depends on the
-reading of R3".
+ambiguous rule once more with its other reading. In the login spec that
+changes nothing. In a spec for topping up a phone it does
+(`experiments/examples/topup_reading`). Its rule R4 is "WHEN a customer enters
+a wrong PIN for the third time THEN the system locks the account for 24
+hours". It was read as "exactly the third time", so nothing says what to do at
+the fourth wrong PIN, and the report has a gap there. With the other reading,
+"the third time or later", R4 applies and the gap is gone. The title of the
+gap says so:
+
+> **4. Gap (depends on the reading of R4): Unclear PIN lock trigger**
+>
+> The requirements do not specify what the system must do when a customer
+> enters a wrong PIN for the fourth time. This gap exists only if R4 is read
+> to mean the account locks strictly when the count reaches three; [...]
 
 ### 3.2 Telling the solver what the words mean
 
@@ -679,7 +689,7 @@ how much weight the finding carries:
 | "Conflict: ..." | proven from the rules alone | a lot. It is wrong only if the translation is wrong |
 | "Conflict (if the assumed facts hold): ..." | proven only with a guessed fact, which the report quotes | read the quoted fact and judge it yourself |
 | "Conflict (doubtful: ...)" | proven, but it has the shape of the artefacts in 3.3 | little. In the evaluation nearly all of these were false alarms |
-| "... (depends on the reading of R3)" | proven with the first reading of R3, which is ambiguous; gone with its other reading | answer the question about R3 first |
+| "... (depends on the reading of R4)" | proven with the first reading of R4, which is ambiguous; gone with its other reading | answer the question about R4 first |
 | "... (found with k of K symbol sets)" | k of the K formalizations found it | the higher k, the better |
 | "Ambiguity: ..." | not a proof, a question to the author | a fair question, though some are asked about clear rules |
 | "Gap: ..." | proven: an event happens and no rule applies | certain. Ask yourself whether that case was left out on purpose |
@@ -838,8 +848,10 @@ the whole project. With `--incremental` it goes another way:
    reworded scenarios, labelled N1, N2, ... For the login example that is one
    scenario, N1, "administrators are never locked out".
 3. **The model formalizes only that**, and it is shown the symbols of the
-   saved model first, with one more instruction: use a listed symbol wherever
-   it fits, and add a new one only for a fact that has none.
+   saved model first, with two more instructions. Use a listed symbol
+   wherever it fits, and add a new one only for a fact that has none. And
+   read each rule by its own words: a listed event is the trigger of a rule
+   only if the rule names it.
 4. **Our code puts the two together**: the saved rules, without the removed
    and the reworded ones, plus the new rules. The checks, the selection and
    the wording are the same as before.
@@ -895,17 +907,18 @@ and N1:
 N1 is a rule of the change, so the finding is about the change and goes into
 the report.
 
-Run on the same 36 changes, this way asked the model about a seventh of what
-the full way asks, and it found 50 of the 54 conflicts that the full way
-found (6.2). So it is an option for when the cost matters, and the full way
-stays the default:
+Both ways were run on the same changes, 36 in each of two sets (6.2). This
+way asked the model a sixth to a seventh of what the full way asks. On the
+first set it found 50 of the 54 conflicts that the full way found; on the
+second, after one change to its prompt, all 72. So it is an option for when
+the cost matters, and the full way stays the default:
 
 | | Default | With `--incremental` |
 |---|---|---|
 | formalized for a change | all the specs, with the change applied | only its new scenarios |
-| requests to the model for a change | 68 | 9, after one full run for the specs |
-| planted conflicts found, of 54 | 54 | 50 |
-| planted gaps found, of 36 | 36 | 36 |
+| requests to the model for a change | 68 | 9 to 11, after one full run for the specs |
+| planted conflicts found (`eval14`, then `eval15`) | 54 of 54, 72 of 72 | 50 of 54, 72 of 72 |
+| planted gaps found | 36 of 36, 18 of 18 | 36 of 36, 18 of 18 |
 
 Three things to know about the saved model:
 
@@ -961,16 +974,18 @@ versions in all. In `eval12` every planted conflict says the opposite outcome
 in other words ("switch the heater on" against "cut the power to the
 heater"), which is the kind the earlier sets missed.
 
-Three more sets, `eval11`, `eval13` and `eval14`, test the change check of
-part 5. Each has six small OpenSpec projects, and each project comes with five
+Four more sets, `eval11`, `eval13`, `eval14` and `eval15`, test the change
+check of part 5. Each has six small OpenSpec projects, and each project comes with five
 or six changes whose right answer is known. In `eval11`: one harmless change, two
 that clash with an existing scenario, and two that leave a case open. In
 `eval13` the changes also remove things: a requirement that held one of two
 cases (a gap must be reported), and the only requirement for an event
 (nothing must be reported). Every project of `eval13` also has a conflict
 that was there before any change, and it must not be blamed on the change.
-The changes of `eval14` were checked twice, the full way and on a saved model
-of the specs, to compare the two.
+The changes of `eval14` and `eval15` were checked both ways, the full way and
+on a saved model of the specs, to compare the two. In `eval15`, 12 of the 36
+changes add a rule about a property of the person or thing that an existing
+event is about, the kind the saved-model way had read badly.
 
 Two more terms. A conflict reported on a clean spec is a *false alarm*. And
 because the model answers a little differently each time, every version is run
@@ -1017,8 +1032,8 @@ eval12  34/36   ███████████████████░   9
 | planted gaps (`eval8` to `eval10`, `eval12`) | 18 of 18 found in the first three and 17 of 18 in `eval12`, now that the question is asked once for each event; before, 0 of 18 |
 | false gaps (the same sets) | in 4, 3, 5 and 0 of 18 runs on clean specs. Explained below |
 | longer specs, 30 and 100 requirements | they went as well as the small ones. Explained below |
-| changes checked against existing specs (`eval11`, `eval13`, `eval14`) | 108 of 108 planted conflicts and 107 of 108 planted gaps found, among them all 36 gaps opened by a removed requirement. The conflict that the specs had before was never blamed on a change. Explained below |
-| the same changes on a saved model of the specs (`eval14`) | 50 of the 54 conflicts that the full way found, and all 36 gaps, for 9 requests to the model for a change, not 68. Explained below |
+| changes checked against existing specs (`eval11`, `eval13`, `eval14`, `eval15`) | 180 of 180 planted conflicts and 125 of 126 planted gaps found, among them all 36 gaps opened by a removed requirement. The conflict that the specs had before was never blamed on a change. Explained below |
+| the same changes on a saved model of the specs (`eval14`, `eval15`) | on `eval14`, 50 of the 54 conflicts that the full way found; on `eval15`, after one change to its prompt, all 72. All gaps both times, for 9 to 11 requests to the model for a change, not 68. Explained below |
 
 **Conflicts that nobody planted.** The questions about two outcomes find the
 conflicts we had been missing, and others with them. On `eval12` they added 27
@@ -1074,6 +1089,13 @@ the system does not create any learner file": read on its own, next to the
 saved symbols, it was given the event "a person registers" as its trigger,
 which it does not name.
 
+We added the second instruction of part 5 for that case, and wrote `eval15`
+to test it. There the saved-model way found all 72 planted conflicts and all
+18 gaps, as the full way did, for 11 requests against 68. With the old prompt
+it found 71, so the new instruction cost nothing and gained little. It did not
+remove the cause either: the model still tied some new rules to a saved event,
+and one such rule came out ambiguous in 3 of 3 runs (6.4).
+
 **Longer specs.** All the specs counted above have at most six requirements.
 To see what a longer document does, we wrote two more, each in four versions
 (clean, direct, overlap, gap) and run three times:
@@ -1101,7 +1123,7 @@ The project has five goals. This is where each one stands:
 | G1: a minimal working prototype of Kiro's formal analysis | done |
 | G2: it works on any spec, in any format | done for the prototype: 2 formats, 63 small specs, two long ones, and changes checked against existing specs, removals included (part 5). A real OpenSpec project has not been tried |
 | G3: code and documents a person can read | done for the current state |
-| G4: research for a paper, on the local model | well under way: 14 tests on specs the design had not seen. Still one main model, and specs written by us |
+| G4: research for a paper, on the local model | well under way: 15 tests on specs the design had not seen. Still one main model, and specs written by us |
 | G5: only the formal part | done: an LLM review of the text was built, measured, and switched off |
 
 ### 6.4 What does not work yet
@@ -1114,7 +1136,7 @@ The project has five goals. This is where each one stands:
 | two words for one yes/no question give a false gap | "the slot is free" and "the slot is taken" as two symbols: in 3 to 5 of 18 clean runs (6.2) |
 | a fact or a link can be wrong, even with a majority behind it | which is why the report quotes every one that a conflict depends on |
 | there is no time | "then", "after" and "until" are not modelled: the logic is one snapshot |
-| the cheaper way to check a change finds a little less | on a saved model of the specs a change costs about a seventh, and 4 of 54 planted conflicts were missed that the full way found (6.2). Either way, a project can have about 140 scenarios at most |
+| the cheaper way to check a change reads a new rule with little around it | shown only the saved symbols, the model sometimes ties a new rule to a saved event that the rule does not name. That cost 4 of 54 planted conflicts on `eval14`. On `eval15` it cost none, but one such rule was ambiguous in 3 of 3 runs (6.2). Either way, a project can have about 140 scenarios at most |
 | the evaluation is small | the specs were written by us, and there is one main model |
 
 **"Remove" against "keep", on a real case.** One of the planted conflicts
@@ -1188,8 +1210,9 @@ The full list is in research.md, section 5.
 
 1. **A larger evaluation**, with another main model, specs we did not write,
    and a real OpenSpec project with its changes.
-2. **The change check, further**: the few conflicts that the cheaper way
-   misses, and projects too large for one read answer.
+2. **The change check, further**: whether the cheaper way becomes the
+   default, what the model is shown when it reads a new rule, and projects
+   too large for one read answer.
 3. **What is left of the choice of symbols**: retention periods that become
    only a number, and a mark for the conflicts that exist only because the
    logic is one snapshot.
@@ -1233,10 +1256,10 @@ that section 2 described:
 | `speccheck/llm.py` | 80 | one function, `ask`: a prompt goes in, N answers come out as JSON |
 | `speccheck/logic.py` | 260 | `model` and `impossible`, the two questions for Z3 (1.2), and `same_meaning` |
 | `speccheck/checks.py` | 750 | `_search` forces rules to apply (2.3); `find_conflicts` runs the two searches (3.2); `_try_other_readings` (3.1); then `find_gaps` and `find_scenarios` (2.4) |
-| `speccheck/formalize.py` | 790 | the seven steps of 3.5. The prompts at the top show what the LLM is asked. With `base`, `formalize` adds new rules to a formal model that exists (part 5) |
+| `speccheck/formalize.py` | 820 | the seven steps of 3.5. The prompts at the top show what the LLM is asked. With `base`, `formalize` adds new rules to a formal model that exists (part 5) |
 | `speccheck/probe.py` | 600 | the questions about concrete situations (3.1 and 3.2), and `outcomes`, the questions about two outcomes (3.2) |
-| `speccheck/explain.py` | 360 | `evidence` writes the *Proven* lines; the wording prompt is above it |
-| `speccheck/cli.py` | 180 | the three stages, called one after the other |
+| `speccheck/explain.py` | 380 | `evidence` writes the *Proven* lines; the wording prompt is above it |
+| `speccheck/cli.py` | 200 | the three stages, called one after the other |
 | `speccheck/change.py` | 440 | part 5: `merge` applies a change to the specs and labels the scenarios; `after_model` sets the removed rules apart; `about_change` selects the findings |
 
 About half of each file is comments, docstrings and prompts.
@@ -1250,7 +1273,7 @@ specs/              3 small specs the prompts were developed on, with their save
 tests/              70 tests that need no LLM
 experiments/
   sets/             the 11 evaluation sets, eval to eval10 and eval12 (297 spec versions), two long specs,
-                    and for the change check eval11, eval13, eval14 and change_dev (old specs as projects)
+                    and for the change check eval11, eval13, eval14, eval15 and change_dev (old specs as projects)
   results/          every experiment: the raw data (.json) and its tables (.md)
   examples/         saved runs that the documents quote
   evaluate.py       runs the pipeline on a set and scores it

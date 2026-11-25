@@ -1,0 +1,963 @@
+{
+  "symbols": [
+    {
+      "name": "customer_buys_credit",
+      "sort": "Bool",
+      "values": [],
+      "description": "A customer initiates a purchase of credit",
+      "event": true
+    },
+    {
+      "name": "payment_accepted",
+      "sort": "Bool",
+      "values": [],
+      "description": "The payment for the credit purchase is accepted",
+      "event": true
+    },
+    {
+      "name": "credit_added_to_balance",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system adds the purchased credit to the customer's balance",
+      "event": false
+    },
+    {
+      "name": "text_message_sent",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system sends a text message to the customer",
+      "event": false
+    },
+    {
+      "name": "balance",
+      "sort": "Real",
+      "values": [],
+      "description": "The current credit balance of the customer in euros",
+      "event": false
+    },
+    {
+      "name": "warning_sent",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system sends a low balance warning to the customer",
+      "event": false
+    },
+    {
+      "name": "call_in_progress",
+      "sort": "Bool",
+      "values": [],
+      "description": "A call is currently in progress for the customer",
+      "event": false
+    },
+    {
+      "name": "call_ended",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system ends the current call",
+      "event": false
+    },
+    {
+      "name": "wrong_pin_entered",
+      "sort": "Bool",
+      "values": [],
+      "description": "A customer enters an incorrect PIN",
+      "event": true
+    },
+    {
+      "name": "wrong_pin_count",
+      "sort": "Int",
+      "values": [],
+      "description": "The number of consecutive wrong PIN entries by the customer",
+      "event": false
+    },
+    {
+      "name": "account_locked",
+      "sort": "Bool",
+      "values": [],
+      "description": "The customer's account is locked",
+      "event": false
+    },
+    {
+      "name": "lock_duration_hours",
+      "sort": "Int",
+      "values": [],
+      "description": "The duration in hours for which the account is locked",
+      "event": false
+    }
+  ],
+  "background": [
+    {
+      "id": "F1",
+      "text": "If an account is locked, the duration of the lock must be defined (non-negative).",
+      "formula": "(=> account_locked (>= lock_duration_hours 0))",
+      "support": "6/8"
+    },
+    {
+      "id": "F2",
+      "text": "The number of consecutive wrong PIN entries cannot be negative.",
+      "formula": "(>= wrong_pin_count 0)",
+      "support": "5/8"
+    },
+    {
+      "id": "F3",
+      "text": "The duration for which an account is locked cannot be negative.",
+      "formula": "(>= lock_duration_hours 0)",
+      "support": "5/8"
+    },
+    {
+      "id": "F4",
+      "text": "What R2 demands, in the terms of the other requirements: If the customer's credit balance is less than 2 euros, the system must send a text message warning to the customer.",
+      "formula": "(=> (and (< balance 2) warning_sent) text_message_sent)",
+      "support": "8/8",
+      "restates": "R2",
+      "antecedent": "(< balance 2)",
+      "consequent": "text_message_sent",
+      "check": {
+        "when": {
+          "balance": "1",
+          "text_message_sent": false
+        },
+        "answers": {
+          "possible": 7,
+          "impossible": 1,
+          "unclear": 0
+        },
+        "replies": [
+          {
+            "reason": "The requirement mandates sending a 'warning' when the balance is below 2 euros, but it does not specify the medium (e.g., text message, email, or in-app notification). Therefore, the system can satisfy the requirement by sending a warning via a channel other than text message, making it possible for the text message to remain unsent.",
+            "answer": "possible"
+          },
+          {
+            "reason": "The requirement mandates sending a warning (a generic act) when the balance is below 2 euros. Since the balance is 1 euro, the warning must be sent, but it does not have to be sent via text message. Therefore, it is possible that the warning was sent (e.g., via email) while the specific fact that a text message was sent remains false.",
+            "answer": "possible"
+          },
+          {
+            "reason": "The requirement mandates sending a warning when the balance is below 2 euros. Since the balance is 1 euro, the condition is met, and the system must send a warning. The fact that `text_message_sent` is FALSE indicates no text message was sent. Since the requirement specifies sending 'a warning' but does not restrict the medium to text messages, the system could satisfy the requirement by sending the warning via another channel (e.g., email, in-app notification), making the absence of a text message compatible with the requirement.",
+            "answer": "possible"
+          },
+          {
+            "reason": "The requirement triggers when the balance falls below 2 euros, which is true since the balance is 1. The requirement mandates sending a 'warning', but the situation states that no 'text message' was sent. Since a warning is not necessarily a text message (it could be an email, push notification, etc.), the system could still comply by sending a non-text warning.",
+            "answer": "possible"
+          },
+          {
+            "reason": "The requirement explicitly states that the system sends a 'warning', not a 'text message'. Since the specific action demanded by the requirement (sending a warning) is distinct from the fact listed as false (sending a text message), the system can send the warning without sending a text message, allowing the text_message_sent fact to remain false.",
+            "answer": "possible"
+          },
+          {
+            "reason": "The requirement mandates sending a warning when the balance is below 2 euros, which is true since the balance is 1. The situation states that a text message was not sent (FALSE). Since the requirement does not specify the medium of the warning (it could be email, in-app, etc.), it is possible for the system to send a non-text warning, thus satisfying the requirement while the fact that no text message was sent remains true.",
+            "answer": "possible"
+          },
+          {
+            "reason": "The requirement mandates that a warning be sent when the balance is below 2 euros (which is true, as the balance is 1). The situation states that a text message was NOT sent. Since the requirement does not specify the medium of the warning, the system could send a warning via another channel (e.g., email or in-app notification) while satisfying the condition without sending a text message.",
+            "answer": "possible"
+          },
+          {
+            "reason": "The requirement mandates that the system sends a warning when the balance falls below 2 euros. The situation states the balance is 1 (which is below 2), triggering the obligation to send a warning. However, the fact 'text_message_sent' is FALSE, and in this context, 'warning' is typically implemented as a text message. Since the system is required to send the warning but the fact states no text message was sent, the requirement is violated.",
+            "answer": "impossible"
+          }
+        ],
+        "verdict": "rejected"
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "R1",
+      "text": "WHEN a customer buys credit AND the payment is accepted THEN the system adds the credit to the balance and sends a text message",
+      "trigger": "payment_accepted",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "Whenever a customer initiates a credit purchase and the payment is successfully accepted, the system must add the credit to the balance and send a text message.",
+      "antecedent": "(and customer_buys_credit payment_accepted)",
+      "consequent": "(and credit_added_to_balance text_message_sent)",
+      "probes": [
+        {
+          "reading": "If the customer initiates a credit purchase, then the system adds the credit to the balance if and only if the payment is accepted, and the system sends a text message if and only if the payment is accepted.",
+          "antecedent": "customer_buys_credit",
+          "consequent": "(and (= credit_added_to_balance payment_accepted) (= text_message_sent payment_accepted))",
+          "situations": [
+            {
+              "when": {
+                "credit_added_to_balance": true,
+                "customer_buys_credit": true,
+                "payment_accepted": false,
+                "text_message_sent": true
+              },
+              "translation_says": "obeyed",
+              "answers": [
+                {
+                  "reason": "Reading A is a material implication that is vacuously true when the antecedent is false (payment not accepted), so it considers the requirement obeyed. Reading B uses biconditionals, requiring that if the customer buys credit, the credit is added to the balance if and only if the payment is accepted. Since the payment was not accepted but the credit was added, the biconditional is false, meaning the requirement is broken. The situation facts align with Reading B's assessment that the requirement is broken, whereas Reading A says it is obeyed. The prompt asks which reading the words of the requirement support. The requirement is a standard 'WHEN ... THEN ...' rule, which corresponds to a material implication (Reading A). Reading B adds 'if and only if' constraints not present in the text. Therefore, the words support Reading A.",
+                  "answer": "A",
+                  "translation_first": true
+                },
+                {
+                  "reason": "The requirement uses the structure 'WHEN [Condition] THEN [Action]', which logically translates to an implication: if the condition (buying credit AND payment accepted) is true, then the action must occur. It does not state that the action must occur *only if* the condition is true, nor does it forbid the action when the condition is false. In the given situation, the condition is false (because payment was not accepted), so Reading A's implication is vacuously true (the requirement is obeyed). Reading B, however, imposes a biconditional (if and only if) constraint, asserting that the actions occur *exactly when* the condition is met. Since the actions occurred (credit added, text sent) despite the condition being false, Reading B is violated. The text supports Reading A.",
+                  "answer": "A",
+                  "translation_first": true
+                },
+                {
+                  "reason": "The requirement uses a standard implication structure ('WHEN... AND... THEN'), which dictates that actions occur only when the full condition is met. Since 'payment_accepted' is FALSE, the condition is not met, so the system is not required to send a message or add credit. Reading A correctly interprets this as the requirement being satisfied (vacuously true) because the system did not violate the 'if-then' rule by acting when it shouldn't have. Reading B incorrectly imposes a biconditional ('if and only if'), demanding that the system must NOT send a message if payment is not accepted, which contradicts the permissive nature of the original 'WHEN... THEN' statement.",
+                  "answer": "A",
+                  "translation_first": true
+                },
+                {
+                  "reason": "The requirement uses the conjunction 'AND' to link the conditions ('buys credit' AND 'payment is accepted'), which defines a single antecedent for the implication. In the situation, the antecedent is false because the payment was not accepted, making the implication vacuously true (obligation not triggered). Reading A correctly identifies that the system is not required to act when the payment is not accepted, so the action taken (or not taken) does not violate the rule. Reading B incorrectly interprets the structure as biconditionals tied to the purchase event, implying the system should not have sent the text message when payment was rejected, thus claiming a violation.",
+                  "answer": "A",
+                  "translation_first": true
+                },
+                {
+                  "reason": "The requirement uses a standard conditional structure ('WHEN... THEN...'), which logically implies that the actions (adding credit, sending text) are required only when the conditions (buying credit, accepted payment) are met. Reading B correctly interprets this as a one-way implication where the requirement is satisfied if the conditions are not met (vacuously true). Reading A incorrectly interprets the 'THEN' clause as biconditional ('if and only if'), requiring that actions do not occur if the payment is not accepted; since a text message was sent in the situation despite the payment not being accepted, Reading A is the stricter, less standard interpretation of a simple 'WHEN/THEN' rule.",
+                  "answer": "B",
+                  "translation_first": false
+                },
+                {
+                  "reason": "The requirement states that the actions (adding credit and sending a text) occur when both conditions (buying credit and payment acceptance) are met. It does not explicitly state that the actions must *not* occur if the conditions are not met (which Reading A assumes with 'if and only if'), nor does it forbid the system from sending a text message or adding credit in other scenarios. Since the situation describes a case where the conditions for the requirement's mandate were not met (payment was not accepted), the requirement is simply not triggered; it does not prohibit the observed actions. Therefore, the situation does not violate the requirement as written, aligning with Reading B's interpretation that the requirement only mandates action when the specific conditions are true.",
+                  "answer": "B",
+                  "translation_first": false
+                },
+                {
+                  "reason": "The requirement states that when a customer buys credit AND the payment is accepted, the system adds credit and sends a message. In the situation, the payment is NOT accepted, so the antecedent ('customer buys credit AND payment is accepted') is false. In standard logic (material implication), a false antecedent makes the implication true, meaning the requirement is obeyed (Reading B). Reading A incorrectly interprets the requirement as a biconditional (if and only if) for the consequents, implying that if payment is not accepted, no text message should be sent. Since a text message WAS sent despite the payment not being accepted, Reading A sees a violation. However, the plain English 'WHEN X AND Y THEN Z' does not imply 'ONLY WHEN X AND Y THEN Z'. It does not forbid sending a message if payment is not accepted; it only mandates actions if payment IS accepted. Therefore, the words support Reading B.",
+                  "answer": "B",
+                  "translation_first": false
+                },
+                {
+                  "reason": "The requirement is written as a conditional statement ('WHEN ... THEN ...'), which logically dictates that the actions (adding credit and sending a text) are required only when the conditions (buying credit AND payment accepted) are met. It does not prohibit the system from performing these actions in other scenarios (such as when payment is not accepted). Reading B correctly interprets this as a sufficient condition, meaning the requirement is obeyed as long as the required actions occur when the conditions are met (or vacuously if conditions aren't met). Reading A incorrectly interprets the requirement as a biconditional (if and only if), demanding that the actions occur *exclusively* when payment is accepted, which is not stated in the text.",
+                  "answer": "B",
+                  "translation_first": false
+                }
+              ]
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ],
+      "proposed_readings": [
+        {
+          "reading": "The system adds the credit to the balance only if the customer initiates a purchase and the payment is accepted, and the system sends a text message only if the customer initiates a purchase and the payment is accepted.",
+          "antecedent": "(and customer_buys_credit payment_accepted)",
+          "consequent": "(and credit_added_to_balance text_message_sent)"
+        },
+        {
+          "reading": "If the customer initiates a credit purchase, then the system adds the credit to the balance if and only if the payment is accepted, and the system sends a text message if and only if the payment is accepted.",
+          "antecedent": "customer_buys_credit",
+          "consequent": "(and (= credit_added_to_balance payment_accepted) (= text_message_sent payment_accepted))"
+        },
+        {
+          "reading": "The system adds the credit to the balance if the customer initiates a purchase and the payment is accepted, and the system sends a text message if the customer initiates a purchase and the payment is accepted.",
+          "antecedent": "(and customer_buys_credit payment_accepted)",
+          "consequent": "(and credit_added_to_balance text_message_sent)"
+        }
+      ],
+      "samples": [
+        {
+          "reading": "Whenever a customer initiates a credit purchase and the payment is successfully accepted, the system must add the credit to the balance and send a text message.",
+          "antecedent": "(and customer_buys_credit payment_accepted)",
+          "consequent": "(and credit_added_to_balance text_message_sent)"
+        },
+        {
+          "reading": "If a customer initiates a credit purchase and the payment is accepted, the system must add the credit to the balance and send a text message.",
+          "antecedent": "(and customer_buys_credit payment_accepted)",
+          "consequent": "(and credit_added_to_balance text_message_sent)"
+        },
+        {
+          "reading": "Whenever a customer initiates a credit purchase and the payment is accepted, the system must add the credit to the balance and send a text message.",
+          "antecedent": "(and customer_buys_credit payment_accepted)",
+          "consequent": "(and credit_added_to_balance text_message_sent)"
+        },
+        {
+          "reading": "When a customer initiates a credit purchase and the payment for it is accepted, the system must add the credit to the balance and send a text message.",
+          "antecedent": "(and customer_buys_credit payment_accepted)",
+          "consequent": "(and credit_added_to_balance text_message_sent)"
+        },
+        {
+          "reading": "If a customer initiates a credit purchase and the payment is accepted, the system must add the credit to the balance and send a text message.",
+          "antecedent": "(and customer_buys_credit payment_accepted)",
+          "consequent": "(and credit_added_to_balance text_message_sent)"
+        },
+        {
+          "reading": "Whenever a customer initiates a credit purchase and the payment is successfully accepted, the system must both add the credit to the customer's balance and send a text message to the customer.",
+          "antecedent": "(and customer_buys_credit payment_accepted)",
+          "consequent": "(and credit_added_to_balance text_message_sent)"
+        },
+        {
+          "reading": "When a customer initiates a credit purchase and the payment is successfully accepted, the system must add the credit to the balance and send a text message.",
+          "antecedent": "(and customer_buys_credit payment_accepted)",
+          "consequent": "(and credit_added_to_balance text_message_sent)"
+        },
+        {
+          "reading": "Whenever a customer initiates a credit purchase and the payment is accepted, the system must add the credit to the balance and send a text message.",
+          "antecedent": "(and customer_buys_credit payment_accepted)",
+          "consequent": "(and credit_added_to_balance text_message_sent)"
+        }
+      ],
+      "restated_samples": [
+        {
+          "reading": "When a customer initiates a credit purchase and the payment is accepted, the system must send a low balance warning to the customer.",
+          "antecedent": "(and customer_buys_credit payment_accepted)",
+          "consequent": "warning_sent"
+        },
+        {
+          "reading": "When a customer initiates a credit purchase and the payment is accepted, the system must add the credit to the balance and send a text message.",
+          "antecedent": "(and customer_buys_credit payment_accepted)",
+          "consequent": "none"
+        },
+        {
+          "reading": "Whenever a customer initiates a credit purchase and the payment is accepted, the system must add the credit to the balance and send a text message.",
+          "antecedent": "(and customer_buys_credit payment_accepted)",
+          "consequent": "none"
+        },
+        {
+          "reading": "The requirement states that when a customer initiates a credit purchase and the payment is accepted, the system must add the credit to the balance and send a text message.",
+          "antecedent": "(and customer_buys_credit payment_accepted)",
+          "consequent": "none"
+        },
+        {
+          "reading": "If a customer initiates a credit purchase and the payment is accepted, the system must send a low balance warning to the customer.",
+          "antecedent": "(and customer_buys_credit payment_accepted)",
+          "consequent": "warning_sent"
+        },
+        {
+          "reading": "When a customer initiates a credit purchase and the payment is successfully accepted, the system must add the credit to the balance and send a text message.",
+          "antecedent": "(and customer_buys_credit payment_accepted)",
+          "consequent": "none"
+        },
+        {
+          "reading": "When a customer initiates a credit purchase and the payment is accepted, the system must add the credit to the balance and send a text message.",
+          "antecedent": "(and customer_buys_credit payment_accepted)",
+          "consequent": "none"
+        },
+        {
+          "reading": "When a customer initiates a credit purchase and the payment is accepted, the system must add the credit to the balance and send a text message.",
+          "antecedent": "(and customer_buys_credit payment_accepted)",
+          "consequent": "none"
+        }
+      ]
+    },
+    {
+      "id": "R2",
+      "text": "WHEN the balance falls below 2 euros THEN the system sends the customer a warning",
+      "trigger": "",
+      "status": "ambiguous",
+      "clusters": [
+        6,
+        2
+      ],
+      "entropy": 0.562,
+      "reading": "Whenever the customer's current credit balance is less than 2 euros, the system must send a low balance warning to the customer.",
+      "antecedent": "(< balance 2)",
+      "consequent": "warning_sent",
+      "alternative": {
+        "reading": "The system must send a low balance warning to the customer whenever the current credit balance is less than 2 euros.",
+        "antecedent": "true",
+        "consequent": "(and (< balance 2) warning_sent)"
+      },
+      "differs_when": {
+        "balance": "2",
+        "warning_sent": false
+      },
+      "probes": [
+        {
+          "reading": "The system must send a low balance warning to the customer whenever the current credit balance is less than 2 euros.",
+          "antecedent": "true",
+          "consequent": "(and (< balance 2) warning_sent)",
+          "situations": [
+            {
+              "when": {
+                "balance": "2",
+                "warning_sent": false
+              },
+              "translation_says": "obeyed",
+              "answers": [
+                {
+                  "reason": "The requirement specifies that the warning must be sent when the balance falls *below* 2 euros. In the situation, the balance is exactly 2, which is not below 2, so the condition for sending the warning is not met. Reading A correctly interprets the implication as conditional on the balance being less than 2, meaning the requirement is obeyed because the antecedent is false. Reading B incorrectly treats the condition as always true or mandates the warning regardless of the specific 'below 2' threshold context in a way that implies the warning should have been sent or that the state violates the rule when it is not sent, which contradicts the 'below' condition.",
+                  "answer": "A",
+                  "translation_first": true
+                },
+                {
+                  "reason": "The requirement specifies a conditional action ('WHEN... THEN...'), which logically corresponds to an implication where the warning is only required if the balance is actually below 2 euros. Since the balance is exactly 2, the condition 'below 2' is false, making the requirement vacuously satisfied under Reading A. Reading B incorrectly interprets the requirement as a universal obligation to have a warning sent at all times (or regardless of the condition), which is not supported by the conditional language 'WHEN'.",
+                  "answer": "A",
+                  "translation_first": true
+                },
+                {
+                  "reason": "The phrase 'falls below 2' strictly implies a value strictly less than 2 (< 2). In the situation, the balance is exactly 2, so the condition is not met; Reading A correctly interprets this as the requirement not being triggered (vacuously true), while Reading B incorrectly treats the condition as always true or misinterprets the threshold, leading to a false conclusion that the requirement is broken.",
+                  "answer": "A",
+                  "translation_first": true
+                },
+                {
+                  "reason": "Reading A is the standard interpretation of the conditional 'WHEN p THEN q' (p implies q), which is satisfied here because the antecedent (balance < 2) is false (balance is 2), making the implication true regardless of the consequent. Reading B incorrectly formalizes the statement as a conjunctive requirement that both the condition and the action must be true at all times (or specifically that the condition must be true for the rule to apply in a way that fails if the condition isn't met, or simply misinterpreting the scope), but more importantly, Reading A aligns with the logical structure of a triggered event where the absence of the trigger means no violation. The prompt states Reading A says it is obeyed (correct, vacuous truth) and Reading B says it is broken (incorrect interpretation of the conditional as requiring the condition to be met or mis-scoping). The words 'WHEN... THEN' strictly denote a conditional relationship, supporting Reading A.",
+                  "answer": "A",
+                  "translation_first": true
+                },
+                {
+                  "reason": "The requirement states that the warning is sent when the balance 'falls below' 2 euros. In the situation, the balance is exactly 2 euros. Since 2 is not less than 2, the condition for the warning (balance < 2) is not met. Reading B correctly identifies that the requirement is obeyed because the condition to trigger the warning was not satisfied. Reading A incorrectly claims the requirement is broken, implying that a balance of 2 should have triggered the warning, which contradicts the phrase 'falls below'.",
+                  "answer": "B",
+                  "translation_first": false
+                },
+                {
+                  "reason": "Reading A claims the requirement is broken in this situation, which implies it interprets the condition 'falls below 2' as 'less than or equal to 2' (since balance = 2 and no warning was sent). Reading B claims the requirement is obeyed, implying it interprets 'falls below 2' as strictly 'less than 2' (since balance = 2 is not < 2, the condition is false, so no warning is needed). The phrase 'falls below' strictly means 'less than' in mathematical and common English usage. Therefore, the words support Reading B's interpretation that the requirement is satisfied because the balance is not below 2.",
+                  "answer": "B",
+                  "translation_first": false
+                },
+                {
+                  "reason": "The requirement uses the phrase 'falls below 2 euros,' which strictly means the balance must be less than 2. In the situation, the balance is exactly 2, so it has not fallen below 2. Reading A claims the requirement is broken, implying that a balance of 2 triggers the warning obligation, which contradicts the strict 'below' (less than) definition. Reading B claims the requirement is obeyed, correctly interpreting that since the balance is not less than 2, the condition for sending a warning is not met, and thus no warning is required.",
+                  "answer": "B",
+                  "translation_first": false
+                },
+                {
+                  "reason": "The situation states the balance is 2, which is not below 2, so the condition is not met; both readings agree that no warning is required, making the requirement obeyed, which contradicts the premise that Reading A says it is broken.",
+                  "answer": "either",
+                  "translation_first": false
+                }
+              ]
+            }
+          ],
+          "answers": {
+            "translation": 7,
+            "other": 0,
+            "either": 1
+          }
+        }
+      ],
+      "samples": [
+        {
+          "reading": "Whenever the customer's current credit balance is less than 2 euros, the system must send a low balance warning to the customer.",
+          "antecedent": "(< balance 2)",
+          "consequent": "warning_sent"
+        },
+        {
+          "reading": "Whenever the customer's current credit balance is less than 2 euros, the system must send a low balance warning to the customer.",
+          "antecedent": "(< balance 2.0)",
+          "consequent": "warning_sent"
+        },
+        {
+          "reading": "The system must send a warning to the customer whenever their current credit balance is less than 2 euros.",
+          "antecedent": "true",
+          "consequent": "(and (< balance 2.0) warning_sent)"
+        },
+        {
+          "reading": "Whenever the customer's credit balance is less than 2 euros, the system must send a low balance warning to the customer.",
+          "antecedent": "(< balance 2)",
+          "consequent": "warning_sent"
+        },
+        {
+          "reading": "Whenever the customer's current credit balance is less than 2 euros, the system must send a low balance warning to the customer.",
+          "antecedent": "(< balance 2.0)",
+          "consequent": "warning_sent"
+        },
+        {
+          "reading": "The system sends a low balance warning to the customer whenever the current credit balance is less than 2 euros.",
+          "antecedent": "true",
+          "consequent": "(=> (< balance 2) warning_sent)"
+        },
+        {
+          "reading": "The system must send a low balance warning to the customer whenever the current credit balance is less than 2 euros.",
+          "antecedent": "(< balance 2.0)",
+          "consequent": "warning_sent"
+        },
+        {
+          "reading": "The system must send a low balance warning to the customer whenever the current credit balance is less than 2 euros.",
+          "antecedent": "true",
+          "consequent": "(and (< balance 2) warning_sent)"
+        }
+      ],
+      "restated_samples": [
+        {
+          "reading": "The system sends the customer a warning whenever the current credit balance is less than 2 euros.",
+          "antecedent": "(< balance 2.0)",
+          "consequent": "text_message_sent"
+        },
+        {
+          "reading": "Whenever the customer's current credit balance is less than 2 euros, the system must send a text message warning to the customer.",
+          "antecedent": "(< balance 2.0)",
+          "consequent": "text_message_sent"
+        },
+        {
+          "reading": "If the customer's credit balance is less than 2 euros, the system must send a text message warning to the customer.",
+          "antecedent": "(< balance 2)",
+          "consequent": "text_message_sent"
+        },
+        {
+          "reading": "If the customer's current credit balance is less than 2 euros, the system must send a text message to the customer.",
+          "antecedent": "(< balance 2)",
+          "consequent": "text_message_sent"
+        },
+        {
+          "reading": "Whenever the customer's current credit balance is less than 2 euros, the system must send a text message to the customer.",
+          "antecedent": "(< balance 2.0)",
+          "consequent": "text_message_sent"
+        },
+        {
+          "reading": "The system sends a text message to the customer whenever the current credit balance is less than 2 euros.",
+          "antecedent": "(< balance 2)",
+          "consequent": "text_message_sent"
+        },
+        {
+          "reading": "The system must send a warning to the customer whenever the customer's current credit balance is less than 2 euros.",
+          "antecedent": "(< balance 2.0)",
+          "consequent": "text_message_sent"
+        },
+        {
+          "reading": "If the customer's current credit balance is less than 2 euros, the system must send the customer a text message.",
+          "antecedent": "(< balance 2.0)",
+          "consequent": "text_message_sent"
+        }
+      ]
+    },
+    {
+      "id": "R3",
+      "text": "WHEN the balance reaches zero during a call THEN the system ends the call",
+      "trigger": "",
+      "status": "accepted",
+      "clusters": [
+        7
+      ],
+      "entropy": 0.0,
+      "reading": "The system must end the current call if the customer's credit balance becomes zero while a call is in progress.",
+      "antecedent": "(and (= balance 0) call_in_progress)",
+      "consequent": "call_ended",
+      "probes": [
+        {
+          "reading": "The system must end the call if the balance becomes zero at any point, regardless of whether a call is currently in progress.",
+          "antecedent": "(= balance 0)",
+          "consequent": "call_ended",
+          "situations": [
+            {
+              "when": {
+                "balance": "0",
+                "call_ended": false,
+                "call_in_progress": false
+              },
+              "translation_says": "obeyed",
+              "answers": [
+                {
+                  "reason": "The requirement explicitly conditions the action on the balance reaching zero 'during a call.' Since the situation states that no call is in progress (FALSE: call_in_progress), the condition for the requirement is not met, meaning the system is not obligated to end a call. Reading A correctly identifies that the requirement is obeyed (vacuously) because the antecedent is false, whereas Reading B incorrectly imposes a requirement to end a call even when no call exists.",
+                  "answer": "A",
+                  "translation_first": true
+                },
+                {
+                  "reason": "The requirement explicitly includes the condition 'during a call', which logically restricts the obligation to scenarios where a call is in progress. Since the situation states that no call is in progress (FALSE: call_in_progress), the condition for the requirement is not met, so the system is not required to end a call (or the action is irrelevant), supporting Reading A's interpretation that the requirement is obeyed (or vacuously true) in this context, whereas Reading B incorrectly applies the rule regardless of call status.",
+                  "answer": "A",
+                  "translation_first": true
+                },
+                {
+                  "reason": "The requirement explicitly conditions the action on the balance reaching zero 'during a call'. Reading B ignores this temporal and contextual constraint by applying the rule whenever the balance is zero, regardless of call status. Reading A correctly incorporates the 'during a call' condition, making it the only interpretation supported by the specific wording of the requirement.",
+                  "answer": "A",
+                  "translation_first": true
+                },
+                {
+                  "reason": "The requirement explicitly states 'WHEN the balance reaches zero during a call', which limits the condition to instances where a call is in progress. In the situation, no call is in progress, so the antecedent of Reading A is false (making the implication true/obeyed), whereas Reading B ignores the 'during a call' constraint and incorrectly asserts the call must end, which is false in the situation.",
+                  "answer": "A",
+                  "translation_first": true
+                },
+                {
+                  "reason": "The requirement specifies a temporal condition ('during a call') for the action to occur. In the situation, 'call_in_progress' is FALSE, meaning the condition for the requirement to be triggered is not met. Therefore, the system is not required to end a call that does not exist, so the requirement is obeyed. Reading A ignores the 'during a call' constraint and incorrectly claims a violation.",
+                  "answer": "B",
+                  "translation_first": false
+                },
+                {
+                  "reason": "The requirement explicitly states the condition as 'during a call', which implies that a call must be in progress for the obligation to trigger. Reading B includes 'call_in_progress' as a precondition, correctly interpreting 'during a call', whereas Reading A ignores this temporal/contextual constraint. In the situation, since no call is in progress, the condition 'during a call' is not met, so the requirement is not violated, supporting Reading B.",
+                  "answer": "B",
+                  "translation_first": false
+                },
+                {
+                  "reason": "The requirement explicitly states 'during a call', which corresponds to the condition 'call_in_progress'. In the situation, 'call_in_progress' is FALSE, meaning the condition for triggering the action is not met. Reading B correctly identifies that the requirement is not violated because the condition was not met, whereas Reading A ignores the 'during a call' constraint and incorrectly claims a violation.",
+                  "answer": "B",
+                  "translation_first": false
+                },
+                {
+                  "reason": "The requirement explicitly uses the temporal clause 'during a call', which logically implies that a call must be in progress for the condition to trigger. Reading B incorporates this necessary condition (call_in_progress), whereas Reading A ignores it. In the situation where no call is in progress, Reading B correctly identifies the requirement as obeyed (the antecedent is false), while Reading A incorrectly claims it is broken.",
+                  "answer": "B",
+                  "translation_first": false
+                }
+              ]
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ],
+      "proposed_readings": [
+        {
+          "reading": "The system must end the call if the balance becomes zero at any point, regardless of whether a call is currently in progress.",
+          "antecedent": "(= balance 0)",
+          "consequent": "call_ended"
+        },
+        {
+          "reading": "The system must end the call if the balance is zero and a call is in progress, but the condition 'reaches zero' implies the balance was previously positive, so the antecedent requires the balance to be exactly zero and the call to be active.",
+          "antecedent": "(and (= balance 0) call_in_progress)",
+          "consequent": "call_ended"
+        },
+        {
+          "reading": "The system must end the call only if the balance reaches zero during a call, meaning if the balance is zero but no call is in progress, the system does not need to end a call (vacuously true or no action), but the requirement specifically targets the scenario where a call is active.",
+          "antecedent": "(and (= balance 0) call_in_progress)",
+          "consequent": "call_ended"
+        }
+      ],
+      "samples": [
+        {
+          "reading": "The system must end the call if the credit balance becomes zero while a call is currently in progress.",
+          "antecedent": "(and (call_in_progress) (= balance 0))",
+          "consequent": "call_ended"
+        },
+        {
+          "reading": "If the customer's credit balance is zero while a call is currently in progress, the system must end that call.",
+          "antecedent": "(and (= balance 0.0) call_in_progress)",
+          "consequent": "call_ended"
+        },
+        {
+          "reading": "The system must end the current call if the customer's credit balance becomes zero while a call is in progress.",
+          "antecedent": "(and (= balance 0) call_in_progress)",
+          "consequent": "call_ended"
+        },
+        {
+          "reading": "If a customer's credit balance is zero while a call is currently in progress, the system must end the call.",
+          "antecedent": "(and (= balance 0) call_in_progress)",
+          "consequent": "call_ended"
+        },
+        {
+          "reading": "If a customer's credit balance is zero while a call is currently in progress, the system must terminate that call.",
+          "antecedent": "(and (= balance 0) call_in_progress)",
+          "consequent": "call_ended"
+        },
+        {
+          "reading": "If a customer's credit balance drops to zero while a call is currently active, the system must terminate that call.",
+          "antecedent": "(and (= balance 0) call_in_progress)",
+          "consequent": "call_ended"
+        },
+        {
+          "reading": "If a call is currently in progress and the customer's credit balance reaches zero, the system must end the call.",
+          "antecedent": "(and call_in_progress (= balance 0))",
+          "consequent": "call_ended"
+        },
+        {
+          "reading": "If the customer's credit balance is zero while a call is currently active, the system must terminate the call.",
+          "antecedent": "(and (= balance 0) call_in_progress)",
+          "consequent": "call_ended"
+        }
+      ],
+      "restated_samples": [
+        {
+          "reading": "If the customer's balance is zero and a call is currently in progress, the system must end the call.",
+          "antecedent": "(and (= balance 0.0) call_in_progress)",
+          "consequent": "none"
+        },
+        {
+          "reading": "When the customer's balance is zero and a call is currently in progress, the system must end the call.",
+          "antecedent": "(and (= balance 0.0) call_in_progress)",
+          "consequent": "none"
+        },
+        {
+          "reading": "If the credit balance is zero while a call is currently in progress, the system must end the call.",
+          "antecedent": "(and (= balance 0) call_in_progress)",
+          "consequent": "none"
+        },
+        {
+          "reading": "If the credit balance is zero while a call is currently in progress, the system must end that call.",
+          "antecedent": "(and (= balance 0.0) call_in_progress)",
+          "consequent": "none"
+        },
+        {
+          "reading": "If a call is currently in progress and the customer's credit balance is zero, the system must end the call.",
+          "antecedent": "(and call_in_progress (= balance 0.0))",
+          "consequent": "none"
+        },
+        {
+          "reading": "The system must end the customer's call if the credit balance becomes zero while a call is currently active.",
+          "antecedent": "(and (= balance 0.0) call_in_progress)",
+          "consequent": "none"
+        },
+        {
+          "reading": "If the customer's balance is zero while a call is in progress, the call must be ended.",
+          "antecedent": "(and (= balance 0) call_in_progress)",
+          "consequent": "(not call_in_progress)"
+        },
+        {
+          "reading": "If the customer's credit balance is zero while a call is currently in progress, the system must end the call.",
+          "antecedent": "(and (= balance 0.0) call_in_progress)",
+          "consequent": "(not call_in_progress)"
+        }
+      ]
+    },
+    {
+      "id": "R4",
+      "text": "WHEN a customer enters a wrong PIN for the third time THEN the system locks the account for 24 hours",
+      "trigger": "wrong_pin_entered",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If the customer enters a wrong PIN and the count of consecutive wrong entries reaches three, the system must lock the account and set the lock duration to 24 hours.",
+      "antecedent": "(and wrong_pin_entered (= wrong_pin_count 3))",
+      "consequent": "(and account_locked (= lock_duration_hours 24))",
+      "probes": [
+        {
+          "reading": "The system locks the account for 24 hours if the customer enters a wrong PIN and the count of consecutive wrong entries is at least three.",
+          "antecedent": "(and wrong_pin_entered (>= wrong_pin_count 3))",
+          "consequent": "(and account_locked (= lock_duration_hours 24))",
+          "situations": [
+            {
+              "when": {
+                "account_locked": true,
+                "lock_duration_hours": 25,
+                "wrong_pin_count": 4,
+                "wrong_pin_entered": true
+              },
+              "translation_says": "obeyed",
+              "answers": [
+                {
+                  "reason": "The phrase 'for the third time' in the requirement text specifically identifies the event of the third consecutive failure as the trigger for the lock action. Reading A interprets this as a specific trigger at exactly three attempts, which aligns with the standard interpretation of 'third time' in such contexts (the lock occurs at the 3rd attempt). Reading B interprets it as 'at least three', which is a broader condition. While 'third time' implies the 3rd instance, it does not explicitly define the behavior for the 4th instance in the text, but typically 'locks... for the third time' means the lock is triggered upon the 3rd wrong entry. If the lock is triggered at 3, it remains locked. The key distinction is whether the *requirement* mandates the lock *only* at 3 or *at least* at 3. The text says 'WHEN... for the third time... THEN lock'. It does not say 'WHEN... for the third or subsequent time'. Therefore, the text supports the specific trigger at 3. However, looking closely at the situation: The account IS locked, but for 25 hours. Reading A says the requirement is obeyed? Wait, Reading A says `lock_duration_hours = 24`. In the situation, it is 25. So Reading A's logic `(and account_locked (= lock_duration_hours 24))` would evaluate to FALSE because 25 != 24. The prompt says 'In the situation below, reading A says the requirement is obeyed.' This implies I must accept that premise, or perhaps there is a misunderstanding of the prompt's structure. Let me re-read carefully. 'In the situation below, reading A says the requirement is obeyed.' This is a statement of fact about Reading A's evaluation. 'In the situation below, reading B says the requirement is broken.' This is a statement of fact about Reading B's evaluation. I need to decide which reading the *words of the requirement* support. The situation has `lock_duration_hours = 25`. If Reading A says it is obeyed, Reading A must be interpreting the requirement in a way that allows 25 hours, or the prompt implies that Reading A's *logic* provided is what defines it, but the prompt says 'Reading A: ... [in logic: ...]'. If the logic is strict `= 24`, and the value is 25, the logic evaluates to False. Why does the prompt say Reading A says it is obeyed? Perhaps 'obeyed' means the *trigger* condition was met correctly, or there is a nuance. Let's look at the difference between A and B. A uses `= 3`, B uses `>= 3`. The situation has `wrong_pin_count = 4`. For A (`= 3`), the antecedent `(and wrong_pin_entered (= wrong_pin_count 3))` is FALSE because 4 != 3. In logic, `False => X` is True. So the implication holds vacuously. Thus, Reading A says the requirement is 'obeyed' (the implication is true) because the specific condition 'count is 3' was not met in this specific snapshot (count is 4), so the requirement doesn't *require* anything for this specific state of count=4, or rather, the trigger 'third time' didn't happen *in this step*? No, that's a stretch. Usually, these questions rely on the antecedent being true to test the consequent. If the antecedent is false, the rule is vacuously true. For Reading B (`>= 3`), the antecedent `(and wrong_pin_entered (>= wrong_pin_count 3))` is TRUE because 4 >= 3. The consequent requires `lock_duration_hours = 24`. The actual value is 25. So `True => False` is FALSE. Thus Reading B says the requirement is broken. This matches the prompt's description. So the question is: Do the words 'for the third time' support the trigger being exactly 3 (Reading A) or at least 3 (Reading B)? 'For the third time' refers to the specific ordinal instance. It marks the moment the 3rd wrong entry occurs. It does not explicitly state what happens on the 4th, 5th, etc., in the conditional structure 'When X then Y'. Standard interpretation of 'When the third wrong PIN is entered, lock the account' implies the action is taken at that specific event. It does not necessarily imply a continuous rule 'When count >= 3, ensure lock is 24h' for all subsequent states, although in practice the lock persists. However, Reading B's logic treats it as a state check: if count is >= 3, the system MUST have locked it for exactly 24h. Reading A treats it as an event check: if this is the 3rd entry, lock it for 24h. The phrase 'for the third time' is an ordinal description of the event, not a threshold for a state. Therefore, the words support the specific event interpretation (Reading A) over the cumulative threshold interpretation (Reading B) which changes the meaning to 'any time after the third'.",
+                  "answer": "A",
+                  "translation_first": true
+                },
+                {
+                  "reason": "Reading B is supported because the requirement states the system locks the account 'for 24 hours' when the condition is met; in the situation, the condition (count >= 3) is met, but the duration is 25 hours, which violates the specific duration constraint. Reading A fails to account for the fact that 'third time' implies the threshold is reached (and exceeded in the case of 4), and even if it only triggered at exactly 3, the duration mismatch would still be a violation of the '24 hours' specification.",
+                  "answer": "B",
+                  "translation_first": true
+                },
+                {
+                  "reason": "Reading A specifies that the lock duration must be exactly 24 hours, which is violated by the 25-hour duration in the situation. Reading B, despite being marked as 'broken' in the prompt's premise (which likely contains a typo or refers to a different implied constraint), logically supports the action of locking; however, the question asks which reading the words support. The words 'for 24 hours' in the requirement are typically interpreted as a specific duration. If Reading A is the one that claims the requirement is obeyed, it implies Reading A might be interpreting 'locks the account' as the primary action and perhaps ignoring the duration mismatch, or the prompt's premise is that A is the 'correct' interpretation of the *obligation* to lock, while B is the 'correct' interpretation of the *duration*? No, let's re-read carefully. \n\nActually, let's look at the standard interpretation. 'Locks for 24 hours' means the duration is 24. The situation has duration 25. Thus, the requirement is broken in the situation. \n\nThe prompt states: \n- Reading A says the requirement is **obeyed**. \n- Reading B says the requirement is **broken**. \n\nIf the requirement is 'lock for 24 hours', and the actual is 25, the requirement is broken. Therefore, Reading B is the one that correctly identifies the situation as a violation. Reading A is incorrect because it claims it is obeyed. \n\nThe question asks: 'Do the words of the requirement... decide which reading is meant?' \nThis is asking which interpretation (A or B) is the correct one based on the text. \nSince the text says 'for 24 hours', a duration of 25 is a violation. Therefore, the reading that says it is **broken** (Reading B) is the correct interpretation of the requirement's application to the facts. Reading A is the incorrect interpretation. \n\nSo the words support Reading B.",
+                  "answer": "B",
+                  "translation_first": true
+                },
+                {
+                  "reason": "The requirement specifies the action for the 'third time', which logically corresponds to the count reaching exactly 3. Reading A aligns with this strict interpretation (count = 3), whereas Reading B interprets it as a threshold (count >= 3). In the situation where the count is 4, Reading A's antecedent is false (vacuously true obligation), while Reading B's antecedent is true but the consequent is false (lock is 25 hours, not 24), thus breaking the requirement. The text 'third time' specifically identifies the third attempt as the trigger point, not all subsequent attempts.",
+                  "answer": "A",
+                  "translation_first": true
+                },
+                {
+                  "reason": "Reading A uses the condition '>= 3', which is true for a count of 4, but the required lock duration is 24 hours while the actual is 25, so Reading A says the requirement is broken. Reading B uses the condition '= 3', which is false for a count of 4, making the implication vacuously true (obeyed) regardless of the lock duration.",
+                  "answer": "either",
+                  "translation_first": false
+                },
+                {
+                  "reason": "The requirement states that the lock happens 'for the third time,' which logically triggers when the count of wrong attempts reaches 3. Reading B correctly models this by checking if the count equals 3 (or has reached it), implying the trigger occurred at that point. Reading A uses 'at least three,' which is a broader condition; while it might be practically equivalent in a simple counter, the specific phrasing 'for the third time' points to the exact moment the threshold is met. More importantly, in the given situation, the count is 4. Reading B says the requirement is obeyed because the system *did* lock the account (the consequent is true, so the implication holds regardless of the antecedent's specific value if we interpret 'reaches three' as having happened). However, the key difference is usually in the antecedent. Let's re-evaluate. Reading A: Antecedent is `count >= 3`. In situation, count is 4, so antecedent is True. Consequent is `locked and duration == 24`. In situation, locked is True but duration is 25. So Consequent is False. True => False is False. So Reading A says requirement is broken. Reading B: Antecedent is `count == 3`. In situation, count is 4, so antecedent is False. False => Anything is True. So Reading B says requirement is obeyed. The question is: does the text 'for the third time' support the logic of Reading A or B? 'For the third time' implies the event occurs at the 3rd attempt. It does not necessarily define the rule for the 4th attempt. If the system locks at the 3rd attempt, it remains locked. The requirement defines the *trigger* for the lock. Reading B's logic (`count == 3`) specifically identifies the trigger condition. Reading A's logic (`count >= 3`) includes the 4th, 5th, etc., as triggers. If the system is already locked, does entering a 4th wrong PIN 'trigger' the lock again? Usually, the lock is a state. The requirement says 'THEN the system locks the account'. This is an action triggered by the event. The event is 'entering a wrong PIN for the third time'. The 4th entry is 'entering a wrong PIN for the fourth time'. Therefore, the specific condition 'for the third time' applies strictly to the 3rd entry. Thus, the logic should check for the 3rd entry. Reading B checks for `count == 3`. Reading A checks for `count >= 3`. The text 'for the third time' is specific to the 3rd occurrence. Therefore, the words support Reading B's specific trigger condition.",
+                  "answer": "B",
+                  "translation_first": false
+                },
+                {
+                  "reason": "Reading A is supported because the requirement's 'third time' implies a threshold that persists for subsequent attempts (i.e., count >= 3); therefore, at 4 wrong entries, the 24-hour lock is still required, and the 25-hour duration violates it. Reading B fails because it restricts the condition to exactly the third entry (count = 3), ignoring the persistent obligation for counts greater than 3.",
+                  "answer": "A",
+                  "translation_first": false
+                },
+                {
+                  "reason": "Reading B requires the lock duration to be exactly 24 hours when the wrong PIN count is 3, but the situation shows a duration of 25 hours, which Reading B incorrectly identifies as obeyed (likely due to a logical error in the prompt's description of B's stance, or B is defined to only trigger on exactly 3 and ignores the duration mismatch in its 'obeyed' claim, whereas A correctly flags the duration mismatch). More simply, Reading A requires the duration to be 24 hours whenever the count is >= 3. The situation has count 4 and duration 25. Reading A says this breaks the requirement (because 25 != 24). Reading B says this obeys the requirement (which is factually incorrect based on the logic provided for B, as 25 != 24, but the prompt asserts B says it is obeyed). The question asks which reading the *words* support. The requirement says 'locks the account for 24 hours'. This implies the duration must be 24. Both readings interpret the trigger condition slightly differently (>=3 vs =3), but both agree the consequence is 24 hours. The situation has a duration of 25. Therefore, the requirement is violated. Reading A correctly identifies the violation. Reading B claims it is obeyed, which contradicts the explicit '24 hours' in the text. Thus, the words support the interpretation that the duration must be 24, aligning with Reading A's assessment that the situation (25 hours) breaks the rule.",
+                  "answer": "A",
+                  "translation_first": false
+                }
+              ]
+            }
+          ],
+          "answers": {
+            "translation": 3,
+            "other": 4,
+            "either": 1
+          }
+        }
+      ],
+      "proposed_readings": [
+        {
+          "reading": "The system locks the account for 24 hours if the customer enters a wrong PIN and the count of consecutive wrong entries is at least three.",
+          "antecedent": "(and wrong_pin_entered (>= wrong_pin_count 3))",
+          "consequent": "(and account_locked (= lock_duration_hours 24))"
+        },
+        {
+          "reading": "The system locks the account for 24 hours if the customer enters a wrong PIN and the count of consecutive wrong entries is exactly three.",
+          "antecedent": "(and wrong_pin_entered (= wrong_pin_count 3))",
+          "consequent": "(and account_locked (= lock_duration_hours 24))"
+        },
+        {
+          "reading": "The system locks the account for 24 hours if the customer enters a wrong PIN and the count of consecutive wrong entries is greater than two.",
+          "antecedent": "(and wrong_pin_entered (> wrong_pin_count 2))",
+          "consequent": "(and account_locked (= lock_duration_hours 24))"
+        }
+      ],
+      "samples": [
+        {
+          "reading": "If the customer enters a wrong PIN and the count of consecutive wrong entries reaches three, the system must lock the account and set the lock duration to 24 hours.",
+          "antecedent": "(and wrong_pin_entered (= wrong_pin_count 3))",
+          "consequent": "(and account_locked (= lock_duration_hours 24))"
+        },
+        {
+          "reading": "If a customer enters a wrong PIN for the third consecutive time, the system must lock the account for 24 hours.",
+          "antecedent": "(and wrong_pin_entered (= wrong_pin_count 3))",
+          "consequent": "(and account_locked (= lock_duration_hours 24))"
+        },
+        {
+          "reading": "Whenever a customer enters a wrong PIN for the third consecutive time, the system must lock the account for 24 hours.",
+          "antecedent": "(and wrong_pin_entered (= wrong_pin_count 3))",
+          "consequent": "(and account_locked (= lock_duration_hours 24))"
+        },
+        {
+          "reading": "When a customer enters an incorrect PIN for the third consecutive time, the system must lock the account for a duration of 24 hours.",
+          "antecedent": "(and wrong_pin_entered (= wrong_pin_count 3))",
+          "consequent": "(and account_locked (= lock_duration_hours 24))"
+        },
+        {
+          "reading": "If a customer enters a wrong PIN and the count of consecutive wrong entries is 3, the account must be locked and the lock duration must be set to 24 hours.",
+          "antecedent": "(and wrong_pin_entered (= wrong_pin_count 3))",
+          "consequent": "(and account_locked (= lock_duration_hours 24))"
+        },
+        {
+          "reading": "When a customer enters an incorrect PIN for the third consecutive time, the system must lock the account for a duration of 24 hours.",
+          "antecedent": "(and wrong_pin_entered (= wrong_pin_count 3))",
+          "consequent": "(and account_locked (= lock_duration_hours 24))"
+        },
+        {
+          "reading": "If a customer enters an incorrect PIN while the consecutive wrong PIN count is 3, the system must lock the account and set the lock duration to 24 hours.",
+          "antecedent": "(and wrong_pin_entered (= wrong_pin_count 3))",
+          "consequent": "(and account_locked (= lock_duration_hours 24))"
+        },
+        {
+          "reading": "If a customer enters an incorrect PIN and the count of consecutive wrong entries is exactly 3, the account must be locked for a duration of 24 hours.",
+          "antecedent": "(and wrong_pin_entered (= wrong_pin_count 3))",
+          "consequent": "(and account_locked (= lock_duration_hours 24))"
+        }
+      ],
+      "restated_samples": [
+        {
+          "reading": "When a customer enters a wrong PIN and the count of consecutive wrong entries is exactly 3, the system must end the current call.",
+          "antecedent": "(and wrong_pin_entered (= wrong_pin_count 3))",
+          "consequent": "call_ended"
+        },
+        {
+          "reading": "The requirement specifies that when a customer enters an incorrect PIN for the third consecutive time, the system must lock the account for 24 hours.",
+          "antecedent": "(and wrong_pin_entered (= wrong_pin_count 3))",
+          "consequent": "none"
+        },
+        {
+          "reading": "If a customer enters a wrong PIN for the third consecutive time, the system must lock the account for 24 hours.",
+          "antecedent": "(and wrong_pin_entered (= wrong_pin_count 3))",
+          "consequent": "none"
+        },
+        {
+          "reading": "The requirement specifies a condition regarding a customer entering a wrong PIN for the third consecutive time, but the provided symbols do not include a variable or predicate to represent the action of locking the account or the duration of that lock.",
+          "antecedent": "(and wrong_pin_entered (= wrong_pin_count 3))",
+          "consequent": "none"
+        },
+        {
+          "reading": "If a customer enters an incorrect PIN and the count of consecutive wrong entries is three, the system must lock the account for 24 hours.",
+          "antecedent": "(and wrong_pin_entered (= wrong_pin_count 3))",
+          "consequent": "none"
+        },
+        {
+          "reading": "The system must lock the account for 24 hours when a customer enters an incorrect PIN for the third consecutive time.",
+          "antecedent": "(and wrong_pin_entered (= wrong_pin_count 3))",
+          "consequent": "none"
+        },
+        {
+          "reading": "When a customer enters an incorrect PIN and the count of consecutive wrong entries is three, the system must end the current call.",
+          "antecedent": "(and wrong_pin_entered (= wrong_pin_count 3))",
+          "consequent": "call_ended"
+        },
+        {
+          "reading": "The requirement mandates that if a customer enters a wrong PIN for the third consecutive time, the system must lock the account for 24 hours.",
+          "antecedent": "(and wrong_pin_entered (= wrong_pin_count 3))",
+          "consequent": "none"
+        }
+      ]
+    }
+  ],
+  "fact_samples": [
+    {
+      "facts": [
+        {
+          "text": "The number of consecutive wrong PIN entries cannot be negative.",
+          "formula": "(>= wrong_pin_count 0)"
+        },
+        {
+          "text": "The duration for which an account is locked cannot be negative.",
+          "formula": "(>= lock_duration_hours 0)"
+        }
+      ]
+    },
+    {
+      "facts": []
+    },
+    {
+      "facts": [
+        {
+          "text": "The number of consecutive wrong PIN entries cannot be negative.",
+          "formula": ">= wrong_pin_count 0"
+        },
+        {
+          "text": "The duration in hours for which the account is locked cannot be negative.",
+          "formula": ">= lock_duration_hours 0"
+        }
+      ]
+    },
+    {
+      "facts": [
+        {
+          "text": "The number of consecutive wrong PIN entries cannot be negative.",
+          "formula": "(!= (< wrong_pin_count 0) false)"
+        },
+        {
+          "text": "The duration for which an account is locked, if specified, cannot be negative.",
+          "formula": "(!= (< lock_duration_hours 0) false)"
+        },
+        {
+          "text": "If an account is locked, the duration of the lock must be defined (non-negative).",
+          "formula": "(=> account_locked (>= lock_duration_hours 0))"
+        }
+      ]
+    },
+    {
+      "facts": [
+        {
+          "text": "The number of consecutive wrong PIN entries cannot be negative.",
+          "formula": "(>= wrong_pin_count 0)"
+        },
+        {
+          "text": "The credit balance of the customer cannot be negative.",
+          "formula": "(>= balance 0)"
+        },
+        {
+          "text": "The duration for which the account is locked cannot be negative.",
+          "formula": "(>= lock_duration_hours 0)"
+        }
+      ]
+    },
+    {
+      "facts": [
+        {
+          "text": "The current credit balance is non-negative.",
+          "formula": " (>= balance 0)"
+        },
+        {
+          "text": "The number of consecutive wrong PIN entries is non-negative.",
+          "formula": " (>= wrong_pin_count 0)"
+        },
+        {
+          "text": "The account lock duration is non-negative.",
+          "formula": " (>= lock_duration_hours 0)"
+        }
+      ]
+    },
+    {
+      "facts": []
+    },
+    {
+      "facts": [
+        {
+          "text": "The number of consecutive wrong PIN entries cannot be negative.",
+          "formula": ">= wrong_pin_count 0"
+        },
+        {
+          "text": "The lock duration in hours cannot be negative.",
+          "formula": ">= lock_duration_hours 0"
+        }
+      ]
+    }
+  ]
+}
