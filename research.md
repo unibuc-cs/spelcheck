@@ -202,7 +202,7 @@ changes, one run each, read by hand:
 | | |
 |---|---|
 | runs that stopped | 5 of 16 (3 for a parser bug, now fixed; 2 for a symbol name that is not a word) |
-| rules without an agreed translation | 147 of 366, 40% (our sets: about 3%) |
+| rules without an agreed translation | 147 of 366, 40% (our sets: about 3%); 45 more are accepted and demand nothing (4.8) |
 | conflicts about the change | 29, in 3 of 11 changes |
 | proven from the rules alone | 3, and they look real: nothing says which of two shell-detection rules wins |
 | resting on a question about two outcomes | 26; the 4 that were read set a general rule against its own special case |
@@ -549,11 +549,32 @@ E16).
 
 A first batch of 16 changes of one real project, so a first sign.
 
-- **Real scenarios are longer than ours.** "THEN parse the markdown change
-  file AND extract change structure and deltas AND output valid JSON to
-  stdout": several outcomes, commands in quotes, file names. Two rules in
+- **The symbols of the read step do not fit real rules** (T27). Two rules in
   five did not get an agreed translation (79 ambiguous, 68 rejected, of
-  366). A rejected rule takes no part in the checks.
+  366). A real rule demands 2.2 things on average ("THEN parse the markdown
+  change file AND extract change structure and deltas AND output valid JSON
+  to stdout"), ours 1, and the read step lists hardly more symbols for it
+  (2.6 against 2.1 for each rule). The eight translations, which may use
+  listed symbols only, then differ:
+  - in 73 of the 147 rules they use different symbols for what is demanded,
+    because the list has several that overlap (`error_thrown` next to
+    `unsupported_shell_error_displayed`);
+  - in 50 there is no symbol for what is demanded, and some translations
+    demand nothing (`... => true`), though the model's own reading of the
+    rule is right;
+  - in 16 only the condition differs, and in 7 the same symbols are combined
+    differently.
+
+  It is not the number of outcomes by itself (34% of the real rules with one
+  outcome have no agreed translation), nor the quoted commands, nor the
+  length of the symbol list.
+- **A rule that demands nothing is accepted.** 75 of the 366 rules have a
+  chosen translation whose "then" part is always true, and 45 of them count
+  as accepted, because the eight agree. In two specs the read step listed
+  0.4 and 0.6 symbols for each outcome, and 43 of 51 and 20 of 33 rules are
+  empty. With the 147, about half of the real rules give the checks nothing.
+- **More answers are not formulas**: 4.9% of the translations, against 0.1
+  to 0.9% on our sets, mostly `and a b` without the outer parentheses.
 - **Real specs put a general rule next to its special cases**, and the
   questions about two outcomes (3.13) turn each such pair into a conflict:
   26 of the 29 conflicts about a change. This is the weakness of 4.6, and
@@ -636,7 +657,8 @@ the merged document, to see which gap the removal opens (2.4). T24 formalized
 only the new scenarios of a change, on a saved model of the specs (2.4). T25
 found why that way lost a conflict in E20, and changed the read prompt
 addition (2.4, 4.5). T26 ran the second model on the spec of 100 requirements
-(4.4).
+(4.4). T27 looked at the saved translations of the real project, to see why
+they disagree (4.8).
 research_log.md
 has them in order, together with the bugs that
 changed results before they were fixed (L1 to L10) and the open threats to

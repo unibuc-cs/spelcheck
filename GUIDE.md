@@ -1112,12 +1112,30 @@ spec files it touches. It went much worse than on our sets:
 | | On 16 real changes |
 |---|---|
 | runs that stopped | 5 (3 for a bug in our parser, now fixed) |
-| rules without an agreed translation | 2 in 5 (on our sets: about 1 in 30) |
+| rules without an agreed translation | 2 in 5 (on our sets: about 1 in 30). 1 more in 8 is accepted but demands nothing |
 | conflicts reported about a change | 29, in 3 changes |
 | of them proven from the rules alone | 3. They look real: two rules for detecting the shell can both apply, and nothing says which wins |
 | of them resting on a question about two outcomes (3.2) | 26. The 4 we read set a general rule against its own special case |
 
 So the tool is not ready for a real project as it is (6.4).
+
+We looked at why the translations disagree, in the saved answers. The eight
+translations of a rule must use the symbols that the read step listed once
+for the whole document (2.1). In our specs a rule demands one thing, and the
+list has one symbol for it. A real rule demands two or three ("THEN parse the
+file AND extract the deltas AND output valid JSON"), and the list does not
+fit:
+
+- for half of the rules without agreement, the list has several symbols for
+  one outcome, a general one and a specific one (`error_thrown`,
+  `unsupported_shell_error_displayed`), and the eight pick different ones;
+- for a third, it has no symbol for what the rule demands. The model then
+  writes that the rule demands nothing (`... => true`), although its own
+  summary of the rule is right. When all eight do that, the rule is accepted,
+  and empty.
+
+So the weak point on real specs is the first step, the list of symbols, and
+not the translation or the solver.
 
 **Longer specs.** All the specs counted above have at most six requirements.
 To see what a longer document does, we wrote two more, each in four versions
@@ -1160,7 +1178,7 @@ The project has five goals. This is where each one stands:
 | two words for one yes/no question give a false gap | "the slot is free" and "the slot is taken" as two symbols: in 3 to 5 of 18 clean runs (6.2) |
 | a fact or a link can be wrong, even with a majority behind it | which is why the report quotes every one that a conflict depends on |
 | there is no time | "then", "after" and "until" are not modelled: the logic is one snapshot |
-| real specs are harder than the ones we wrote | their scenarios have several outcomes, quoted commands and file names, and 2 rules in 5 got no agreed translation. They put a general rule next to its special cases, and the questions about two outcomes then report a conflict for each such pair. A whole project is too large to check at once (6.2) |
+| real specs are harder than the ones we wrote | their rules demand two or three things each, and the symbols that the read step lists do not fit them: 2 rules in 5 got no agreed translation, and 1 more in 8 was accepted with a translation that demands nothing. They put a general rule next to its special cases, and the questions about two outcomes then report a conflict for each such pair. A whole project is too large to check at once (6.2) |
 | the cheaper way to check a change reads a new rule with little around it | shown only the saved symbols, the model sometimes ties a new rule to a saved event that the rule does not name. That cost 4 of 54 planted conflicts on `eval14`. On `eval15` it cost none, but one such rule was ambiguous in 3 of 3 runs (6.2). Either way, a project can have about 140 scenarios at most |
 | the evaluation is small | the specs were written by us, and there is one main model |
 

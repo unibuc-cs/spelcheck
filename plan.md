@@ -62,7 +62,22 @@ this order:
    OpenSpec tool's own repository, each against the spec files it touches.
    It went badly: 5 runs stopped, 40% of the rules had no agreed
    translation, and 26 of 29 conflicts came from the questions about two
-   outcomes (research.md 4.8). 32 changes of the pool are left to run. A
+   outcomes (research.md 4.8). The cause of the second is found (T27): the
+   symbols that the read step lists do not fit real rules, which demand two
+   or three things each. For some outcomes there is no symbol, for others
+   several that overlap, and 45 rules that demand nothing were accepted.
+   What follows from it, none built, each needing `eval16/` first:
+   - a rule whose chosen translation demands nothing is not accepted but
+     reported as one that could not be expressed (no LLM; nothing changes on
+     our sets);
+   - the spec is read one requirement at a time, with the symbols so far, as
+     `--incremental` reads a change. Symbols are then made next to the rule
+     that needs them, and the limit of 140 scenarios goes;
+   - overlapping symbols: ask after reading which say the same, or tell the
+     translation to state everything the rule demands;
+   - the parentheses of a translation are repaired as those of a fact.
+
+   32 changes of the pool are left to run. A
    larger invented project with a change that does everything at once is
    done (step 36).
    All fifteen sets have been read (`eval15/` in E21), so
@@ -1124,8 +1139,11 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       (`experiments/real/`). First batch, 16 of a pool of 48 changes (E23): 5
       runs stopped, 147 of 366 rules without an agreed translation, 29
       conflicts about a change of which 3 from the rules alone (they look
-      real). The parser now skips headers in code blocks. Open: the other 32
-      changes, why the translations disagree, names that are not words
+      real). The parser now skips headers in code blocks. T27: the
+      translations disagree because the symbols of the read step do not fit
+      real rules (73 rules with overlapping symbols, 50 with none for the
+      outcome; 45 empty rules accepted). Open: the remedies of section 2,
+      the other 32 changes, names that are not words
 - [x] **Documentation pass 2**: GUIDE.md reviewed point by point and rewritten (a new
       2.4 on gaps and scenarios; the ambiguity check, voted facts and links as steps on
       one real example), then shortened from 1112 to 893 lines; README.md reworded in the

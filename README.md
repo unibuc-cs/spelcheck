@@ -782,8 +782,15 @@ Some notes on these numbers:
     a scenario (fixed since), 2 because the LLM made a symbol with a name
     that is not a word (".claude");
   - 147 of the 366 rules got no agreed translation (79 ambiguous, 68
-    rejected). On our sets that is about 3%. Real scenarios have several
-    outcomes, quoted commands and file names;
+    rejected). On our sets that is about 3%. The cause is the list of symbols
+    that the first step makes for the whole document. A real rule demands two
+    or three things, and the list does not fit: for 73 of the 147 it has
+    several overlapping symbols for one outcome and the eight translations
+    pick different ones; for 50 it has none, and some translations then
+    demand nothing (`... => true`);
+  - 45 more rules were accepted with a translation that demands nothing,
+    because all eight agreed on it. So about half of the real rules gave the
+    checks nothing to work with;
   - 29 conflicts were reported about a change, in 3 of the 11 changes. 26 of
     them rest on a question about two outcomes, and the 4 we read set a
     general rule against its own special case ("the legacy list command
@@ -814,7 +821,7 @@ Some notes on these numbers:
 | Gaps depend on the symbols, and on the events the LLM marks | "free" and "taken" as two symbols give a false gap, and it is rarely marked doubtful. The gap in which no event happens, which almost every spec has, is marked as such and is rarely something to fix |
 | One snapshot, no time | "then", "after" and "until" are not modelled |
 | A reworded scenario is the change's, whatever its new words are | if its old words gave the same finding, the finding is still shown as the change's |
-| Real specs are harder than the ones we wrote | on 16 changes of a real project, 2 rules in 5 got no agreed translation, 5 runs stopped, and most conflicts came from the questions about two outcomes, which report a general rule against its own special case. A whole real project is also too large to check at once: a change is checked against the spec files it touches |
+| Real specs are harder than the ones we wrote | on 16 changes of a real project, 2 rules in 5 got no agreed translation and 1 more in 8 was accepted with a translation that demands nothing, because the symbols of the first step do not fit rules that demand several things. 5 runs stopped, and most conflicts came from the questions about two outcomes, which report a general rule against its own special case. A whole real project is also too large to check at once: a change is checked against the spec files it touches |
 | The cheaper way to check a change reads a new rule with little around it | by default the specs are formalized again for each change, so that old and new rules share their symbols. `--incremental` avoids that. Shown only the saved symbols, the LLM sometimes ties a new rule to a saved event that the rule does not name. That cost 4 of 54 planted conflicts on `eval14/`, and none of 72 on `eval15/`, where one such rule was ambiguous in 3 of 3 runs. Either way, a project is bounded by the read step's room, about 140 scenarios |
 
 ## Optional: an LLM review of the text (off by default)
