@@ -116,6 +116,44 @@ this order:
      the facts rarely say that one of the two always holds, so only 2 of 13
      were marked (T20, E16). This is a known limit now.
 
+### 2.1 The plan for step 39: a name that is not a word (not built yet)
+
+On specs written like real ones a run often ends before it starts. The read
+step lists the symbols, our code checks the list, and the run stops if the
+list cannot be used after three tries. In the 179 runs of E23, T28 and E24
+that happened 24 times:
+
+| What is wrong with the list | Runs | Examples |
+|---|---|---|
+| a name or a value that is not a word | 20 | `timed out`, `change:apply`, `.claude`, 201, `Asia/Shanghai` |
+| a name declared twice | 2 | the value `zsh` of one symbol, and a symbol `zsh` |
+| an enum with fewer than two values | 2 | |
+
+The prompt already asks for words in snake_case and for distinct names. The
+model keeps the spelling of what it found in quotes in the document.
+
+One try: our code repairs the list, and no prompt changes.
+
+1. A name or a value that is not a word is made one: every character that is
+   not a letter, a digit or "_" becomes "_" (`timed out` to `timed_out`). One
+   that would start with a digit gets the name of its symbol in front (201 to
+   `answer_status_201`).
+2. A value that is already the name of something else gets the name of its
+   symbol in front (`zsh` to `shell_zsh`). A symbol whose name is taken is
+   left out; the first one stays.
+3. An enum with fewer than two values becomes a yes/no symbol.
+4. A trigger that names a repaired symbol is renamed with it.
+
+A list without such slips comes back as it is, so nothing changes for the
+specs that run today. The translations are shown the repaired names.
+
+**How it is tested.** `eval17/` first (make_eval.py): six specs with states,
+codes and labels in quotes that are not words. Development: `eval16/` (6 to 8
+of 48 runs stopped) and the second real batch. Then `eval17/`, with the code
+before and after. **The rule, set now:** the repair stays if fewer runs stop
+on `eval17/` and what is planted is found no less often in the runs that
+finish.
+
 Small things that are open:
 
 - **Long documents** (E14). A spec of 100 requirements works: its read answer
@@ -1150,6 +1188,11 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       and one change that adds, rewrites, removes and renames (no design
       change). E22: 9 of 9 planted conflicts and 9 of 9 planted gaps in 3
       runs, both ways, and nothing else about the change
+- [ ] **Step 39 — a name that is not a word**: `eval17/` written first
+      (done); the symbol list of the read step is repaired where a name or a
+      value is not a word, is declared twice, or an enum has one value (plan
+      in 2.1). Development on `eval16/` and the second real batch; held-out
+      `eval17/`, before and after
 - [x] **Step 38 — rules that demand nothing, and reading in pieces**:
       `eval16/` written first. A rule whose chosen translation demands
       nothing is rejected and reported as not checked: kept. A document of

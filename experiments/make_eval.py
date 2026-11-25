@@ -1,6 +1,6 @@
-"""make_eval.py: writes the evaluation sets eval/ to eval16/, size/, size2/ and mixed/. No LLM, no GPU.
+"""make_eval.py: writes the evaluation sets eval/ to eval17/, size/, size2/ and mixed/. No LLM, no GPU.
 
-    python -m experiments.make_eval eval16     (only the sets named; all if none)
+    python -m experiments.make_eval eval17     (only the sets named; all if none)
 
 change_dev/ is development data for the change check: the OpenSpec-format
 specs of eval9/ and eval10/ as projects with a change (see as_projects).
@@ -220,6 +220,16 @@ limit of the registry, the time limit of the runner) clash with the ordinary
 cases, so a conflict in a clean version can be a fair finding. And the
 statuses in quotes (`timed out`, 201) are values that are not words, which
 stopped 6 to 8 of 48 runs. Held-out in E24; development data since.
+
+eval17/ (written 2026-11-25, after E24, before a symbol list with a name that
+is not a word is repaired) has six more specs of that kind, 10 scenarios
+each, made to bring out what stopped those runs. Every spec has states,
+codes, regions or labels that the text gives in quotes and that are not
+words: `rolled back`, `in review`, `pending-sync`, `auth-only`, `50-50`,
+`kind:bug`, `.dep/config`, 402. The domains are a deployment tool, an issue
+tracker, a DNS service, a payment gateway, a mail queue and a feature-flag
+service. Four versions each, as in eval16. This time a clean spec has no
+rule that cuts across the others.
 """
 
 import json
@@ -2350,7 +2360,7 @@ PROJECTS11 = {
 # Folder -> the specs written into it.
 def _spec16(intro: str, rules: list, direct: tuple, direct_with: int, overlap: tuple, overlap_with: int,
             second_case: int, covered: list) -> dict:
-    """One eval16 spec: 14 scenarios and its three planted versions.
+    """One spec of eval16 or eval17: its scenarios and its three planted versions.
 
     direct, direct_with    the scenario that the direct version adds, and the number of the
                            scenario it clashes with (numbers count from 1, in the document)
@@ -2483,9 +2493,102 @@ SPECS16 = {
         12, [1, 3, 11]),
 }
 
+SPECS17 = {
+    "deploy": _spec16(
+        "A command-line tool, `dep`, releases a service to an environment.",
+        [("Release", "Healthy build", "WHEN the user runs `dep release` AND the build passes its health check THEN the tool sets the release state to `live` AND prints the address of the service"),
+         ("Release", "Unhealthy build", "WHEN the user runs `dep release` AND the build does not pass its health check THEN the tool sets the release state to `rolled back` AND keeps the previous version running"),
+         ("Status", "Release running", "WHEN the user runs `dep status` AND a release is in progress THEN the tool prints `in progress` AND the number of instances already replaced"),
+         ("Status", "No release running", "WHEN the user runs `dep status` AND no release is in progress THEN the tool prints the state of the last release"),
+         ("Regions", "Region known", "WHEN the user runs `dep region set <name>` AND the name is one of `eu-west`, `us-east` or `ap-south` THEN the tool stores the region in `.dep/config`"),
+         ("Regions", "Region unknown", "WHEN the user runs `dep region set <name>` AND the name is not one of `eu-west`, `us-east` or `ap-south` THEN the tool prints \"unknown region\" AND exits with code 64"),
+         ("Rollback", "Previous version kept", "WHEN the user runs `dep rollback` AND a previous version exists THEN the tool starts the previous version AND sets the release state to `rolled back`"),
+         ("Rollback", "Nothing to roll back to", "WHEN the user runs `dep rollback` AND no previous version exists THEN the tool prints \"nothing to roll back to\" AND exits with code 3"),
+         ("Logs", "Logs shown", "WHEN the user runs `dep logs` THEN the tool prints the last 100 lines of the service"),
+         ("Alerts", "Third failed release", "WHEN a release is rolled back for the third time in a day THEN the tool notifies the channel `#ops-alerts`")],
+        ("Force", "Release anyway", "WHEN the user runs `dep release` AND the build does not pass its health check THEN the tool sets the release state to `live`"), 2,
+        ("Freeze", "Change freeze", "WHEN a change freeze is in force THEN the tool does not set the release state to `live`"), 1,
+        8, [1, 3, 5, 7]),
+    "issues": _spec16(
+        "A tracker keeps the issues of a software project.",
+        [("Triage", "Reproduced", "WHEN a maintainer triages an issue AND the issue can be reproduced THEN the tracker sets the state of the issue to `in review` AND assigns the issue to the maintainer"),
+         ("Triage", "Not reproduced", "WHEN a maintainer triages an issue AND the issue cannot be reproduced THEN the tracker sets the state of the issue to `needs info` AND asks the reporter for steps"),
+         ("Closing", "Fix merged", "WHEN a maintainer closes an issue AND a fix is merged THEN the tracker sets the state of the issue to `done` AND adds the issue to the release notes"),
+         ("Closing", "No fix merged", "WHEN a maintainer closes an issue AND no fix is merged THEN the tracker sets the state of the issue to `not planned`"),
+         ("Labels", "Known label", "WHEN a member adds a label AND the label is one of `kind:bug`, `kind:feature` or `kind:docs` THEN the tracker shows the label on the issue"),
+         ("Labels", "Unknown label", "WHEN a member adds a label AND the label is not one of `kind:bug`, `kind:feature` or `kind:docs` THEN the tracker answers with status 422"),
+         ("Reopening", "Closed recently", "WHEN the reporter reopens an issue AND the issue was closed less than 30 days ago THEN the tracker sets the state of the issue to `in review`"),
+         ("Reopening", "Closed long ago", "WHEN the reporter reopens an issue AND the issue was not closed less than 30 days ago THEN the tracker asks the reporter to open a new issue"),
+         ("Search", "Issues listed", "WHEN a member searches the issues THEN the tracker lists the matching issues with their state"),
+         ("Spam", "Third report", "WHEN an account is reported for spam for the third time THEN the tracker blocks the account")],
+        ("Fast lane", "Skip the review", "WHEN a maintainer triages an issue AND the issue can be reproduced THEN the tracker sets the state of the issue to `done`"), 1,
+        ("Archive", "Archived project", "WHEN the project is archived THEN the tracker does not add any issue to the release notes"), 3,
+        8, [1, 3, 5, 7]),
+    "dns": _spec16(
+        "A service manages the DNS records of the domains of its customers.",
+        [("Records", "Valid record", "WHEN a customer adds a record AND the record is valid THEN the service stores the record AND sets the zone state to `pending-sync`"),
+         ("Records", "Invalid record", "WHEN a customer adds a record AND the record is not valid THEN the service answers with status 400 AND names the field that is wrong"),
+         ("Sync", "Name servers reachable", "WHEN a zone is synced AND the name servers are reachable THEN the service sets the zone state to `in-sync` AND writes the serial number to the log"),
+         ("Sync", "Name servers not reachable", "WHEN a zone is synced AND the name servers are not reachable THEN the service sets the zone state to `sync-failed` AND tries again after 60 seconds"),
+         ("Lookup", "Name exists", "WHEN a client looks up a name AND the name exists in the zone THEN the service answers with the record AND the code `NOERROR`"),
+         ("Lookup", "Name missing", "WHEN a client looks up a name AND the name does not exist in the zone THEN the service answers with the code `NXDOMAIN`"),
+         ("Transfer", "Code accepted", "WHEN a customer transfers a domain AND the transfer code is correct THEN the service starts the transfer AND sets the domain state to `transfer-out`"),
+         ("Transfer", "Code refused", "WHEN a customer transfers a domain AND the transfer code is not correct THEN the service answers with status 403"),
+         ("Expiry", "Domain expires", "WHEN a domain passes its expiry date THEN the service sends a reminder to the customer"),
+         ("Abuse", "Fifth wrong code", "WHEN a wrong transfer code is entered for the fifth time for a domain THEN the service writes the address of the customer to the abuse log")],
+        ("Optimistic sync", "Assume success", "WHEN a zone is synced AND the name servers are not reachable THEN the service sets the zone state to `in-sync`"), 4,
+        ("Legal", "Disputed domain", "WHEN a domain is under dispute THEN the service does not start any transfer"), 7,
+        8, [1, 3, 5, 7]),
+    "payments": _spec16(
+        "A gateway takes card payments for online shops.",
+        [("Authorisation", "Card accepted", "WHEN a shop asks for an authorisation AND the card is accepted THEN the gateway sets the payment state to `auth-only` AND returns status 201"),
+         ("Authorisation", "Card refused", "WHEN a shop asks for an authorisation AND the card is not accepted THEN the gateway sets the payment state to `declined` AND returns status 402"),
+         ("Capture", "Within the limit", "WHEN a shop captures a payment AND the amount is at most the authorised amount THEN the gateway sets the payment state to `captured` AND books the amount"),
+         ("Capture", "Over the limit", "WHEN a shop captures a payment AND the amount is above the authorised amount THEN the gateway returns status 409 AND books nothing"),
+         ("Refunds", "Refund in time", "WHEN a shop refunds a payment AND the payment is at most 180 days old THEN the gateway sets the payment state to `refunded` AND returns the amount to the card"),
+         ("Refunds", "Refund too late", "WHEN a shop refunds a payment AND the payment is more than 180 days old THEN the gateway returns status 422"),
+         ("Currencies", "Known currency", "WHEN a shop sets its currency AND the currency is one of `EUR`, `USD` or `RON` THEN the gateway stores the currency of the shop"),
+         ("Currencies", "Unknown currency", "WHEN a shop sets its currency AND the currency is not one of `EUR`, `USD` or `RON` THEN the gateway returns status 400"),
+         ("Statements", "Day closed", "WHEN the gateway closes the books of a day THEN the gateway sends each shop a statement"),
+         ("Fraud", "Third refused card", "WHEN a card is refused for the third time in an hour THEN the gateway reports the card to the fraud desk")],
+        ("Soft declines", "Accept anyway", "WHEN a shop asks for an authorisation AND the card is not accepted THEN the gateway sets the payment state to `auth-only`"), 2,
+        ("Disputes", "Open dispute", "WHEN a payment has an open dispute THEN the gateway does not return any amount to the card"), 5,
+        6, [1, 3, 5, 7]),
+    "mailq": _spec16(
+        "A mail server queues outgoing messages and delivers them.",
+        [("Delivery", "Message accepted", "WHEN the queue runner tries a message AND the receiving server accepts the message THEN the server sets the message state to `sent` AND writes the delivery to the log"),
+         ("Delivery", "Message not accepted", "WHEN the queue runner tries a message AND the receiving server does not accept the message THEN the server sets the message state to `deferred` AND tries again after 15 minutes"),
+         ("Submission", "Sender allowed", "WHEN a client submits a message AND the sender is allowed THEN the server puts the message in the queue AND answers with the code `250`"),
+         ("Submission", "Sender not allowed", "WHEN a client submits a message AND the sender is not allowed THEN the server answers with the code `550` AND stores nothing"),
+         ("Filtering", "Spam", "WHEN the filter scores a message AND the score is above 5 THEN the server adds the header `X-Spam-Flag: YES` AND moves the message to the folder `spam-quarantine`"),
+         ("Filtering", "Not spam", "WHEN the filter scores a message AND the score is at most 5 THEN the server adds the header `X-Spam-Flag: NO`"),
+         ("Bounces", "Unknown recipient", "WHEN a receiving server reports an unknown recipient THEN the server sends a notice to the sender"),
+         ("Queue", "Queue listed", "WHEN the operator runs `mailq list` THEN the server prints the id AND the state AND the age of every message in the queue"),
+         ("Queue", "Message deleted", "WHEN the operator runs `mailq rm <id>` THEN the server deletes the message AND writes the id to the log"),
+         ("Queue", "Old message", "WHEN a message stays in the queue for more than 5 days THEN the server sends a warning to the operator")],
+        ("Fail fast", "No retries", "WHEN the queue runner tries a message AND the receiving server does not accept the message THEN the server sets the message state to `bounced`"), 2,
+        ("Maintenance", "Submission closed", "WHEN the server is in maintenance mode THEN the server does not put any message in the queue"), 3,
+        4, [1, 3, 5]),
+    "flags": _spec16(
+        "A service switches features on and off for the users of an application.",
+        [("Evaluation", "Flag exists", "WHEN a client asks for a flag AND the flag exists THEN the service answers with the value of the flag AND the reason `rule-match`"),
+         ("Evaluation", "Flag missing", "WHEN a client asks for a flag AND the flag does not exist THEN the service answers with the value `off` AND the reason `flag-not-found`"),
+         ("Rollout", "Checks pass", "WHEN an operator advances a rollout AND the health checks pass THEN the service sets the rollout stage to `50-50` AND writes the change to the audit log"),
+         ("Rollout", "Checks fail", "WHEN an operator advances a rollout AND the health checks do not pass THEN the service sets the rollout stage to `halted` AND alerts the owner of the flag"),
+         ("Environments", "Known environment", "WHEN an operator copies a flag AND the target is one of `staging`, `prod-eu` or `prod-us` THEN the service creates the flag in the target"),
+         ("Environments", "Unknown environment", "WHEN an operator copies a flag AND the target is not one of `staging`, `prod-eu` or `prod-us` THEN the service answers with status 404"),
+         ("History", "History shown", "WHEN an operator asks for the history of a flag THEN the service lists every change of the flag with its author"),
+         ("Archiving", "Flag unused", "WHEN an operator archives a flag AND no client asked for the flag in the last 30 days THEN the service moves the flag to the archive"),
+         ("Archiving", "Flag in use", "WHEN an operator archives a flag AND a client asked for the flag in the last 30 days THEN the service refuses with \"flag is in use\""),
+         ("Limits", "Third failed rollout", "WHEN the health checks of a rollout fail for the third time THEN the service sends a report to the owner of the flag")],
+        ("Bold rollouts", "Advance anyway", "WHEN an operator advances a rollout AND the health checks do not pass THEN the service sets the rollout stage to `50-50`"), 4,
+        ("Freeze", "Release freeze", "WHEN a release freeze is in force THEN the service does not create any flag in a target"), 5,
+        9, [1, 3, 5, 8]),
+}
+
 SETS = {"eval": SPECS, "eval2": SPECS2, "eval3": SPECS3, "eval4": SPECS4, "eval5": SPECS5,
         "eval6": SPECS6, "eval7": SPECS7, "eval8": SPECS8, "eval9": SPECS9, "eval10": SPECS10,
-        "eval12": SPECS12, "size": SPECS_SIZE, "size2": SPECS_SIZE2, "eval16": SPECS16}
+        "eval12": SPECS12, "size": SPECS_SIZE, "size2": SPECS_SIZE2, "eval16": SPECS16, "eval17": SPECS17}
 
 
 def _project13(capabilities: tuple, first, second, doors, pair, single, ban, notice, added, removal: dict) -> dict:
