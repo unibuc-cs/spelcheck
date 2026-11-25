@@ -14,7 +14,7 @@ class FakeSecond:
     def __init__(self, translations):
         self.translations = translations
 
-    def ask(self, system, user, schema, samples=1, temperature=0.0):
+    def ask(self, system, user, schema, samples=1, temperature=0.0, max_tokens=4096):
         return self.translations[:samples]
 
 

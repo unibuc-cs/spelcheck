@@ -59,6 +59,13 @@ logic shown in brackets after each reading tells you precisely how the two \
 differ; say that difference in plain words. Do not ask that question for a \
 conflict or a gap.
 
+A conflict or a gap may say that a requirement is ambiguous and that, with \
+its other reading, the finding is gone. It is still a conflict or a gap: the \
+title and the explanation are about it. Add one sentence saying that it \
+exists only if that requirement is read the first way, and what the other \
+reading is. Do not ask which reading was meant: the ambiguity has a finding \
+of its own.
+
 If the finding lists assumptions, it holds only if they are true. Say so in \
 the explanation and state each assumption in plain words.
 

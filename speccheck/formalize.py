@@ -73,6 +73,15 @@ HIGH_ENTROPY = 1.0
 # requirements. On a server with a smaller window, lower it.
 READ_MAX_TOKENS = 24576
 
+# The longest answer allowed for one translation of one rule (steps 2, 5 and
+# 7). Such an answer is one sentence and two formulas: the longest of the
+# 99,452 saved in experiments/results/ has 652 characters, about 200 tokens.
+# The default of llm.ask, 4096, reserves room that is never used, and on the
+# second model's server (--max-model-len 6144, serve_second.sbatch) that room
+# is missing for the prompt: for a spec of 100 requirements the list of
+# symbols alone makes a prompt of 4,234 tokens (E14).
+TRANSLATE_MAX_TOKENS = 1024
+
 # ---------------------------------------------------------------- step 1: read
 
 READ_SYSTEM = """\
@@ -121,6 +130,14 @@ for each of those facts so the difference can be expressed.
 # Added to READ_SYSTEM when the document adds to a system that has a formal
 # model already (formalize with `base`). The user message then starts with
 # the symbols of that model.
+#
+# Its second paragraph is there because the list invites the model to tie a
+# new rule to an event of the list that the rule does not name (E20). For
+# "WHEN a person is younger than 17 THEN ..." it gave the listed event "a
+# person registers" as trigger, and described its new symbol as "the age of
+# the person attempting to register". The translations, which are shown the
+# descriptions, then disagreed on whether the event belongs to the condition,
+# and the rule was rejected.
 READ_MORE = """
 
 The document is an ADDITION to a system that is described already. The \
@@ -129,8 +146,14 @@ wherever it fits the meaning: a new rule about a fact that already has a \
 symbol MUST use that symbol, also when the rule says it in other words, so \
 that a clash with the rules written before can be seen. Add a symbol only \
 for a fact that no listed symbol stands for. Under "symbols", give only the \
-symbols you add (an empty list if the listed ones are enough). The trigger \
-of a rule may be a listed event."""
+symbols you add (an empty list if the listed ones are enough).
+
+Read each rule by its own words. The trigger of a rule may be a listed \
+event, but only when the words of the rule name that happening; a rule whose \
+words name no happening has an empty trigger, also when a listed event seems \
+related. Describe a symbol you add by the fact alone, not by a listed event \
+("the brightness of the lamp", not "the brightness of the lamp that was \
+switched on")."""
 
 READ_SCHEMA = {
     "type": "object",
@@ -405,7 +428,8 @@ def _translate(llm: LLM, symbol_list: str, rule: dict, samples: int, temperature
     symbol_list  the symbols the model may use, as _symbol_list writes them
     """
     prompt = f"Symbols:\n{symbol_list}\n\nRequirement {rule['id']}:\n{rule['text']}"
-    return llm.ask(system, prompt, FORMALIZE_SCHEMA, samples, temperature)
+    return llm.ask(system, prompt, FORMALIZE_SCHEMA, samples, temperature,
+                   max_tokens=TRANSLATE_MAX_TOKENS)
 
 
 def _symbol_list(symbols: list[dict], hidden: set = frozenset()) -> str:

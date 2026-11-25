@@ -2738,6 +2738,99 @@ and E20_eval14_incremental.json, each with its table.
 
 ---
 
+## T25 — Development: the read step ties a new rule to a saved event (2026-11-25)
+
+**Question.** Why did the saved-model way (`--incremental`) miss 4 planted
+conflicts on `eval14/` that the full run found (E20), and can one change to
+the read prompt addition `READ_MORE` avoid it?
+
+**The cause, from the saved runs of E20.** Of the 108 new rules read the
+saved-model way, 4 were not accepted (3 rejected, 1 ambiguous), and those are
+the 4 misses. Three are one rule in its 3 runs, in `drivingschool_overlap`:
+"WHEN a person is younger than 17 THEN the system does not create any learner
+file". The read step was shown the saved symbols, among them the event
+`registration_attempted`, and it tied the new rule to that event in two
+places:
+
+| | The full run | The saved-model way |
+|---|---|---|
+| trigger of the rule | none (3 of 3 runs) | `registration_attempted` (3 of 3) |
+| description of the new symbol `person_age` | "The age of the person in years" | "The age of the person attempting to register" |
+| the 8 translations | 6 to 8 say `(< person_age 17) => (not learner_file_created)` | split 3/2/1, 3/2/1 and 5/3: some add `registration_attempted` to the "when" part, some do not, some are no formulas |
+
+The translations are not shown the trigger, but they are shown the
+description of every symbol, and "the person attempting to register" invites
+the event into the condition. The fourth miss (`brewery_direct`, 1 run of 3)
+is a rule whose translations scattered 5/1/1/1 over the sign of the outcome;
+there is no cause to act on. One more effect of the same kind does not lose a
+conflict: in `musicschool_modified` the new state "a school concert is taking
+place" was marked as an event in 2 of 3 runs (never in the full run), so the
+planted conflict was found and marked doubtful.
+
+**The change.** The last sentence of `READ_MORE`, "The trigger of a rule may
+be a listed event.", is replaced by:
+
+> Read each rule by its own words. The trigger of a rule may be a listed
+> event, but only when the words of the rule name that happening; a rule
+> whose words name no happening has an empty trigger, also when a listed
+> event seems related. Describe a symbol you add by the fact alone, not by a
+> listed event ("the brightness of the lamp", not "the brightness of the lamp
+> that was switched on").
+
+`eval15/` was written and committed before this change (4883766).
+
+**Results on development data**, the saved-model way, 3 runs per change:
+
+| | `eval14/` before (E20) | `eval14/` now | `eval11/` before (T24) | `eval11/` now |
+|---|---|---|---|---|
+| planted conflicts found | 50 of 54 | 54 of 54 | 35 of 36 | 36 of 36 |
+| doubtful ones set aside | 45 of 54 | 49 of 54 | 32 of 36 | 33 of 36 |
+| planted gaps found | 36 of 36 | 36 of 36 | 36 of 36 | 36 of 36 |
+| clean changes with a conflict or a gap about them | 0 of 18 | 0 of 18 | 0 of 18 | 0 of 18 |
+| new rules that were not accepted | 4 of 108 | 3 of 108 | 3 of 90 | 1 of 90 |
+| added state rules that got a trigger (`overlap`) | 3 of 18 | 0 of 18 | 0 of 9 | 0 of 9 |
+| other conflicts about a change | 1 | 3 | 0 | 0 |
+| requests to the LLM for a change | 9.4 | 9.2 | 9.2 | 9.4 |
+
+- The rule that was lost is now read as in the full run, `(< person_age 17) =>
+  (not learner_file_created)`, in 3 of 3 runs, and its conflict is found.
+- The rules for an event that the saved model has (`direct`, `gap`, `clean`)
+  still get that event as trigger: 72 of 72 on `eval14/`.
+- Not changed: a rewritten state rule marked as an event, 5 of 18 on
+  `eval14/` before and now (`florist_modified` in 3 runs, as in the full run,
+  and `musicschool_modified` in 2). Those planted conflicts are found and
+  marked doubtful.
+- Two of the three other conflicts about a change are there because the rule
+  is no longer rejected: it now takes part in the questions about two
+  outcomes (5.7), and one such question gave a fact that sets it against "the
+  system charges the learner for the lesson" (1 run each, the kind of
+  research.md 4.6).
+
+**Two small things in the same session.**
+
+- *The answer limit of a translation* is now 1,024 tokens, not the default
+  4,096 (`TRANSLATE_MAX_TOKENS`); the longest of the 99,452 translation
+  answers saved so far has 652 characters. The three development specs give
+  the same table as before (T25_specs against T24_specs), and the two runs
+  above were made with it. The second model, which needs the room, is tried
+  in T26.
+- *The wording of a finding that depends on a reading.* The wording prompt
+  got a paragraph for it. The check that was planned, wording the saved login
+  model again, showed nothing: with today's gap search the saved model has no
+  such finding any more. Since T20 a gap that the assumed facts allow is
+  looked for first, and with the fact `(>= failed_attempts_count 0)` Z3 now
+  shows the gap at 0 failed attempts, which both readings of R3 leave open;
+  the report saved in `specs/auth_openspec` showed it at 6. The check is
+  moved to the next session, on saved models that do have such a finding.
+
+**Frozen** with the commit of this entry: the new `READ_MORE`, the answer
+limit, and the wording paragraph. Next: held-out `eval15/` three ways (E21).
+
+**Raw data.** experiments/results/T25_eval14_incremental.json,
+T25_eval11_incremental.json and T25_specs.json, each with its table.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |
