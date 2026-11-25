@@ -3143,6 +3143,96 @@ the repository yet. The scripts are in experiments/real/.
 
 ---
 
+## T27 — Why two real rules in five get no agreed translation (2026-11-25)
+
+**Question.** In E23, 147 of 366 rules were ambiguous or rejected, against
+about 3% on our sets. Why?
+
+**Method.** No LLM: `experiments/real/translations.py` reads the eight saved
+translations of every rule of E23 and compares their parts with Z3. The same
+script on two of our own runs, for contrast.
+
+**The short answer.** The eight translations must use the symbols that the
+read step listed once, for the whole document. On our specs a rule demands
+one thing and the list has one symbol for it. On the real specs the list
+does not fit the rules: for some outcomes it has no symbol, for others it has
+several that overlap. Both come from the read step, not from the translation.
+
+**In what the translations of the 147 rules differ** (the first that fits):
+
+| | Rules | |
+|---|---|---|
+| different symbols for what is demanded | 73 | the list has several symbols for one outcome, and the eight pick different ones |
+| no symbol for what is demanded | 50 | some translations then demand nothing: `... => true` |
+| only the condition differs | 16 | |
+| the same symbols, combined differently | 7 | "and" against "or", a condition inside the outcome |
+| too few usable answers | 1 | |
+
+So for 131 of the 147 the disagreement is about what the rule demands, and
+for 123 it is about which symbols to use.
+
+- **Several symbols for one outcome.** "WHEN shell path indicates an
+  unsupported shell THEN throw error: \"Shell '<name>' is not supported. ...\""
+  has `error_thrown` and `unsupported_shell_error_displayed`: 6 translations
+  use the first, 2 use both. "... THEN authors SHALL use `### Requirement: ...`
+  followed by at least one `#### Scenario: ...` section" has a symbol for each
+  heading and one for the whole (`uses_structured_spec_format`): 4 use the
+  two parts, 2 all three, 1 the whole alone. The same happens to conditions:
+  `executing_install_zsh_no_omz` next to `executing_install_zsh` and
+  `oh_my_zsh_installed`.
+- **No symbol for the outcome.** "WHEN user runs `openspec templates --schema
+  tdd` THEN the system displays template paths for the specified schema"
+  came out as `templates_command_run => true` in 8 of 8, and was accepted.
+  The model understood the rule; its reading says "the system must display
+  the template paths for the specified schema". There is no symbol for that,
+  and the translation may use listed symbols only.
+- **The read step lists too few symbols for a real spec.** A real rule
+  demands 2.2 things on average ("THEN a AND b AND c"), ours 1. The read step
+  listed 2.6 symbols for each real rule and 2.1 for each of ours. Counting
+  the symbols that are not events against the outcomes:
+
+  | | Symbols per outcome | Rules whose chosen translation demands nothing |
+  |---|---|---|
+  | our long spec (100 requirements, E14) | 1.4 | 0 of 1,203 |
+  | our mixed project (E22) | 1.6 | 0 of 132 |
+  | the 7 real specs with 0.9 or more | 0.9 to 1.25 | 7 of 222 |
+  | the 4 real specs with fewer | 0.4 to 0.7 | 68 of 144 |
+
+  In two real specs it listed 33 and 25 such symbols for 82 and 41 outcomes,
+  and 43 of 51 and 20 of 33 of their rules demand nothing.
+- **Empty rules are counted as accepted.** 75 of the 366 rules have a chosen
+  translation that demands nothing, and 45 of those were accepted, because
+  the eight agree on `true`. With the 147, that makes 192 of 366 rules, about
+  half, that give the checks nothing to work with.
+- **More answers are not formulas**: 142 of 2,920 (4.9%), in 77 rules, mostly
+  `and a b` without the outer parentheses. On our sets it is 0.1 to 0.9%.
+  The facts vote repairs this slip (T19); the translations are not repaired.
+
+**What it is not.** Not the number of outcomes by itself: of the 136 real
+rules with one outcome, 34% have no agreed translation. Not the quoted
+commands and file names: rules with them agree more often (64%) than rules
+without (50%). Not the length of the symbol list: our mixed project has as
+many symbols as a real spec, and 1 rule in 132 without agreement.
+
+**What follows** (nothing is built; each needs a held-out set first):
+
+1. A rule whose chosen translation demands nothing should not be accepted.
+   It should be reported as a rule that could not be expressed. This needs no
+   LLM and changes nothing on our sets, where there is no such rule.
+2. The symbols should be made next to the rule that needs them: read a spec
+   one requirement at a time, each time with the symbols so far, as
+   `--incremental` already does for a change. That also lifts the limit of
+   about 140 scenarios.
+3. For overlapping symbols: either ask, after reading, which symbols say the
+   same thing or include one another, or tell the translation to state
+   everything the rule demands.
+4. Repair the parentheses of a translation as for a fact.
+
+**Raw data.** The saved run of E23 (not in the repository, see E23); the
+script is experiments/real/translations.py.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |
