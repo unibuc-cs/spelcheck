@@ -692,6 +692,7 @@ how much weight the finding carries:
 | "... (depends on the reading of R4)" | proven with the first reading of R4, which is ambiguous; gone with its other reading | answer the question about R4 first |
 | "... (found with k of K symbol sets)" | k of the K formalizations found it | the higher k, the better |
 | "Ambiguity: ..." | not a proof, a question to the author | a fair question, though some are asked about clear rules |
+| "Not checked: ..." | the requirement could not be written in logic: no symbol stands for what it demands. It took no part in the checks | nothing was found about it because nothing was looked for. Stating its outcome as one plain fact helps |
 | "Gap: ..." | proven: an event happens and no rule applies | certain. Ask yourself whether that case was left out on purpose |
 | "Gap (doubtful: ...)" | proven, but the assumed facts say its situation cannot happen (3.3) | little: usually two symbols for one yes/no question |
 | "Gap (opened by removing X1): ..." | proven, when a change is checked: a rule that the change removes used to cover this situation (part 5) | certain. The change left this case open |
@@ -1137,6 +1138,26 @@ fit:
 So the weak point on real specs is the first step, the list of symbols, and
 not the translation or the solver.
 
+We tried two remedies, on a second batch of 16 real changes and on six specs
+of our own written like real ones (`eval16`), with the old and the new code
+side by side:
+
+1. **A rule whose translation demands nothing is no longer accepted.** The
+   report lists it as "Not checked" and says why. This stays. It does not
+   make the rule checkable, but the report no longer passes over it.
+2. **A long document was read in pieces**, a few requirements at a time, each
+   piece with the symbols made so far. That gave the rules their symbols: the
+   rules with none for their outcome fell from 68 and 43 (two runs of the old
+   code) to 19. It did not make the translations agree, because with more
+   symbols there are more that overlap. More runs stopped, and our own longer
+   documents got conflicts that nobody planted. So it was taken out again
+   (6.5).
+
+One thing came out of this that we had not seen as clearly: on such specs a
+run often stops before it starts. The model makes a symbol or a value whose
+name is not a word (`.claude`, `timed out`, 201), our code refuses the list,
+and after three tries the run ends. That happened in 6 to 19% of the runs.
+
 **Longer specs.** All the specs counted above have at most six requirements.
 To see what a longer document does, we wrote two more, each in four versions
 (clean, direct, overlap, gap) and run three times:
@@ -1178,7 +1199,7 @@ The project has five goals. This is where each one stands:
 | two words for one yes/no question give a false gap | "the slot is free" and "the slot is taken" as two symbols: in 3 to 5 of 18 clean runs (6.2) |
 | a fact or a link can be wrong, even with a majority behind it | which is why the report quotes every one that a conflict depends on |
 | there is no time | "then", "after" and "until" are not modelled: the logic is one snapshot |
-| real specs are harder than the ones we wrote | their rules demand two or three things each, and the symbols that the read step lists do not fit them: 2 rules in 5 got no agreed translation, and 1 more in 8 was accepted with a translation that demands nothing. They put a general rule next to its special cases, and the questions about two outcomes then report a conflict for each such pair. A whole project is too large to check at once (6.2) |
+| real specs are harder than the ones we wrote | a run stops when the model makes a name that is not a word (6 to 19% of the runs). Their rules demand two or three things each, and the symbols that the read step lists do not fit them: about half of the rules get no agreed translation or one that demands nothing (the second kind is now reported as "Not checked"). They put a general rule next to its special cases, and the questions about two outcomes then report a conflict for each such pair. A whole project is too large to check at once (6.2) |
 | the cheaper way to check a change reads a new rule with little around it | shown only the saved symbols, the model sometimes ties a new rule to a saved event that the rule does not name. That cost 4 of 54 planted conflicts on `eval14`. On `eval15` it cost none, but one such rule was ambiguous in 3 of 3 runs (6.2). Either way, a project can have about 140 scenarios at most |
 | the evaluation is small | the specs were written by us, and there is one main model |
 
@@ -1247,12 +1268,25 @@ again. This is experiment T14 in research_log.md. A real repair would need the
 model to compare two requirements and judge whether they clash. That is an LLM
 judgement and not a proof, which this project leaves out on purpose.
 
+**Reading a long document in pieces.** The read step lists too few symbols
+for a real spec (6.2), so we cut a long document at its headings and let the
+model read a few requirements at a time, each piece with the symbols so far
+in front of it. The symbols came: a spec that had 33 for 82 outcomes got 158.
+But on 16 real changes it had not seen, 44% of the rules were still of no use
+to the checks, against 57% and 47% in two runs without it, which is no more
+than two runs differ anyway. More runs stopped, because every piece is one
+more answer that can hold a bad name. And in our own project of 39 scenarios
+a state ("a protest is open") was read as an event in a later piece, so a
+real conflict was marked doubtful in 3 of 3 runs. It was taken out; this is
+T28 and E24 in research_log.md.
+
 The full list is in research.md, section 5.
 
 ### 6.6 What is next
 
-1. **A larger evaluation**, with another main model, specs we did not write,
-   and a real OpenSpec project with its changes.
+1. **Real specs**: names that are not words, which stop a run; symbols that
+   overlap; and the conflicts between a general rule and its special case.
+   Then a larger evaluation, with another main model.
 2. **The change check, further**: whether the cheaper way becomes the
    default, what the model is shown when it reads a new rule, and projects
    too large for one read answer.
@@ -1313,9 +1347,10 @@ The folders:
 speccheck/          the tool (the 8 files above; refine.py is the review that is switched off)
 specs/              3 small specs the prompts were developed on, with their saved output,
                     and auth_change, the example of part 5
-tests/              71 tests that need no LLM
+tests/              73 tests that need no LLM
 experiments/
   sets/             the 11 evaluation sets, eval to eval10 and eval12 (297 spec versions), two long specs,
+                    eval16 (six specs written like real ones), real1 and real2 (32 changes of a real project),
                     and for the change check eval11, eval13, eval14, eval15, mixed (one larger project)
                     and change_dev (old specs as projects)
   results/          every experiment: the raw data (.json) and its tables (.md)

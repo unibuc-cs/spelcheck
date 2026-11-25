@@ -58,30 +58,30 @@ this order:
    more sets, specs we did not write, and results counted per planted
    conflict (the runs of one spec mostly agree, so more specs help more than
    more runs). For the change check: a real OpenSpec project with its
-   history of changes. A first batch is done (step 37): 16 changes of the
-   OpenSpec tool's own repository, each against the spec files it touches.
-   It went badly: 5 runs stopped, 40% of the rules had no agreed
-   translation, and 26 of 29 conflicts came from the questions about two
-   outcomes (research.md 4.8). The cause of the second is found (T27): the
-   symbols that the read step lists do not fit real rules, which demand two
-   or three things each. For some outcomes there is no symbol, for others
-   several that overlap, and 45 rules that demand nothing were accepted.
-   What follows from it, none built, each needing `eval16/` first:
-   - a rule whose chosen translation demands nothing is not accepted but
-     reported as one that could not be expressed (no LLM; nothing changes on
-     our sets);
-   - the spec is read one requirement at a time, with the symbols so far, as
-     `--incremental` reads a change. Symbols are then made next to the rule
-     that needs them, and the limit of 140 scenarios goes;
-   - overlapping symbols: ask after reading which say the same, or tell the
-     translation to state everything the rule demands;
-   - the parentheses of a translation are repaired as those of a fact.
+   history of changes. Two batches of 16 changes of the OpenSpec tool's own
+   repository are done (steps 37 and 38), each change against the spec files
+   it touches. It goes badly, and we know why (research.md 4.8):
+   - **a run stops** when the model makes a name or a value that is not a
+     word (`.claude`, `timed out`, 201): 6 to 19% of the runs. This is the
+     first thing in the way, and nothing is built for it;
+   - **about half of the rules give the checks nothing**: the symbols of the
+     read step do not fit rules that demand two or three things. A rule
+     whose translation demands nothing is now rejected and reported as not
+     checked (step 38). Reading a long document in pieces gave the rules
+     their symbols and was taken out again: more runs stopped, and the
+     translations then disagreed over which symbol to use;
+   - **overlapping symbols** are what is left of that: ask after reading
+     which symbols say the same, or tell the translation to state everything
+     the rule demands. Not tried;
+   - **most conflicts on real specs** set a general rule against its own
+     special case, through a question about two outcomes. Not tried;
+   - the parentheses of a translation could be repaired as those of a fact.
 
-   32 changes of the pool are left to run. A
-   larger invented project with a change that does everything at once is
-   done (step 36).
-   All fifteen sets have been read (`eval15/` in E21), so
-   a new design needs `eval16/`, written first.
+   The third batch of real changes is not run: 32 changes show these things
+   well enough. A larger invented project with a change that does everything
+   at once is done (step 36).
+   All sixteen sets and both real batches have been read (E24), so
+   a new design needs `eval17/`, written first.
 2. **The change check, further** (G2). The gap that a removal opens is done
    (step 33), and so is a way to check a change on a saved model of the
    specs (step 34, `--incremental`). What is left:
@@ -115,55 +115,6 @@ this order:
      once (step 30): a gap the assumed facts rule out is marked doubtful, but
      the facts rarely say that one of the two always holds, so only 2 of 13
      were marked (T20, E16). This is a known limit now.
-
-### 2.1 The plan for step 38: rules that demand nothing, and reading in pieces (not built yet)
-
-T27 found that on real specs the symbols of the read step do not fit the
-rules. Two of its remedies are built in this step.
-
-**1. A rule that demands nothing is not accepted.** When no listed symbol
-stands for what a rule demands, the translations say `... => true`. Eight of
-them agree, and today the rule is accepted (45 of 366 real rules in E23).
-From now on step 3 looks at the chosen translation: if its "then" part is
-always true, the rule is rejected and marked `empty`. The report shows it as
-a requirement that was not checked, not as an ambiguity. No LLM is asked, and
-nothing changes where there is no such rule (none in E14, E21, E22).
-
-**2. A long document is read in pieces.** Today the read step lists the rules
-and the symbols of the whole document in one answer, and for a real spec the
-list comes out too short (0.4 to 1.25 symbols for each outcome, 1.4 to 1.6 on
-our specs). From now on:
-
-1. Our code cuts a document of more than 2,500 characters into pieces of at
-   most 2,500, at its headings: a section stays whole if it fits, and is cut
-   at its own sub-headings if not. A code block is never cut. Our specs up to
-   `eval15/` are shorter and are read as before.
-2. The LLM reads the first piece as today. It reads every later piece with
-   the symbols so far in front of it, and adds only what is missing. This is
-   the read of `--incremental` (5.10), with the same prompt addition.
-3. Our code puts the rules and the symbols of the pieces together. If a later
-   piece numbers its rules again from R1 (a document without labels), its
-   rules are numbered on.
-
-Everything after the read step is as before. The limit of about 140
-scenarios for one read answer no longer applies.
-
-**How it is tested.**
-
-1. **`eval16/` first** (make_eval.py): six specs written the way real tool
-   specs are, 14 scenarios each with two or three outcomes, in a clean, a
-   direct, an overlap and a gap version. The second batch of the real project
-   (16 changes that were not run yet) is held out too.
-2. **Development**: the first real batch (E23), `mixed/`, the spec of 100
-   requirements and the three development specs.
-3. **Freeze, then held-out**: `eval16/` and the second real batch, each with
-   the design before and after.
-4. **The rule, set now.** The two changes stay if, on the second real batch,
-   fewer rules are without a usable translation (no agreed translation, or one
-   that demands nothing) and no more runs stop, and if on `eval16/` the
-   planted conflicts and gaps found do not go down and the clean specs get no
-   more false alarms. If one of the two changes does harm and the other does
-   not, the one that does harm is taken out.
 
 Small things that are open:
 
@@ -205,6 +156,22 @@ with a conflict that was not planted from 3 to 13 of 144 (T22). On held-out
 loss, and each added conflict quotes the fact it rests on. The rule for such
 decisions from now on: when the gains are larger than the losses, the new
 version becomes the default, and the loss is written down as a limit.
+
+Decided on 2026-11-25: **a rule whose chosen translation demands nothing is
+rejected; reading a long document in pieces is taken out again** (step 38).
+On real specs the read step lists no symbol for many outcomes, and the
+translation then says `... => true`; eight such answers agree, and the rule
+was accepted (45 of 366 rules in E23). Step 3 now rejects it, marks it
+`empty`, and the report lists it as not checked. Reading a document of more
+than 2,500 characters in pieces, each with the symbols so far, was built
+with it and tested on held-out `eval16/` and on a second real batch (E24).
+It gave the real rules their symbols. But the rule set before the test asked
+for no more runs that stop, and more did (3 of 16 against 1 and 2, 8 of 48
+against 6), because every piece is one more read answer that can have an
+unusable symbol list. The gain in usable rules (44% of no use against 57%
+and 47%) is no larger than the difference between two runs of the old
+design, and our own long documents got conflicts that nobody planted (T28).
+The code is in commit bcc1ff5.
 
 Decided on 2026-11-25: **the read step of `--incremental` is told to read a
 new rule by its own words** (step 35). On `eval14/` that way had lost a
@@ -345,12 +312,12 @@ The code, in the order to read it:
 |---|---|---|---|
 | `speccheck/llm.py` | 80 | One function: prompt + JSON schema in, N parsed answers out | the model server |
 | `speccheck/logic.py` | 250 | Symbols to Z3 variables; parses formulas; asks the solver, including the test "do these two rules mean the same?" | Z3 |
-| `speccheck/formalize.py` | 820 | Stage 1: text to `formal.json` (steps 1 to 5, then 6 and 7); `formalize_sets` for K symbol sets; with `base`, adds new rules to a formal model that exists | `llm`, `logic`, `probe` |
+| `speccheck/formalize.py` | 830 | Stage 1: text to `formal.json` (steps 1 to 5, then 6 and 7); `formalize_sets` for K symbol sets; with `base`, adds new rules to a formal model that exists | `llm`, `logic`, `probe` |
 | `speccheck/probe.py` | 600 | Stage 1, step 6: four checks by simple questions, three about one requirement and one about the outcomes of two | `llm`, `logic` |
 | `speccheck/checks.py` | 750 | Stage 2: `formal.json` to findings; which findings depend on a reading; scenarios; `combine` for K formal models | `logic` |
-| `speccheck/explain.py` | 380 | Stage 3: findings to plain words; the scenario judge; builds `report.md` | `llm` |
+| `speccheck/explain.py` | 400 | Stage 3: findings to plain words; the scenario judge; builds `report.md` | `llm` |
 | `speccheck/cli.py` | 200 | Runs the three stages, writes the files; with `--change`, on the specs of an OpenSpec project with a change applied | all |
-| `speccheck/change.py` | 440 | For `--change`: applies an OpenSpec change to the specs that exist, labels the scenarios, and says which findings involve the change (5.10) | `logic` |
+| `speccheck/change.py` | 460 | For `--change`: applies an OpenSpec change to the specs that exist, labels the scenarios, and says which findings involve the change (5.10) | `logic` |
 
 About half of each file is comments, docstrings and prompts.
 
@@ -1183,23 +1150,25 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       and one change that adds, rewrites, removes and renames (no design
       change). E22: 9 of 9 planted conflicts and 9 of 9 planted gaps in 3
       runs, both ways, and nothing else about the change
-- [ ] **Step 38 — rules that demand nothing, and reading in pieces**:
-      `eval16/` written first (done); a rule whose chosen translation demands
-      nothing is rejected and reported as not checked; a document of more
-      than 2,500 characters is read in pieces, each with the symbols so far
-      (plan in 2.1). Development on the first real batch, `mixed/` and the
-      long spec; held-out `eval16/` and the second real batch, before and
-      after
-- [ ] **Step 37 — a real OpenSpec project**: the OpenSpec tool's own
+- [x] **Step 38 — rules that demand nothing, and reading in pieces**:
+      `eval16/` written first. A rule whose chosen translation demands
+      nothing is rejected and reported as not checked: kept. A document of
+      more than 2,500 characters read in pieces, each with the symbols so
+      far: built, tested and taken out. T28 (development): rules of no use on
+      the first real batch 52% to 41%, with conflicts that nobody planted on
+      our own long documents. E24 (held-out `eval16/` and the second real
+      batch): what is planted is found either way; more runs stop with the
+      pieces; 44% of the real rules of no use against 57% and 47% in two
+      runs of the old design
+- [x] **Step 37 — a real OpenSpec project**: the OpenSpec tool's own
       repository, each archived change against the spec files it touches
-      (`experiments/real/`). First batch, 16 of a pool of 48 changes (E23): 5
-      runs stopped, 147 of 366 rules without an agreed translation, 29
-      conflicts about a change of which 3 from the rules alone (they look
-      real). The parser now skips headers in code blocks. T27: the
-      translations disagree because the symbols of the read step do not fit
-      real rules (73 rules with overlapping symbols, 50 with none for the
-      outcome; 45 empty rules accepted). Open: the remedies of section 2,
-      the other 32 changes, names that are not words
+      (`experiments/real/`; the 32 cases that were run are in
+      `experiments/sets/real1` and `real2`). First batch (E23): 5 of 16 runs
+      stopped, 147 of 366 rules without an agreed translation, 29 conflicts
+      about a change of which 3 from the rules alone (they look real). The
+      parser now skips headers in code blocks. T27: the translations disagree
+      because the symbols of the read step do not fit real rules. The third
+      batch is not run
 - [x] **Documentation pass 2**: GUIDE.md reviewed point by point and rewritten (a new
       2.4 on gaps and scenarios; the ambiguity check, voted facts and links as steps on
       one real example), then shortened from 1112 to 893 lines; README.md reworded in the

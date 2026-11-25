@@ -6,9 +6,7 @@ and counting below is done by this file:
 
     1. read     one LLM call lists the atomic rules of the document, with the
                 event each one reacts to (its trigger), and the symbols
-                (variables) needed to express them. A long document is read
-                in pieces, one call for each, every piece with the symbols of
-                the pieces before it (_pieces, _read_document).
+                (variables) needed to express them.
     2. sample   each rule is translated to logic N times, independently.
     3. cluster  the N translations are put in groups that mean the same: two
                 go together when Z3 proves that no situation tells them apart.
@@ -85,14 +83,6 @@ READ_MAX_TOKENS = 24576
 # is missing for the prompt: for a spec of 100 requirements the list of
 # symbols alone makes a prompt of 4,234 tokens (E14).
 TRANSLATE_MAX_TOKENS = 1024
-
-# A document of more than PIECE characters is read in pieces of at most that
-# size (_pieces). Read in one answer, a real spec got too few symbols: 0.4 to
-# 1.25 for each outcome of its rules, where our own specs get 1.4 to 1.6, and
-# a rule without a symbol for what it demands cannot be translated (T27). Our
-# specs up to eval15 have at most 2,400 characters and are read as before; a
-# real requirement with its scenarios has about 850.
-PIECE = 2500
 
 # ---------------------------------------------------------------- step 1: read
 
@@ -332,7 +322,7 @@ def formalize(llm: LLM, spec_text: str, samples: int = 8, temperature: float = 0
     """
     old_symbols = base["symbols"] if base else []
     old_rules = base["rules"] if base else []
-    rules, symbols = _read_document(llm, spec_text, read_temperature, old_symbols)
+    rules, symbols = _read(llm, spec_text, read_temperature, old_symbols)
     vocab = Vocabulary(symbols)
     shown = _symbol_list(symbols)
     # With a base whose symbols are enough, the facts are those of the base.
@@ -491,97 +481,6 @@ def _read(llm: LLM, spec_text: str, first_temperature: float,
         except ValueError as problem:
             error = problem
     raise RuntimeError(f"could not get a usable symbol list: {error}")
-
-
-def _pieces(text: str, limit: int = PIECE) -> list[str]:
-    """Cut a document into pieces of at most `limit` characters, for the read step.
-
-    A document that fits is one piece. A longer one is cut at its headings:
-
-        # Backup Specification        too long: cut at the "##" headings
-        ## Purpose                    fits: stays whole
-        ## Requirements               too long: cut at the "###" headings
-        ### Requirement: Init         fits, with its scenarios
-        ### Requirement: Run          fits
-        ...
-
-    and the parts that follow each other are put together again as long as
-    they fit, so that a piece holds a few requirements. A part without a
-    heading to cut at is cut at its blank lines, and one without blank lines
-    (a list with one requirement on each line) at its lines. A heading inside
-    a code block (``` or ~~~) is text, and the block is never cut. Joined by
-    line breaks, the pieces are the document again. A piece can be a little
-    longer than the limit: when a part of a few lines is put with its neighbour.
-    """
-    def cut(lines: list[str]) -> list[list[str]]:
-        if sum(len(line) + 1 for line in lines) <= limit:
-            return [lines]
-        # Where a new part may start: at a heading, after a blank line, at any line.
-        headings, blanks, plain, in_code = [], [], [], False
-        for number, line in enumerate(lines):
-            fence = line.lstrip().startswith(("```", "~~~"))
-            if number and not in_code and not fence:
-                level = len(line) - len(line.lstrip("#"))
-                plain.append(number)
-                if 0 < level < 7 and line[level:level + 1] == " ":
-                    headings.append((level, number))
-                elif not line.strip() and number + 1 < len(lines):
-                    blanks.append(number + 1)
-            in_code = in_code != fence
-        top = min((level for level, _ in headings), default=0)
-        starts = [number for level, number in headings if level == top] or blanks or plain
-        parts = [lines[a:b] for a, b in zip([0] + starts, starts + [len(lines)]) if b > a]
-        if len(parts) < 2:
-            return [lines]  # nothing to cut at: one long line, or one code block
-        def size(block: list[str]) -> int:
-            return sum(len(line) + 1 for line in block)
-
-        # Put together the parts that fit in one piece.
-        packed = []
-        for part in (piece for part in parts for piece in cut(part)):
-            if packed and size(packed[-1]) + size(part) <= limit:
-                packed[-1] = packed[-1] + part
-            else:
-                packed.append(part)
-        # What is left with only a few lines (a title and a purpose, a last short
-        # paragraph) goes with its neighbour: read alone it has no rule.
-        joined = []
-        for part in packed:
-            if joined and min(size(joined[-1]), size(part)) < limit // 8:
-                joined[-1] = joined[-1] + part
-            else:
-                joined.append(part)
-        return joined
-
-    return ["\n".join(lines) for lines in cut(text.split("\n"))]
-
-
-def _read_document(llm: LLM, spec_text: str, first_temperature: float,
-                   existing: list[dict] = ()) -> tuple[list[dict], list[dict]]:
-    """Step 1 for a whole document: read it piece by piece (_pieces), each piece with the symbols so far.
-
-    The first piece is read as a document of its own. Every later piece is
-    read as an addition to what was read before: the model is shown the
-    symbols so far and adds only those that are missing (READ_MORE, the read
-    of `--incremental`). So the symbols for a rule are made when that rule is
-    read, a few requirements at a time, and the rules of all pieces still
-    share their symbols.
-
-    Returns the rules of the document in its order, and all symbols.
-    """
-    rules, symbols = [], list(existing)
-    for piece in _pieces(spec_text):
-        if not piece.strip():
-            continue
-        new_rules, symbols = _read(llm, piece, first_temperature, symbols)
-        # A document without labels: the model numbers the rules of every
-        # piece from R1 again. Its rules are then numbered on.
-        taken = {rule["id"] for rule in rules}
-        if any(rule["id"] in taken for rule in new_rules):
-            new_rules = [{**rule, "id": f"R{len(rules) + number}"}
-                         for number, rule in enumerate(new_rules, start=1)]
-        rules += new_rules
-    return rules, symbols
 
 
 # ------------------------------------------------------------- step 3: cluster

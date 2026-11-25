@@ -12,5 +12,10 @@ The project is cloned outside the repository's tracked files and only read:
 
 A real project is too large to formalize as one document (44 spec files here),
 so each change is checked against the spec files it touches, as they were in
-the commit before the change was archived. research_log.md, E23.
+the commit before the change was archived. research_log.md, E23, T27 and E24.
+
+The two batches that were run are kept in experiments/sets/real1 and real2,
+with the licence of the project they come from; they can be run from there:
+
+    python -m experiments.evaluate --base-url ... --specs experiments/sets/real2 --runs 1 --symbol-sets 1 --name ...
 """

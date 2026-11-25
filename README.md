@@ -73,10 +73,11 @@ Where the project stands:
   seventh. On one test set it found 50 conflicts where the full way found 54,
   on the next one all 72
   ([The two ways to check a change](#the-two-ways-to-check-a-change));
-- all of that is on specs we wrote. On a first batch of 16 changes of a real
-  project it did much worse: 5 runs stopped, 2 rules in 5 got no agreed
-  translation, and 26 of the 29 conflicts it reported look like artefacts.
-  The other 3 look real ([How reliable is it](#how-reliable-is-it)).
+- all of that is on specs we wrote. On 32 changes of a real project it does
+  much worse: up to 1 run in 5 stops, about half of the rules give the checks
+  nothing to work with, and most of the conflicts it reports look like
+  artefacts. A few look real
+  ([How reliable is it](#how-reliable-is-it)).
 
 | Read next | For |
 |---|---|
@@ -416,6 +417,7 @@ The title of each finding says how far to trust it. These are real titles:
 | "doubtful: ..." | proven, but probably an artefact of the formulas | the two cases below |
 | "depends on the reading of R4" | proven with the first reading of R4, which is ambiguous; gone with its other reading | "Gap (depends on the reading of R4): Unclear PIN lock trigger", the gap at the fourth wrong PIN in the top-up spec ([Ambiguities](#ambiguities)) |
 | "found with k of K symbol sets" | optional: the spec was translated K times, each time with other symbols, and k of them found it | "Conflict (found with 3 of 3 symbol sets): Conflict between removal and retention" |
+| "Not checked: ..." | not a finding about the spec: the requirement could not be written in logic, because no symbol stands for what it demands, and it took no part in the checks | "Not checked: Uncheckable Success Message Requirement", for a rule that demands a message with three prompts in it (a real project, below) |
 | "opened by removing X1" | only when a change is checked: a rule that the change removes used to cover this situation | "Gap (opened by removing X1): Missing rule for unauthorized check-in" ([Checking a change](#checking-a-change-against-existing-specs)) |
 
 A conflict is marked *doubtful* in two cases, and a gap in the second one. A
@@ -668,6 +670,8 @@ Nothing in the code or in the prompts is about orders.
 | `experiments/sets/`: `eval` to `eval10`, `eval12` | both | 66 specs in new domains. Each has a clean version and versions with one planted defect, 297 versions in all. Each set was written before it was used, as a test the prompts had not seen |
 | `specs/auth_change`, `experiments/sets/eval11`, `eval13`, `eval14`, `eval15` | OpenSpec projects: specs that exist, and a change | the login example as a change, and 24 projects in new domains with 5 or 6 changes each |
 | `experiments/sets/mixed` | one larger OpenSpec project (39 scenarios, four spec files) | one change that adds, rewrites, removes and renames at once |
+| `experiments/sets/eval16` | OpenSpec format, written like real tool specs: 14 scenarios with two or three outcomes each | six specs, each clean and with a planted conflict (two kinds) or gap |
+| `experiments/sets/real1`, `real2` | a real project: the OpenSpec tool's own specs (MIT licence, see the README in each folder) | 32 of its archived changes, each with the spec files it touches as they were before it. Nothing is planted, so there is no known answer |
 
 ## How reliable is it
 
@@ -802,8 +806,22 @@ Some notes on these numbers:
     apply, and nothing says which wins.
 
   So on a real project the tool is not usable as it is. The scripts are in
-  `experiments/real/`. Only the table of this run is in
-  `experiments/results/`: its raw data holds the text of the project's specs.
+  `experiments/real/`, and the cases in `experiments/sets/real1`.
+- Two remedies for that, tested on a second batch of 16 real changes
+  (`real2/`) and on `eval16/`, six specs of our own written like real ones,
+  each with the code before and after (E24):
+  - a rule whose translation demands nothing is rejected, and the report
+    lists it as "Not checked". This stays: no such rule is accepted any more;
+  - a long document was read in pieces, each with the symbols so far. It gave
+    the real rules their symbols, but 44% of the rules were still of no use
+    to the checks, against 57% and 47% in two runs without it. More runs
+    stopped (3 of 16 against 1 and 2), and our own long documents got
+    conflicts that nobody planted. It was taken out again;
+  - on `eval16/` what we planted is found either way (19 of 22 and 19 of 20
+    conflicts, 10 of 10 gaps). 6 and 8 of its 48 runs stopped, each because
+    the LLM made a value that is not a word (the status `timed out`, the
+    status 201). And 96% of its rules get an agreed translation: specs we
+    write are easier than real ones, also when we try to write them alike.
 - The numbers are small: the specs were written by us, and there is one main
   model. The details are in [research.md](research.md).
 
@@ -821,7 +839,7 @@ Some notes on these numbers:
 | Gaps depend on the symbols, and on the events the LLM marks | "free" and "taken" as two symbols give a false gap, and it is rarely marked doubtful. The gap in which no event happens, which almost every spec has, is marked as such and is rarely something to fix |
 | One snapshot, no time | "then", "after" and "until" are not modelled |
 | A reworded scenario is the change's, whatever its new words are | if its old words gave the same finding, the finding is still shown as the change's |
-| Real specs are harder than the ones we wrote | on 16 changes of a real project, 2 rules in 5 got no agreed translation and 1 more in 8 was accepted with a translation that demands nothing, because the symbols of the first step do not fit rules that demand several things. 5 runs stopped, and most conflicts came from the questions about two outcomes, which report a general rule against its own special case. A whole real project is also too large to check at once: a change is checked against the spec files it touches |
+| Real specs are harder than the ones we wrote | on 32 changes of a real project, about half of the rules got no agreed translation or one that demands nothing, because the symbols of the first step do not fit rules that demand several things. A run stops when the LLM makes a name or a value that is not a word (`.claude`, `timed out`): 6 to 19% of the runs. Most conflicts came from the questions about two outcomes, which report a general rule against its own special case. A whole real project is also too large to check at once: a change is checked against the spec files it touches |
 | The cheaper way to check a change reads a new rule with little around it | by default the specs are formalized again for each change, so that old and new rules share their symbols. `--incremental` avoids that. Shown only the saved symbols, the LLM sometimes ties a new rule to a saved event that the rule does not name. That cost 4 of 54 planted conflicts on `eval14/`, and none of 72 on `eval15/`, where one such rule was ambiguous in 3 of 3 runs. Either way, a project is bounded by the read step's room, about 140 scenarios |
 
 ## Optional: an LLM review of the text (off by default)
@@ -845,8 +863,9 @@ research.md, section 5.
 | `speccheck/change.py` | for `--change`: applies an OpenSpec change to the specs, labels the scenarios, sets apart what the change removes, selects the findings about the change |
 | `speccheck/refine.py` | optional LLM review, off by default |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the vLLM servers on the cluster: the main model, the second model |
-| `tests/` | 71 tests of everything that needs no LLM |
-| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10` and `eval12`, `size` and `size2`; for the change check `eval11`, `eval13`, `eval14`, `eval15`, `mixed` and `change_dev`; and the script that writes them |
+| `experiments/slurm/serve_direct.sh` | the same server for the main model, started directly on a machine with free GPUs, without the queue |
+| `tests/` | 73 tests of everything that needs no LLM |
+| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10`, `eval12` and `eval16`, `size` and `size2`; for the change check `eval11`, `eval13`, `eval14`, `eval15`, `mixed` and `change_dev`; and the script that writes them. `real1` and `real2` are not written by it (`experiments/real/`) |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs and scores the evaluation; re-scores saved runs without a GPU |
 | `experiments/real/` | the trial on a real OpenSpec project: each archived change next to the specs before it, from the git history |

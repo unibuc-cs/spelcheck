@@ -213,8 +213,13 @@ Four versions each, planted as in size/ and size2/:
                words, one of the outcomes of an existing scenario
     gap        one of two complementary scenarios removed
 
-A clean spec has no rule for a special case of another rule's condition: a
-conflict reported there is a false alarm.
+A clean spec was meant to have no rule for a special case of another rule's
+condition, so that a conflict reported there would be a false alarm. That did
+not hold: the rules that cut across the others (the rate limit and the upload
+limit of the registry, the time limit of the runner) clash with the ordinary
+cases, so a conflict in a clean version can be a fair finding. And the
+statuses in quotes (`timed out`, 201) are values that are not words, which
+stopped 6 to 8 of 48 runs. Held-out in E24; development data since.
 """
 
 import json

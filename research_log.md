@@ -3137,9 +3137,8 @@ most of what is reported is the known weakness of one step (research.md
 4.6), much stronger here than on our sets. One finding is the kind the tool
 is for. This is 16 changes of one project, read once.
 
-**Raw data.** experiments/results/E23_real_batch1.md (the table). The .json
-with every formal model holds the text of the project's specs and is not in
-the repository yet. The scripts are in experiments/real/.
+**Raw data.** experiments/results/E23_real_batch1.json and its table; the 16
+cases are in experiments/sets/real1. The scripts are in experiments/real/.
 
 ---
 
@@ -3228,8 +3227,8 @@ many symbols as a real spec, and 1 rule in 132 without agreement.
    everything the rule demands.
 4. Repair the parentheses of a translation as for a fact.
 
-**Raw data.** The saved run of E23 (not in the repository, see E23); the
-script is experiments/real/translations.py.
+**Raw data.** The saved run of E23; the script is
+experiments/real/translations.py.
 
 ---
 
@@ -3324,9 +3323,130 @@ for a smaller share of the memory (`GPU_MEMORY=0.75`).
 Development shows a gain on real specs and a cost on our own long ones; the
 held-out runs (E24) decide by the rule of plan.md 2.1.
 
-**Raw data.** experiments/results/T28_mixed.json, T28_size2.json and
-T28_specs.json with their tables; T28_real_batch1.md (its .json holds the
-project's spec text and is not in the repository).
+**Raw data.** experiments/results/T28_mixed.json, T28_size2.json,
+T28_specs.json and T28_real_batch1.json, each with its table.
+
+---
+
+## E24 — Held-out: rules that demand nothing, and reading in pieces (2026-11-25)
+
+**Question.** Do the two changes of T28 help on specs they were not built on?
+
+**Setup.** `eval16/` was written first (cc0396f) and the design frozen in
+bcc1ff5. Two held-out sets, each run with the design before the two changes
+(the code of cc0396f, from a git worktree) and after them:
+
+- `eval16/`: six specs written like real tool specs (a backup tool, a
+  package registry, a log shipping agent, a thumbnail service, a build
+  runner, a file sync client), 14 scenarios each, most with two or three
+  outcomes, in a clean, a direct, an overlap and a gap version. 2 runs each.
+- `real2/`: the second batch of the real project, 16 archived changes that
+  had not been run. 1 run each. Its "before" arm was run twice, because the
+  first result was overwritten by a mistake in the session script; the
+  numbers that the first run printed are given too.
+
+**The real batch** (`real2/`):
+
+| | Before, first run | Before, second run | After |
+|---|---|---|---|
+| runs that finished | 15 of 16 | 14 of 16 | 13 of 16 |
+| rules | 437 | 414 | 369 |
+| accepted | 201 (46%) | 223 (54%) | 205 (56%) |
+| chosen translation demands nothing | 47, of them 13 accepted | 23, of them 3 accepted | 12, none accepted |
+| **rules of no use to the checks** | **249 (57%)** | **194 (47%)** | **164 (44%)** |
+| rules the checks can use | 188 | 220 | 205 |
+| without agreement: no symbol for the outcome | 68 | 43 | 19 |
+| ... different symbols | 108 | 110 | 92 |
+| ... only the condition | 54 | 30 | 38 |
+| conflicts about a change | 9 | 10 | 31 |
+| gaps about a change | 9 | 6 | 5 |
+| requests to the LLM for a change | 126 | 133 | 155 |
+
+- **The rejection of empty rules does what it should.** No rule that demands
+  nothing is accepted any more (13 and 3 before).
+- **Reading in pieces makes the symbols** (19 rules without a symbol for
+  their outcome, 68 and 43 before) **but the gain in usable rules is within
+  the difference between two runs of the old design**: 44% of no use, against
+  57% and 47%. In rules that the checks can use it is between the two (205;
+  188 and 220), because one more run stopped.
+- **More runs stop**: 3, against 1 and 2. Every stop, in all three runs, is a
+  read answer with an unusable symbol list: a name or a value that is not a
+  word (`.claude`, `spec-driven`, `change:apply`), a name declared twice, an
+  enum with one value. With one read answer for each piece there are more of
+  them.
+- **Three times as many conflicts about a change** (31; 9 and 10). All but one
+  rest on an assumed fact.
+
+**`eval16/`** (24 spec versions, 2 runs each):
+
+| | Before | After |
+|---|---|---|
+| runs that finished | 42 of 48 | 40 of 48 |
+| planted conflicts found | 19 of 22 | 19 of 20 |
+| ... doubtful ones set aside | 16 of 22 | 15 of 20 |
+| planted gaps found | 10 of 10 | 10 of 10 |
+| clean runs with a conflict | 8 of 10 | 7 of 10 |
+| ... doubtful ones set aside | 4 of 10 | 3 of 10 |
+| conflicts that were not planted, for one run | 5.0 | 2.1 |
+| ambiguity flags on clean specs | 7 | 2 |
+| rules accepted | 577 of 600 (96%) | 550 of 570 (96%) |
+| rules whose chosen translation demands nothing | 1 | 6, all rejected |
+
+- **What was planted is found either way**, and the gaps too.
+- **Every run that stopped did so for a value that is not a word**: the
+  status `timed out` of the build runner (its spec finished 3 of 8 runs
+  before and none after), and the status 201 of the registry. That is 6 and 8
+  of 48 runs.
+- **`eval16/` does not show the translation problem of the real specs.** 96%
+  of its rules are accepted, both ways. Two or three outcomes in a scenario
+  are not what makes a real spec hard; ours are still too regular.
+- **Its clean versions are not clean, by our own fault.** We wrote rules that
+  cut across the others ("more than 100 requests in a minute: status 429",
+  "an upload grows beyond 50 megabytes: status 413", "a job passes 60 minutes:
+  `timed out`"), and each clashes with the ordinary case it overlaps. The
+  registry alone has 36 such conflicts in its 2 clean runs before. So "clean
+  runs with a conflict" on this set counts fair findings and artefacts
+  together, and only the comparison of the two columns means something.
+- **The conflicts that were not planted fall with reading in pieces** on this
+  set (5.0 to 2.1 for a run), mostly in the registry, where the statuses got
+  symbols of their own in the pieces. On `mixed/` and on the real batch they
+  rise (T28, above). No clear direction.
+
+**Decision**, by the rule of plan.md 2.1.
+
+- *A rule that demands nothing is rejected*: **stays.** It changes nothing
+  where there is no such rule, and on real specs it stops calling an empty
+  rule accepted.
+- *A long document is read in pieces*: **taken out.** The rule asked for
+  fewer rules without a usable translation and no more runs that stop. More
+  runs stop (3 of 16 against 1 and 2; 8 of 48 against 6), and the gain in
+  usable rules on the held-out batch is no larger than the difference
+  between two runs of the old design. It also costs on our own long
+  documents (T28: conflicts that nobody planted, a state read as an event).
+  The code is in commit bcc1ff5.
+
+What reading in pieces showed is kept as a finding: the read step can be
+made to give a real rule its symbols (0.8 to 2.3 for each outcome, 0.2 to
+1.25 in one answer), and that is not enough, because the translations then
+disagree over which of the symbols to use.
+
+**What stops a run on such specs** is now the first thing in the way: a name
+or a value that is not a word. It stopped 6 to 19% of the runs here, in both
+designs.
+
+`eval16/` and `real2/` are development data from now on; the next design
+needs `eval17/`.
+
+**The machines.** The login `fmi0` on the GPU node sees three GPUs that the
+queue does not manage. The "before" arm of the real batch ran there, on a
+server started with `experiments/slurm/serve_direct.sh`, next to the cluster
+job.
+
+**Raw data.** experiments/results/E24_eval16.json, E24_eval16_before.json,
+E24_real_batch2.json and E24_real_batch2_before.json (its second run), each
+with its table. The real cases are in the repository now:
+experiments/sets/real1 (the batch of E23 and T28) and real2, with the
+licence of the project they come from; the raw data of E23 and T28 too.
 
 ---
 

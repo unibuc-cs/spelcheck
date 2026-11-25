@@ -106,6 +106,8 @@ def main() -> None:
 
         total = sum(status.values())
         print(f"\n== {path}\n   {total} rules: {dict(status)}")
+        if not total:  # no run of this file finished
+            continue
         print(f"   answers that are not formulas over the listed symbols: {malformed} of {answers} "
               f"({100 * malformed / answers:.1f}%), in {with_malformed} rules")
         print(f"   rules whose chosen translation demands nothing: {sum(hollow.values())} {dict(hollow)}")

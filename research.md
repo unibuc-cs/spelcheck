@@ -35,6 +35,8 @@ its entries. How each mechanism works is in [plan.md](plan.md), section 5.
   | `eval13/` | 36 changes on 6 OpenSpec projects, with removals (2.4) | 6 conflicts, 12 gaps; 1 old conflict in each project | E19 |
   | `eval14/` | 36 changes on 6 OpenSpec projects, run both ways (2.4) | 18 conflicts, 12 gaps | E20 |
   | `eval15/` | 36 changes on 6 OpenSpec projects, run both ways; new rules about a property of what an existing event is about (2.4) | 24 conflicts, 6 gaps | E21 |
+  | `eval16/` | 6 specs written like real tool specs, 14 scenarios with two or three outcomes each (2.4) | 2 conflicts, 1 gap | E24 |
+  | `real1/`, `real2/` | 2 x 16 archived changes of a real OpenSpec project, each against the spec files it touches (2.4) | nothing: no known answer | E23, E24 |
   | `size/` | 4 versions of one spec of 30 requirements | 2 conflicts, 1 gap | E13 |
   | `size2/` | 4 versions of one spec of 100 requirements | 2 conflicts, 1 gap | E14 (not held-out: no design was tuned on it) |
 
@@ -209,6 +211,24 @@ changes, one run each, read by hand:
 | gaps about the change | 10, not judged |
 
 The limits behind this are in 4.8.
+
+**Two remedies were tried on it** (T28, E24), with a second batch of 16 real
+changes and `eval16/`, six specs written like real ones, both held out.
+
+- *A rule whose chosen translation demands nothing is rejected*, and the
+  report lists it as not checked. It stays: no empty rule is accepted any
+  more (45 of 366 in the first batch, 13 and 3 in two runs of the second).
+- *A long document is read in pieces*, each piece with the symbols so far.
+  It was taken out. It does give the real rules their symbols: the rules
+  without a symbol for their outcome fell from 68 and 43 to 19. But 44% of
+  the rules were of no use to the checks with it, against 57% and 47% in two
+  runs without it, so the gain is no larger than the difference between two
+  runs. More runs stopped (3 of 16 against 1 and 2; 8 of 48 against 6 on
+  `eval16/`), three times as many conflicts were reported about the real
+  changes, and our own long documents got conflicts that nobody planted.
+
+On `eval16/` what was planted is found either way: 19 of 22 and 19 of 20
+conflicts, 10 of 10 gaps.
 
 ---
 
@@ -532,8 +552,8 @@ requirements have several hundred.
 ### 4.7 The evaluation is small
 
 Eleven sets with 66 base specs (297 versions), two longer specs and twenty-five OpenSpec
-projects with 139 changes, all written by us (and a first batch of 16 changes
-of a real project, E23); 63 to 90 runs per experiment; one main model. One leak is known: an
+projects with 139 changes, all written by us (and 32 changes of a real
+project, E23 and E24); 63 to 90 runs per experiment; one main model. One leak is known: an
 example in the read prompt came from the domain of an `eval3/` spec (D4). And
 one clean spec, `shelter_clean` in `eval9/`, has a conflict we did not plan
 (E15).
@@ -545,9 +565,9 @@ E16).
 
 ---
 
-### 4.8 What a real project shows (E23)
+### 4.8 What a real project shows (E23, T27, T28, E24)
 
-A first batch of 16 changes of one real project, so a first sign.
+Two batches of 16 changes of one real project, so a first sign.
 
 - **The symbols of the read step do not fit real rules** (T27). Two rules in
   five did not get an agreed translation (79 ambiguous, 68 rejected, of
@@ -590,6 +610,22 @@ A first batch of 16 changes of one real project, so a first sign.
 - **A whole project does not fit.** 44 spec files are far beyond one read
   answer; a change was checked against the files it touches only, so a
   conflict with a rule in another file cannot be seen.
+- **A name that is not a word stops the run** (E24). The model makes a
+  symbol or a value such as `.claude`, `timed out` or 201, the list is
+  refused, and after three tries the run ends: 6 to 19% of the runs on the
+  real batches and on `eval16/`. On specs of this kind it is the first thing
+  in the way.
+- **Giving the rules their symbols is not enough** (T28, E24). Read in
+  pieces, a real spec gets 0.8 to 2.3 symbols for each outcome (0.2 to 1.25
+  in one answer), and the rules that demand nothing nearly go. As many rules
+  as before stay without an agreed translation: with more symbols there are
+  more that overlap, and the eight translations choose among them.
+- **Specs written by us do not show this, even when written like real
+  ones.** The rules of `eval16/` have two or three outcomes, commands and
+  exit codes in quotes, and 96% of them get an agreed translation. Its clean
+  versions also turned out not to be clean: the rules we wrote across the
+  others ("more than 100 requests in a minute: status 429") clash with the
+  ordinary cases, and 8 of 10 clean runs report a conflict.
 - **A gap is hard to read at this size**: it lists every other event as
   FALSE, 20 to 40 lines.
 
@@ -606,6 +642,7 @@ A first batch of 16 changes of one real project, so a first sign.
 | A read-prompt sentence: "remove" and "keep" are opposites | the "keep" rules' translations scattered and were rejected in 6 of 6 runs; nothing found | T14 |
 | Other thresholds for the second reader | they only trade flags for finds | T9, T13 |
 | Setting aside wrong facts in other ways | at most 1 of 7 runs recovered, with 9 to 12 more unexpected conflicts on `eval3/` | T10 |
+| Reading a long document in pieces, each with the symbols so far | the real rules got their symbols, but no more of them got an agreed translation than between two runs without it; more runs stopped, and our own long documents got conflicts that nobody planted | T28, E24 |
 | An LLM review of the text (Kiro's "refinement") | finds `delete_property` in 40 of 40 runs, misses two conflicts the solver finds. Built, then switched off by decision: the project is about the formal check | T4, E3, D1 |
 
 ---
@@ -640,6 +677,7 @@ the prompts, so it can be scored again without a GPU.
 | E21 | `eval15/`, held-out: 36 changes on 6 OpenSpec projects, checked the full way, and on a saved model with the read prompt before and after T25 | 3 x 108 runs | conflicts 72 of 72 (full), 71 and 72 of 72 (saved model, before and after); gaps 18 of 18 in all three; a change costs 68 requests against 11 (2.4) |
 | E22 | `mixed/`: one project of 39 scenarios, one change that adds, rewrites, removes and renames at once; the full way and on a saved model | 3 + 3 runs | 9 of 9 planted conflicts and 9 of 9 planted gaps both ways, nothing else about the change (2.4) |
 | E23 | a real OpenSpec project (the OpenSpec tool's own repository): 16 of its archived changes, each against the spec files it touches | 16 runs | 5 runs stopped; 40% of the rules without an agreed translation; 29 conflicts about a change, 3 of them from the rules alone (2.4, 4.8) |
+| E24 | `eval16/` and the second real batch, held-out: a rule that demands nothing is rejected, and a long document is read in pieces (T28); each set before and after | 2 x 48 and 3 x 16 runs | planted conflicts 19 of 22 before, 19 of 20 after, gaps 10 of 10 both; real rules of no use 57% and 47% before, 44% after; runs stopped 1 and 2 of 16 before, 3 after. The first change kept, the second taken out (2.4) |
 
 The trials (T1 to T26) were run on development data between these
 experiments. Among the last: T17 compared temperatures 0.3, 0.5 and 0.7 (3.1);
@@ -658,7 +696,8 @@ only the new scenarios of a change, on a saved model of the specs (2.4). T25
 found why that way lost a conflict in E20, and changed the read prompt
 addition (2.4, 4.5). T26 ran the second model on the spec of 100 requirements
 (4.4). T27 looked at the saved translations of the real project, to see why
-they disagree (4.8).
+they disagree (4.8). T28 tried the two remedies of 2.4 on the first real
+batch and on our own long documents.
 research_log.md
 has them in order, together with the bugs that
 changed results before they were fixed (L1 to L10) and the open threats to
