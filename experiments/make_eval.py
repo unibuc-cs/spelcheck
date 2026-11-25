@@ -1,6 +1,6 @@
-"""make_eval.py: writes the evaluation sets eval/ to eval14/, size/ and size2/. No LLM, no GPU.
+"""make_eval.py: writes the evaluation sets eval/ to eval15/, size/ and size2/. No LLM, no GPU.
 
-    python -m experiments.make_eval eval14     (only the sets named; all if none)
+    python -m experiments.make_eval eval15     (only the sets named; all if none)
 
 change_dev/ is development data for the change check: the OpenSpec-format
 specs of eval9/ and eval10/ as projects with a change (see as_projects).
@@ -155,6 +155,24 @@ the full one and the new one. Six versions:
 
 The new way must give a new rule the symbols of the old ones, or no clash
 with them can be seen; direct, overlap and modified test that.
+
+eval15/ is of the same kind (written 2026-11-25, after E20, before the read
+step of the new way is told when a listed event is the trigger of a rule):
+six more OpenSpec projects with seven existing scenarios each, to be run the
+full way and the new way. In E20 the new way lost a conflict when it read a
+rule about a state ("a person is younger than 17") next to the saved symbols:
+it tied the rule to a saved event that the rule does not name ("a person
+registers"). The changes of eval15 are aimed at that. Six versions. clean,
+direct, modified and gap are as in eval14; removed is left out, because a
+change that only removes gives the model nothing to read. The two new ones:
+
+    property   the change adds a requirement for a state that is a quantity
+               of the person or thing an existing event is about ("the bar
+               tab of a player is above 60 euros", next to "a player asks for
+               shoes"). It forbids, in the same words, what a scenario for
+               that event demands.
+    status     the same with a yes/no property ("a game is a practice game",
+               next to "a player starts a game").
 """
 
 import json
@@ -2759,6 +2777,240 @@ PROJECTS14 = {
 }
 
 
+def _project15(capabilities: tuple, first, second, event, pair, counted, notice, added, direct, prop, status, gap,
+               names: dict) -> dict:
+    """One eval15 project: the seven existing scenarios of _project14, and six changes.
+
+    Everything is as in _project14, except that there is no "removed" change,
+    and the "overlap" change is replaced by two:
+
+    prop      (the "property" change) a state requirement about a quantity of
+              the person or thing that the event of `pair` is about. It
+              forbids what the first scenario of `pair` demands
+    status    a state requirement about a yes/no property of the person or
+              thing that the event of `event` is about. It forbids what
+              `event` demands
+    """
+    (a, _), (b, _) = capabilities
+    project = _project14(capabilities, first, second, event, pair, counted, notice, added, direct, prop, gap,
+                         {**names, "overlap": names["property"], "removed": ("unused", "")})
+    changes = project["changes"]
+    changes["property"] = changes.pop("overlap")
+    del changes["removed"]
+    changes["status"] = {
+        "name": names["status"][0], "why": names["status"][1], "delta": {b: {"ADDED": [status]}},
+        "expected": {"conflicts": [[f"{a}/{event[0]}/{event[2][0][0]}", f"{b}/{status[0]}/{status[2][0][0]}"]]}}
+    return project
+
+
+PROJECTS15 = {
+    "bakery": _project15(
+        (("orders", "Customers order cakes at a bakery, and the bakers bake."),
+         ("counter", "Collection at the counter, regular customers, and notices.")),
+        ("Order with oven time", "The system SHALL accept an order when the ovens have time for it.", [
+            ("Oven time free", "WHEN a customer orders a cake AND the ovens have free time on that day THEN the system confirms the order to the customer")]),
+        ("Order without oven time", "The system SHALL offer another day when the ovens are full.", [
+            ("Ovens full", "WHEN a customer orders a cake AND the ovens have no free time on that day THEN the system offers the customer the next free day")]),
+        ("Fresh bread", "The system SHALL announce fresh bread.", [
+            ("Bread out of the oven", "WHEN a baker takes a batch of bread out of the oven THEN the system rings the shop bell")]),
+        ("Collection", "The system SHALL hand out orders at the counter.", [
+            ("Order paid", "WHEN a customer collects an order AND the order is paid THEN the system prints a collection slip"),
+            ("Order not paid", "WHEN a customer collects an order AND the order is not paid THEN the system asks for the payment")]),
+        ("Uncollected orders", "The system SHALL act on customers who do not collect their orders.", [
+            ("Third uncollected order", "WHEN a customer fails to collect an order for the third time THEN the system asks the customer to pay in advance")]),
+        (("Stocktaking", "The system SHALL announce stocktaking.", [
+            ("Stocktaking day", "WHEN the bakery is taking stock THEN the system shows a notice in the shop window")]),
+         " and does not confirm any order"),
+        ("Loyalty cards", "The system SHALL reward regular customers.", [
+            ("Card full", "WHEN a customer shows a loyalty card AND the card is full THEN the system gives the customer a free loaf"),
+            ("Card not full", "WHEN a customer shows a loyalty card AND the card is not full THEN the system adds a stamp to the card")]),
+        ("Quiet mornings", "The system SHALL keep the shop quiet in the early morning.", [
+            ("No bell", "WHEN a baker takes a batch of bread out of the oven THEN the system keeps the shop bell silent")]),
+        ("Large orders", "The system SHALL limit what is handed out at the counter.", [
+            ("Too many items", "WHEN an order has more than 40 items THEN the system does not print any collection slip")]),
+        ("Wholesale", "The system SHALL treat the batches for wholesale customers apart.", [
+            ("Wholesale batch", "WHEN a batch of bread is baked for a wholesale customer THEN the system does not ring the shop bell")]),
+        ("Baking courses", "The system SHALL take bookings for baking courses.", [
+            ("Place free", "WHEN a customer asks for a place in a baking course AND a place is free THEN the system books the place and sends the recipe list")]),
+        {"clean": ("add-loyalty-cards", "The bakery wants to reward its regular customers."),
+         "direct": ("quiet-early-mornings", "Neighbours complained about the bell at five in the morning."),
+         "property": ("limit-large-orders", "Large orders blocked the counter at rush hour."),
+         "status": ("no-bell-for-wholesale", "Customers queued for bread that was not for sale."),
+         "modified": ("no-orders-during-stocktaking", "Orders taken during stocktaking could not be baked."),
+         "gap": ("add-baking-courses", "The bakery starts baking courses.")}),
+    "observatory": _project15(
+        (("visits", "Visitors book and attend evenings at a public observatory."),
+         ("dome", "Telescope time, cancellations, and notices.")),
+        ("Booking an evening with places", "The system SHALL give a place to the visitor who books an evening.", [
+            ("Places left", "WHEN a visitor books an evening AND the evening has places left THEN the system reserves a place for the visitor")]),
+        ("Booking a full evening", "The system SHALL offer another evening when one is full.", [
+            ("Evening full", "WHEN a visitor books an evening AND the evening has no places left THEN the system offers the visitor the next evening")]),
+        ("Dome roof", "The system SHALL prepare the dome for observing.", [
+            ("Observing starts", "WHEN a guide starts an observing session THEN the system opens the dome roof")]),
+        ("Telescope time", "The system SHALL give telescope time to visitors.", [
+            ("Telescope free", "WHEN a visitor asks for telescope time AND the telescope is free THEN the system unlocks the telescope controls"),
+            ("Telescope in use", "WHEN a visitor asks for telescope time AND the telescope is not free THEN the system puts the visitor on the telescope list")]),
+        ("Late cancellations", "The system SHALL act on visitors who cancel late.", [
+            ("Second late cancellation", "WHEN a visitor cancels an evening on the same day for the second time THEN the system asks the visitor for a deposit")]),
+        (("Mirror cleaning", "The system SHALL announce the cleaning of the mirror.", [
+            ("Mirror being cleaned", "WHEN the telescope mirror is being cleaned THEN the system shows a notice at the entrance")]),
+         " and does not reserve any place for visitors"),
+        ("Star maps", "The system SHALL lend star maps to visitors.", [
+            ("Map on the shelf", "WHEN a visitor asks for a star map AND a map is on the shelf THEN the system lends the map to the visitor"),
+            ("No map on the shelf", "WHEN a visitor asks for a star map AND no map is on the shelf THEN the system sends the map to the visitor by email")]),
+        ("Bad weather", "The system SHALL protect the telescope from rain.", [
+            ("Roof stays shut", "WHEN a guide starts an observing session THEN the system keeps the dome roof closed")]),
+        ("Introduction evenings", "The system SHALL protect the telescope from misuse.", [
+            ("Too few introductions", "WHEN a visitor has attended fewer than 2 introduction evenings THEN the system does not unlock the telescope controls")]),
+        ("Indoor sessions", "The system SHALL run the sessions about the sun indoors.", [
+            ("Session in the lecture room", "WHEN an observing session is held in the lecture room THEN the system does not open the dome roof")]),
+        ("School visits", "The system SHALL take bookings from schools.", [
+            ("Guide free", "WHEN a teacher asks for a school visit AND a guide is free on that day THEN the system books the visit and informs the guide")]),
+        {"clean": ("add-star-maps", "Visitors asked for star maps to take home."),
+         "direct": ("keep-roof-shut", "Rain got into the dome twice this year."),
+         "property": ("telescope-after-two-introductions", "Beginners moved the telescope out of alignment."),
+         "status": ("indoor-sessions", "The sessions about the sun are held in the lecture room."),
+         "modified": ("no-bookings-during-mirror-cleaning", "Evenings were booked while the telescope could not be used."),
+         "gap": ("add-school-visits", "Schools asked for visits in the morning.")}),
+    "bowling": _project15(
+        (("lanes", "Players get a lane at a bowling alley and play."),
+         ("bar", "Shoes, fouls, the league, and notices.")),
+        ("Asking for a free lane", "The system SHALL give a free lane to the player who asks for one.", [
+            ("Lane free", "WHEN a player asks for a lane AND a lane is free THEN the system assigns the lane to the player")]),
+        ("Asking when all lanes are taken", "The system SHALL let players wait for a lane.", [
+            ("No lane free", "WHEN a player asks for a lane AND no lane is free THEN the system gives the player a pager")]),
+        ("Scoreboard", "The system SHALL show the score of a game.", [
+            ("Game starts", "WHEN a player starts a game THEN the system switches the lane screen on")]),
+        ("Shoe hire", "The system SHALL hire out shoes.", [
+            ("Shoes in stock", "WHEN a player asks for shoes AND shoes of the size are in stock THEN the system hands out a pair of shoes"),
+            ("Shoes out of stock", "WHEN a player asks for shoes AND shoes of the size are not in stock THEN the system offers the player shoe covers")]),
+        ("Fouls", "The system SHALL act on fouls.", [
+            ("Third foul", "WHEN a player steps over the foul line for the third time in a game THEN the system ends the game of the player")]),
+        (("League nights", "The system SHALL announce league nights.", [
+            ("League night", "WHEN a league match is being played THEN the system shows the league table above the bar")]),
+         " and does not assign any lane to players"),
+        ("Bumpers", "The system SHALL help children to play.", [
+            ("Bumper lane free", "WHEN a player asks for bumpers AND a lane with bumpers is free THEN the system raises the bumpers of the lane"),
+            ("No bumper lane free", "WHEN a player asks for bumpers AND no lane with bumpers is free THEN the system offers the player a ramp")]),
+        ("Screen saving", "The system SHALL spare the lane screens.", [
+            ("Screen off", "WHEN a player starts a game THEN the system leaves the lane screen dark")]),
+        ("Open tabs", "The system SHALL limit players who owe money.", [
+            ("Tab too high", "WHEN the bar tab of a player is above 60 euros THEN the system does not hand out any pair of shoes")]),
+        ("Practice games", "The system SHALL run practice games without a score.", [
+            ("Practice game", "WHEN a game is a practice game THEN the system does not switch the lane screen on")]),
+        ("Lockers", "The system SHALL rent lockers to players.", [
+            ("Locker free", "WHEN a player asks for a locker AND a locker is free THEN the system gives the player the locker code")]),
+        {"clean": ("add-bumpers", "Families asked for bumpers."),
+         "direct": ("spare-the-screens", "The lane screens burn in."),
+         "property": ("limit-open-tabs", "Players left without paying their tab."),
+         "status": ("practice-games-without-screen", "Practice games do not need a scoreboard."),
+         "modified": ("no-lanes-on-league-nights", "Players took lanes that the league needed."),
+         "gap": ("add-lockers", "The alley has installed lockers.")}),
+    "tailor": _project15(
+        (("fittings", "Customers of a tailor book fittings, and the tailors work on garments."),
+         ("workshop", "Collection, missed fittings, and notices.")),
+        ("Fitting with a free tailor", "The system SHALL book a fitting when a tailor is free.", [
+            ("Tailor free", "WHEN a customer asks for a fitting AND a tailor is free THEN the system books the fitting for the customer")]),
+        ("Fitting without a free tailor", "The system SHALL offer another day when no tailor is free.", [
+            ("No tailor free", "WHEN a customer asks for a fitting AND no tailor is free THEN the system offers the customer the next free day")]),
+        ("Pressing", "The system SHALL keep the air of the workshop clean.", [
+            ("Pressing starts", "WHEN a tailor starts the steam press THEN the system switches the extractor fan on")]),
+        ("Collection", "The system SHALL hand out finished garments.", [
+            ("Alteration paid", "WHEN a customer collects a garment AND the alteration is paid THEN the system prints a release note"),
+            ("Alteration not paid", "WHEN a customer collects a garment AND the alteration is not paid THEN the system shows the amount due")]),
+        ("Missed fittings", "The system SHALL act on customers who miss fittings.", [
+            ("Second missed fitting", "WHEN a customer misses a fitting for the second time THEN the system asks the customer for a deposit")]),
+        (("Holidays", "The system SHALL announce the holidays of the shop.", [
+            ("Shop on holiday", "WHEN the shop is on holiday THEN the system shows the opening date on the door")]),
+         " and does not book any fitting"),
+        ("Fabric samples", "The system SHALL send fabric samples to customers.", [
+            ("Sample in stock", "WHEN a customer asks for a fabric sample AND the sample is in stock THEN the system posts the sample to the customer"),
+            ("Sample out of stock", "WHEN a customer asks for a fabric sample AND the sample is not in stock THEN the system orders the sample from the mill")]),
+        ("Quiet workshop", "The system SHALL keep the workshop quiet.", [
+            ("Fan off", "WHEN a tailor starts the steam press THEN the system keeps the extractor fan off")]),
+        ("Storage time", "The system SHALL hold back garments that were left for long.", [
+            ("Left too long", "WHEN a garment has been in storage for more than 90 days THEN the system does not print any release note")]),
+        ("Cold pressing", "The system SHALL save energy when no steam is made.", [
+            ("Cold mode", "WHEN the steam press is in cold mode THEN the system does not switch the extractor fan on")]),
+        ("Home visits", "The system SHALL take bookings for fittings at home.", [
+            ("Customer in the city", "WHEN a customer asks for a home visit AND the customer lives in the city THEN the system books the visit and prints the route")]),
+        {"clean": ("add-fabric-samples", "Customers want to feel a fabric before they order."),
+         "direct": ("keep-the-workshop-quiet", "The fan is too loud for the fitting room next door."),
+         "property": ("hold-back-garments-left-too-long", "Garments left for months have to be checked by the owner first."),
+         "status": ("cold-pressing", "The new press has a mode without steam."),
+         "modified": ("no-fittings-during-holidays", "Fittings were booked for days on which the shop was closed."),
+         "gap": ("add-home-visits", "Customers asked for fittings at home.")}),
+    "airfield": _project15(
+        (("launches", "Pilots of a gliding club launch and land gliders."),
+         ("hangar", "Club gliders, hard landings, and notices.")),
+        ("Launch with a free winch", "The system SHALL let a pilot launch when the winch is free.", [
+            ("Winch free", "WHEN a pilot asks for a launch AND the winch is free THEN the system clears the pilot for launch")]),
+        ("Launch with a busy winch", "The system SHALL let pilots wait for the winch.", [
+            ("Winch busy", "WHEN a pilot asks for a launch AND the winch is not free THEN the system adds the pilot to the launch list")]),
+        ("Access road", "The system SHALL keep the access road clear for landing gliders.", [
+            ("Glider on approach", "WHEN a glider reports its approach THEN the system lowers the barrier on the access road")]),
+        ("Club gliders", "The system SHALL give club gliders to pilots.", [
+            ("Glider airworthy", "WHEN a pilot asks for a club glider AND the glider is airworthy THEN the system hands out the logbook of the glider"),
+            ("Glider not airworthy", "WHEN a pilot asks for a club glider AND the glider is not airworthy THEN the system offers the pilot another glider")]),
+        ("Hard landings", "The system SHALL act on hard landings.", [
+            ("Third hard landing", "WHEN a pilot makes a hard landing for the third time in a season THEN the system books a check flight for the pilot")]),
+        (("Air shows", "The system SHALL announce air shows.", [
+            ("Air show", "WHEN an air show is taking place THEN the system shows the programme at the clubhouse")]),
+         " and does not clear any pilot for launch"),
+        ("Parachutes", "The system SHALL give parachutes to pilots.", [
+            ("Parachute packed", "WHEN a pilot asks for a parachute AND a packed parachute is on the shelf THEN the system assigns the parachute to the pilot"),
+            ("No parachute packed", "WHEN a pilot asks for a parachute AND no packed parachute is on the shelf THEN the system calls the parachute packer")]),
+        ("Open road", "The system SHALL keep the access road open for the farmers.", [
+            ("Barrier up", "WHEN a glider reports its approach THEN the system keeps the barrier on the access road raised")]),
+        ("Solo hours", "The system SHALL give club gliders to experienced pilots only.", [
+            ("Too few solo hours", "WHEN a pilot has fewer than 10 hours of solo flight THEN the system does not hand out any logbook")]),
+        ("Training circuits", "The system SHALL treat training circuits apart.", [
+            ("Training circuit", "WHEN a glider is on a training circuit THEN the system does not lower the barrier on the access road")]),
+        ("Guest flights", "The system SHALL take bookings for guest flights.", [
+            ("Instructor free", "WHEN a guest asks for a flight AND an instructor is free THEN the system books the flight and prints the waiver")]),
+        {"clean": ("add-parachutes", "The club has bought parachutes."),
+         "direct": ("keep-the-road-open", "Farmers complained about waiting at the barrier."),
+         "property": ("solo-hours-for-club-gliders", "The insurer asks for a minimum of solo hours."),
+         "status": ("training-circuits", "Training circuits do not cross the access road."),
+         "modified": ("no-launches-during-air-shows", "Launches got in the way of the air show."),
+         "gap": ("add-guest-flights", "The club offers flights to guests.")}),
+    "escaperoom": _project15(
+        (("games", "Teams book escape rooms and play in them."),
+         ("lobby", "Hints, broken props, and notices.")),
+        ("Booking a free room", "The system SHALL take the booking of a free room.", [
+            ("Room free", "WHEN a team books a room AND the room is free at that hour THEN the system sends the team a booking code")]),
+        ("Booking a taken room", "The system SHALL show other hours when a room is taken.", [
+            ("Room taken", "WHEN a team books a room AND the room is not free at that hour THEN the system shows the team the free hours")]),
+        ("Game start", "The system SHALL start the game when the team is inside.", [
+            ("Team enters", "WHEN a team enters a room THEN the system locks the room door")]),
+        ("Hints", "The system SHALL give hints to teams.", [
+            ("Hints left", "WHEN a team asks for a hint AND the team has hints left THEN the system shows a hint on the room screen"),
+            ("No hints left", "WHEN a team asks for a hint AND the team has no hints left THEN the system adds two minutes to the time of the team")]),
+        ("Broken props", "The system SHALL act on teams that break props.", [
+            ("Second broken prop", "WHEN a team breaks a prop for the second time THEN the system ends the game of the team")]),
+        (("Rebuilding", "The system SHALL announce the rebuilding of the rooms.", [
+            ("Rooms being rebuilt", "WHEN the rooms are being rebuilt THEN the system shows the opening date in the lobby")]),
+         " and does not send any booking code"),
+        ("Team photos", "The system SHALL give teams a photo of their game.", [
+            ("Printer ready", "WHEN a team asks for a team photo AND the photo printer is ready THEN the system prints the photo"),
+            ("Printer not ready", "WHEN a team asks for a team photo AND the photo printer is not ready THEN the system sends the photo by email")]),
+        ("Fire safety", "The system SHALL keep the escape routes open.", [
+            ("Door unlocked", "WHEN a team enters a room THEN the system keeps the room door unlocked")]),
+        ("Fair play", "The system SHALL keep the high scores fair.", [
+            ("Late in the game", "WHEN a team has less than 5 minutes left THEN the system does not show any hint on the room screen")]),
+        ("Children", "The system SHALL not lock children in.", [
+            ("Team with a child", "WHEN a team has a child among its players THEN the system does not lock the room door")]),
+        ("Vouchers", "The system SHALL take vouchers as payment.", [
+            ("Voucher valid", "WHEN a team pays with a voucher AND the voucher is valid THEN the system marks the booking as paid")]),
+        {"clean": ("add-team-photos", "Teams asked for a photo after the game."),
+         "direct": ("keep-doors-unlocked", "The fire inspector asked for unlocked doors."),
+         "property": ("no-hints-in-the-last-minutes", "Late hints made the high scores unfair."),
+         "status": ("do-not-lock-children-in", "Parents complained that their children were locked in."),
+         "modified": ("no-bookings-during-rebuilding", "Bookings were taken for rooms that did not exist yet."),
+         "gap": ("add-vouchers", "The lobby sells gift vouchers.")}),
+}
+
+
 def as_projects(specs: dict) -> dict:
     """Old OpenSpec-format specs as projects with a change: development data for the change check.
 
@@ -2812,7 +3064,7 @@ def as_projects(specs: dict) -> dict:
 
 # Folder -> the OpenSpec projects written into it, each with one change.
 # change_dev is made from eval9 and eval10, which have been read (E15, E16).
-PROJECT_SETS = {"eval11": PROJECTS11, "eval13": PROJECTS13, "eval14": PROJECTS14,
+PROJECT_SETS = {"eval11": PROJECTS11, "eval13": PROJECTS13, "eval14": PROJECTS14, "eval15": PROJECTS15,
                 "change_dev": as_projects({**SPECS9, **SPECS10})}
 
 

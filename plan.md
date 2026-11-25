@@ -89,6 +89,46 @@ this order:
      the facts rarely say that one of the two always holds, so only 2 of 13
      were marked (T20, E16). This is a known limit now.
 
+### 2.1 The plan for step 35: the conflicts that `--incremental` misses (not built yet)
+
+On `eval14/` the saved-model way missed 4 of the 54 planted conflicts (E20).
+Three of them are one rule, in its 3 runs: "WHEN a person is younger than 17
+THEN the system does not create any learner file". Read next to the saved
+symbols, the read step tied it to a saved event that the rule does not name:
+
+- its trigger became `registration_attempted`;
+- its new symbol was described as "the age of the person attempting to
+  register" (the full run wrote "the age of the person in years").
+
+The translations are shown that description. Some put the event into the
+"when" part and some did not, the 8 split 3/2/1, and the rule was rejected.
+The fourth miss is one run of another rule whose translations scattered, with
+no cause to act on.
+
+One try: the last sentence of the prompt addition `READ_MORE` ("The trigger of
+a rule may be a listed event.") is replaced by three. They say that a rule is
+read by its own words, that a listed event is its trigger only when its words
+name that happening, and that a symbol the model adds is described by the fact
+alone.
+
+1. **`eval15/` first**: six new projects with 36 changes, aimed at this case
+   (make_eval.py). Each has two changes that add a rule about a property of
+   the person or thing an existing event is about.
+2. **Development**: `eval14/` and `eval11/` the saved-model way with the new
+   sentences (50 of 54 and 35 of 36 before).
+3. **Freeze, then `eval15/`** three ways: the full run, the saved-model way
+   with the old sentence, and with the new ones.
+4. **The rule, set now**: the new sentences stay if on `eval15/` they find at
+   least as many planted conflicts as the old one, with no fewer gaps and
+   nothing more about clean changes. Otherwise they are taken out again, and
+   the misses stay a limit. Whether `--incremental` becomes the default is
+   another question, to be asked only if it then finds as much as the full
+   run.
+
+Two small things from the list below go with it: the wording of a finding
+that depends on a reading, and a lower answer limit for translations, so that
+the second model fits a long spec.
+
 Small things that are open:
 
 - **The wording of a finding that depends on a reading** (E13). The model now
@@ -1081,6 +1121,11 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       T24); held-out `eval14/` both ways (E20): conflicts 54 of 54 against 50
       of 54, gaps 36 of 36 both, 68 requests for a change against 9. Kept as
       an option; the full run stays the default
+- [ ] **Step 35 — the conflicts that `--incremental` misses**: `eval15/`
+      written first (done); one change to the prompt addition of the read
+      step; development on `eval14/` and `eval11/`; held-out `eval15/` three
+      ways (plan in 2.1). With it: the wording of a finding that depends on a
+      reading, and the second model on a long spec
 - [x] **Documentation pass 2**: GUIDE.md reviewed point by point and rewritten (a new
       2.4 on gaps and scenarios; the ambiguity check, voted facts and links as steps on
       one real example), then shortened from 1112 to 893 lines; README.md reworded in the
