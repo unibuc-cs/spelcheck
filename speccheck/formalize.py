@@ -49,6 +49,7 @@ The prompts below are generic: nothing in this file is about any one spec.
 """
 
 import math
+import re
 from concurrent.futures import ThreadPoolExecutor
 
 import z3
@@ -474,13 +475,75 @@ def _read(llm: LLM, spec_text: str, first_temperature: float,
             continue
         try:
             # A symbol that the model lists although it exists is not added twice.
-            symbols = list(existing) + [symbol for symbol in answers[0]["symbols"]
-                                        if symbol["name"] not in known]
-            Vocabulary(symbols)  # raises ValueError on bad symbols
-            return answers[0]["rules"], symbols
+            symbols, renamed = _usable(list(existing) + [symbol for symbol in answers[0]["symbols"]
+                                                         if symbol["name"] not in known])
+            Vocabulary(symbols)  # raises ValueError on what _usable does not repair
+            rules = [{**rule, "trigger": renamed.get(rule["trigger"], rule["trigger"])}
+                     for rule in answers[0]["rules"]]
+            return rules, symbols
         except ValueError as problem:
             error = problem
     raise RuntimeError(f"could not get a usable symbol list: {error}")
+
+
+def _usable(symbols: list[dict]) -> tuple[list[dict], dict]:
+    """Repair the slips in a symbol list that would end the run.
+
+    The read step is told that names are words in snake_case and that all
+    names are distinct. For something the document gives in quotes it often
+    keeps the document's spelling:
+
+        job_status: Enum {queued, passed, timed out}     "timed out" is two words
+        answer_status: Enum {200, 201, 409}              numbers
+        shell: Enum {zsh, bash}, and a symbol zsh        one name for two things
+        skills_dir: Enum {skills}                        one value: always the same
+
+    Vocabulary refuses each of these, and after three such answers the run
+    ended: 24 of 179 runs on specs written like real ones (E24). So:
+
+      - a name or a value that is not a word is made one. Every character
+        that is not a letter, a digit or "_" becomes "_": timed_out. One that
+        would start with a digit gets the name of its symbol in front:
+        answer_status_200;
+      - a value that is also the name of a symbol, or a value of an earlier
+        symbol, gets the name of its symbol in front: shell_zsh. Of two
+        symbols with one name the first stays;
+      - an enum with fewer than two values becomes a yes/no symbol.
+
+    A list without such slips comes back as it is. Returns the list, and
+    {old name: new name} for the symbols whose own name changed (a rule may
+    name one as its trigger).
+    """
+    def word(name: str) -> str:
+        return re.sub(r"[^A-Za-z0-9_]", "_", name).strip("_")
+
+    usable, renamed = [], {}
+    for symbol in symbols:
+        name = word(symbol["name"])
+        if not name or name[0].isdigit():
+            name = f"s_{name or len(usable) + 1}"
+        if name in {other["name"] for other in usable}:
+            continue
+        if name != symbol["name"]:
+            renamed[symbol["name"]] = name
+        usable.append({**symbol, "name": name})
+
+    taken = {symbol["name"] for symbol in usable}
+    for symbol in usable:
+        if symbol["sort"] != "Enum":
+            continue
+        values = []
+        # dict.fromkeys: the same value listed twice is one value
+        for value in dict.fromkeys(word(value) for value in symbol.get("values", [])):
+            if not value or value[0].isdigit() or value in taken:
+                value = f"{symbol['name']}_{value}".rstrip("_")
+            if value not in taken:
+                taken.add(value)
+                values.append(value)
+        symbol["values"] = values
+        if len(values) < 2:
+            symbol.update(sort="Bool", values=[])
+    return usable, renamed
 
 
 # ------------------------------------------------------------- step 3: cluster

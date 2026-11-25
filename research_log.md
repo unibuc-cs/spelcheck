@@ -3450,6 +3450,72 @@ licence of the project they come from; the raw data of E23 and T28 too.
 
 ---
 
+## T29 — Development: a symbol list with a name that is not a word (2026-11-25)
+
+**Question.** On specs written like real ones a run often stops in the read
+step: the symbol list cannot be used, three times in a row. Can our code
+repair the list?
+
+**What stops a run.** In the 179 runs of E23, T28 and E24, 28 stopped: 4 for
+a label that the read step did not keep (3 of them our parser's fault, fixed
+in E23), and 24 for the symbol list:
+
+| What is wrong with the list | Runs | Examples |
+|---|---|---|
+| a name or a value that is not a word | 20 | `timed out` (13 times), `change:apply`, `.claude`, `add-auth`, 201, `spec-driven`, `Asia/Shanghai` |
+| a name declared twice | 2 | the value `zsh` of one symbol and a symbol `zsh` |
+| an enum with fewer than two values | 2 | |
+
+All 20 are values of an enum that the document gives in quotes: the model
+keeps the spelling of the document.
+
+**The change** (`formalize._usable`, no prompt changes). `eval17/` was written
+and committed first (8ad8d6e). Before the list is checked:
+
+1. a name or a value that is not a word is made one: every character that is
+   not a letter, a digit or "_" becomes "_" (`timed out` to `timed_out`); one
+   that would start with a digit gets the name of its symbol in front (201 to
+   `answer_status_201`);
+2. a value that is also the name of a symbol, or a value of an earlier
+   symbol, gets the name of its symbol in front; of two symbols with one name
+   the first stays;
+3. an enum with fewer than two values becomes a yes/no symbol;
+4. a trigger that names a renamed symbol is renamed with it.
+
+The repair leaves all 3,897 symbol lists of the saved runs, examples and
+development specs as they are, so no earlier result can move.
+
+**Results on development data.**
+
+| | Before | With the repair |
+|---|---|---|
+| `eval16/` (2 runs of 24 specs): runs that finished | 42 of 48 (E24) | 48 of 48 |
+| planted conflicts found | 19 of 22 | 24 of 24 |
+| planted gaps found | 10 of 10 | 12 of 12 |
+| clean runs with a conflict, doubtful ones set aside | 4 of 10 | 3 of 12 |
+| the second real batch: runs that finished | 14 and 15 of 16 (E24) | 16 of 16 |
+| its rules of no use to the checks | 47% and 57% | 60% |
+
+- **Every run finishes.** The build runner of `eval16/`, which finished 3 of
+  8 runs, now has `status_reported: Enum {queued, skipped, failed, passed,
+  timed_out, cancelled}` and finishes 8 of 8, with its two planted conflicts
+  found in 4 of 4 runs.
+- **More conflicts are counted on `eval16/`** (403 that were not planted, 211
+  before), because that spec now runs: every pair of its rules that report a
+  status clashes when the two events happen at once. They are marked
+  doubtful, and with those set aside 24 are left (48 before).
+- **The real specs that used to stop are hard ones.** With them in, 60% of
+  the rules of the batch are of no use to the checks. The repair lets a run
+  finish; it does not make its rules translatable (research.md 4.8).
+
+**Frozen** with the commit of this entry. Next: held-out `eval17/` with the
+code before and after (E25).
+
+**Raw data.** experiments/results/T29_eval16.json and T29_real2.json, each
+with its table.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |
