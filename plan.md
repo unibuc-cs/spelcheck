@@ -61,9 +61,9 @@ this order:
    history of changes. Two batches of 16 changes of the OpenSpec tool's own
    repository are done (steps 37 and 38), each change against the spec files
    it touches. It goes badly, and we know why (research.md 4.8):
-   - **a run stops** when the model makes a name or a value that is not a
-     word (`.claude`, `timed out`, 201): 6 to 19% of the runs. This is the
-     first thing in the way, and nothing is built for it;
+   - **a run stopped** when the model made a name or a value that is not a
+     word (`.claude`, `timed out`, 201): 6 to 19% of the runs. The symbol
+     list is now repaired (step 39), and every run finishes;
    - **about half of the rules give the checks nothing**: the symbols of the
      read step do not fit rules that demand two or three things. A rule
      whose translation demands nothing is now rejected and reported as not
@@ -80,8 +80,8 @@ this order:
    The third batch of real changes is not run: 32 changes show these things
    well enough. A larger invented project with a change that does everything
    at once is done (step 36).
-   All sixteen sets and both real batches have been read (E24), so
-   a new design needs `eval17/`, written first.
+   All seventeen sets and both real batches have been read (E25), so
+   a new design needs `eval18/`, written first.
 2. **The change check, further** (G2). The gap that a removal opens is done
    (step 33), and so is a way to check a change on a saved model of the
    specs (step 34, `--incremental`). What is left:
@@ -115,44 +115,6 @@ this order:
      once (step 30): a gap the assumed facts rule out is marked doubtful, but
      the facts rarely say that one of the two always holds, so only 2 of 13
      were marked (T20, E16). This is a known limit now.
-
-### 2.1 The plan for step 39: a name that is not a word (not built yet)
-
-On specs written like real ones a run often ends before it starts. The read
-step lists the symbols, our code checks the list, and the run stops if the
-list cannot be used after three tries. In the 179 runs of E23, T28 and E24
-that happened 24 times:
-
-| What is wrong with the list | Runs | Examples |
-|---|---|---|
-| a name or a value that is not a word | 20 | `timed out`, `change:apply`, `.claude`, 201, `Asia/Shanghai` |
-| a name declared twice | 2 | the value `zsh` of one symbol, and a symbol `zsh` |
-| an enum with fewer than two values | 2 | |
-
-The prompt already asks for words in snake_case and for distinct names. The
-model keeps the spelling of what it found in quotes in the document.
-
-One try: our code repairs the list, and no prompt changes.
-
-1. A name or a value that is not a word is made one: every character that is
-   not a letter, a digit or "_" becomes "_" (`timed out` to `timed_out`). One
-   that would start with a digit gets the name of its symbol in front (201 to
-   `answer_status_201`).
-2. A value that is already the name of something else gets the name of its
-   symbol in front (`zsh` to `shell_zsh`). A symbol whose name is taken is
-   left out; the first one stays.
-3. An enum with fewer than two values becomes a yes/no symbol.
-4. A trigger that names a repaired symbol is renamed with it.
-
-A list without such slips comes back as it is, so nothing changes for the
-specs that run today. The translations are shown the repaired names.
-
-**How it is tested.** `eval17/` first (make_eval.py): six specs with states,
-codes and labels in quotes that are not words. Development: `eval16/` (6 to 8
-of 48 runs stopped) and the second real batch. Then `eval17/`, with the code
-before and after. **The rule, set now:** the repair stays if fewer runs stop
-on `eval17/` and what is planted is found no less often in the runs that
-finish.
 
 Small things that are open:
 
@@ -194,6 +156,16 @@ with a conflict that was not planted from 3 to 13 of 144 (T22). On held-out
 loss, and each added conflict quotes the fact it rests on. The rule for such
 decisions from now on: when the gains are larger than the losses, the new
 version becomes the default, and the loss is written down as a limit.
+
+Decided on 2026-11-25: **a symbol list with a name that is not a word is
+repaired, not refused** (step 39). The read step keeps the spelling of what
+the document gives in quotes, and our code ended the run after three such
+lists: 24 of 179 runs on specs written like real ones. Now a name or a value
+that is not a word is made one, a value that is another name gets the name
+of its symbol in front, and an enum with one value becomes a yes/no symbol
+(`formalize._usable`). No prompt changes, and none of the 3,897 saved symbol
+lists does. On held-out `eval17/` 48 of 48 runs finish, 7 of 48 before, with
+22 of 24 planted conflicts and 10 of 12 planted gaps found (E25).
 
 Decided on 2026-11-25: **a rule whose chosen translation demands nothing is
 rejected; reading a long document in pieces is taken out again** (step 38).
@@ -350,7 +322,7 @@ The code, in the order to read it:
 |---|---|---|---|
 | `speccheck/llm.py` | 80 | One function: prompt + JSON schema in, N parsed answers out | the model server |
 | `speccheck/logic.py` | 250 | Symbols to Z3 variables; parses formulas; asks the solver, including the test "do these two rules mean the same?" | Z3 |
-| `speccheck/formalize.py` | 830 | Stage 1: text to `formal.json` (steps 1 to 5, then 6 and 7); `formalize_sets` for K symbol sets; with `base`, adds new rules to a formal model that exists | `llm`, `logic`, `probe` |
+| `speccheck/formalize.py` | 890 | Stage 1: text to `formal.json` (steps 1 to 5, then 6 and 7); `formalize_sets` for K symbol sets; with `base`, adds new rules to a formal model that exists | `llm`, `logic`, `probe` |
 | `speccheck/probe.py` | 600 | Stage 1, step 6: four checks by simple questions, three about one requirement and one about the outcomes of two | `llm`, `logic` |
 | `speccheck/checks.py` | 750 | Stage 2: `formal.json` to findings; which findings depend on a reading; scenarios; `combine` for K formal models | `logic` |
 | `speccheck/explain.py` | 400 | Stage 3: findings to plain words; the scenario judge; builds `report.md` | `llm` |
@@ -1188,11 +1160,12 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       and one change that adds, rewrites, removes and renames (no design
       change). E22: 9 of 9 planted conflicts and 9 of 9 planted gaps in 3
       runs, both ways, and nothing else about the change
-- [ ] **Step 39 — a name that is not a word**: `eval17/` written first
-      (done); the symbol list of the read step is repaired where a name or a
-      value is not a word, is declared twice, or an enum has one value (plan
-      in 2.1). Development on `eval16/` and the second real batch; held-out
-      `eval17/`, before and after
+- [x] **Step 39 — a name that is not a word**: `eval17/` written first;
+      the symbol list of the read step is repaired where a name or a value
+      is not a word, is declared twice, or an enum has one value. T29
+      (development): `eval16/` 48 of 48 runs finish (42 before), the second
+      real batch 16 of 16. E25 (held-out `eval17/`): 48 of 48 runs finish, 7
+      before; 22 of 24 planted conflicts, 10 of 12 planted gaps. Kept
 - [x] **Step 38 — rules that demand nothing, and reading in pieces**:
       `eval16/` written first. A rule whose chosen translation demands
       nothing is rejected and reported as not checked: kept. A document of

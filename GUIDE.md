@@ -1154,9 +1154,17 @@ side by side:
    (6.5).
 
 One thing came out of this that we had not seen as clearly: on such specs a
-run often stops before it starts. The model makes a symbol or a value whose
-name is not a word (`.claude`, `timed out`, 201), our code refuses the list,
-and after three tries the run ends. That happened in 6 to 19% of the runs.
+run often stopped before it started. The model makes a symbol or a value
+whose name is not a word (`.claude`, `timed out`, 201), because that is how
+the document spells it. Our code refused the list, and after three tries the
+run ended. That happened in 6 to 19% of the runs.
+
+This one is repaired. Before the list is checked, our code makes a word of
+every such name (`timed out` becomes `timed_out`, 201 becomes
+`answer_status_201`), and the translations are shown the repaired names. We
+wrote six more specs full of such values (`eval17`) and ran them with the old
+and the new code: 7 of 48 runs finished before, 48 of 48 after, and 22 of the
+24 conflicts and 10 of the 12 gaps that we had planted were found.
 
 **Longer specs.** All the specs counted above have at most six requirements.
 To see what a longer document does, we wrote two more, each in four versions
@@ -1199,7 +1207,7 @@ The project has five goals. This is where each one stands:
 | two words for one yes/no question give a false gap | "the slot is free" and "the slot is taken" as two symbols: in 3 to 5 of 18 clean runs (6.2) |
 | a fact or a link can be wrong, even with a majority behind it | which is why the report quotes every one that a conflict depends on |
 | there is no time | "then", "after" and "until" are not modelled: the logic is one snapshot |
-| real specs are harder than the ones we wrote | a run stops when the model makes a name that is not a word (6 to 19% of the runs). Their rules demand two or three things each, and the symbols that the read step lists do not fit them: about half of the rules get no agreed translation or one that demands nothing (the second kind is now reported as "Not checked"). They put a general rule next to its special cases, and the questions about two outcomes then report a conflict for each such pair. A whole project is too large to check at once (6.2) |
+| real specs are harder than the ones we wrote | their rules demand two or three things each, and the symbols that the read step lists do not fit them: about half of the rules get no agreed translation or one that demands nothing (the second kind is now reported as "Not checked"). They put a general rule next to its special cases, and the questions about two outcomes then report a conflict for each such pair. A whole project is too large to check at once (6.2) |
 | the cheaper way to check a change reads a new rule with little around it | shown only the saved symbols, the model sometimes ties a new rule to a saved event that the rule does not name. That cost 4 of 54 planted conflicts on `eval14`. On `eval15` it cost none, but one such rule was ambiguous in 3 of 3 runs (6.2). Either way, a project can have about 140 scenarios at most |
 | the evaluation is small | the specs were written by us, and there is one main model |
 
@@ -1284,9 +1292,9 @@ The full list is in research.md, section 5.
 
 ### 6.6 What is next
 
-1. **Real specs**: names that are not words, which stop a run; symbols that
-   overlap; and the conflicts between a general rule and its special case.
-   Then a larger evaluation, with another main model.
+1. **Real specs**: symbols that overlap, and the conflicts between a general
+   rule and its special case. Then a larger evaluation, with another main
+   model.
 2. **The change check, further**: whether the cheaper way becomes the
    default, what the model is shown when it reads a new rule, and projects
    too large for one read answer.
@@ -1347,10 +1355,10 @@ The folders:
 speccheck/          the tool (the 8 files above; refine.py is the review that is switched off)
 specs/              3 small specs the prompts were developed on, with their saved output,
                     and auth_change, the example of part 5
-tests/              73 tests that need no LLM
+tests/              78 tests that need no LLM
 experiments/
   sets/             the 11 evaluation sets, eval to eval10 and eval12 (297 spec versions), two long specs,
-                    eval16 (six specs written like real ones), real1 and real2 (32 changes of a real project),
+                    eval16 and eval17 (twelve specs written like real ones), real1 and real2 (32 changes of a real project),
                     and for the change check eval11, eval13, eval14, eval15, mixed (one larger project)
                     and change_dev (old specs as projects)
   results/          every experiment: the raw data (.json) and its tables (.md)

@@ -3516,6 +3516,61 @@ with its table.
 
 ---
 
+## E25 — Held-out `eval17/`: the repair of the symbol list (2026-11-25)
+
+**Question.** Does the repair of T29 let specs run that it was not built on,
+and is what we planted in them found?
+
+**Setup.** `eval17/` was written first (8ad8d6e) and the design frozen in
+83328d5. Six specs of 10 scenarios (a deployment tool, an issue tracker, a
+DNS service, a payment gateway, a mail queue, a feature-flag service), each
+with states, codes, regions or labels in quotes that are not words
+(`rolled back`, `in review`, `pending-sync`, `auth-only`, `50-50`,
+`kind:bug`, 402), in a clean, a direct, an overlap and a gap version. 2 runs
+each, with the code before the repair (commit 8ad8d6e, from a git worktree,
+on the workstation login) and after it (on the cluster), at the same time.
+
+**Results.**
+
+| | Before | With the repair |
+|---|---|---|
+| **runs that finished** | **7 of 48** | **48 of 48** |
+| planted conflicts found | 4 (of the 4 in the runs that finished) | 22 of 24 |
+| planted gaps found | 2 (of 2) | 10 of 12 |
+| clean runs with a conflict, doubtful ones set aside | 0 of 1 | 0 of 12 |
+| conflicts that were not planted and not marked doubtful | 0 | 3 |
+| rules accepted | 72 of 72 | 462 of 492 (94%) |
+
+- **Without the repair five of the six specs never run.** All 41 stops are a
+  value that is not a word: `rolled back` and `eu-west` (deployment),
+  `pending-sync` (DNS), `rule-match` (flags), `in review` and `kind:bug`
+  (issues), `auth-only` (payments), `spam-quarantine` (2 of the 8 runs of
+  the mail queue, the only spec that mostly ran).
+- **With it every run finishes**, and 22 of the 24 planted conflicts and 10
+  of the 12 planted gaps are found. On the mail queue, which ran both ways,
+  the result is the same (4 of 4 conflicts).
+- **What is missed is the usual translation trouble, not the names**: "starts
+  the transfer AND sets the domain state to `transfer-out`" was rejected in
+  one run (its translations scattered), and "returns the amount to the card"
+  was written as an amount in some translations and as a yes or no in
+  others (one conflict missed, and the gap of that spec in 2 of 2 runs).
+- **The clean specs are clean this time**: with the doubtful conflicts set
+  aside, none of the 12 clean runs reports a conflict. Counted with them
+  there are 163 conflicts that were not planted: rules for different
+  commands that set the same state ("sets the release state to ...") clash
+  when two commands are run at the same moment. All but 3 are marked
+  doubtful.
+
+**Decision.** The repair stays: the rule of plan.md 2.1 asked for fewer runs
+that stop, and for what is planted to be found no less often in the runs
+that finish. `eval17/` is development data from now on; the next design
+needs `eval18/`.
+
+**Raw data.** experiments/results/E25_eval17.json and E25_eval17_before.json,
+each with its table.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

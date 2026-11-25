@@ -36,6 +36,7 @@ its entries. How each mechanism works is in [plan.md](plan.md), section 5.
   | `eval14/` | 36 changes on 6 OpenSpec projects, run both ways (2.4) | 18 conflicts, 12 gaps | E20 |
   | `eval15/` | 36 changes on 6 OpenSpec projects, run both ways; new rules about a property of what an existing event is about (2.4) | 24 conflicts, 6 gaps | E21 |
   | `eval16/` | 6 specs written like real tool specs, 14 scenarios with two or three outcomes each (2.4) | 2 conflicts, 1 gap | E24 |
+  | `eval17/` | 6 specs of that kind with states and codes in quotes that are not words (2.4) | 2 conflicts, 1 gap | E25 |
   | `real1/`, `real2/` | 2 x 16 archived changes of a real OpenSpec project, each against the spec files it touches (2.4) | nothing: no known answer | E23, E24 |
   | `size/` | 4 versions of one spec of 30 requirements | 2 conflicts, 1 gap | E13 |
   | `size2/` | 4 versions of one spec of 100 requirements | 2 conflicts, 1 gap | E14 (not held-out: no design was tuned on it) |
@@ -229,6 +230,16 @@ changes and `eval16/`, six specs written like real ones, both held out.
 
 On `eval16/` what was planted is found either way: 19 of 22 and 19 of 20
 conflicts, 10 of 10 gaps.
+
+**A run no longer stops for a name that is not a word** (T29, E25). The model
+keeps the spelling of what a document gives in quotes (`timed out`, 201,
+`.claude`); our code refused such a symbol list, and after three tries the
+run ended: 24 of 179 runs on specs of this kind. The list is now repaired
+before it is checked (`timed_out`, `answer_status_201`), with no change to
+any prompt and none to a list that already works. On held-out `eval17/`, six
+specs full of such values, 7 of 48 runs finished before and 48 of 48 after,
+with 22 of the 24 planted conflicts and 10 of the 12 planted gaps found. On
+the second real batch 16 of 16 runs finish (14 and 15 before).
 
 ---
 
@@ -565,7 +576,7 @@ E16).
 
 ---
 
-### 4.8 What a real project shows (E23, T27, T28, E24)
+### 4.8 What a real project shows (E23, T27, T28, E24, T29)
 
 Two batches of 16 changes of one real project, so a first sign.
 
@@ -610,11 +621,10 @@ Two batches of 16 changes of one real project, so a first sign.
 - **A whole project does not fit.** 44 spec files are far beyond one read
   answer; a change was checked against the files it touches only, so a
   conflict with a rule in another file cannot be seen.
-- **A name that is not a word stops the run** (E24). The model makes a
-  symbol or a value such as `.claude`, `timed out` or 201, the list is
-  refused, and after three tries the run ends: 6 to 19% of the runs on the
-  real batches and on `eval16/`. On specs of this kind it is the first thing
-  in the way.
+- **A name that is not a word stopped the run** (E24), in 6 to 19% of the
+  runs on the real batches and on `eval16/`. It is repaired since T29 (2.4).
+  The real specs that used to stop are hard ones: with them in, 60% of the
+  rules of the second batch are of no use to the checks.
 - **Giving the rules their symbols is not enough** (T28, E24). Read in
   pieces, a real spec gets 0.8 to 2.3 symbols for each outcome (0.2 to 1.25
   in one answer), and the rules that demand nothing nearly go. As many rules
@@ -678,6 +688,7 @@ the prompts, so it can be scored again without a GPU.
 | E22 | `mixed/`: one project of 39 scenarios, one change that adds, rewrites, removes and renames at once; the full way and on a saved model | 3 + 3 runs | 9 of 9 planted conflicts and 9 of 9 planted gaps both ways, nothing else about the change (2.4) |
 | E23 | a real OpenSpec project (the OpenSpec tool's own repository): 16 of its archived changes, each against the spec files it touches | 16 runs | 5 runs stopped; 40% of the rules without an agreed translation; 29 conflicts about a change, 3 of them from the rules alone (2.4, 4.8) |
 | E24 | `eval16/` and the second real batch, held-out: a rule that demands nothing is rejected, and a long document is read in pieces (T28); each set before and after | 2 x 48 and 3 x 16 runs | planted conflicts 19 of 22 before, 19 of 20 after, gaps 10 of 10 both; real rules of no use 57% and 47% before, 44% after; runs stopped 1 and 2 of 16 before, 3 after. The first change kept, the second taken out (2.4) |
+| E25 | `eval17/`, held-out: a symbol list with a name that is not a word is repaired (T29); before and after | 2 x 48 runs | runs that finish 7 of 48 before, 48 of 48 after; planted conflicts 22 of 24, gaps 10 of 12 (2.4) |
 
 The trials (T1 to T26) were run on development data between these
 experiments. Among the last: T17 compared temperatures 0.3, 0.5 and 0.7 (3.1);
@@ -697,7 +708,8 @@ found why that way lost a conflict in E20, and changed the read prompt
 addition (2.4, 4.5). T26 ran the second model on the spec of 100 requirements
 (4.4). T27 looked at the saved translations of the real project, to see why
 they disagree (4.8). T28 tried the two remedies of 2.4 on the first real
-batch and on our own long documents.
+batch and on our own long documents. T29 counted what stops a run on such
+specs, and repaired the symbol list (2.4).
 research_log.md
 has them in order, together with the bugs that
 changed results before they were fixed (L1 to L10) and the open threats to

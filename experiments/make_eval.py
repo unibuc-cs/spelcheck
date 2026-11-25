@@ -229,7 +229,7 @@ words: `rolled back`, `in review`, `pending-sync`, `auth-only`, `50-50`,
 `kind:bug`, `.dep/config`, 402. The domains are a deployment tool, an issue
 tracker, a DNS service, a payment gateway, a mail queue and a feature-flag
 service. Four versions each, as in eval16. This time a clean spec has no
-rule that cuts across the others.
+rule that cuts across the others. Held-out in E25; development data since.
 """
 
 import json
