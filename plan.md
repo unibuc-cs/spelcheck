@@ -118,6 +118,60 @@ this order:
      the facts rarely say that one of the two always holds, so only 2 of 13
      were marked (T20, E16). This is a known limit now.
 
+### 2.1 The plan for step 41: a second read for the rules that got no symbol (not built yet)
+
+After the vote, one real rule in three is still of no use to the checks
+(E26). For half of those, at least one of the eight translations says that
+the rule demands nothing:
+
+```
+"WHEN user runs `templates` THEN the system displays template paths"
+templates_command_run => true
+```
+
+The model understood the rule (its own summary is right) and found no symbol
+for the display: the read step, which lists the symbols for the whole
+document in one answer, left it out. In two runs of the third real batch
+that is 172 of the 341 rules of no use. In our own sets it is 0 to 2 rules
+in a whole set.
+
+One try, between steps 3 and 4:
+
+1. **Which rules.** Our code takes the rules that are not accepted after
+   step 3 and have at least one translation that demands nothing.
+2. **The second read.** One call, the read step in the form it has for an
+   addition to a saved model (`READ_MORE`): the model is shown the symbols
+   so far and only those rules. One more paragraph tells it that something
+   these rules demand has no symbol, and to add one for each such fact.
+3. **The new symbols.** Our code repairs their names (step 39) and adds them
+   to the list. If the model adds none, or its answer cannot be used, the
+   run goes on as it was.
+4. **Translated again.** Those rules are translated eight more times with
+   the longer list and judged again, vote included. A rule takes the new
+   translation only if it is accepted now; otherwise it stays as it was.
+5. **Facts.** If symbols were added, the question for the assumed facts is
+   asked with the final list.
+
+Reading a whole document in pieces was dropped in step 38 for three
+reasons. Two are gone since: a bad name no longer stops a run (step 39), and
+translations that pick different symbols now vote (step 40). The third, a
+state read as an event in a later piece, cannot happen here: the second read
+adds symbols and changes no trigger.
+
+**How it is tested.** First `real4/` (experiments/real/planted.py): the 13
+changes of the real project that create a new spec of 14 to 31 scenarios,
+which the pool left out. Each is there twice, as it is and with one scenario
+of ours that clashes with one of its own, so for the first time there is a
+known answer on real text. Development: the three earlier real batches, and
+our own sets to see that nothing moves. Then `real4/`, twice, with the code
+before and after.
+
+**The rule, set now.** The second read stays if on `real4/` fewer rules are
+of no use to the checks, by more than two runs of one arm differ; no more
+runs stop; and the planted conflicts are found no less often. If the gains
+are larger than the losses it is on by default, and a loss within that is
+written down as a limit.
+
 Small things that are open:
 
 - **Long documents** (E14). A spec of 100 requirements works: its read answer
@@ -1191,6 +1245,13 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       and one change that adds, rewrites, removes and renames (no design
       change). E22: 9 of 9 planted conflicts and 9 of 9 planted gaps in 3
       runs, both ways, and nothing else about the change
+- [ ] **Step 41 — a second read for the rules that got no symbol**:
+      `real4/` first (done): 13 real changes that create a new spec, each
+      also with one planted conflict. Then: the rules that are not accepted
+      and have a translation that demands nothing are read again, alone,
+      with the symbols so far; the symbols the model adds go into the list,
+      and those rules are translated again (plan in 2.1). Development on
+      the three real batches; held-out `real4/`, before and after
 - [x] **Step 40 — a vote among the translations of a rule**: `eval18/` and
       `real3/` written first; where the translations of a rule differ only
       in the symbols they use, the strongest one that more than half of them

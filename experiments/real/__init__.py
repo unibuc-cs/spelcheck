@@ -14,8 +14,13 @@ A real project is too large to formalize as one document (44 spec files here),
 so each change is checked against the spec files it touches, as they were in
 the commit before the change was archived. research_log.md, E23, T27 and E24.
 
-The two batches that were run are kept in experiments/sets/real1 and real2,
+The three batches that were run are kept in experiments/sets/real1 to real3,
 with the licence of the project they come from; they can be run from there:
 
     python -m experiments.evaluate --base-url ... --specs experiments/sets/real2 --runs 1 --symbol-sets 1 --name ...
+
+real4 is written by planted.py: the changes that create a new spec, each
+also with one scenario of ours that clashes with one of its own.
+
+    python experiments/real/planted.py .scratch/real_cases experiments/sets/real4
 """

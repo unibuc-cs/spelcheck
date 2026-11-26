@@ -40,6 +40,7 @@ its entries. How each mechanism works is in [plan.md](plan.md), section 5.
   | `real1/`, `real2/` | 2 x 16 archived changes of a real OpenSpec project, each against the spec files it touches (2.4) | nothing: no known answer | E23, E24 |
   | `eval18/` | 6 specs written like tool specs, 7 scenarios each | 1 conflict, 1 gap, 2 ambiguities | E26 |
   | `real3/` | the last 16 archived changes of that project that fit, laid out like `real1/` | nothing: no known answer | E26 |
+  | `real4/` | 13 more changes of that project, each creating a new spec; each also with one scenario of ours added | 1 conflict in the planted version | not run yet: held out for step 41 (plan.md 2.1) |
   | `size/` | 4 versions of one spec of 30 requirements | 2 conflicts, 1 gap | E13 |
   | `size2/` | 4 versions of one spec of 100 requirements | 2 conflicts, 1 gap | E14 (not held-out: no design was tuned on it) |
 
