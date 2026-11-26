@@ -1367,6 +1367,7 @@ Then the documents:
 | File | What it gives you | When to read it |
 |---|---|---|
 | [README.md](README.md) | the same story in short form, with more real output, and how to run the tool with the LLM | next |
+| [commands.md](commands.md) | the commands on one page | when you run it |
 | [plan.md](plan.md) | section 5 has the exact rule behind each decision, section 6 every JSON field | while you read the code |
 | [research.md](research.md) | every result, with its numbers | when you want to know what was measured |
 | [research_log.md](research_log.md) | the archive: every experiment in the order it happened | only for writing the paper |

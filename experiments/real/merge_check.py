@@ -1,6 +1,6 @@
 """Does speccheck's merge do to the specs what the project's own archive step did? No LLM.
 
-    python experiments/real/merge_check.py CASES
+    python -m experiments.real.merge_check CASES
 
 For each case of history.py: apply the change to the specs as they were before (change.merge), and
 compare the scenarios that result with those of the spec files after the archive commit.

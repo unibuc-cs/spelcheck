@@ -81,6 +81,7 @@ Where the project stands:
 | Read next | For |
 |---|---|
 | [GUIDE.md](GUIDE.md) | a guided tour for a first reading: every idea from an example, in small steps |
+| [commands.md](commands.md) | the commands on one page: set up, start the model, check a spec or a change, run an evaluation |
 | this file | a worked example with real output, the results, how to run it |
 | [plan.md](plan.md) | where we are, what is next, and the exact rule behind each decision |
 | [research.md](research.md) | what we found, with the numbers |

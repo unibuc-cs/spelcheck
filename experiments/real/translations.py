@@ -1,6 +1,6 @@
 """Why do the eight translations of a rule disagree? Reads the translations saved in a result file. No LLM.
 
-    python experiments/real/translations.py RESULT.json [RESULT.json ...]
+    python -m experiments.real.translations RESULT.json [RESULT.json ...]
 
 Every rule is translated eight times with the symbols that the read step
 listed (formalize.py, steps 1 to 3). This script looks at what the eight say:
