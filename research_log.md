@@ -4430,6 +4430,80 @@ development data now.
 
 ---
 
+## E30 — Held-out `eval21/`: every example of a conflict must describe its situation (2026-11-27)
+
+**Question.** The tool itself was run on the four changes of the project of
+T36, each in 32 or 33 parts (T38). A change that can be built got a
+conflict "found in 21 of 32 parts": an existing example against an example
+that the change adds, of the same test case, the second "while" one more
+thing is true. Read as rules the second is a special case of the first. The
+mark of step 44 was not given, because one of the two examples, the second,
+describes the whole situation. Should every example of a conflict have to?
+
+**The change** (step 45, `checks._mark_examples`; Z3, no question). A
+conflict with examples counts as it is only when every example among its
+rules describes its situation: its condition and what it demands, with the
+assumed facts, entail the conditions of the other rules. The existing
+example does not say what its variant adds, so the two are two cases. The
+finding names the examples that fall short (`beyond_example`).
+
+**The set** (`eval21/`, written and committed before the change). Four more
+projects about an assistant that calls tools: a library, a garage, a
+pharmacy, an irrigation system. Each has a rule about a call ("WHEN a call
+of `lend_book` succeeds THEN an earlier call of `check_card` in the run
+succeeded") and one example with no condition of its own ("Example: a book
+is lent: WHEN mira asks to borrow book b12 THEN `lend_book` is called once
+AND the answer gives the due date"). Three changes each, all of which add
+examples:
+
+| Change | What it adds | Expected |
+|---|---|---|
+| variant | two more cases of the request of the existing example, each under a condition of its own ("WHEN the same request runs while b12 is reserved for another reader THEN `lend_book` is never called ...") | nothing |
+| same | an example with the words of the existing one in its WHEN part and the opposite outcome ("WHEN mira asks to borrow book b12 THEN `lend_book` is never called ...") | that conflict |
+| breaks | an example that breaks the rule about the call by what it demands itself ("WHEN mira sends a quick request for book b12 THEN `lend_book` succeeds once AND `check_card` is never called") | that conflict |
+
+**The rule, set before the change** (plan.md 2.2). With doubtful conflicts
+set aside and the same runs scored both ways: the "variant" changes have a
+conflict about them less often than when one example is enough, and the
+conflicts of the "same" and the "breaks" changes are found no less often.
+And the saved runs of `eval20/` (E29), scored again, give what they gave.
+
+**Result.** 12 changes, 3 runs each, with `--whole-run --examples
+"^Example:"` (`E30_eval21`). Doubtful conflicts are set aside.
+
+| | Every example (step 45) | One example is enough (step 44) | Examples read as rules |
+|---|---|---|---|
+| "variant" changes with a conflict about them (conflicts) | 0/12 | 3/12 (3) | 11/12 (20) |
+| "same" conflicts found | 5/12 | 5/12 | 5/12 |
+| "breaks" conflicts found | 4/12 | 4/12 | 10/12 |
+| other conflicts about a change with a planted one | 0 | 0 | 3 |
+
+- **The rule is met.** The three conflicts that step 44 left on the
+  "variant" changes are the existing example against its new variant, in
+  the three runs of one project. The runs of `eval20/`, scored again, give
+  the numbers of E29 in every row.
+- **What the set shows besides, which the rule did not ask.** A conflict
+  between an example and a rule is found in 10 of 12 runs, and in 6 of the
+  10 it is marked doubtful, with either step. The example says "`start_repair`
+  succeeds once", the model wrote that as a count, `(= start_repair_called_count 1)`,
+  and the rule is about `start_repair_succeeded`: nothing in the formulas says
+  that the first means the second, so the example does not make the rule
+  apply. The mark for examples costs these.
+- **Two examples of one case are found in 5 of 12 runs**, with or without
+  the mark. In all 7 misses the two have the same condition, and "called
+  once" and "never called" became two symbols: a count that is 1, and "the
+  call did not succeed", a symbol that the model took over from the rule
+  about the call. Asked whether the two can hold together, 7 or 8 of 8
+  answers say that they can: a call can be made and fail.
+- Read as rules, the examples give a conflict on 11 of the 12 changes that
+  only add cases.
+- A change of these projects costs 43 requests.
+
+**Decision.** Step 45 stays. An example that breaks a rule by its own words
+is the open point: it is found, and marked doubtful more often than not.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

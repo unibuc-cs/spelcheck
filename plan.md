@@ -208,7 +208,7 @@ before; a "clean" change has a conflict about it in 0 runs, 6 before; a
 it did. The price: a change costs 87 requests to the LLM where it cost 55.
 Step 44 stays.
 
-### 2.2 Step 45: every example of a conflict must describe its situation (built; `eval21/` not run yet)
+### 2.2 Step 45: every example of a conflict must describe its situation (built; held-out result in E30)
 
 The tool itself was then run on the four changes of the project, each in
 32 or 33 parts. The contradiction between two rules that its authors name is
@@ -247,6 +247,19 @@ changes have a conflict about them less often than when one example is
 enough, and the conflicts of the "same" and the "breaks" changes are found
 no less often; and if the saved runs of `eval20/` (E29), scored again, give
 what they gave. Point 2 is checked by tests.
+
+**The result** (E30, research_log.md). The rule is met. With doubtful
+conflicts set aside, on 12 runs of each kind: a "variant" change has a
+conflict about it in 0 runs, and in 3 when one example is enough; the "same"
+conflicts are found in 5 either way, the "breaks" ones in 4 either way; the
+runs of `eval20/` give what they gave. Step 45 stays.
+
+The set also measured what the rule did not ask. An example that breaks a
+rule by its own words is found in 10 of 12 runs, and 6 of the 10 are marked
+doubtful: "succeeds once" became a count, and nothing in the formulas says
+that this makes "a call succeeds" true. Two examples of one case with
+opposite outcomes are found in 5 of 12 runs, mark or no mark: "called once"
+and "never called" became two symbols that can hold together.
 
 Small things that are open:
 
@@ -1512,7 +1525,15 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       and one change that adds, rewrites, removes and renames (no design
       change). E22: 9 of 9 planted conflicts and 9 of 9 planted gaps in 3
       runs, both ways, and nothing else about the change
-- [ ] **Step 44 — specs about the runs of an agent system**: `eval20/`
+- [x] **Step 45 — every example of a conflict must describe its situation**:
+      `eval21/` first. A conflict with examples is doubtful unless every
+      example in it makes the other rules apply by its own case (step 44:
+      one of them); an existing example and a variant of it are two cases.
+      In a project in parts a count is of the parts that have the finding
+      as it is shown, and what is not doubtful comes first. Held-out
+      `eval21/` (E30): changes that only add cases with a conflict 3 → 0 of
+      12; the two planted kinds unchanged, 5 and 4 of 12
+- [x] **Step 44 — specs about the runs of an agent system**: `eval20/`
       first (done). Built and frozen: a situation can be a whole run
       (`--whole-run`); a scenario can be an example (`--examples`), and a
       conflict in a situation that says more than the example does is
@@ -1521,8 +1542,7 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       project too large for one document is checked in parts (2.1).
       Held-out `eval20/` (E29): "cross" conflicts 0 → 12 of 12, clean changes
       with a conflict 6 → 0 of 12, "twins" changes 11 → 0 of 12, "direct" 12
-      of 12 as before. Left: the tool's own runs on the project, and
-      GUIDE.md, README.md, research.md
+      of 12 as before
 - [x] **Step 43 — a conflict between a rule and a special case of it says
       so**: solver only (`checks._mark_special_cases`). A remark in the
       title, no count changes. T35: on 22 of 56 and 26 of 148 conflicts that
