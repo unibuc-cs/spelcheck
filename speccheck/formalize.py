@@ -317,7 +317,8 @@ they cannot express it at all, answer with consequent: none"""
 
 def formalize(llm: LLM, spec_text: str, samples: int = 8, temperature: float = 0.7,
               read_temperature: float = 0.0, keep_samples: bool = False,
-              second: LLM | None = None, base: dict | None = None) -> dict:
+              second: LLM | None = None, base: dict | None = None,
+              whole_run: bool = False, first: set | None = None) -> dict:
     """Turn a requirements document into a formal.json dict.
 
     samples           answers drawn per rule (for the ambiguity check) and for
@@ -338,6 +339,14 @@ def formalize(llm: LLM, spec_text: str, samples: int = 8, temperature: float = 0
                       is the base with the new symbols, facts and rules added
                       at the end. The rules of the base are not asked about
                       again, and step 7 is skipped.
+    whole_run         the rules are about a whole run of the system, in which
+                      several things happen, not about one moment. The model
+                      gets "situation": "run": two rules that react to two
+                      different happenings are then asked about in step 6
+                      like any two rules, and checks.py does not doubt a
+                      conflict between them
+    first             ids of rules whose pairs step 6 asks about first (the
+                      rules of a change, which come last in a long document)
     """
     old_symbols = base["symbols"] if base else []
     old_rules = base["rules"] if base else []
@@ -410,6 +419,7 @@ def formalize(llm: LLM, spec_text: str, samples: int = 8, temperature: float = 0
 
     formal = {
         **(base or {}),
+        **({"situation": "run"} if whole_run else {}),
         # The rules that were read a second time, and the symbols that stayed.
         **({"reread": {"rules": [rules[index]["id"] for index in again],
                        "symbols": [symbol["name"] for symbol in added]}} if again else {}),
@@ -425,10 +435,10 @@ def formalize(llm: LLM, spec_text: str, samples: int = 8, temperature: float = 0
     # and to the facts it tests.
     question(llm, formal, vocab, shown, temperature, keep_samples, only=new)
     # Its fourth check adds assumed facts about pairs of outcomes ("between").
-    outcomes(llm, formal, vocab, temperature, keep_samples, only=new)
+    outcomes(llm, formal, vocab, temperature, keep_samples, only=new, first=first)
     # Its fifth check adds assumed facts about the conditions of two rules that
     # clash ("between", with "about": "conditions").
-    conditions(llm, formal, vocab, temperature, keep_samples, only=new)
+    conditions(llm, formal, vocab, temperature, keep_samples, only=new, first=first)
     # Step 7 (optional) adds "second" to the rules.
     if second is not None and not base:
         second_reading(second, formal, samples, temperature, keep_samples)
@@ -451,7 +461,8 @@ def formalize(llm: LLM, spec_text: str, samples: int = 8, temperature: float = 0
 
 def formalize_sets(llm: LLM, spec_text: str, sets: int, samples: int = 8,
                    temperature: float = 0.7, keep_samples: bool = False,
-                   second: LLM | None = None) -> list[dict]:
+                   second: LLM | None = None, whole_run: bool = False,
+                   first: set | None = None) -> list[dict]:
     """Formalize the same document `sets` times, each time with its own symbols.
 
     The read step chooses the symbols, and the findings follow from that
@@ -465,13 +476,15 @@ def formalize_sets(llm: LLM, spec_text: str, sets: int, samples: int = 8,
 
     Returns the formal models, at least one, at most `sets`.
     """
-    first = formalize(llm, spec_text, samples, temperature, 0.0, keep_samples, second)
-    models = [first]
+    usual = formalize(llm, spec_text, samples, temperature, 0.0, keep_samples, second,
+                      whole_run=whole_run, first=first)
+    models = [usual]
     for _ in range(sets - 1):
-        model = formalize(llm, spec_text, samples, temperature, SET_TEMPERATURE, keep_samples, second)
-        if len(model["rules"]) != len(first["rules"]):
+        model = formalize(llm, spec_text, samples, temperature, SET_TEMPERATURE, keep_samples, second,
+                          whole_run=whole_run, first=first)
+        if len(model["rules"]) != len(usual["rules"]):
             continue  # a different list of rules: its findings could not be matched
-        for rule, reference in zip(model["rules"], first["rules"]):
+        for rule, reference in zip(model["rules"], usual["rules"]):
             rule["id"] = reference["id"]
         models.append(model)
     return models

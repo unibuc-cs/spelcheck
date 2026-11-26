@@ -65,13 +65,30 @@ model has. The scenarios that stay keep the labels they have in the saved
 model, and so do the removed ones. A scenario with new words has two labels:
 the new text is N..., and its old rule in the saved model is "replaced",
 which after_model drops.
+
+A project can be too large for one document (PART_LIMIT). Its change is then
+checked in parts (parts): one document for each spec file that the change
+does not touch, holding that file and the files that the change touches. A
+scenario has the label that it has in the document of the whole project, so
+a rule of the change is the same rule in every part. combine_parts puts the
+findings of the parts together.
+
+A project can also hold examples: scenarios that describe one concrete case,
+not a rule for all cases (merge, `examples`).
 """
 
 import re
+from collections import Counter
+from fnmatch import fnmatch
 from pathlib import Path
 from typing import NamedTuple
 
+from .checks import weakness
 from .logic import Vocabulary
+
+# A document with more scenarios than this is checked in parts (see parts). It
+# is the longest that one read was tested on (experiments/sets/size2, E14).
+PART_LIMIT = 100
 
 REQUIREMENT = re.compile(r"^###\s+Requirement:\s*(.+?)\s*$")
 SCENARIO = re.compile(r"^####\s+Scenario:\s*(.*?)\s*$")
@@ -85,7 +102,8 @@ class Merged(NamedTuple):
     text: str           # the document; every scenario header carries its label
     scenarios: dict     # label -> {"capability", "requirement", "scenario", "status"};
     #                     status is "existing", "added", "modified" or "removed"; with
-    #                     on_base also "replaced": the old rule of a modified scenario
+    #                     on_base also "replaced": the old rule of a modified scenario.
+    #                     An example (merge, `examples`) also has "example": True
     changed_text: list  # the text above the first scenario (the SHALL sentence) of each
     #                     added requirement, and of each modified one where it changed
     removed: list       # "capability/requirement" for each requirement the change removes
@@ -105,17 +123,27 @@ def base_document(specs_dir: Path) -> Merged:
     return _document(_load(specs_dir), "", on_base=False)
 
 
-def merge(change_dir: Path, on_base: bool = False) -> Merged:
+def merge(change_dir: Path, on_base: bool = False, only: set | None = None,
+          examples: str | None = None) -> Merged:
     """Apply the change in `change_dir` to its project's specs; return them as one labelled document.
 
     change_dir is openspec/changes/<name>; the specs are in openspec/specs,
     two folders up. A delta that names a requirement which does not exist (or
     adds one that does) raises ValueError, as `openspec archive` refuses it.
 
-    on_base  the document holds only the added and modified scenarios of the
-             change, labelled N1, N2, ... (it is empty if there are none). The
-             other scenarios keep the labels they have in base_document; see
-             the module docstring.
+    on_base   the document holds only the added and modified scenarios of the
+              change, labelled N1, N2, ... (it is empty if there are none). The
+              other scenarios keep the labels they have in base_document; see
+              the module docstring.
+    only      the document holds only these spec files (capabilities); their
+              scenarios have the labels they have in the whole document (see
+              parts). Not with on_base.
+    examples  a pattern (a regular expression). A scenario is an example when
+              the pattern is found in its text, which is its name and the
+              lines below it: "^Example:" for names that start so, "^kind:
+              example$" for such a line below the name. An example describes
+              one concrete case; a conflict in a situation that says more
+              than the example does is doubtful (checks._mark_examples).
     """
     specs_dir = change_dir.parent.parent / "specs"
     specs = _load(specs_dir)
@@ -152,7 +180,30 @@ def merge(change_dir: Path, on_base: bool = False) -> Merged:
                 raise ValueError(f"{delta_file}: ADDED names the requirement '{name}', "
                                  f"which the spec of '{capability}' already has")
             requirements[name] = _parsed(lines, "added")
-    return _document(specs, change_dir.name, on_base)
+    return _document(specs, change_dir.name, on_base, only, re.compile(examples, re.MULTILINE) if examples else None)
+
+
+def parts(change_dir: Path, against: str | None = None, limit: int | None = None) -> list[set]:
+    """The documents in which a change is checked: for each, the names of its spec files (capabilities).
+
+    Usually that is one document with every spec file. When it would have
+    more than `limit` scenarios (PART_LIMIT if not given), the change is
+    checked in parts: one document for each spec file that the change does
+    not touch, with that file and the files that the change touches. What is
+    lost: a conflict that needs rules of three spec files.
+
+    against  check the change only against the spec files whose name matches
+             this pattern ("billing-*", as for file names); the files that
+             the change touches are always in
+    """
+    touched = {delta.parent.relative_to(change_dir / "specs").as_posix()
+               for delta in (change_dir / "specs").glob("**/spec.md")}
+    sizes = Counter(scenario["capability"] for scenario in merge(change_dir).scenarios.values())
+    others = [capability for capability in sizes
+              if capability not in touched and (against is None or fnmatch(capability, against))]
+    if not others or sum(sizes[capability] for capability in [*touched, *others]) <= (limit or PART_LIMIT):
+        return [touched | set(others)]
+    return [touched | {other} for other in others]
 
 
 def _load(specs_dir: Path) -> dict:
@@ -176,17 +227,26 @@ def _load(specs_dir: Path) -> dict:
     return specs
 
 
-def _document(specs: dict, name: str, on_base: bool) -> Merged:
+def _document(specs: dict, name: str, on_base: bool, only: set | None = None,
+              examples: re.Pattern | None = None) -> Merged:
     """Write the specs into one document, and label the scenarios on the way.
 
     As a whole (on_base False): R1, R2, ... for the scenarios that are in the
     specs after the change, X1, X2, ... for those that the change removes.
     On a base: only the added and modified scenarios are written, as N1, N2,
     ...; the others are listed under the labels they had before the change.
+    `only` and `examples`: see merge.
     """
     document, scenarios, changed_text, removed, removed_text = [], {}, [], [], []
     count = {"R": 0, "X": 0, "N": 0}
     for capability, (preamble, requirements) in specs.items():
+        if only is not None and capability not in only:
+            # Left out of this document. Its scenarios are counted, so that
+            # the others get the labels they have in the whole document.
+            for requirement in requirements.values():
+                for _, _, status, _ in requirement.scenarios:
+                    count["X" if status == "removed" else "R"] += 1
+            continue
         heading = preamble if not on_base else [f"# {capability} Specification"]
         written = len(document)
         for requirement_name, requirement in requirements.items():
@@ -213,6 +273,8 @@ def _document(specs: dict, name: str, on_base: bool) -> Merged:
                 label = f"{letter}{count[letter]}" if letter else was
                 scenarios[label] = {"capability": capability, "requirement": requirement_name,
                                     "scenario": scenario, "status": status}
+                if examples and examples.search("\n".join([scenario, *lines])):
+                    scenarios[label]["example"] = True
                 if is_new or not on_base:
                     block += [f"#### Scenario {label}: {scenario}", *lines]
             if block or not on_base:
@@ -396,6 +458,79 @@ def after_model(model: dict, merged: Merged) -> dict:
         "background": [fact for fact in model.get("background", [])
                        if fact.get("restates") not in out and not out & set(fact.get("between", []))],
     }
+
+
+def with_examples(model: dict, merged: Merged) -> dict:
+    """The formal model with "example": True in the rules of the scenarios that are examples (merge)."""
+    examples = {label for label, scenario in merged.scenarios.items() if scenario.get("example")}
+    if not examples:
+        return model
+    return {**model, "rules": [{**rule, "example": True} if rule["id"] in examples else rule
+                               for rule in model["rules"]]}
+
+
+def combine_parts(findings_per_part: list[list[dict]], models: list[dict], changed: list[set]) -> list[dict]:
+    """Put together the findings of the parts in which a change was checked (see parts).
+
+    findings_per_part  for each part, the findings of checks.analyze
+    models, changed    for each part, its formal model (after_model) and the
+                       ids of its changed rules (changed_rules)
+
+    Every part holds the spec files that the change touches, so a finding
+    among their rules can show up in every part; one with a rule of another
+    file only in the part of that file. Findings are matched as
+    checks.combine matches those of several symbol sets, and each gets
+
+        "model"  the index of the part its situation is written in
+        "parts"  "7/19": found in 7 of the 19 parts that hold all its rules
+                 (left out when one part holds them)
+
+    A gap is a situation over the symbols of one part. Two gaps count as the
+    same when they are about the same rules of the change (those that react
+    to its event, and the removed rules that covered it). A gap is kept only
+    if every part has it: where one part has none, a rule of that part's
+    other file covers the situation. Gaps that are not about the change are
+    dropped: among the rules of one other file alone, a gap says nothing
+    about the project.
+    """
+    holds = [{rule["id"] for rule in model["rules"]} for model in models]
+    merged: dict[tuple, dict] = {}   # key -> the finding shown for it
+    seen_in: Counter = Counter()     # key -> number of parts that have it
+    for index, findings in enumerate(findings_per_part):
+        keys = set()
+        for finding in findings:
+            finding = {**finding, "model": index}
+            if finding["type"] == "ambiguity":
+                key = ("ambiguity", finding["rule"])
+            elif finding["type"] == "gap":
+                if not about_change(finding, models, changed):
+                    continue
+                vocab = Vocabulary(models[index]["symbols"])
+                reacting = {rule["id"] for rule in models[index]["rules"]
+                            if rule["id"] in changed[index] and finding.get("event") in vocab.events_of(rule)}
+                key = ("gap", frozenset(reacting), frozenset(finding.get("opened_by", [])))
+            else:  # conflict
+                key = (finding["type"], frozenset(finding["rules"]))
+            keys.add(key)
+            # Show the first occurrence, unless a later one is stronger.
+            if key not in merged or weakness(finding) < weakness(merged[key]):
+                merged[key] = finding
+        seen_in.update(keys)
+
+    kept = []
+    for key, finding in merged.items():
+        if key[0] == "gap":
+            if seen_in[key] < len(models):
+                continue
+        else:
+            rules = [finding["rule"]] if key[0] == "ambiguity" else finding["rules"]
+            possible = sum(part.issuperset(rules) for part in holds)
+            if possible > 1:
+                finding["parts"] = f"{seen_in[key]}/{possible}"
+        kept.append(finding)
+    # The usual order of types; within a type, the finding of most parts first.
+    order = {"ambiguity": 0, "conflict": 1, "gap": 2}
+    return sorted(kept, key=lambda f: (order[f["type"]], -int(f.get("parts", "0/1").split("/")[0])))
 
 
 def about_change(finding: dict, models: list[dict], changed: list[set]) -> bool:

@@ -13,7 +13,8 @@ Output: a list of findings, each a plain dict ready for findings.json:
 A conflict with a "facts" list holds only if those assumed facts are true; a
 conflict without one is proven from the requirements alone. A conflict that
 is likely a false alarm is kept but marked doubtful, with "doubted_by" (see
-find_conflicts) or "simultaneous_events" (see _simultaneous_events). A conflict
+find_conflicts), "simultaneous_events" (see _simultaneous_events) or
+"beyond_example" (see _mark_examples); is_doubtful tests the three. A conflict
 or gap that is gone with the other reading of an ambiguous rule says so in
 "depends_on_reading", and the ambiguity lists what its other reading changes
 in "other_reading" (see _try_other_readings).
@@ -41,6 +42,14 @@ SETTLE = 0.5
 
 # At most this many distinct uncovered situations are reported (find_gaps).
 MAX_GAPS = 3
+
+# The marks of a finding that is likely a false alarm (see the module docstring).
+DOUBTS = ("doubted_by", "simultaneous_events", "beyond_example")
+
+
+def is_doubtful(finding: dict) -> bool:
+    """Is the finding marked as a likely false alarm?"""
+    return any(finding.get(mark) for mark in DOUBTS)
 
 
 def analyze(formal: dict, max_group: int = 3, questions: bool = True,
@@ -73,17 +82,69 @@ def analyze(formal: dict, max_group: int = 3, questions: bool = True,
     # as ambiguities instead.
     rules = [vocab.rule(r) for r in decided if r.get("status") != "rejected"]
     ambiguities = find_ambiguities(decided)
-    conflicts = find_conflicts(vocab, rules, facts, max_group)
+    # A spec about whole runs ("situation": "run", formalize): several things
+    # happen in a run, so two events in one conflict are no reason for doubt.
+    whole_run = formal.get("situation") == "run"
+    conflicts = find_conflicts(vocab, rules, facts, max_group, whole_run)
     _mark_special_cases(vocab, rules, conflicts)
+    _mark_examples(vocab, rules, facts, conflicts, {rule["id"] for rule in formal["rules"] if rule.get("example")})
     # The rules that a change removes (change.after_model). They take no part
     # in any check; they only show which gap the change opened.
     lost = [vocab.rule(rule) for rule in formal.get("removed_rules", []) if rule.get("status") != "rejected"]
     gaps = find_gaps(vocab, rules, doubt=facts, lost=lost)
     if readings:
-        _try_other_readings(vocab, decided, rules, facts, max_group, ambiguities, conflicts, gaps)
+        _try_other_readings(vocab, decided, rules, facts, max_group, ambiguities, conflicts, gaps, whole_run)
         # The ambiguities whose answer changes another finding come first.
         ambiguities.sort(key=lambda finding: not any(finding.get("other_reading", {}).values()))
     return ambiguities + conflicts + gaps
+
+
+def _mark_examples(vocab: Vocabulary, rules: list[Rule], facts: dict, conflicts: list[dict],
+                   examples: set) -> None:
+    """Mark the conflicts that need more than an example says ("beyond_example").
+
+    examples  the ids of the rules that are examples ("example": true in the
+              formal model, set from `speccheck --examples`)
+
+    An example describes one concrete case, not a rule for all cases:
+
+        R9   "WHEN dana asks to return parcel k7 AND k7 was delivered
+              THEN book_return is called once ..."
+        R10  "WHEN the same request runs while k7 is still in the warehouse
+              THEN book_return is never called ..."
+
+    Read as rules, R9 and R10 clash for a parcel that was delivered and is
+    still in the warehouse. But each is about its own case, and R9 does not
+    say that its parcel is in the warehouse. So a conflict with an example
+    counts as it is only when the case of one example is the whole situation:
+    its condition and what it demands, with the assumed facts, entail the
+    conditions of the other rules of the conflict. Then the example itself
+    says that they apply ("WHEN dana sends an express request THEN
+    ship_parcel succeeds three times", against a rule about every successful
+    ship_parcel). Otherwise the situation says more than any example in it,
+    and the conflict is kept and marked as doubtful, with the examples among
+    its rules:
+
+        "beyond_example": ["R9", "R10"]
+    """
+    by_id = {rule.id: rule for rule in rules}
+    given = list(facts.values())
+
+    def is_whole_situation(example: Rule, others: list[Rule]) -> bool:
+        case = given + [example.antecedent, example.consequent]
+        return not vocab.impossible(case) and all(vocab.implies(case, other.antecedent) for other in others)
+
+    for finding in conflicts:
+        chosen = [by_id[rule_id] for rule_id in finding["rules"]]
+        inside = [rule for rule in chosen if rule.id in examples]
+        if inside and not any(is_whole_situation(example, [rule for rule in chosen if rule is not example])
+                              for example in inside):
+            finding["beyond_example"] = [rule.id for rule in inside]
+
+
+def weakness(finding: dict) -> tuple:
+    """Lower is stronger: not doubtful first, then proven from the rules alone (see combine)."""
+    return (is_doubtful(finding), "facts" in finding)
 
 
 # ------------------------------------------------------------------- ambiguity
@@ -188,7 +249,7 @@ def find_ambiguities(rules: list[dict]) -> list[dict]:
 
 def _try_other_readings(vocab: Vocabulary, decided: list[dict], rules: list[Rule], facts: dict,
                         max_group: int, ambiguities: list[dict], conflicts: list[dict],
-                        gaps: list[dict]) -> None:
+                        gaps: list[dict], whole_run: bool = False) -> None:
     """Say which findings depend on the reading chosen for an ambiguous rule.
 
     An ambiguous rule has two readings, and the checks use the first one.
@@ -235,7 +296,7 @@ def _try_other_readings(vocab: Vocabulary, decided: list[dict], rules: list[Rule
         variant = [reading if compiled.id == rule["id"] else compiled for compiled in rules]
 
         found = {frozenset(conflict["rules"])
-                 for conflict in find_conflicts(vocab, variant, facts, max_group)}
+                 for conflict in find_conflicts(vocab, variant, facts, max_group, whole_run)}
         for conflict in conflicts:
             if frozenset(conflict["rules"]) not in found:
                 conflict.setdefault("depends_on_reading", {})[rule["id"]] = other.get("reading", "")
@@ -260,7 +321,8 @@ def _try_other_readings(vocab: Vocabulary, decided: list[dict], rules: list[Rule
 # -------------------------------------------------------------------- conflicts
 
 
-def find_conflicts(vocab: Vocabulary, rules: list[Rule], facts: dict, max_group: int) -> list[dict]:
+def find_conflicts(vocab: Vocabulary, rules: list[Rule], facts: dict, max_group: int,
+                   whole_run: bool = False) -> list[dict]:
     """Find situations in which the rules cannot all be obeyed.
 
     The search (see _search) runs twice:
@@ -283,10 +345,10 @@ def find_conflicts(vocab: Vocabulary, rules: list[Rule], facts: dict, max_group:
     solver; the fact that they exclude each other marks the resulting
     conflict as doubtful.
     """
-    proven = _search(vocab, rules, {}, max_group, doubt=facts)
+    proven = _search(vocab, rules, {}, max_group, doubt=facts, whole_run=whole_run)
     if not facts:
         return proven
-    assumed = _search(vocab, rules, facts, max_group)
+    assumed = _search(vocab, rules, facts, max_group, whole_run=whole_run)
     return proven + [
         finding for finding in assumed
         if "facts" in finding
@@ -331,7 +393,7 @@ def _mark_special_cases(vocab: Vocabulary, rules: list[Rule], conflicts: list[di
 
 
 def _search(vocab: Vocabulary, rules: list[Rule], facts: dict, max_group: int,
-            doubt: dict | None = None) -> list[dict]:
+            doubt: dict | None = None, whole_run: bool = False) -> list[dict]:
     """One conflict search, taking the given facts (id -> formula) as true.
 
     Asking "can all rules hold together?" is not enough: implications are all
@@ -406,7 +468,7 @@ def _search(vocab: Vocabulary, rules: list[Rule], facts: dict, max_group: int,
                 events = events if len(events) >= 2 else []
             else:
                 events = _simultaneous_events(vocab, firing)
-            if events:
+            if events and not whole_run:  # in a whole run, several things happen
                 finding["simultaneous_events"] = events
             findings.append(finding)
 
@@ -762,10 +824,6 @@ def combine(findings_per_model: list[list[dict]]) -> list[dict]:
     total = len(findings_per_model)
     if total == 1:
         return findings_per_model[0]
-
-    def weakness(f: dict) -> tuple:
-        """Lower is stronger: not doubtful first, then proven from the rules alone."""
-        return ("doubted_by" in f or "simultaneous_events" in f, "facts" in f)
 
     merged: dict[tuple, dict] = {}   # key -> the finding shown for it
     seen_in: dict[tuple, int] = {}   # key -> number of models that have it

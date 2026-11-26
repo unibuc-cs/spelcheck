@@ -18,11 +18,14 @@ Four functions, used in this order:
 
 "models" below is the list of formal models of the document (formal.json
 dicts). There is one, unless several symbol sets were asked for; a finding
-then says in "model" which one its witness is written in.
+then says in "model" which one its witness is written in. A change that is
+checked in parts (change.parts) has one model for each part, and a finding
+says in the same way which part it is from.
 """
 
 from concurrent.futures import ThreadPoolExecutor
 
+from .checks import is_doubtful
 from .llm import LLM
 from .logic import describe
 
@@ -179,6 +182,11 @@ def evidence(finding: dict, formal: dict) -> str:
             text += ("\nBut this situation needs these events to happen at the same moment: "
                      f"{', '.join(finding['simultaneous_events'])}. The requirements are "
                      "probably not meant for that, so the conflict may be a false alarm.")
+        if finding.get("beyond_example"):
+            examples = finding["beyond_example"]
+            text += (f"\nBut {', '.join(examples)} {'is an example' if len(examples) == 1 else 'are examples'}: "
+                     "one concrete case each. No example here says that its case is this situation: what it "
+                     "describes does not make the other requirement(s) apply. So the conflict may be a false alarm.")
         if finding.get("special_case"):
             general, special = finding["special_case"]["general"], finding["special_case"]["special"]
             text += (f"\n{special} applies only where {general} applies: its condition is a special case of "
@@ -257,9 +265,9 @@ def evidence(finding: dict, formal: dict) -> str:
     return text
 
 
-def _requirements(models: list[dict]) -> str:
-    """The requirements as "id: text" lines, for the prompts."""
-    return "\n".join(f"{r['id']}: {r['text']}" for r in models[0]["rules"])
+def _requirements(formal: dict) -> str:
+    """The requirements of one formal model as "id: text" lines, for the prompts."""
+    return "\n".join(f"{r['id']}: {r['text']}" for r in formal["rules"])
 
 
 def explain(llm: LLM, findings: list[dict], models: list[dict]) -> list[dict]:
@@ -269,13 +277,13 @@ def explain(llm: LLM, findings: list[dict], models: list[dict]) -> list[dict]:
     option_a, option_b. ("situation" is the model's own restatement of the
     witness; it is kept in findings.json but not printed in the report.)
     """
-    requirements = _requirements(models)
-
     def explain_one(finding: dict) -> dict:
         # The fact sheet names the assumed facts a finding depends on (if any),
-        # so the model sees exactly the facts that matter and no others.
-        sheet = evidence(finding, models[finding.get("model", 0)])
-        answers = llm.ask(EXPLAIN_SYSTEM, f"Requirements:\n{requirements}\n\nFinding:\n{sheet}",
+        # so the model sees exactly the facts that matter and no others. The
+        # requirements are those of the finding's own model (of its part).
+        formal = models[finding.get("model", 0)]
+        sheet = evidence(finding, formal)
+        answers = llm.ask(EXPLAIN_SYSTEM, f"Requirements:\n{_requirements(formal)}\n\nFinding:\n{sheet}",
                           EXPLAIN_SCHEMA)
         # If the model fails to answer, the finding is still reported, unworded.
         return {**finding, **(answers[0] if answers else {})}
@@ -293,11 +301,10 @@ def judge(llm: LLM, scenarios: list[dict], models: list[dict], spec_text: str) -
     author's attention ("surprise", 0 to 3). Those scored below MIN_SURPRISE
     are dropped, and at most MAX_SCENARIOS are returned, highest score first.
     """
-    requirements = _requirements(models)
-
     def judge_one(scenario: dict) -> dict:
-        sheet = evidence(scenario, models[scenario.get("model", 0)])
-        prompt = f"Document:\n{spec_text}\n\nRequirements:\n{requirements}\n\nConsequence:\n{sheet}"
+        formal = models[scenario.get("model", 0)]
+        sheet = evidence(scenario, formal)
+        prompt = f"Document:\n{spec_text}\n\nRequirements:\n{_requirements(formal)}\n\nConsequence:\n{sheet}"
         answers = llm.ask(JUDGE_SYSTEM, prompt, JUDGE_SCHEMA)
         return {**scenario, **(answers[0] if answers else {"surprise": 0})}
 
@@ -307,15 +314,18 @@ def judge(llm: LLM, scenarios: list[dict], models: list[dict], spec_text: str) -
     return sorted(worth_showing, key=lambda scenario: -scenario["surprise"])[:MAX_SCENARIOS]
 
 
-def render(findings: list[dict], models: list[dict], title: str, note: list[str] = ()) -> str:
+def render(findings: list[dict], models: list[dict], title: str, note: list[str] = (),
+           parts: bool = False) -> str:
     """Build the Markdown report. Works with or without the LLM wording.
 
     The report is the formal analysis: what the solver proved. If the optional
     review ran (refine.py), its notes follow as a second part, kept apart so
     the reader always knows how much to trust a finding.
 
-    note  lines to put under the summary line (the check of a change says
-          there which findings it shows, see change.report_lines)
+    note   lines to put under the summary line (the check of a change says
+           there which findings it shows, see change.report_lines)
+    parts  the models are those of the parts of one large project
+           (change.parts), not symbol sets of one document
     """
     solver = [f for f in findings if f["type"] != "review"]
     notes = [f for f in findings if f["type"] == "review"]
@@ -325,14 +335,13 @@ def render(findings: list[dict], models: list[dict], title: str, note: list[str]
     # ambiguities, and counted apart: they were not checked.
     unchecked = sum(f.get("found_by") == "empty" for f in solver)
     counts["ambiguity"] -= unchecked
-    doubtful = {kind: sum(f["type"] == kind and bool(f.get("doubted_by") or f.get("simultaneous_events"))
-                          for f in solver)
+    doubtful = {kind: sum(f["type"] == kind and is_doubtful(f) for f in solver)
                 for kind in ("conflict", "gap")}
     lines = [
         f"# Requirements analysis: {title}",
         "",
-        f"{len(models[0]['rules'])} requirements analysed"
-        + (f" with {len(models)} symbol sets" if len(models) > 1 else "")
+        f"{len({rule['id'] for model in models for rule in model['rules']})} requirements analysed"
+        + (f" in {len(models)} part(s)" if parts else f" with {len(models)} symbol sets" if len(models) > 1 else "")
         + f": {counts['conflict']} conflict(s)"
         + (f" ({doubtful['conflict']} doubtful)" if doubtful["conflict"] else "")
         + f", {counts['gap']} gap(s)"
@@ -373,6 +382,8 @@ def render(findings: list[dict], models: list[dict], title: str, note: list[str]
             remarks.append("doubtful: the assumed facts say this situation cannot happen")
         if finding.get("simultaneous_events"):
             remarks.append("doubtful: needs two events at the same moment")
+        if finding.get("beyond_example"):
+            remarks.append("doubtful: the situation says more than the example does")
         if finding.get("quiet"):
             remarks.append("no event happens")
         if finding.get("opened_by"):
@@ -382,6 +393,9 @@ def render(findings: list[dict], models: list[dict], title: str, note: list[str]
         if "support" in finding:  # several symbol sets were used
             found, total = finding["support"].split("/")
             remarks.append(f"found with {found} of {total} symbol sets")
+        if "parts" in finding:  # a large project, checked in parts
+            found, total = finding["parts"].split("/")
+            remarks.append(f"found in {found} of {total} parts")
         if finding.get("special_case"):
             remarks.append(f"{finding['special_case']['special']} is a special case of {finding['special_case']['general']}")
         if remarks:

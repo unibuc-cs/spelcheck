@@ -130,7 +130,7 @@ this order:
      the facts rarely say that one of the two always holds, so only 2 of 13
      were marked (T20, E16). This is a known limit now.
 
-### 2.1 The plan for step 44: specs about the runs of an agent system (not built yet)
+### 2.1 Step 44: specs about the runs of an agent system (built; `eval20/` not run yet)
 
 The specs that the tool is meant for are those of an agent system: an
 orchestrator and specialist agents that call tools, with rules about what a
@@ -141,36 +141,48 @@ of which its authors know to be impossible to implement) showed five things
 that stand in the way. None is about that project's words; `eval20/` has
 specs of the same kind in other domains.
 
-1. **A situation is a whole run, not a moment** (option `--whole-run`). Two
-   rules that react to two different calls can both apply in one run, and
-   there they can clash. Today such a conflict is marked doubtful ("needs
-   two events at the same moment"), and the questions about two outcomes
-   and two conditions skip the pair. With the option the mark is not given,
-   the pairs are asked about, and the two question prompts say "run" where
-   they say "snapshot". The formal model records it (`situation: run`).
-2. **An example is one case, not a rule** (option `--examples PATTERN`). A
-   scenario that the pattern matches is a concrete case ("WHEN the same
-   request runs while the address has no postcode ..."). Two examples of
-   one request under different conditions are read as two general rules
-   and clash; a conflict between examples only is marked doubtful ("only
-   examples"). An example against a general rule stays a conflict.
-3. **A link that only renames is checked with both symbols in view.** The
-   link step restated "`shipping.max_parcels` is 20" as
+1. **A situation is a whole run, not a moment** (option `--whole-run`, 5.2).
+   Two rules that react to two different calls can both apply in one run,
+   and there they can clash. Read as moments, such a conflict is marked
+   doubtful ("needs two events at the same moment"), and the questions about
+   two outcomes and two conditions skip the pair. With the option the mark
+   is not given, the pairs are asked about, and the two question prompts say
+   "run" where they say "snapshot". The formal model records it
+   (`situation: run`).
+2. **An example is one case, not a rule** (option `--examples PATTERN`,
+   5.2). A scenario that the pattern matches is a concrete case ("WHEN the
+   same request runs while the address has no postcode ..."). A conflict
+   with an example is doubtful unless the example's own case, its condition
+   and what it demands, makes the other rules of the conflict apply.
+3. **A link that only renames is asked about with both symbols in view**
+   (5.7, check 2). The link step restated "`shipping.max_parcels` is 20" as
    "`shipping.max_batch_parcels` is 20", and the check confirmed it, because
-   it hides the rule's own symbol. When a restatement is the rule's own
-   demand with one symbol swapped for another, the model is asked whether
-   the two can differ, with both descriptions shown; the link stays only if
-   most answers say that they cannot.
+   it does not show the rule's own symbol. When a restatement is the rule's
+   own demand with one symbol swapped for another, the model is asked
+   whether the two can differ, with both descriptions shown; the link stays
+   only if most answers say that they cannot.
 4. **On a change, the pairs with a rule of the change are asked about
-   first.** At most 40 pairs are asked about, in document order, so in a
-   long document the rules of the change, which come last, were never
-   reached.
-5. **A project too large for one read is checked in parts.** `--change`
-   then runs once for each spec file that the change does not touch (or
-   those that `--against PATTERN` names), each time with the files the
-   change touches. A finding among the rules of the change says in how
+   first** (5.7, check 4). At most 40 pairs are asked about, in document
+   order, so in a long document the rules of the change, which come last,
+   were never reached.
+5. **A project too large for one document is checked in parts** (5.10).
+   `--change` then runs once for each spec file that the change does not
+   touch (or those that `--against PATTERN` names), each time with the files
+   the change touches. A finding among the rules of the change says in how
    many parts it was found; a gap about the change is kept only if every
    part has it.
+
+**One refinement before the freeze** (point 2). The plan said: a conflict
+between examples only is doubtful, and an example against a rule stays a
+conflict. A second trial on the project, with the code as planned, gave 73
+conflicts about the change that cannot be implemented, in 40 runs. 33 of
+them set an example of an existing spec against a rule of the change, in a
+situation that mixes the two: the concrete case of the example, taken to be
+also a run of the new workflow. The example says nothing of the kind. So the
+mark became what point 2 says now, and Z3 decides it. On the same 40 runs
+that leaves 39 conflicts, 32 of them the one conflict between two rules
+that the authors of the project name; on 58 runs of the three changes that
+can be implemented, 10.
 
 **How it is tested.** `eval20/` (make_eval.py): four projects about the runs
 of an assistant in other domains, each with settings, rules about calls and
@@ -179,13 +191,13 @@ one that clashes with a rule that reacts to another call of the same run, one
 that contradicts itself, and one that adds a setting named like an existing
 one. Then the project itself.
 
-**The rule, set now.** Points 1 to 3 stay if on `eval20/`, with doubtful
-conflicts set aside and the two options given, the conflicts of the "cross"
-changes are found more often than without, the "clean" and "twins" changes
-get fewer conflicts, and the "direct" conflicts are found no less often; and
-if, with the options not given, `eval12/` gives what it gave. Points 4 and 5
-change no answer on a project that fits one read and has fewer than 40
-pairs; they are checked by tests.
+**The rule, set before the build.** Points 1 to 3 stay if on `eval20/`, with
+doubtful conflicts set aside and the two options given, the conflicts of the
+"cross" changes are found more often than without, the "clean" and "twins"
+changes get fewer conflicts, and the "direct" conflicts are found no less
+often; and if, with the options not given, `eval12/` gives what it gave.
+Points 4 and 5 change no answer on a project that fits one read and has
+fewer than 40 pairs; they are checked by tests.
 
 Small things that are open:
 
@@ -582,6 +594,49 @@ taken         a new translation only if it is accepted; an added symbol only if 
   - "at least 24 hours" and "less than 24 hours" as two yes/no symbols: both
     can be true for the solver
   - an assumed fact (5.3) says they exclude each other
+- **A situation that says more than an example does** (step 44,
+  `--examples PATTERN`, when a change is checked)
+  - the spec of an agent system also holds scenarios that describe one
+    concrete case, not a rule for all cases:
+    ```
+    "WHEN dana asks to return parcel k7 AND k7 was delivered THEN `book_return` is called once ..."
+    "WHEN the same request runs while k7 is still in the warehouse THEN `book_return` is never called ..."
+    "WHEN the same request runs and the customer cancels the return THEN `book_return` is called once ..."
+    ```
+  - read as rules, the second and the third clash where a parcel is in the
+    warehouse and the customer cancels. Neither example says that: each is
+    about its own case
+  - a scenario is an example when the pattern is found in its text, which is
+    its name and the lines below it (`change.merge`); its rule then has
+    `example: true` (`change.with_examples`)
+  - for a conflict with an example *e* among its rules, Z3 is asked whether
+    the case of *e* is the whole situation (`checks._mark_examples`):
+    ```
+    the case of e                 A_e and C_e and the assumed facts      satisfiable
+    it makes the others apply     for every other rule r of the conflict:
+                                  A_e and C_e and the facts and (not A_r)   unsatisfiable
+    ```
+  - if that holds for no example of the conflict, it is marked
+    (`beyond_example`, with the examples among its rules): "doubtful: the
+    situation says more than the example does"
+  - it stays a plain conflict when an example itself makes the other rules
+    apply ("WHEN dana sends an express request THEN `ship_parcel` succeeds
+    three times", against a rule about every successful `ship_parcel`), and
+    for two examples with the same condition
+
+**A situation can be a whole run** (step 44, `--whole-run`)
+- the rules of an agent system are about a whole run, in which several
+  things happen one after the other:
+  ```
+  R2  "WHEN a call of `ship_parcel` succeeds in a run with a plan
+       THEN an earlier call of `request_signoff` in the run was approved"
+  R6  "WHEN an express request is handled in a run THEN `request_signoff` is not called in the run"
+  ```
+- the two react to two different happenings, and both can be in one run. Read
+  as moments, their conflict would be marked for two events at once
+- with the option the formal model says `situation: run`: that mark is not
+  given, and checks 4 and 5 of step 6 ask about such pairs as about any
+  other, with "run" in place of "snapshot" in their prompts (5.7)
 
 Result on the held-out `eval3/`: every marked conflict was a false alarm;
 setting them aside cut false alarms on clean runs from 9 to 1 of 18 (E8).
@@ -803,6 +858,26 @@ question       D2, fully obeyed: could this situation still be true?
 verdict        more than half say "impossible" → the link is used; otherwise not
 ```
 
+- the question does not show the symbol with which the rule itself says its
+  demand. A link that only moves the demand to another symbol passes it: the
+  model takes the symbol it sees for the one in the requirement
+- so such a link gets a second question, with both symbols in view (step 44,
+  `probe._renamed`):
+
+```
+rule           "... `shipping.max_parcels` is the integer 20"     (= shipping_max_parcels 20)
+its link       the same demand on another symbol                (= shipping_max_batch_parcels 20)
+question       Statement A: shipping_max_parcels = 20 (with its description)
+               Statement B: shipping_max_batch_parcels = 21 (with its description)
+               Can A and B both hold?  possible / impossible / unclear       (the prompt of check 4)
+verdict        the link is used only if more than half say "impossible" here too:
+               then the two symbols stand for one thing
+```
+
+- asked only when the link's demand is the rule's own demand with one symbol
+  swapped for another of the same kind; a link that says the demand in other
+  terms ("removed" as "not retained") has the first question alone
+
 **Check 3: does a requirement agree with the facts that contradict it?**
 
 ```
@@ -845,7 +920,8 @@ conflict    C1 and C6, "if the assumed facts hold"                    (5.3, run 
 
 - our code and Z3 pick the pairs. A pair is asked about when both rules can
   apply in one situation that the facts allow; they do not react to two
-  different events (that conflict would be doubtful anyway); what they demand
+  different events (that conflict would be doubtful anyway; in a spec about
+  whole runs, 5.2, such pairs are asked about); what they demand
   shares no symbol, and no fact already excludes the two; and what each
   demands is one definite state of its symbols (not "x or y")
 - the model sees the two outcomes only, as facts with their descriptions. It
@@ -858,7 +934,8 @@ conflict    C1 and C6, "if the assumed facts hold"                    (5.3, run 
   conflict nobody planted, and possible together with the other two
 - at most 40 pairs are asked about, the first ones in the document
   (`MAX_PAIRS`). A spec of six rules has 2 to 5; one of 100 requirements has
-  several hundred
+  several hundred. When a change is checked, the pairs with one of its rules
+  come first (step 44): its rules are the last in the document
 - what it finds and what it costs: research.md 3.13 and 4.6
 
 **Check 5: can the conditions of two rules that clash both hold?** (step 42)
@@ -869,7 +946,7 @@ conflict    C1 and C6, "if the assumed facts hold"                    (5.3, run 
 ```
 they can apply together   A_a and A_b and the facts           satisfiable
 they clash there          A_a and A_b and C_a and C_b and the facts   unsatisfiable
-not two different events  (as in 5.2)
+not two different events  (as in 5.2; not asked of a spec about whole runs)
 two definite states       A_a and A_b each fix one value for each of their symbols,
                           and each says something that the other does not
 ```
@@ -1040,9 +1117,32 @@ With `--incremental`:
 - the second reader (5.8), several symbol sets (5.6) and the review are not
   available this way; the command line refuses the combination
 
+**A project too large for one document** (step 44; `change.parts`,
+`change.combine_parts`, `cli._formalize_part`)
+
+| Step | Who | What |
+|---|---|---|
+| 1 split | our code | the specs with the change have more than 100 scenarios (`PART_LIMIT`, the longest document that one read was tested on). One document is written for each spec file that the change does not touch: that file, and the files the change touches. A scenario keeps the label it has in the document of the whole project, so a rule of the change is the same rule in every part |
+| 2 formalize | the LLM and Z3 | each part goes through `formalize.py` by itself, the parts at the same time, each in a process of its own. A part that fails twice is left out, and the report names it |
+| 3 check | Z3 | each part by itself |
+| 4 put together | our code | findings are matched by their rules. One among the rules of the change can show up in every part and says in how many ("found in 7 of 32 parts"); one with a rule of another file shows up in the part of that file. A gap about the change is kept only if every part has it: where a part has none, a rule of its other file covers the situation |
+| 5 as before | our code, the LLM | the selection, and the wording, each finding with the rules of its own part |
+
+- no option turns it on: the size of the project does. `--against PATTERN`
+  names the spec files to check against ("billing-*"); the files of the
+  change are always in
+- the rules of the change are formalized once for each part, each time with
+  other symbols. So the count of parts says how far a finding among them
+  depends on the symbols, as the count of symbol sets does (5.6)
+- what is lost: a conflict that needs rules of three spec files; the
+  scenarios to confirm (5.5), which are consequences of one whole document;
+  `--incremental`, several symbol sets, the second reader and the review
+
 **Kept simple:**
 - if a label does not come back as a rule id, the tool stops: it could not
-  tell the change's rules from the others (`change.changed_rules`)
+  tell the change's rules from the others (`change.changed_rules`). In a
+  project that is checked in parts, that part is tried once more and then
+  left out
 - the read step may take a requirement's SHALL sentence for a rule of its
   own, without a label. It counts as changed when it is the sentence of an
   added requirement or the new sentence of a modified one, and as removed
@@ -1087,6 +1187,8 @@ With `--incremental`:
 | `rules[].demand_nothing` | only for a rule that is not accepted: how many of its translations demand nothing. Such a rule is read again (5.1) |
 | `condition_pairs` | step 6, check 5: each pair of rules asked about, and the count of its answers. A fact that came from one has `between`, the ids of the two rules, and `about: conditions` |
 | `reread`, `rules[].reread` | only when there was a second read: `reread` names the rules that were read again and the symbols that stayed; a rule has `reread: true` when its translation comes from the second round |
+| `situation` | `run` when the rules are about whole runs (`--whole-run`, 5.2); absent otherwise |
+| `background[].check.renames` | only for a link that moves the rule's demand to another symbol: the two statements shown in the second question of check 2 (`own`, `other`) and the count of its answers (5.7) |
 | `symbols[].event` | true for something that happens at one moment (5.2) |
 | `rules[].trigger` | the event the rule reacts to (5.2), or empty |
 | `rules[].probes` | step 6: each other reading, the situations asked about, and the answers |
@@ -1114,8 +1216,10 @@ It is the only input of `checks.py`, so the solver stage can be re-run without a
 
 - A conflict with a `facts` list holds only if those assumed facts are true. A
   conflict without one is proven from the rules alone. It is doubtful when it
-  has `simultaneous_events` (the events it needs at once) or `doubted_by` (the
-  facts that say its situation cannot happen). A conflict between a rule and a
+  has `simultaneous_events` (the events it needs at once), `doubted_by` (the
+  facts that say its situation cannot happen) or `beyond_example` (the
+  examples among its rules, none of which describes the whole situation,
+  5.2). A conflict between a rule and a
   special case of it has `special_case`, with the ids of the `general` and the
   `special` rule (5.2); that is a remark, not a doubt.
 - An ambiguity has `found_by`: `samples` (5.1), `questions` (5.7) or `models` (5.8).
@@ -1123,6 +1227,9 @@ It is the only input of `checks.py`, so the solver stage can be re-run without a
   (`"rejected"` for a situation the rules rule out).
 - With several symbol sets every finding also has `support` ("3/5": found with 3
   of 5 sets) and `model` (which formal model its witness is written in).
+- In a project that is checked in parts (5.10), `model` is the part, and a
+  finding whose rules are in several parts has `parts` ("7/32": found in 7 of
+  the 32 parts that hold all its rules).
 - A conflict or gap with `depends_on_reading` (rule id → that rule's other
   reading, in words) is gone with the other reading of those ambiguous rules. An ambiguity with two
   readings has `other_reading`: `{"removes": [[rule ids]], "adds": [[rule ids]],
@@ -1148,8 +1255,8 @@ It is the only input of `checks.py`, so the solver stage can be re-run without a
 ```
 
 The remarks in brackets appear only when they apply; a doubtful conflict says
-"doubtful: needs two events at the same moment" or "doubtful: the assumed facts
-say this situation cannot happen", and a doubtful gap says the latter. A conflict or gap that is gone with the
+"doubtful: needs two events at the same moment", "doubtful: the assumed facts
+say this situation cannot happen" or "doubtful: the situation says more than the example does", and a doubtful gap says the second. A conflict or gap that is gone with the
 other reading of an ambiguous rule says "depends on the reading of R3".
 
 With `--change`, the output goes into the change's folder, together with
@@ -1157,7 +1264,9 @@ With `--change`, the output goes into the change's folder, together with
 report shows only the findings about the change. Under its first line it says
 what the change adds, modifies and removes, and how many other findings were
 left out; it ends with a table of the rules: label, spec file, requirement,
-scenario, and "added" or "modified".
+scenario, and "added" or "modified". For a project that is checked in parts
+it also says in how many, and which parts could not be formalized; the
+documents and formal models of the parts are in `parts/`.
 
 ---
 
@@ -1351,11 +1460,13 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       change). E22: 9 of 9 planted conflicts and 9 of 9 planted gaps in 3
       runs, both ways, and nothing else about the change
 - [ ] **Step 44 — specs about the runs of an agent system**: `eval20/`
-      first (done). A situation can be a whole run (`--whole-run`); a
-      scenario can be an example (`--examples`); a link that only renames is
-      checked with both symbols; on a change the pairs with one of its rules
-      are asked about first; a project too large for one read is checked in
-      parts (plan in 2.1)
+      first (done). Built and frozen: a situation can be a whole run
+      (`--whole-run`); a scenario can be an example (`--examples`), and a
+      conflict in a situation that says more than the example does is
+      doubtful; a link that only renames is asked about with both symbols;
+      on a change the pairs with one of its rules are asked about first; a
+      project too large for one document is checked in parts (2.1). Not run
+      yet: `eval20/`
 - [x] **Step 43 — a conflict between a rule and a special case of it says
       so**: solver only (`checks._mark_special_cases`). A remark in the
       title, no count changes. T35: on 22 of 56 and 26 of 148 conflicts that

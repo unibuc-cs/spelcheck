@@ -67,6 +67,13 @@ Five checks. Each question is asked 8 times and the answers are counted.
 In formal.json the answers end up under "probes" (in a rule), "check" (in a
 link or a fact), "outcome_pairs" and "condition_pairs"; a fact of check 4 or
 5 has "between", and one of check 5 also "about": "conditions".
+
+A spec about an agent that calls tools has rules about a whole run ("WHEN a
+call of ship_parcel succeeds in a run with a plan THEN an earlier
+request_signoff was approved"). When the formal model says so
+("situation": "run", set by `formalize(whole_run=True)`), checks 4 and 5 also
+ask about two rules that react to two different happenings, since both can
+be in one run, and their prompts say "run" where they say "snapshot" (_about).
 """
 
 from collections import Counter
@@ -325,6 +332,7 @@ def question(llm: LLM, formal: dict, vocab: Vocabulary, symbol_list: str,
                     prompt = _pair_prompt(rule, probe, situation, translation_first, descriptions)
                     questions.append(Question(QUESTION_SYSTEM, QUESTION_SCHEMA, prompt, share,
                                               record=situation, translation_first=translation_first))
+    rule_of = {rule["id"]: rule for rule in formal["rules"]}
     for link in links:
         when = _link_situation(vocab, link, facts)
         if when is not None:
@@ -333,6 +341,16 @@ def question(llm: LLM, formal: dict, vocab: Vocabulary, symbol_list: str,
                       f"Situation:\n{describe(when, descriptions)}")
             questions.append(Question(LINK_SYSTEM, LINK_SCHEMA, prompt, ANSWERS,
                                       record=link["check"], translation_first=None))
+        # A link that only renames (see _renamed) is also asked about with
+        # both symbols in view: can the one hold and the other not?
+        apart = _renamed(vocab, rule_of[link["restates"]], link)
+        if apart:
+            own, other = apart
+            link.setdefault("check", {})["renames"] = {"own": own, "other": other}
+            prompt = (f"Statement A:\n{describe(own, descriptions)}\n\n"
+                      f"Statement B:\n{describe(other, descriptions)}")
+            questions.append(Question(_about(OUTCOMES_SYSTEM, formal), OUTCOMES_SCHEMA, prompt, ANSWERS,
+                                      record=link["check"]["renames"], translation_first=None))
     # Check 3, Z3: the voted facts that make a requirement impossible to obey.
     voted_formulas = {fact_id: vocab.parse(fact["formula"]) for fact_id, fact in voted.items()}
     suspects: dict[str, dict] = {}  # fact id -> the first rule it contradicts
@@ -362,9 +380,17 @@ def question(llm: LLM, formal: dict, vocab: Vocabulary, symbol_list: str,
     # A link is used only when most answers say "impossible" (or none came back).
     for link in links:
         if "check" in link:
-            counts = _count(link["check"], LINK_SCHEMA, keep_answers)
-            total = sum(counts.values())
-            confirmed = not total or counts["impossible"] > MAJORITY * total
+            confirmed = True
+            if "when" in link["check"]:
+                counts = _count(link["check"], LINK_SCHEMA, keep_answers)
+                total = sum(counts.values())
+                confirmed = not total or counts["impossible"] > MAJORITY * total
+            # A link that only renames: the two symbols must be one thing, so
+            # most answers must say that the one cannot hold without the other.
+            if "renames" in link["check"]:
+                counts = _count(link["check"]["renames"], OUTCOMES_SCHEMA, keep_answers)
+                total = sum(counts.values())
+                confirmed = confirmed and (not total or counts["impossible"] > MAJORITY * total)
             link["check"]["verdict"] = "confirmed" if confirmed else "rejected"
     # A voted fact already has a majority behind it, so it is left out only when
     # most answers say the requirement contradicts it.
@@ -455,6 +481,55 @@ def _link_situation(vocab: Vocabulary, link: dict, facts: list) -> dict | None:
     return vocab.witness(model, vocab.symbols_in(restated.formula))
 
 
+def _renamed(vocab: Vocabulary, rule: dict, link: dict) -> tuple[dict, dict] | None:
+    """Is the link the rule's own demand, moved to another symbol? Then: a case of the two apart.
+
+    Step 5 hides the symbol with which a rule says what it demands, and the
+    model writes the demand with the symbols of the other rules. That finds
+    two names for one thing. It also happens that the model takes the nearest
+    name for another thing:
+
+        rule    "... `shipping.max_parcels` is the integer 20"   (= shipping_max_parcels 20)
+        link    the same demand, for the limit of a batch        (= shipping_max_batch_parcels 20)
+
+    Check 2 confirms such a link, because its question does not show the
+    rule's own symbol: the model takes the one it sees for the one in the
+    requirement. So when the restatement is the rule's own demand with one
+    symbol swapped for another of its kind, a second question shows both:
+
+        A: shipping_max_parcels = 20 (the most parcels in one request)
+        B: shipping_max_batch_parcels = 21 (the most parcels in one batch)
+
+    If the two are one thing, A and B cannot both hold. Returned are A and B,
+    or None when the link is not of this shape.
+    """
+    own = vocab.rule(rule).consequent
+    restated = vocab.parse(link["consequent"])
+    own_names, other_names = vocab.symbols_in(own), vocab.symbols_in(restated)
+    if len(own_names) != 1 or len(other_names) != 1 or own_names == other_names:
+        return None
+    (own_name,), (other_name,) = own_names, other_names
+    own_symbol, other_symbol = vocab.variables[own_name], vocab.variables[other_name]
+    if own_symbol.sort() != other_symbol.sort():
+        return None
+    if not vocab.impossible([z3.Xor(z3.substitute(own, (own_symbol, other_symbol)), restated)]):
+        return None  # not the same demand
+    holds = vocab.model([own])
+    if holds is None:
+        return None
+    # A value of the other symbol that breaks the restatement; for a number,
+    # the one next to the value of the rule's own symbol (20 and 21).
+    near = []
+    if z3.is_arith(own_symbol):
+        value = holds.eval(own_symbol, model_completion=True)
+        near = [[other_symbol == value + step] for step in (1, -1)]
+    broken = next((model for model in (vocab.model([z3.Not(restated)] + extra) for extra in near + [[]])
+                   if model is not None), None)
+    if broken is None:
+        return None
+    return vocab.witness(holds, own_names), vocab.witness(broken, other_names)
+
+
 def _decide_reading(probe: dict, keep_answers: bool) -> None:
     """Check 1: count the answers about one other reading (checks.settled decides)."""
     counts = {"translation": 0, "other": 0, "either": 0}
@@ -538,8 +613,30 @@ sentence ("A candle that was never lit cannot be blown out."); otherwise \
 leave "fact" empty."""
 
 
+def _about(prompt: str, formal: dict) -> str:
+    """The prompt of a question about two statements, for the kind of situation the spec is about.
+
+    A moment (the default), or a whole run of the system, in which things
+    happen one after the other ("situation": "run" in the formal model).
+    """
+    if formal.get("situation") != "run":
+        return prompt
+    return (prompt
+            .replace("ONE snapshot of a software system", "ONE run of a software system")
+            .replace("in the same snapshot?",
+                     "in the same run? A run goes from a request to its end, and what the "
+                     "statements say may happen at different times in it."))
+
+
+def _first(pairs: list[tuple], first: set | None) -> list[tuple]:
+    """The pairs with one of the rules in `first` in front, in their order (see outcomes)."""
+    if not first:
+        return pairs
+    return sorted(pairs, key=lambda pair: not (pair[0]["id"] in first or pair[1]["id"] in first))
+
+
 def outcomes(llm: LLM, formal: dict, vocab: Vocabulary, temperature: float,
-             keep_answers: bool = False, only: set | None = None) -> None:
+             keep_answers: bool = False, only: set | None = None, first: set | None = None) -> None:
     """Step 6, check 4: for rules that can apply together, can both get what they demand?
 
     Runs after the other checks, on the links and facts they left standing.
@@ -557,19 +654,24 @@ def outcomes(llm: LLM, formal: dict, vocab: Vocabulary, temperature: float,
     keep_answers  also store every answer with its reason (for the experiments)
     only          ask only about pairs with one of these rules, and keep the
                   pairs that the model has already (formalize with `base`)
+    first         the rules whose pairs are asked about first. At most
+                  MAX_PAIRS pairs are asked about; when a change is checked,
+                  its rules come last in the document, and in a long one
+                  they would not be reached
     """
     descriptions = {s["name"]: s["description"] for s in formal["symbols"]}
-    pairs = [pair for pair in _open_pairs(vocab, formal)
-             if only is None or pair[0]["id"] in only or pair[1]["id"] in only]
+    pairs = _first([pair for pair in _open_pairs(vocab, formal)
+                    if only is None or pair[0]["id"] in only or pair[1]["id"] in only], first)
     if len(pairs) > MAX_PAIRS:
         formal["outcome_pairs_skipped"] = len(pairs) - MAX_PAIRS
         pairs = pairs[:MAX_PAIRS]
+    system = _about(OUTCOMES_SYSTEM, formal)
 
     def ask(pair: tuple) -> list[dict]:
         _, _, first_demands, second_demands = pair
         prompt = (f"Statement A:\n{describe(first_demands, descriptions)}\n\n"
                   f"Statement B:\n{describe(second_demands, descriptions)}")
-        return llm.ask(OUTCOMES_SYSTEM, prompt, OUTCOMES_SCHEMA, ANSWERS, temperature)
+        return llm.ask(system, prompt, OUTCOMES_SCHEMA, ANSWERS, temperature)
 
     with ThreadPoolExecutor(max_workers=16) as pool:  # LLM calls only
         replies = list(pool.map(ask, pairs))
@@ -596,7 +698,7 @@ def outcomes(llm: LLM, formal: dict, vocab: Vocabulary, temperature: float,
 
 
 def conditions(llm: LLM, formal: dict, vocab: Vocabulary, temperature: float,
-               keep_answers: bool = False, only: set | None = None) -> None:
+               keep_answers: bool = False, only: set | None = None, first: set | None = None) -> None:
     """Step 6, check 5: for two rules that clash, can their conditions both hold?
 
     Runs last, on all the facts that the other checks left or added. The
@@ -615,19 +717,21 @@ def conditions(llm: LLM, formal: dict, vocab: Vocabulary, temperature: float,
     keep_answers  also store every answer with its reason (for the experiments)
     only          ask only about pairs with one of these rules, and keep the
                   pairs that the model has already (formalize with `base`)
+    first         the rules whose pairs are asked about first (see outcomes)
     """
     descriptions = {s["name"]: s["description"] for s in formal["symbols"]}
-    pairs = [pair for pair in _clashing_pairs(vocab, formal)
-             if only is None or pair[0]["id"] in only or pair[1]["id"] in only]
+    pairs = _first([pair for pair in _clashing_pairs(vocab, formal)
+                    if only is None or pair[0]["id"] in only or pair[1]["id"] in only], first)
     if len(pairs) > MAX_PAIRS:
         formal["condition_pairs_skipped"] = len(pairs) - MAX_PAIRS
         pairs = pairs[:MAX_PAIRS]
+    system = _about(CONDITIONS_SYSTEM, formal)
 
     def ask(pair: tuple) -> list[dict]:
         _, _, first_only, second_only = pair
         prompt = (f"Statement A:\n{describe(first_only, descriptions)}\n\n"
                   f"Statement B:\n{describe(second_only, descriptions)}")
-        return llm.ask(CONDITIONS_SYSTEM, prompt, OUTCOMES_SCHEMA, ANSWERS, temperature)
+        return llm.ask(system, prompt, OUTCOMES_SCHEMA, ANSWERS, temperature)
 
     with ThreadPoolExecutor(max_workers=16) as pool:  # LLM calls only
         replies = list(pool.map(ask, pairs))
@@ -665,7 +769,8 @@ def _clashing_pairs(vocab: Vocabulary, formal: dict) -> list[tuple]:
     - both rules can apply in one situation that the assumed facts allow, and
       there they cannot both be obeyed (with the facts);
     - they do not react to two different events (that conflict is marked
-      doubtful anyway, see checks._search);
+      doubtful anyway, see checks._search), unless the spec is about whole
+      runs;
     - each condition is one definite state of its symbols, so that it can be
       shown as a list of facts (not "x or y", not "at least 5");
     - each condition says something that the other does not. Two rules with
@@ -685,9 +790,10 @@ def _clashing_pairs(vocab: Vocabulary, formal: dict) -> list[tuple]:
             if condition:
                 usable.append((data, rule, vocab.events_of(data), condition))
     pairs = []
+    whole_run = formal.get("situation") == "run"
     for index, (first, a, a_events, a_condition) in enumerate(usable):
         for second, b, b_events, b_condition in usable[index + 1:]:
-            if a_events and b_events and not a_events & b_events:
+            if not whole_run and a_events and b_events and not a_events & b_events:
                 continue  # two different events
             a_only = {name: value for name, value in a_condition.items() if name not in b_condition}
             b_only = {name: value for name, value in b_condition.items() if name not in a_condition}
@@ -709,7 +815,8 @@ def _open_pairs(vocab: Vocabulary, formal: dict) -> list[tuple]:
 
     - both rules can apply in one situation that the assumed facts allow;
     - they do not react to two different events (that conflict would be
-      marked doubtful anyway, see checks._search);
+      marked doubtful anyway, see checks._search), unless the spec is about
+      whole runs;
     - what they demand shares no symbol (otherwise Z3 already relates the
       two), and no assumed fact already says that the two exclude each other;
     - what each demands is one definite state of its symbols, so that it can
@@ -728,9 +835,10 @@ def _open_pairs(vocab: Vocabulary, formal: dict) -> list[tuple]:
             if demands:
                 usable.append((data, rule, vocab.events_of(data), demands))
     pairs = []
+    whole_run = formal.get("situation") == "run"
     for index, (first, a, a_events, a_demands) in enumerate(usable):
         for second, b, b_events, b_demands in usable[index + 1:]:
-            if a_events and b_events and not a_events & b_events:
+            if not whole_run and a_events and b_events and not a_events & b_events:
                 continue  # two different events
             if a_demands.keys() & b_demands.keys():
                 continue  # a symbol in common: Z3 sees how the two relate

@@ -7,7 +7,7 @@ options do and what the output means is in [README.md](README.md).
 
 ```
 uv sync                      # on a "hardlink" error: set UV_LINK_MODE=copy and retry
-python -m pytest tests       # 96 tests, no LLM
+python -m pytest tests       # 114 tests, no LLM
 ```
 
 ## 2. Try it without a GPU
@@ -75,6 +75,29 @@ in `openspec/.speccheck/base.json`, and formalizes only the new scenarios of
 each change. It cannot be combined with `--symbol-sets`, `--second-base-url`
 or `--review`.
 
+**Specs about the runs of an agent.** For an assistant that calls tools, with
+rules about what a whole run may contain ("WHEN a call of `ship_parcel`
+succeeds in a run with a plan THEN an earlier `request_signoff` was
+approved"):
+
+```
+python -m speccheck --change path/to/openspec/changes/<name> --base-url http://localhost:18200/v1 --whole-run --examples "^Example:"
+python -m speccheck --change path/to/openspec/changes/<name> --base-url http://localhost:18200/v1 --whole-run --against "billing-*"
+```
+
+| Option | What it does |
+|---|---|
+| `--whole-run` | a situation is a whole run, in which several things happen: two rules that react to two different calls can clash, and that conflict is not marked doubtful |
+| `--examples PATTERN` | a scenario whose text (its name and the lines below it) matches this regular expression is one concrete case, not a rule; a conflict in a situation that says more than the example does is marked doubtful |
+| `--against PATTERN` | check the change only against the spec files whose name matches, besides the files it touches |
+
+**A large project.** When the specs have more than 100 scenarios, the change
+is checked in parts, without an option: one document for each spec file that
+the change does not touch, holding that file and the files of the change. The
+parts are formalized at the same time and give one report, in which a finding
+among the rules of the change says in how many parts it was found. Not with
+`--incremental`, `--symbol-sets`, `--second-base-url` or `--review`.
+
 ## 6. What comes out
 
 | File | Content |
@@ -84,12 +107,14 @@ or `--review`.
 | `formal.json` | the spec as logic: symbols, rules, assumed facts (`formal_2.json` ... with `--symbol-sets`) |
 | `merged.md` | with `--change`: the specs with the change applied, every scenario labelled |
 | `new.md` | with `--change --incremental`: the new scenarios of the change |
+| `parts/merged_01.md`, `parts/formal_01.json`, ... | a large project, checked in parts: the document and the formal model of each part |
 
 To run the solver again after editing `formal.json` by hand (to remove a
 wrong assumed fact, for example):
 
 ```
 python -m speccheck path/to/spec.md --formal path/to/formal.json
+python -m speccheck --change path/to/openspec/changes/<name> --formal out/parts/formal_*.json --out out     # a large project: the models of all its parts
 ```
 
 ## 7. Other options
@@ -117,9 +142,10 @@ findings next to it. The results go to `experiments/results/<name>.json` (the
 raw runs) and `<name>.md` (the tables).
 
 ```
-python -m experiments.make_eval eval19          # write a set again from the script (no LLM); all sets if none is named
+python -m experiments.make_eval eval20          # write a set again from the script (no LLM); all sets if none is named
 python -m experiments.evaluate --base-url http://localhost:18200/v1 --specs experiments/sets/eval18 --runs 3 --symbol-sets 1 --name my_run
 python -m experiments.evaluate --base-url http://localhost:18200/v1 --specs experiments/sets/eval15 --runs 3 --symbol-sets 1 --name my_run_incremental --incremental
+python -m experiments.evaluate --base-url http://localhost:18200/v1 --specs experiments/sets/eval20 --runs 3 --symbol-sets 1 --name my_run_agents --whole-run --examples "^Example:"    # specs about the runs of an agent
 python -m experiments.evaluate --rescore experiments/results/my_run.json          # score saved runs again, no LLM
 python -m experiments.evaluate --rescore experiments/results/my_run.json --second-base-url http://localhost:18201/v1    # add the second model to saved runs
 python -m experiments.evaluate --rescore experiments/results/my_run.json --conditions-base-url http://localhost:18200/v1 --name my_run_conditions    # ask the question about two conditions on saved runs that were made without it

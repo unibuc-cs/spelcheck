@@ -69,8 +69,8 @@ from pathlib import Path
 
 from speccheck import formalize as formalize_module
 from speccheck import probe as probe_module
-from speccheck.change import Merged, about_change, after_model, base_document, changed_rules, merge
-from speccheck.checks import analyze, combine, find_gaps, settled
+from speccheck.change import Merged, about_change, after_model, base_document, changed_rules, merge, with_examples
+from speccheck.checks import analyze, combine, find_gaps, is_doubtful, settled
 from speccheck.formalize import formalize, formalize_sets, judge_second, second_reading
 from speccheck.llm import LLM
 from speccheck.logic import Vocabulary
@@ -93,7 +93,8 @@ from speccheck.probe import conditions, outcomes
 #                pairs of outcomes (False: leave them out)
 DEFAULT = {"sets": 1, "rule": "any", "facts": True, "max_group": 3,
            "questions": True, "link_checks": True, "doubtful": True, "settle": 0.5,
-           "second": False, "repair": True, "outcomes": True, "conditions": True}
+           "second": False, "repair": True, "outcomes": True, "conditions": True,
+           "whole_run": True, "examples": True, "renames": True}
 
 CONFIGURATIONS = [
     ("default (1 symbol set)",               {}),
@@ -111,6 +112,11 @@ CONFIGURATIONS = [
     ("without the questions about outcomes, doubtful set aside", {"outcomes": False, "doubtful": False}),
     ("without the questions about conditions", {"conditions": False}),
     ("without the questions about conditions, doubtful set aside", {"conditions": False, "doubtful": False}),
+    # Step 44. They change something only in runs made with --whole-run or
+    # --examples, or made since links that only rename are asked about.
+    ("a run read as one moment, doubtful set aside", {"whole_run": False, "doubtful": False}),
+    ("examples read as rules, doubtful set aside", {"examples": False, "doubtful": False}),
+    ("links that only rename not asked about, doubtful set aside", {"renames": False, "doubtful": False}),
     ("pairs of rules only",                  {"max_group": 2}),
     ("3 symbol sets, found with any",        {"sets": 3}),
     ("3 symbol sets, found with most",       {"sets": 3, "rule": "majority"}),
@@ -131,20 +137,26 @@ SAMPLES = 8
 def one_run(job: tuple) -> dict:
     """Formalize one spec once, with several symbol sets.
 
-    job = (base_url, spec, symbol_sets, temperature, base); spec is the entry
-    that collect() made for this spec. base is a formal model to add the spec
-    to (--incremental), or None. Returns {"models": [...], "cost": ...} or
+    job = (base_url, spec, symbol_sets, temperature, base, whole_run); spec is
+    the entry that collect() made for this spec. base is a formal model to add
+    the spec to (--incremental), or None. whole_run: the rules are about whole
+    runs (--whole-run). Returns {"models": [...], "cost": ...} or
     {"error": ...}; cost is what the run asked of the LLM. Runs in a worker
     process.
     """
-    base_url, spec, symbol_sets, temperature, base = job
+    base_url, spec, symbol_sets, temperature, base, whole_run = job
     llm = LLM(base_url)
+    # The rules of a change: step 6 asks about their pairs first.
+    first = {label for label, scenario in spec["change"]["scenarios"].items()
+             if scenario["status"] in ("added", "modified")} if "change" in spec else None
     try:
         # keep_samples: the raw LLM answers are saved too, for later study.
         if base is None:
-            models = formalize_sets(llm, spec["text"], symbol_sets, temperature=temperature, keep_samples=True)
+            models = formalize_sets(llm, spec["text"], symbol_sets, temperature=temperature, keep_samples=True,
+                                    whole_run=whole_run, first=first)
         else:  # a change that only removes adds nothing to the base
-            models = [formalize(llm, spec["text"], temperature=temperature, keep_samples=True, base=base)
+            models = [formalize(llm, spec["text"], temperature=temperature, keep_samples=True, base=base,
+                                whole_run=whole_run, first=first)
                       if spec["text"] else base]
     except Exception as error:  # a failed run is a result too, not a reason to stop the batch
         return {"error": str(error)}
@@ -165,13 +177,16 @@ def merged_of(spec: dict) -> Merged:
 
 
 def collect(base_url: str, specs_root: Path, runs: int, symbol_sets: int, temperature: float,
-            incremental: bool = False) -> dict:
+            incremental: bool = False, whole_run: bool = False, examples: str | None = None) -> dict:
     """Ask the LLM: formalize every spec under `specs_root`, `runs` times.
 
     incremental  for the OpenSpec changes: formalize the specs of each project
                  once for each run (its base), and each change on top of the
                  base of its run. The cases of one project are the folders
                  that share its specs.
+    whole_run    the rules are about whole runs (`speccheck --whole-run`)
+    examples     for the OpenSpec changes: the pattern of the scenarios that
+                 are examples (`speccheck --examples`)
     """
     llm = LLM(base_url)
     specs = {}
@@ -182,7 +197,7 @@ def collect(base_url: str, specs_root: Path, runs: int, symbol_sets: int, temper
         if (folder / "openspec").is_dir():  # an OpenSpec project with one change
             change_dir = next(path for path in sorted((folder / "openspec" / "changes").iterdir())
                               if path.is_dir())
-            merged = merge(change_dir, on_base=incremental)._asdict()
+            merged = merge(change_dir, on_base=incremental, examples=examples)._asdict()
             specs[folder.name] = {"text": merged.pop("text"), "change": merged, **expected}
             if incremental:
                 document = base_document(folder / "openspec" / "specs")
@@ -198,14 +213,15 @@ def collect(base_url: str, specs_root: Path, runs: int, symbol_sets: int, temper
         base_jobs = [(text, run) for text in documents for run in range(runs)]
         base_specs = {text: {"text": text, "change": {k: v for k, v in document._asdict().items() if k != "text"}}
                       for text, document in documents.items()}
-        bases = dict(zip(base_jobs, pool.map(one_run, [(base_url, base_specs[text], 1, temperature, None)
+        bases = dict(zip(base_jobs, pool.map(one_run, [(base_url, base_specs[text], 1, temperature, None, whole_run)
                                                        for text, _ in base_jobs])))
 
         def base_of(name: str, run: int) -> dict | None:
             made = bases.get((specs[name].get("base"), run))
             return made["models"][0] if made and "models" in made else None
 
-        results = list(pool.map(one_run, [(base_url, specs[name], symbol_sets, temperature, base_of(name, run))
+        results = list(pool.map(one_run, [(base_url, specs[name], symbol_sets, temperature, base_of(name, run),
+                                           whole_run)
                                           for name, run in jobs
                                           if not incremental or "base" not in specs[name] or base_of(name, run)]))
     if incremental:  # a change whose base could not be made has no run
@@ -224,6 +240,10 @@ def collect(base_url: str, specs_root: Path, runs: int, symbol_sets: int, temper
         # How the changes were run, and what the bases cost (their formal
         # models are part of the models of the changes).
         "incremental": incremental,
+        # Step 44: whole runs, and the pattern of the examples (the scenarios
+        # that it matched have "example" in "specs").
+        "whole_run": whole_run,
+        "examples": examples,
         "base_costs": [made.get("cost") for made in bases.values()],
         # The exact prompts, so the experiment can be understood after they change.
         "prompts": {"read": formalize_module.READ_SYSTEM,
@@ -382,9 +402,32 @@ def without_repair(model: dict) -> dict:
     return {**model, "background": background}
 
 
+def without_renames(model: dict) -> dict:
+    """The model as if no link had been asked about with both symbols in view (step 44, probe._renamed).
+
+    A link then stands or falls by the question that shows a situation alone.
+    The questions about two outcomes ran on the links left standing, so this
+    is close to a run without the second question, not exactly one.
+    """
+    def as_before(fact: dict) -> dict:
+        check = fact.get("check", {})
+        if "renames" not in check:
+            return fact
+        counts = check.get("answers", {})
+        total = sum(counts.values())
+        confirmed = not total or counts["impossible"] > probe_module.MAJORITY * total
+        return {**fact, "check": {**check, "verdict": "confirmed" if confirmed else "rejected"}}
+
+    return {**model, "background": [as_before(fact) for fact in model["background"]]}
+
+
 def findings_of(run: dict, config: dict) -> tuple[list[dict], list[dict]]:
     """The formal models of one run as a configuration uses them, and what the solver finds in them."""
     models = run["models"][:config["sets"]]
+    if not config["whole_run"]:  # a run read as one moment: two events in a conflict are doubtful again
+        models = [{key: value for key, value in model.items() if key != "situation"} for model in models]
+    if not config["renames"]:
+        models = [without_renames(model) for model in models]
     if not config["facts"]:
         models = [{**model, "background": []} for model in models]
     if not config["repair"]:
@@ -401,11 +444,6 @@ def findings_of(run: dict, config: dict) -> tuple[list[dict], list[dict]]:
                                 second=config["second"], readings=False)
                         for model in models])
     return models, findings
-
-
-def is_doubtful(finding: dict) -> bool:
-    """Is the finding marked as a likely artefact (checks.py)?"""
-    return "doubted_by" in finding or "simultaneous_events" in finding
 
 
 def kind(name: str) -> str:
@@ -531,6 +569,10 @@ CHANGE_CONFIGURATIONS = ("default (1 symbol set)", "doubtful conflicts set aside
                          "without the questions about conditions",
                          "without the questions about conditions, doubtful set aside",
                          "without assumed facts and links")
+# Those of step 44, for the runs made since (their file says "whole_run").
+CHANGE_CONFIGURATIONS_44 = ("a run read as one moment, doubtful set aside",
+                            "examples read as rules, doubtful set aside",
+                            "links that only rename not asked about, doubtful set aside")
 
 
 def change_run(spec: dict, run: dict, config: dict) -> dict:
@@ -558,8 +600,10 @@ def change_run(spec: dict, run: dict, config: dict) -> dict:
     # Which rules are the change's is read off the models as the LLM made them.
     # The checks then run without the rules that the change removes.
     changed = [changed_rules(model, merged) for model in run["models"][:config["sets"]]]
-    models, findings = findings_of({**run, "models": [after_model(model, merged) for model in run["models"]]},
-                                   config)
+    after = [after_model(model, merged) for model in run["models"]]
+    if config["examples"]:  # the rules of the scenarios that are examples are marked
+        after = [with_examples(model, merged) for model in after]
+    models, findings = findings_of({**run, "models": after}, config)
     mine = [finding for finding in findings if about_change(finding, models, changed)]
 
     def conflicts(some: list[dict]) -> set:
@@ -601,7 +645,7 @@ def change_tables(data: dict) -> str:
     """
     ok_runs = [run for run in data["runs"] if "models" in run]
     configs = [(label, {**DEFAULT, **change}) for label, change in CONFIGURATIONS
-               if label in CHANGE_CONFIGURATIONS]
+               if label in CHANGE_CONFIGURATIONS or (label in CHANGE_CONFIGURATIONS_44 and "whole_run" in data)]
     kinds = sorted({kind(name) for name, spec in data["specs"].items() if spec.get("conflicts")})
     gap_kinds = sorted({kind(name) for name, spec in data["specs"].items() if spec.get("gaps")})
 
@@ -879,6 +923,10 @@ def main() -> None:
                                                       "rules that clash, asked at this server, and save them under --name")
     parser.add_argument("--incremental", action="store_true",
                         help="OpenSpec changes: formalize the specs of a project once, and each change on top")
+    parser.add_argument("--whole-run", action="store_true",
+                        help="the rules are about whole runs of the system (speccheck --whole-run)")
+    parser.add_argument("--examples", metavar="PATTERN",
+                        help="OpenSpec changes: the scenarios whose text matches are examples (speccheck --examples)")
     args = parser.parse_args()
 
     if args.rescore:
@@ -897,7 +945,7 @@ def main() -> None:
     elif args.base_url:
         raw_file = Path("experiments/results") / f"{args.name}.json"
         data = collect(args.base_url, args.specs, args.runs, args.symbol_sets, args.temperature,
-                       args.incremental)
+                       args.incremental, args.whole_run, args.examples)
         raw_file.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     else:
         parser.error("give --base-url (to run the evaluation) or --rescore (to score saved runs)")
