@@ -1359,6 +1359,7 @@ tests/              78 tests that need no LLM
 experiments/
   sets/             the 11 evaluation sets, eval to eval10 and eval12 (297 spec versions), two long specs,
                     eval16 and eval17 (twelve specs written like real ones), real1 and real2 (32 changes of a real project),
+                    eval18 and real3 (six more such specs and 16 more real changes, not run yet: the test of the next step),
                     and for the change check eval11, eval13, eval14, eval15, mixed (one larger project)
                     and change_dev (old specs as projects)
   results/          every experiment: the raw data (.json) and its tables (.md)

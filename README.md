@@ -671,6 +671,7 @@ Nothing in the code or in the prompts is about orders.
 | `experiments/sets/mixed` | one larger OpenSpec project (39 scenarios, four spec files) | one change that adds, rewrites, removes and renames at once |
 | `experiments/sets/eval16`, `eval17` | OpenSpec format, written like real tool specs: scenarios with two or three outcomes, and states, codes and commands in quotes | twelve specs, each clean and with a planted conflict (two kinds) or gap |
 | `experiments/sets/real1`, `real2` | a real project: the OpenSpec tool's own specs (MIT licence, see the README in each folder) | 32 of its archived changes, each with the spec files it touches as they were before it. Nothing is planted, so there is no known answer |
+| `experiments/sets/eval18`, `real3` | six more specs written like tool specs, each clean and with a planted conflict, a planted gap and two planted ambiguities; and 16 more changes of the real project | not run yet. They are set aside as the test of the next step: letting the translations of a rule vote when they differ only in the symbols they use (plan.md, section 2.1) |
 
 ## How reliable is it
 
@@ -872,9 +873,10 @@ research.md, section 5.
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the vLLM servers on the cluster: the main model, the second model |
 | `experiments/slurm/serve_direct.sh` | the same server for the main model, started directly on a machine with free GPUs, without the queue |
 | `tests/` | 78 tests of everything that needs no LLM |
-| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10`, `eval12`, `eval16` and `eval17`, `size` and `size2`; for the change check `eval11`, `eval13`, `eval14`, `eval15`, `mixed` and `change_dev`; and the script that writes them. `real1` and `real2` are not written by it (`experiments/real/`) |
+| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10`, `eval12`, `eval16` to `eval18`, `size` and `size2`; for the change check `eval11`, `eval13`, `eval14`, `eval15`, `mixed` and `change_dev`; and the script that writes them. `real1`, `real2` and `real3` are not written by it (`experiments/real/`) |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs and scores the evaluation; re-scores saved runs without a GPU |
 | `experiments/real/` | the trial on a real OpenSpec project: each archived change next to the specs before it, from the git history |
 | `experiments/stability.py`, `fact_threshold.py` | the earlier experiments |
 | `experiments/examples/` | saved runs referred to above and in research_log.md |
+| `docs/management/` | a paper and a slide deck about the project, with their LaTeX sources, the evidence files behind their numbers, and two snapshots of the source they describe. Start with its own README |

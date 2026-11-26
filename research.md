@@ -38,6 +38,8 @@ its entries. How each mechanism works is in [plan.md](plan.md), section 5.
   | `eval16/` | 6 specs written like real tool specs, 14 scenarios with two or three outcomes each (2.4) | 2 conflicts, 1 gap | E24 |
   | `eval17/` | 6 specs of that kind with states and codes in quotes that are not words (2.4) | 2 conflicts, 1 gap | E25 |
   | `real1/`, `real2/` | 2 x 16 archived changes of a real OpenSpec project, each against the spec files it touches (2.4) | nothing: no known answer | E23, E24 |
+  | `eval18/` | 6 specs written like tool specs, 7 scenarios each | 1 conflict, 1 gap, 2 ambiguities | not run yet: held out for step 40 (plan.md 2.1) |
+  | `real3/` | the last 16 archived changes of that project that fit, laid out like `real1/` | nothing: no known answer | not run yet: held out for step 40 |
   | `size/` | 4 versions of one spec of 30 requirements | 2 conflicts, 1 gap | E13 |
   | `size2/` | 4 versions of one spec of 100 requirements | 2 conflicts, 1 gap | E14 (not held-out: no design was tuned on it) |
 
