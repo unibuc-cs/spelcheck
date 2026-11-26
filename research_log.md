@@ -3650,11 +3650,114 @@ rule that splits 5 to 3 between "= 5" and ">= 5" has a majority too.
 - **On our own sets little moves**: 2 rules voted on in `eval8/`, 10 in
   `eval7/`, 5 in `eval17/`.
 
-**Frozen** with the commit of this entry. Next: held-out `eval18/` and
-`real3/` with the code before and after (E26).
+**Frozen** with the commit of this entry (831254e). Next: held-out `eval18/`
+and `real3/` with the code before and after (E26).
 
 **Raw data.** experiments/results/T30_real2.json, T30_eval17.json,
 T30_eval8.json, T30_eval7.json and T30_specs.json, each with its table.
+
+---
+
+## E26 — Held-out `eval18/` and a third real batch: the vote (2026-11-26)
+
+**Question.** Does the vote of T30 make more rules usable on real changes it
+was not built on, and what does it cost in planted ambiguities?
+
+**Setup.** `eval18/` and `real3/` were written first (bccfaf5) and the design
+frozen in 831254e. The code before the vote (commit 1732c04, from a git
+worktree, on the cluster) and after it (on the workstation login) ran at the
+same time.
+
+- `eval18/`: six specs of 7 scenarios written like tool specs (a secrets
+  tool, a job scheduler, a webhook service, a linter, a migration tool, a
+  paging service). Each is clean, has a planted conflict, a planted gap, and
+  two planted ambiguities: a limit ("reaches 90 days"), and one of "only
+  if", an "if" after two outcomes, or "and ... or ... and". 3 runs each.
+- `real3/`: the 16 changes of the real project's pool that were not run yet,
+  526 rules. 2 runs each, to see how much two runs differ.
+
+**Results on `real3/`** (the two runs of each arm side by side).
+
+| | Before | With the vote |
+|---|---|---|
+| runs that finished | 32 of 32 | 32 of 32 |
+| rules accepted | 45% and 37% | 71% and 63% (155 and 148 of them by the vote) |
+| **rules of no use to the checks** | **54% and 62%** | **28% and 36%** |
+| conflicts about a change | 22 and 18 | 34 and 44 |
+| of them not marked doubtful | 12 and 11 | 12 and 18 |
+| changes with such a conflict | 3 and 4 of 16 | 4 and 6 of 16 |
+| gaps about a change | 15 and 20 | 15 and 11 |
+| questions about an ambiguous rule of a change | 43 and 40 | 21 and 24 |
+| rules of a change reported as not checked | 7 and 11 | 10 and 13 |
+
+- **A quarter more of the real rules take part in the checks.** The two runs
+  of one arm differ by 8 points, the two arms by 26.
+- **What is left** (341 of the 1,052 rules of both runs, 617 before): for 179
+  there is no symbol for what the rule demands (220 before); for 127 the
+  translations use different symbols and the vote did not settle it (272);
+  for 23 the same symbols are combined differently, which is not voted on
+  (13); for 11 only the condition differs (111).
+- **The author is asked half as often** about a rule of the change (45
+  questions in two runs, 83 before).
+- **More rules give more conflicts**: 30 that are not doubtful in the two
+  runs, 23 before. 24 of the 30 involve a voted rule. The five we read set a
+  rule for the normal case against a rule for a failure that can happen at
+  the same time ("WHEN ... the user runs `openspec schemas --json` ... list
+  schemas from the store" against "WHEN ... store resolution fails THEN ...
+  report the diagnostic and exit"), as the conflicts before did (E23).
+  Whether such a pair is a finding or an artefact is the author's call; we
+  have no known answer for real specs.
+
+**Results on `eval18/`** (90 runs each arm, all finish).
+
+| | Before | With the vote |
+|---|---|---|
+| planted conflicts found | 18 of 18 | 18 of 18 |
+| planted gaps found | 18 of 18 | 18 of 18 |
+| **planted ambiguities found** | **11 of 36** | **11 of 36** |
+| a limit ("reaches 90 days") | 0 of 18 | 0 of 18 |
+| "only if" | 5 of 9 | 9 of 9 |
+| "if" after two outcomes | 5 of 6 | 2 of 6 |
+| "and ... or ... and" | 1 of 3 | 0 of 3 |
+| rules accepted in step 3 | 595 of 630 | 621 of 630 (23 by the vote) |
+| ambiguity flags on rules we did not make ambiguous | 15 | 9 |
+| clean runs with a conflict, doubtful ones set aside | 9 of 18 | 10 of 18 |
+
+- **Nothing planted is found less often.** The two arms are separate runs,
+  so the kinds move by chance as well; the sum is the same.
+- **What the vote did to planted ambiguities.** It took 5 of the 36 planted
+  rules (two "and/or", one "if", one "only if", one limit). One was still
+  reported, by the question of step 6; four were not. Without the vote such
+  a rule (ambiguous in step 3) was reported 4 times in 12, because step 6
+  then asks about the two groups and the answers often side with the
+  translation. So the vote costs about one planted ambiguity in this set,
+  within the rule set beforehand (at most one in ten of those found).
+- **A limit worded "reaches N" is never found**, with or without the vote:
+  all eight translations read it as "N or more", and the answers of step 6
+  agree.
+- **Three of the six clean specs are not clean**, as in `eval16/`. Each has
+  one rule about a state that cuts across the commands: "WHEN the
+  configuration names a rule that does not exist THEN ... exits with code
+  2" next to "`lnt check` AND no file has a finding ... exits with code 0";
+  "WHEN an applied change was edited afterwards ... exits with code 6" next
+  to "`mig up` AND no change is pending ... exits with code 0"; "WHEN a job
+  runs for more than 60 minutes THEN the service stops the job" next to
+  "starts the job". These three report a conflict in 9 of their 9 clean
+  runs, in both arms; the other three in 0 and 1 of 9. A fair finding, and
+  our mistake in writing the set.
+
+**Decision.** The vote stays. The rule of plan.md 2.1 asked for fewer rules
+of no use on `real3/` (28% and 36% against 54% and 62%), for planted
+conflicts and gaps found no less often on `eval18/` (18 of 18 both), and for
+at most one planted ambiguity in ten lost (11 of 36 both ways). Written down
+as limits: a voted rule can say less than its words, a split that the vote
+settles is no longer asked about, and more rules in the checks give more
+conflicts between a rule and its special case. `eval18/` and `real3/` are
+development data from now on. The next design needs `eval19/`, and a test on
+real changes needs changes outside this pool of 48.
+
+**Raw data.** experiments/results/E26_eval18.json, E26_eval18_before.json,
+E26_real3.json and E26_real3_before.json, each with its table.
 
 ---
 

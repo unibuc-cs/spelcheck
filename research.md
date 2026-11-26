@@ -38,8 +38,8 @@ its entries. How each mechanism works is in [plan.md](plan.md), section 5.
   | `eval16/` | 6 specs written like real tool specs, 14 scenarios with two or three outcomes each (2.4) | 2 conflicts, 1 gap | E24 |
   | `eval17/` | 6 specs of that kind with states and codes in quotes that are not words (2.4) | 2 conflicts, 1 gap | E25 |
   | `real1/`, `real2/` | 2 x 16 archived changes of a real OpenSpec project, each against the spec files it touches (2.4) | nothing: no known answer | E23, E24 |
-  | `eval18/` | 6 specs written like tool specs, 7 scenarios each | 1 conflict, 1 gap, 2 ambiguities | E26, running: held out for step 40, the vote (plan.md 2.1) |
-  | `real3/` | the last 16 archived changes of that project that fit, laid out like `real1/` | nothing: no known answer | E26, running: held out for step 40 |
+  | `eval18/` | 6 specs written like tool specs, 7 scenarios each | 1 conflict, 1 gap, 2 ambiguities | E26 |
+  | `real3/` | the last 16 archived changes of that project that fit, laid out like `real1/` | nothing: no known answer | E26 |
   | `size/` | 4 versions of one spec of 30 requirements | 2 conflicts, 1 gap | E13 |
   | `size2/` | 4 versions of one spec of 100 requirements | 2 conflicts, 1 gap | E14 (not held-out: no design was tuned on it) |
 
@@ -243,6 +243,11 @@ specs full of such values, 7 of 48 runs finished before and 48 of 48 after,
 with 22 of the 24 planted conflicts and 10 of the 12 planted gaps found. On
 the second real batch 16 of 16 runs finish (14 and 15 before).
 
+**The translations of a rule vote when they differ only in their symbols**
+(T30, E26; 3.14). On a third batch of 16 real changes, run twice each way,
+28% and 36% of the rules are of no use to the checks, against 54% and 62%
+without the vote.
+
 ---
 
 ## 3. What makes it work
@@ -407,6 +412,41 @@ Z3 proves the conflict with it.
   (E18) of the pairs were called impossible.
 - **Its price** is more conflicts that nobody planted (4.6).
 
+### 3.14 Translations that differ only in their symbols vote (T30, E26)
+
+On real specs the read step lists a general and a specific symbol for one
+outcome, and the eight translations of a rule use different ones. By the
+count of 3.1 these are several meanings, and the rule was ambiguous or
+rejected. Now step 3 keeps what the translations share:
+
+```
+"WHEN move succeeds THEN display success message with archived name and list of updated specs"
+3 x  move_succeeds => success_message_displayed
+2 x  move_succeeds => (and success_message_displayed spec_summary_displayed)
+1 x  move_succeeds => (and success_message_displayed specs_updated)
+1 x  move_succeeds => (and success_message_displayed updated_specs_tracked spec_summary_displayed)
+```
+
+- **The vote.** Z3 is asked which translations entail which. The strongest
+  one that more than half of the usable translations entail becomes the
+  translation of the rule (the first line, 7 of 7).
+- **Its condition.** No two translations that use the same symbols may
+  differ in meaning. "= 5" against ">= 5" is two readings of the words and
+  stays a question. Without the condition the vote would accept 30 of the
+  72 planted ambiguities that step 3 flags in the saved runs of `eval7/` to
+  `eval12/`; with it, 5.
+- **On real changes it was not built on** (`real3/`, two runs each way): the
+  rules of no use to the checks go from 54% and 62% to 28% and 36%, and the
+  questions to the author about a rule of the change from 83 to 45.
+- **On `eval18/`**, written to measure the cost: 18 of 18 planted conflicts
+  and 18 of 18 planted gaps both ways, and 11 of 36 planted ambiguities both
+  ways. The vote took 5 planted rules; one was still reported by the
+  question of 3.6.
+- **Its price**: a voted rule can say less than its words (the list of
+  updated specs above is not in the formula); a split that the vote settles
+  is asked about only if the model proposes another reading itself; and
+  more rules in the checks give more conflicts on real specs (4.8).
+
 ---
 
 ## 4. What does not work yet
@@ -564,9 +604,10 @@ requirements have several hundred.
 
 ### 4.7 The evaluation is small
 
-Eleven sets with 66 base specs (297 versions), two longer specs and twenty-five OpenSpec
-projects with 139 changes, all written by us (and 32 changes of a real
-project, E23 and E24); 63 to 90 runs per experiment; one main model. One leak is known: an
+Eleven sets with 66 base specs (297 versions), eighteen specs written like tool specs
+(78 versions), two longer specs and twenty-five OpenSpec
+projects with 139 changes, all written by us (and 48 changes of a real
+project, E23, E24 and E26); 63 to 90 runs per experiment; one main model. One leak is known: an
 example in the read prompt came from the domain of an `eval3/` spec (D4). And
 one clean spec, `shelter_clean` in `eval9/`, has a conflict we did not plan
 (E15).
@@ -578,9 +619,23 @@ E16).
 
 ---
 
-### 4.8 What a real project shows (E23, T27, T28, E24, T29)
+### 4.8 What a real project shows (E23, T27, T28, E24, T29, T30, E26)
 
-Two batches of 16 changes of one real project, so a first sign.
+Three batches of 16 changes of one real project, so a first sign.
+
+- **One real rule in three is still of no use to the checks** (E26), after
+  the vote of 3.14 brought back about half of those that were lost. Of the
+  341 such rules in two runs of the third batch, 179 have no symbol for what
+  they demand, and for 127 the translations use different symbols and the
+  vote did not settle it. The first kind is the read step's doing, and a
+  vote cannot help there.
+- **More rules in the checks give more conflicts**: 30 that are not marked
+  doubtful in two runs of the third batch, 23 without the vote, and 24 of
+  the 30 involve a voted rule. Those we read set a rule for the normal case
+  against a rule for a failure that can happen at the same time. There is
+  no known answer for real specs, so we cannot say how many are findings.
+
+What the first two batches showed, before the vote:
 
 - **The symbols of the read step do not fit real rules** (T27). Two rules in
   five did not get an agreed translation (79 ambiguous, 68 rejected, of
@@ -691,6 +746,7 @@ the prompts, so it can be scored again without a GPU.
 | E23 | a real OpenSpec project (the OpenSpec tool's own repository): 16 of its archived changes, each against the spec files it touches | 16 runs | 5 runs stopped; 40% of the rules without an agreed translation; 29 conflicts about a change, 3 of them from the rules alone (2.4, 4.8) |
 | E24 | `eval16/` and the second real batch, held-out: a rule that demands nothing is rejected, and a long document is read in pieces (T28); each set before and after | 2 x 48 and 3 x 16 runs | planted conflicts 19 of 22 before, 19 of 20 after, gaps 10 of 10 both; real rules of no use 57% and 47% before, 44% after; runs stopped 1 and 2 of 16 before, 3 after. The first change kept, the second taken out (2.4) |
 | E25 | `eval17/`, held-out: a symbol list with a name that is not a word is repaired (T29); before and after | 2 x 48 runs | runs that finish 7 of 48 before, 48 of 48 after; planted conflicts 22 of 24, gaps 10 of 12 (2.4) |
+| E26 | `eval18/` and a third real batch, held-out: the translations of a rule vote when they differ only in their symbols (T30); before and after | 2 x 90 and 2 x 32 runs | real rules of no use to the checks 54% and 62% before, 28% and 36% after; on `eval18/` 18 of 18 planted conflicts, 18 of 18 gaps and 11 of 36 ambiguities both ways (3.14) |
 
 The trials (T1 to T26) were run on development data between these
 experiments. Among the last: T17 compared temperatures 0.3, 0.5 and 0.7 (3.1);

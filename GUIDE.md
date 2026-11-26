@@ -1199,11 +1199,28 @@ wrote six more specs full of such values (`eval17`) and ran them with the old
 and the new code: 7 of 48 runs finished before, 48 of 48 after, and 22 of the
 24 conflicts and 10 of the 12 gaps that we had planted were found.
 
-The newest step is the vote of 3.1, made for the overlapping symbols. On the
-second real batch, where it was developed, the rules of no use to the checks
-fell from 60% to 23%, and on our own sets with planted ambiguities it
-accepted 2 of 33 that the old code flagged. Its test on specs it was not
-built on (`eval18`, and a third batch of real changes, `real3`) is running.
+The newest step is the vote of 3.1, made for the overlapping symbols. It was
+tested on a third batch of 16 real changes (`real3`), run twice with the old
+code and twice with the new:
+
+| | Before | With the vote |
+|---|---|---|
+| rules of no use to the checks | 54% and 62% | 28% and 36% |
+| questions to the author about a rule of the change | 83 | 45 |
+| conflicts about a change, not doubtful | 23 | 30 |
+
+So one real rule in three is still lost, half of them because the list has
+no symbol for what the rule demands, and a vote cannot help there. And with
+more rules in the checks, more conflicts are reported. Those we read set a
+rule for the normal case against a rule for a failure that can happen at the
+same time; nothing is planted in real specs, so we cannot say how many are
+findings.
+
+What the vote costs was measured on six more specs of our own (`eval18`),
+each with two planted ambiguities. Planted conflicts (18 of 18), gaps (18 of
+18) and ambiguities (11 of 36) were found as often with the vote as without.
+The vote took 5 of the 36 planted rules, and one of them was still reported
+by the question of 3.1.
 
 **Longer specs.** All the specs counted above have at most six requirements.
 To see what a longer document does, we wrote two more, each in four versions
@@ -1246,7 +1263,8 @@ The project has five goals. This is where each one stands:
 | two words for one yes/no question give a false gap | "the slot is free" and "the slot is taken" as two symbols: in 3 to 5 of 18 clean runs (6.2) |
 | a fact or a link can be wrong, even with a majority behind it | which is why the report quotes every one that a conflict depends on |
 | there is no time | "then", "after" and "until" are not modelled: the logic is one snapshot |
-| real specs are harder than the ones we wrote | their rules demand two or three things each, and the symbols that the read step lists do not fit them: about half of the rules get no agreed translation or one that demands nothing (the second kind is now reported as "Not checked"). They put a general rule next to its special cases, and the questions about two outcomes then report a conflict for each such pair. A whole project is too large to check at once (6.2) |
+| real specs are harder than the ones we wrote | their rules demand two or three things each, and the symbols that the read step lists do not fit them: one rule in three gets no agreed translation or one that demands nothing (one in two before the vote of 3.1; the second kind is reported as "Not checked"). They put a general rule next to its special cases, and each such pair can be reported as a conflict. A whole project is too large to check at once (6.2) |
+| a voted rule can say less than its words | "display success message with archived name and list of updated specs" is kept as "the success message is displayed" (3.1). And a split that the vote settles is not asked about any more: 5 of the 36 planted ambiguities of `eval18` were voted on, and 1 was still found |
 | the cheaper way to check a change reads a new rule with little around it | shown only the saved symbols, the model sometimes ties a new rule to a saved event that the rule does not name. That cost 4 of 54 planted conflicts on `eval14`. On `eval15` it cost none, but one such rule was ambiguous in 3 of 3 runs (6.2). Either way, a project can have about 140 scenarios at most |
 | the evaluation is small | the specs were written by us, and there is one main model |
 
@@ -1331,9 +1349,9 @@ The full list is in research.md, section 5.
 
 ### 6.6 What is next
 
-1. **Real specs**: symbols that overlap, and the conflicts between a general
-   rule and its special case. Then a larger evaluation, with another main
-   model.
+1. **Real specs**: rules for whose outcome the read step lists no symbol,
+   and the conflicts between a general rule and its special case. Then a
+   larger evaluation, with another main model.
 2. **The change check, further**: whether the cheaper way becomes the
    default, what the model is shown when it reads a new rule, and projects
    too large for one read answer.
@@ -1398,8 +1416,7 @@ specs/              3 small specs the prompts were developed on, with their save
 tests/              84 tests that need no LLM
 experiments/
   sets/             the 11 evaluation sets, eval to eval10 and eval12 (297 spec versions), two long specs,
-                    eval16 and eval17 (twelve specs written like real ones), real1 and real2 (32 changes of a real project),
-                    eval18 and real3 (six more such specs and 16 more real changes: the test of the vote, running),
+                    eval16 to eval18 (eighteen specs written like real ones), real1 to real3 (48 changes of a real project),
                     and for the change check eval11, eval13, eval14, eval15, mixed (one larger project)
                     and change_dev (old specs as projects)
   results/          every experiment: the raw data (.json) and its tables (.md)

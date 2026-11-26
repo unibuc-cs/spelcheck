@@ -73,9 +73,10 @@ Where the project stands:
   seventh. On one test set it found 50 conflicts where the full way found 54,
   on the next one all 72
   ([The two ways to check a change](#the-two-ways-to-check-a-change));
-- all of that is on specs we wrote. On 32 changes of a real project it does
-  much worse: about half of the rules give the checks nothing to work with,
-  and most of the conflicts it reports look like artefacts. A few look real
+- all of that is on specs we wrote. On 48 changes of a real project it does
+  much worse: one rule in three gives the checks nothing to work with (one
+  in two, before the translations of a rule were let to vote), and most of
+  the conflicts it reports look like artefacts. A few look real
   ([How reliable is it](#how-reliable-is-it)).
 
 | Read next | For |
@@ -279,7 +280,9 @@ differ only in which symbols they use: three say `success_message_displayed`,
 two say that and `spec_summary_displayed`. Such translations vote, and the
 rule is accepted with the strongest translation that more than half of them
 entail, here the first. A split between translations that use the same
-symbols, like A and B above, is never settled that way.
+symbols, like A and B above, is never settled that way. The price is that a
+voted rule can say less than its words: here the summary of the specs is not
+in the formula.
 
 Until the author answers, the checks use reading A, and some findings may
 exist only because of that choice. So each ambiguous rule is tried once more
@@ -677,9 +680,8 @@ Nothing in the code or in the prompts is about orders.
 | `experiments/sets/`: `eval` to `eval10`, `eval12` | both | 66 specs in new domains. Each has a clean version and versions with one planted defect, 297 versions in all. Each set was written before it was used, as a test the prompts had not seen |
 | `specs/auth_change`, `experiments/sets/eval11`, `eval13`, `eval14`, `eval15` | OpenSpec projects: specs that exist, and a change | the login example as a change, and 24 projects in new domains with 5 or 6 changes each |
 | `experiments/sets/mixed` | one larger OpenSpec project (39 scenarios, four spec files) | one change that adds, rewrites, removes and renames at once |
-| `experiments/sets/eval16`, `eval17` | OpenSpec format, written like real tool specs: scenarios with two or three outcomes, and states, codes and commands in quotes | twelve specs, each clean and with a planted conflict (two kinds) or gap |
-| `experiments/sets/real1`, `real2` | a real project: the OpenSpec tool's own specs (MIT licence, see the README in each folder) | 32 of its archived changes, each with the spec files it touches as they were before it. Nothing is planted, so there is no known answer |
-| `experiments/sets/eval18`, `real3` | six more specs written like tool specs, each clean and with a planted conflict, a planted gap and two planted ambiguities; and 16 more changes of the real project | the test of the newest step, the vote among the translations of a rule (plan.md, section 2.1). The runs are under way |
+| `experiments/sets/eval16`, `eval17`, `eval18` | OpenSpec format, written like real tool specs: scenarios with two or three outcomes, and states, codes and commands in quotes | eighteen specs, each clean and with a planted conflict or gap; those of `eval18` also with two planted ambiguities |
+| `experiments/sets/real1`, `real2`, `real3` | a real project: the OpenSpec tool's own specs (MIT licence, see the README in each folder) | 48 of its archived changes, each with the spec files it touches as they were before it. Nothing is planted, so there is no known answer |
 
 ## How reliable is it
 
@@ -839,12 +841,28 @@ Some notes on these numbers:
   planted conflicts and 10 of the 12 planted gaps were found. On the second
   real batch 16 of 16 runs finish (14 and 15 before).
 - The translations of a rule now vote when they differ only in the symbols
-  they use ([Ambiguities](#ambiguities)). So far this is measured on the data
-  it was developed on (T30): on the second real batch the rules of no use to
-  the checks fall from 60% to 23%; `eval17/`, `eval8/` and `eval7/` keep
-  their planted conflicts and gaps; and of 33 planted ambiguities that the
-  old code flagged from the split alone, the vote accepts 2. The test on
-  `eval18/` and on a third real batch is running (E26).
+  they use ([Ambiguities](#ambiguities)). Tested with the code before and
+  after on data it was not built on (E26):
+  - a third batch of 16 real changes (`real3/`), run twice each way: 54% and
+    62% of the rules were of no use to the checks before, 28% and 36% after.
+    The author is asked about a rule of the change half as often (45
+    questions against 83);
+  - half of what is left are rules for whose outcome the first step listed
+    no symbol (179 of 341), which a vote cannot help;
+  - with more rules in the checks, more conflicts are reported about the
+    changes: 30 that are not doubtful, 23 before. Those we read set a rule
+    for the normal case against a rule for a failure that can happen at the
+    same time. Nothing is planted in real specs, so we cannot say how many
+    are findings;
+  - `eval18/`, six specs of our own with planted ambiguities, to see the
+    cost: 18 of 18 planted conflicts, 18 of 18 planted gaps and 11 of 36
+    planted ambiguities, the same both ways. The vote took 5 of the 36
+    planted rules, and one of them was still reported. A limit worded
+    "reaches 90 days" was found in none of 18 runs, either way;
+  - three of the six clean specs of `eval18/` have a rule that cuts across
+    the others ("WHEN the configuration names a rule that does not exist
+    ... exits with code 2"), as `eval16/` had. They report a conflict in
+    every clean run, with either code.
 - The numbers are small: the specs were written by us, and there is one main
   model. The details are in [research.md](research.md).
 
@@ -862,7 +880,8 @@ Some notes on these numbers:
 | Gaps depend on the symbols, and on the events the LLM marks | "free" and "taken" as two symbols give a false gap, and it is rarely marked doubtful. The gap in which no event happens, which almost every spec has, is marked as such and is rarely something to fix |
 | One snapshot, no time | "then", "after" and "until" are not modelled |
 | A reworded scenario is the change's, whatever its new words are | if its old words gave the same finding, the finding is still shown as the change's |
-| Real specs are harder than the ones we wrote | on 32 changes of a real project, about half of the rules got no agreed translation or one that demands nothing, because the symbols of the first step do not fit rules that demand several things. Most conflicts came from the questions about two outcomes, which report a general rule against its own special case. A whole real project is also too large to check at once: a change is checked against the spec files it touches |
+| Real specs are harder than the ones we wrote | on real changes one rule in three gets no agreed translation or one that demands nothing (one in two before the vote), because the symbols of the first step do not fit rules that demand several things. Most conflicts set a general rule against its own special case. A whole real project is also too large to check at once: a change is checked against the spec files it touches |
+| A voted translation can say less than the rule | when the eight translations differ only in their symbols, the rule is kept with what more than half of them entail. "Display success message with archived name and list of updated specs" became "the success message is displayed". `formal.json` marks such a rule (`"voted": "7/7"`), the report does not. A split that the vote settles is no longer a question to the author: on `eval18/` that happened to 5 of 36 planted ambiguities, and 1 was still found |
 | The cheaper way to check a change reads a new rule with little around it | by default the specs are formalized again for each change, so that old and new rules share their symbols. `--incremental` avoids that. Shown only the saved symbols, the LLM sometimes ties a new rule to a saved event that the rule does not name. That cost 4 of 54 planted conflicts on `eval14/`, and none of 72 on `eval15/`, where one such rule was ambiguous in 3 of 3 runs. Either way, a project is bounded by the read step's room, about 140 scenarios |
 
 ## Optional: an LLM review of the text (off by default)

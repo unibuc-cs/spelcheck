@@ -58,30 +58,32 @@ this order:
    more sets, specs we did not write, and results counted per planted
    conflict (the runs of one spec mostly agree, so more specs help more than
    more runs). For the change check: a real OpenSpec project with its
-   history of changes. Two batches of 16 changes of the OpenSpec tool's own
-   repository are done (steps 37 and 38), each change against the spec files
-   it touches. It goes badly, and we know why (research.md 4.8):
+   history of changes. Three batches of 16 changes of the OpenSpec tool's own
+   repository are done (steps 37, 38 and 40), each change against the spec
+   files it touches. It goes badly, and we know why (research.md 4.8):
    - **a run stopped** when the model made a name or a value that is not a
      word (`.claude`, `timed out`, 201): 6 to 19% of the runs. The symbol
      list is now repaired (step 39), and every run finishes;
-   - **about half of the rules give the checks nothing**: the symbols of the
+   - **about half of the rules gave the checks nothing**: the symbols of the
      read step do not fit rules that demand two or three things. A rule
      whose translation demands nothing is now rejected and reported as not
      checked (step 38). Reading a long document in pieces gave the rules
      their symbols and was taken out again: more runs stopped, and the
      translations then disagreed over which symbol to use;
-   - **overlapping symbols** are what is left of that: ask after reading
-     which symbols say the same, or tell the translation to state everything
-     the rule demands. Not tried;
+   - **overlapping symbols**: translations that differ only in the symbols
+     they use now vote (step 40), and one rule in three is of no use, not
+     one in two. Half of what is left has no symbol for what the rule
+     demands, which is the read step's doing. Not tried: a second read
+     answer for the rules that got none;
    - **most conflicts on real specs** set a general rule against its own
      special case, through a question about two outcomes. Not tried;
    - the parentheses of a translation could be repaired as those of a fact.
 
-   The third batch of real changes is not run: 32 changes show these things
-   well enough. A larger invented project with a change that does everything
-   at once is done (step 36).
-   All seventeen sets and both real batches have been read (E25), so
-   a new design needs `eval18/`, written first.
+   A larger invented project with a change that does everything at once is
+   done (step 36).
+   All eighteen sets and the three real batches have been read (E26), so a
+   new design needs `eval19/`, written first, and a test on real changes
+   needs changes outside this pool of 48, from another project.
 2. **The change check, further** (G2). The gap that a removal opens is done
    (step 33), and so is a way to check a change on a saved model of the
    specs (step 34, `--incremental`). What is left:
@@ -115,59 +117,6 @@ this order:
      once (step 30): a gap the assumed facts rule out is marked doubtful, but
      the facts rarely say that one of the two always holds, so only 2 of 13
      were marked (T20, E16). This is a known limit now.
-
-### 2.1 The plan for step 40: a vote among the translations of a rule (built, frozen; held-out runs open)
-
-On real specs about half of the rules without an agreed translation are lost
-to the choice of symbols (T27). The read step lists several symbols that
-overlap, a general one and a specific one, and the eight translations use
-different ones:
-
-```
-"WHEN move succeeds THEN display success message with archived name and list of updated specs"
-3 x  move_succeeds => success_message_displayed
-2 x  move_succeeds => (and success_message_displayed spec_summary_displayed)
-1 x  move_succeeds => (and success_message_displayed specs_updated)
-1 x  move_succeeds => (and success_message_displayed updated_specs_tracked spec_summary_displayed)
-```
-
-Today these are four groups, 3/2/1/1, and the rule is rejected. But all seven
-agree on one thing: the success message. The facts of step 4 are kept by
-such a vote already; the translations of a rule are not.
-
-One try, in step 3 and with no prompt changed:
-
-1. **When the vote is taken.** Only for a rule whose translations do not
-   agree (ambiguous or rejected), and only if they differ in the symbols they
-   use: no two translations that use the same symbols differ in meaning. Two
-   translations with the same symbols and two meanings ("= 5" and ">= 5") are
-   two readings of the words, and that stays a question to the author.
-2. **The vote.** For each of the translations, our code asks Z3 which of the
-   others entail it. The strongest translation that more than half of the
-   usable ones entail is chosen, and the rule is accepted with it (marked
-   `voted`, with the count). Above: `move_succeeds =>
-   success_message_displayed`, 7 of 7.
-3. If no translation has such a majority, the rule stays as it is. If the
-   chosen one demands nothing, the rule is rejected as empty (step 38).
-
-On the saved runs (no LLM, so only step 3): the rules with an accepted
-translation would go from 40% to 68% on the second real batch and from 60% to
-80% on the first. Of the 72 planted ambiguities that step 3 flags in `eval7/`
-to `eval12/`, the vote would accept 5. Without the condition of point 1 it
-would accept about half of them.
-
-**How it is tested.** First `eval18/` (make_eval.py): six specs written like
-tool specs, each clean, with a planted conflict, a planted gap and two
-planted ambiguities, to see what the vote costs. And `real3/`, the third
-batch of 16 real changes, the only real cases not yet run. Development: the
-two earlier real batches, `eval16/`, `eval17/`, and two of the sets with
-planted ambiguities. Then `eval18/` and `real3/`, with the code before and
-after.
-
-**The rule, set now.** The vote stays if on `real3/` fewer rules are of no
-use to the checks, and on `eval18/` the planted conflicts and gaps found do
-not go down and at most one planted ambiguity in ten is lost. A loss within
-that is written down as a limit.
 
 Small things that are open:
 
@@ -209,6 +158,21 @@ with a conflict that was not planted from 3 to 13 of 144 (T22). On held-out
 loss, and each added conflict quotes the fact it rests on. The rule for such
 decisions from now on: when the gains are larger than the losses, the new
 version becomes the default, and the loss is written down as a limit.
+
+Decided on 2026-11-26: **the translations of a rule vote when they differ
+only in the symbols they use** (step 40). On real specs the read step lists a
+general and a specific symbol for one outcome, the eight translations pick
+different ones, and the rule was ambiguous or rejected. Step 3 now accepts
+such a rule with the strongest translation that more than half of the usable
+ones entail (`formalize._vote`, 5.1). Two translations with the same symbols
+and two meanings are never voted on: that is two readings of the words. No
+prompt changes. On held-out `real3/`, run twice each way, the rules of no use
+to the checks are 28% and 36%, against 54% and 62%; on held-out `eval18/` the
+planted conflicts (18 of 18), gaps (18 of 18) and ambiguities (11 of 36) are
+found as often either way (E26). The price: a voted rule can say less than
+its words, a split that the vote settles is no longer asked about (5 of the
+36 planted rules of `eval18/` were voted on, 1 was still reported), and the
+real specs get more conflicts between a rule and its special case.
 
 Decided on 2026-11-25: **a symbol list with a name that is not a word is
 repaired, not refused** (step 39). The read step keeps the spelling of what
@@ -430,6 +394,19 @@ Each rule *i* is `A_i => C_i` (antecedent, consequent).
 | 8, or 7/1 | accepted | the largest group is used |
 | 6/2, 5/3 | ambiguous | used; the second group is the other reading, and the question of 5.7 decides |
 | 4/2/2 and wider | rejected | left out of the checks; must be rewritten |
+
+- a split is first tried as a vote (step 40), when it is about symbols and
+  not about the words:
+
+```
+condition    no two translations that use the same symbols are in different groups
+vote         for each group g:  votes(g) = the translations t with   t and (not g)   unsatisfiable
+chosen       the group with votes(g) > N_usable / 2 that entails most of the other such groups
+effect       the rule is accepted with it, and carries "voted": "7/8"
+```
+
+  With no such group, or when the condition fails ("= 5" against ">= 5"),
+  the table above decides
 
 - this finds where the model is unsure
 - a split is not final: the question of 5.7 decides between the two groups
@@ -953,6 +930,7 @@ With `--incremental`:
 | `background` | the assumed facts; `support` = how many samples agree. A fact with `restates` is a link (step 5): it says what that rule demands in the other rules' terms; its `check` holds the answers of step 6. Editable by hand |
 | `rules[].status` | `accepted` (samples agree), `ambiguous` (two readings; the rule also carries `alternative` and `differs_when`), `rejected` (no stable reading; left out of the checks) |
 | `rules[].clusters` | how the samples split by meaning, e.g. `[5, 3]` |
+| `rules[].voted` | only when the rule was accepted by the vote of 5.1: how many of the usable translations entail the chosen one, e.g. `"7/8"` |
 | `symbols[].event` | true for something that happens at one moment (5.2) |
 | `rules[].trigger` | the event the rule reacts to (5.2), or empty |
 | `rules[].probes` | step 6: each other reading, the situations asked about, and the answers |
@@ -1213,13 +1191,14 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       and one change that adds, rewrites, removes and renames (no design
       change). E22: 9 of 9 planted conflicts and 9 of 9 planted gaps in 3
       runs, both ways, and nothing else about the change
-- [ ] **Step 40 — a vote among the translations of a rule**: `eval18/` and
-      `real3/` first (done); where the translations of a rule differ in the
-      symbols they use, the strongest one that more than half of them entail
-      is accepted (plan in 2.1). Built and frozen after the development runs
-      (T30): on the second real batch the rules of no use to the checks fall
-      from 60% to 23%; 2 of 33 planted ambiguities are lost. Open: held-out
-      `eval18/` and `real3/`, before and after (E26)
+- [x] **Step 40 — a vote among the translations of a rule**: `eval18/` and
+      `real3/` written first; where the translations of a rule differ only
+      in the symbols they use, the strongest one that more than half of them
+      entail is accepted. T30 (development): on the second real batch the
+      rules of no use to the checks fall from 60% to 23%; 2 of 33 planted
+      ambiguities are lost. E26 (held-out): on `real3/` 28% and 36% of no
+      use against 54% and 62%; on `eval18/` 18 of 18 conflicts, 18 of 18
+      gaps and 11 of 36 ambiguities both ways. Kept
 - [x] **Step 39 — a name that is not a word**: `eval17/` written first;
       the symbol list of the read step is repaired where a name or a value
       is not a word, is declared twice, or an enum has one value. T29
