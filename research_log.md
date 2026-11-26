@@ -4430,6 +4430,73 @@ development data now.
 
 ---
 
+## T38 — The tool itself on the project: four changes, each in parts (2026-11-26 and 27)
+
+**Question.** T36 and T37 put each change next to one spec file by hand.
+What does `speccheck --change` report on the project's own folder?
+
+**How it was run.** `speccheck --change <the change> --whole-run --examples
+<the project's mark for an example>`, with the frozen code of step 44, once
+for each change. With a change applied the project has 474 to 479
+scenarios, so each was checked in 32 or 33 parts, formalized at the same
+time on two GPUs: 31 to 55 minutes for a change. 4 of the 131 parts could
+not be formalized: the read step returned the rules of the change alone,
+twice. All four are specs of the project's test harness. The report names
+them.
+
+**What the first reports showed** led to step 45 (E30): the contradiction
+that the authors name was there, "found in 18 of 32 parts", and a change
+that can be built had a conflict found in 21 of 32, an existing example
+against a new variant of it.
+
+**The reports with the code of step 45.** The saved parts were checked
+again (the model is asked only for the wording): against all 33 spec files,
+and against the 24 of the application alone (`--against`), without the 9
+that describe the test harness.
+
+| Change | Against | Parts | Conflicts, not doubtful | Among the rules of the change (parts that found each) | With a rule of another spec file | Doubtful, all marked for an example |
+|---|---|---|---|---|---|---|
+| cannot be built | the application | 24 | 6 | 3 (16, 2 and 1 of 24) | 3 | 18 |
+| can be built, first | the application | 24 | 5 | 2 (1 and 1 of 24) | 3 | 33 |
+| can be built, second | the application | 23 | 3 | 1 (1 of 23) | 2 | 43 |
+| can be built, third | the application | 24 | 1 | 0 | 1 | 16 |
+| cannot be built | all spec files | 32 | 10 | 4 (18, 2, 1 and 1 of 32) | 6 | 18 |
+| can be built, first | all spec files | 33 | 14 | 2 (2 and 1 of 33) | 12 | 35 |
+| can be built, second | all spec files | 32 | 4 | 2 (1 and 1 of 32) | 2 | 45 |
+| can be built, third | all spec files | 30 | 1 | 0 | 1 | 18 |
+
+- **The contradiction between two rules is found in 16 of 24 parts** (18 of
+  32), with the remark that one rule is a special case of the other, and an
+  explanation that says the system cannot be built as written. Nothing
+  else among the rules of any change is found in more than 2 parts. That
+  count is what tells the four changes apart; the number of conflicts does
+  not.
+- **The conflicts with a rule of another spec file are artefacts**, those
+  we read. Each is found in one part. Most rest on one assumed fact from
+  the question about two outcomes, between two rules about two unrelated
+  happenings of one run ("A run cannot have a maximum tool call count of 40
+  if no tools were called"). The others give one attribute to a whole run
+  that belongs to one call or one function: the token a call carried, the
+  file a function is defined in. The specs of the test harness add 3 and 9
+  of them, which is why `--against` exists.
+- **Of the four reasons that the authors give, one is found.** The missing
+  approval, which T37 found in one run of two and marked doubtful, is not in
+  these reports. It is a chain of three rules: a run of the new workflow
+  takes a page down in a plan, the existing rule then demands an approved
+  request, and the change says that such a run asks nobody. No two of the
+  three clash by themselves, and nothing in the formulas says that an
+  approved request is a request. The hand-over and the arithmetic are not
+  found either. The rule that carries the batch size has no agreed
+  translation in 15 of 24 parts.
+- **16 to 45 conflicts for a change are doubtful**, every one because its
+  situation says more than an example does. They are in the report, after
+  the others.
+- 5 to 8 rules of a change are reported as ambiguous, and up to 3 as not
+  checked, each with the number of parts. No report has a gap: a gap about
+  the change must be in every part.
+
+---
+
 ## E30 — Held-out `eval21/`: every example of a conflict must describe its situation (2026-11-27)
 
 **Question.** The tool itself was run on the four changes of the project of

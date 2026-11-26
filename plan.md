@@ -23,9 +23,9 @@ projects have them (5.10).
 | Goal | Status |
 |---|---|
 | **G1** A minimal working prototype of Kiro's formal analysis: spec, formal check, answer in plain language | **Done.** Conflicts, gaps, ambiguities and scenarios, as in Kiro's formal part. Gaps are asked once for each event, and all 18 planted gaps of `eval8/` were found. Both Kiro blog examples found by the solver (`delete_property`: 3 of 3 in the last runs; a wrong voted fact can still hide it). Ambiguities: about half with one model; with the optional second reader 30 and 32 of 36 (held-out `eval4/`, `eval7/`), at up to one extra question per spec |
-| **G2** Data-driven: any spec, any format | **Done for the prototype.** 63 base specs in two formats (Kiro EARS, OpenSpec), no change to code or prompts; specs of 30 and of 100 requirements went as well as the small ones (E13, E14), and the read step has room for about 140. An OpenSpec *change* is checked against the specs that exist (`--change`, 5.10): on held-out `eval11/`, 36 of 36 planted conflicts and 36 of 36 planted gaps, and nothing else reported about a change (E17). A gap that a removal opens is reported as the change's, 18 of 18 on held-out `eval13/`, and a conflict the specs had before is never blamed on the change (E19). With `--incremental` a change is checked on a saved model of the specs, for a sixth to a seventh of the cost. It found 50 against 54 planted conflicts on held-out `eval14/` (E20) and, after one change to its read prompt, 72 against 72 on held-out `eval15/` (E21). Not tried: a real OpenSpec project |
+| **G2** Data-driven: any spec, any format | **Done for the prototype.** 63 base specs in two formats (Kiro EARS, OpenSpec), no change to code or prompts; specs of 30 and of 100 requirements went as well as the small ones (E13, E14), and the read step has room for about 140. An OpenSpec *change* is checked against the specs that exist (`--change`, 5.10): on held-out `eval11/`, 36 of 36 planted conflicts and 36 of 36 planted gaps, and nothing else reported about a change (E17). A gap that a removal opens is reported as the change's, 18 of 18 on held-out `eval13/`, and a conflict the specs had before is never blamed on the change (E19). With `--incremental` a change is checked on a saved model of the specs, for a sixth to a seventh of the cost. It found 50 against 54 planted conflicts on held-out `eval14/` (E20) and, after one change to its read prompt, 72 against 72 on held-out `eval15/` (E21). The specs of an agent system, whose rules are about whole runs and stand next to examples, have two options (`--whole-run`, `--examples`), and a project too large for one document is checked in parts (steps 44 and 45; 5.2, 5.10): on held-out `eval20/` the conflicts between rules about two calls of one run went from 0 to 12 of 12, and the changes that should give nothing from 17 of 24 with a conflict to none (E29). On a real project of that kind, 33 spec files and 465 scenarios, the contradiction between two rules that makes one change impossible to build is found in 16 of 24 parts, and nothing else among the rules of its four changes in more than 2 (T38) |
 | **G3** Code and documents a person can read | **Done** for the current state. GUIDE.md and README.md were revised after a point-by-point review (2026-11-22): each mechanism is a short list of steps on one real example |
-| **G4** Research for a paper, on the local model | **Well under way.** 20 held-out tests (E5, E7 to E13, E15 to E21, E24 to E28). On the 10 before the questions about outcomes: 61 to 100% of planted conflicts found; with doubtful conflicts set aside, at most 1 false alarm in 18 clean runs, apart from a real conflict we wrote into an `eval9/` clean spec by mistake (2 runs, E15). With those questions (E18, conflicts said in other words): 34 of 36, and 3 of 18 clean runs with a conflict that was not planted. Planted gaps 18 of 18 in each of the three sets E13, E15, E16. On real specs (E23 to E28): what is planted is found in 46 of 52 runs with a copied condition and 10 of 16 with a condition of its own, but of 20 conflicts that nobody planted none is a contradiction (T32). Still small: one main model, one real project |
+| **G4** Research for a paper, on the local model | **Well under way.** 22 held-out tests (E5, E7 to E13, E15 to E21, E24 to E30). On the 10 before the questions about outcomes: 61 to 100% of planted conflicts found; with doubtful conflicts set aside, at most 1 false alarm in 18 clean runs, apart from a real conflict we wrote into an `eval9/` clean spec by mistake (2 runs, E15). With those questions (E18, conflicts said in other words): 34 of 36, and 3 of 18 clean runs with a conflict that was not planted. Planted gaps 18 of 18 in each of the three sets E13, E15, E16. On real specs (E23 to E28): what is planted is found in 46 of 52 runs with a copied condition and 10 of 16 with a condition of its own, but of 20 conflicts that nobody planted none is a contradiction (T32). On the specs of an agent system (E29, E30, T38): what the two options are for is found or set aside as planned, but an example that breaks a rule is marked doubtful in 6 of 10 runs, and of the four reasons why a change of the real project cannot be built, one is found. Still small: one main model, one real OpenSpec project, one real project of an agent system |
 | **G5** Only the formal part | **Done.** An LLM review of the text was built, measured, and switched off |
 
 In short: the pipeline works end to end, finds what Kiro's blog finds, and
@@ -44,15 +44,37 @@ finds most of the ambiguities, at the cost of more questions to the author.
 A finding that holds with only one reading of an ambiguous rule now says so,
 and each ambiguity says what its other reading would change (5.9).
 A change to specs that already exist, as OpenSpec projects have them, can be
-checked too: the report shows what the change breaks (5.10).
+checked too: the report shows what the change breaks (5.10). That also
+works for the specs of an agent system, whose rules are about whole runs,
+and for a project too large to read as one document (5.2, 5.10).
 
 ---
 
 ## 2. What is next
 
 The check of an OpenSpec change is built (step 31, 5.10), and so are the
-questions about pairs of outcomes (step 32, 5.7). Three candidates follow, in
-this order:
+questions about pairs of outcomes (step 32, 5.7). Four candidates follow, in
+this order. The first is new, from the real project of an agent system
+(T38, research.md 4.9):
+
+0. **The specs of an agent system** (G2, G4). What steps 44 and 45 left:
+   - **does what one rule demands make another rule apply?** Nothing asks
+     that. A chain of three rules needs it ("an approved request" means
+     that a request was made), and so does an example that breaks a rule
+     ("succeeds once" means that a call succeeds): such an example is found
+     in 10 of 12 runs and marked doubtful in 6 (E30). Not tried: the
+     question of check 4, asked of a demand and the opposite of a condition;
+   - **the wrong answers to the question about two outcomes**, which with a
+     whole run as the situation is asked of two unrelated happenings too.
+     Every change of the real project got 1 to 3 conflicts from them, and
+     up to 9 more next to the specs of its test harness;
+   - **an attribute of one call** ("the token it was made with") becomes an
+     attribute of the run, and two rules about two calls clash;
+   - **the limit of 40 pairs** is reached in nearly every document of a
+     project in parts, of about 175 pairs each;
+   - **a project in parts** finds no conflict that needs rules of three spec
+     files, and checks its parts one after the other in the solver stage,
+     1 to 10 minutes for a change.
 
 1. **A larger evaluation** (G4): another main model, the second reader on
    more sets, specs we did not write, and results counted per planted
@@ -92,10 +114,11 @@ this order:
 
    A larger invented project with a change that does everything at once is
    done (step 36).
-   All nineteen sets, the three real batches, `real4/` and `real5/` have
-   been read (E28). A new design needs `eval20/`, written first, and a test
+   All twenty-one sets, the three real batches, `real4/` and `real5/` have
+   been read (E30). A new design needs `eval22/`, written first, and a test
    on real changes needs another project: the 8 changes of `real5/` were
-   the last of this one that fit.
+   the last of this one that fit, and the four changes of the project of an
+   agent system have been read too.
 2. **The change check, further** (G2). The gap that a removal opens is done
    (step 33), and so is a way to check a change on a saved model of the
    specs (step 34, `--incremental`). What is left:

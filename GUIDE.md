@@ -61,9 +61,9 @@ we cannot, do we say so clearly?
 The same tool also checks a *change* against specs that already exist, which
 is how OpenSpec projects work. That is part 5.
 
-To give an idea of the size: about 3,700 lines of Python now, half of them comments
+To give an idea of the size: about 4,700 lines of Python now, half of them comments
 and prompts, one local model (Qwen3.8, 27B), and results measured on 297 versions
-of small specs and on 138 changes. The results are in part 6.
+of small specs and on 166 changes. The results are in part 6.
 
 ---
 
@@ -604,6 +604,33 @@ means "not retained" where D4 says "retained", and the conflict between D2 and
 D4 is found. The report says "if the assumed facts hold" and quotes the link,
 so the reader can judge whether "remove" really means that.
 
+The test of step 4 has a blind spot: it does not show the rule's own symbol.
+That matters when a link only moves a rule's demand to another symbol of the
+same kind. In a spec for a dispatcher of parcels, a change adds a second
+limit (`experiments/examples/parcels_twins`):
+
+```
+R1   "... `shipping.max_parcels` is the integer 20"          (= max_parcels 20)
+R6   "... `shipping.max_batch_parcels` is the integer 50"    (= max_batch_parcels 50)
+```
+
+1. **The link step** translated R6 again without its own symbol, and all
+   eight answers moved the demand to the other setting: `(= max_parcels 50)`.
+2. **The test of step 4** showed the text of R6 and a situation in which
+   `max_parcels` is 51. All eight answers said "impossible": the model took
+   the setting it was shown for the one in the requirement. With that link,
+   R1 (20) and R6 (50) would clash.
+3. **So our code asks once more**, when a link is the rule's own demand with
+   one symbol swapped for another. The model sees both symbols with their
+   descriptions, and no requirement: "A: max_batch_parcels = 50 (The
+   configured maximum number of parcels in a batch). B: max_parcels = 51
+   (The configured maximum number of parcels). Can A and B both hold?"
+4. **All eight answers said "possible"**, so the two symbols are two things
+   and the link is left out. A link stays only if most answers say
+   "impossible". That is what "an earlier call of `request_signoff` was
+   approved" and "`request_signoff` is not called" got, a link that a real
+   conflict needs (5.1).
+
 #### Questions about two outcomes
 
 Voted facts come from an open question ("which facts connect these
@@ -656,7 +683,8 @@ we planted (6.2).
 
 The formulas describe one snapshot of the system, with no "before" and no
 "after". This produces findings that are correct as logic and meaningless in
-practice. They come in two shapes.
+practice. They come in two shapes. A third one, an example read as a rule,
+needs an option and is in 5.1.
 
 The first shape is two events in the same instant. Take a newsletter spec:
 
@@ -1020,6 +1048,113 @@ change rewrites, the scenarios are compared one by one. A scenario with the
 same words as before counts as existing, so an old conflict of that scenario
 is not blamed on the change.
 
+### 5.1 Specs about the runs of an agent
+
+Everything so far reads a spec as rules about one moment. The specs of an
+agent system are different in three ways: an assistant calls tools, the
+rules say what a whole run may contain, and next to the rules stand
+examples. The project here is a dispatcher that ships parcels
+(`experiments/sets/eval20/parcels_*`), with three changes; the saved runs
+are `experiments/examples/parcels_cross`, `parcels_clean` and
+`parcels_twins`.
+
+**A run, not a moment** (`--whole-run`). The first change adds R6:
+
+```
+R2   "WHEN a call of `ship_parcel` succeeds in a run with a plan
+      THEN an earlier call of `request_signoff` in the run was approved"
+R6   "WHEN an express request is handled in a run THEN `request_signoff` is not called in the run"
+```
+
+1. The two rules react to two different happenings: a call that succeeds,
+   and a request that is handled. In 3.3 that is the first shape of a
+   finding that is probably not real, two events at the same moment.
+2. Here it is real: both happen in one run, an express request in a run
+   with a plan, in which a parcel is shipped. With `--whole-run` the formal
+   model says that a situation is a run. The mark is not given, and the
+   question about two outcomes (3.2) is asked of such pairs too, with "run"
+   in place of "snapshot".
+3. Asked about "an earlier call was approved" and "the tool is not called",
+   8 of 8 answers say they cannot both hold, and Z3 proves the conflict:
+
+> **1. Conflict (if the assumed facts hold): Express requests and signoff conflict**
+
+Without the option, all 12 such conflicts of the test were found and all 12
+were marked doubtful (6.2).
+
+**An example is one case** (`--examples PATTERN`). The second change adds
+three cases of one request:
+
+```
+R8    "Example: a return is booked"              WHEN dana asks to return parcel k7 AND k7 was delivered
+                                                 THEN `book_return` is called once ...
+R9    "Example: the parcel was never delivered"  WHEN the same request runs while k7 is still in the warehouse
+                                                 THEN `book_return` is never called ...
+R10   "Example: the customer cancels"            WHEN the same request runs and the customer cancels the return
+                                                 THEN `book_return` is called once ...
+```
+
+1. Read as rules for all cases, R9 and R10 clash: a parcel in the warehouse,
+   and the customer cancels. Z3 proves that, and neither example says it.
+   Each is about its own case.
+2. Which scenarios are examples is the author's knowledge, so it is an
+   option: a pattern that is looked for in the name of a scenario and in
+   the lines below it. Here it is `"^Example:"`. Our code marks the rules
+   of those scenarios.
+3. For each example in a conflict, Z3 is asked whether its own case is the
+   whole situation: do its condition and what it demands make the other
+   rules of the conflict apply? R9's case is a parcel in the warehouse.
+   Nothing in it says that the customer cancels, so R10 does not apply in
+   it.
+4. If one example of the conflict fails that test, the conflict is marked:
+
+> **2. Conflict (if the assumed facts hold, doubtful: the situation says more than the example does): Conflicting return rules**
+
+A conflict stays as it is when every example in it passes. That is the case
+for an example in which `ship_parcel` succeeds and nobody signs off, against
+R2: the example itself says that a parcel is shipped. It is also the case
+for two examples with the same condition and opposite outcomes. An example
+and a variant of it ("WHEN the same request runs while ...") are two cases:
+the variant makes the first one apply, but the first does not say what the
+variant adds.
+
+The third change, the second limit, is the example of 3.2: no option, and
+nothing is reported.
+
+### 5.2 A project too large for one document
+
+A change is read together with the specs, in one document, so that old and
+new rules get the same symbols. One document holds about 100 scenarios
+before the translations get worse. A project of an agent system that we
+checked has about 470, in 33 spec files. Such a change is checked in parts,
+and no option is needed:
+
+1. **Our code splits.** One document is written for each spec file that the
+   change does not touch. It holds that file and the files the change
+   touches, with the change applied: 32 or 33 documents of 13 to 49
+   scenarios.
+   Every scenario keeps the label it has in the whole project, so R477 is
+   the same rule in every part.
+2. **The model and Z3 go through each part** as through any document, the
+   parts at the same time. A part that fails twice is left out, and the
+   report names it.
+3. **Our code puts the findings together.** A finding among the rules of the
+   change can show up in every part. It is shown as the strongest part has
+   it, with the number of parts that have it so. A finding with a rule of
+   another spec file shows up only in the part of that file. What is not
+   doubtful comes first.
+
+> **8. Conflict (found in 16 of 24 parts, R479 is a special case of R477): ...**
+
+That count is worth reading. The rules of the change are translated once for
+each part, each time with other symbols, so a conflict that 16 of 24 parts
+find does not hang on the symbols, and one that a single part finds may
+(3.4). With `--against PATTERN` the change is checked only against the spec
+files whose name matches; the report above is against the 24 spec files of
+the application, without the 9 of its test harness. What is lost in parts is
+a conflict that needs rules of three spec files, and the scenarios of part 2,
+which are consequences of one whole document.
+
 ---
 
 ## 6. Where we are
@@ -1349,6 +1484,80 @@ about 9 of the 100 rules of the clean version, none of which we had made
 ambiguous; the main model alone asks about 2. These are two documents, so a
 first sign, not a measurement.
 
+**Specs about the runs of an agent** (5.1). The two options and the second
+question about a link were tested on four projects of ours about an
+assistant that calls tools (`eval20`), written before the code. Each has
+four changes, and each change was run three times with the code before and
+three times with the options. Doubtful conflicts are set aside:
+
+| | Before | With the options |
+|---|---|---|
+| a conflict between two rules that react to two calls of one run: found | 0 of 12 | 12 of 12 |
+| a direct conflict between two rules about one function: found | 12 of 12 | 12 of 12 |
+| a change that only adds examples: runs with a conflict about it | 6 of 12 | 0 of 12 |
+| a change that adds a setting named like an existing one: runs with a conflict about it | 11 of 12 | 0 of 12 |
+
+Each part does one of these things. Read as moments, the 12 conflicts of the
+first row are all found and all doubtful. With the examples read as rules,
+11 of the 12 changes that only add examples have a conflict. Without the
+second question about the link, 9 of the 12 changes that add a setting have
+one. The price is in the questions about two outcomes: with a whole run as
+the situation they are asked of 1,530 pairs where they were asked of 74, and
+a change costs 87 requests to the model where it cost 55.
+
+Then the tool was run on a real project of this kind (5.2), and one of its
+reports showed a case that the set did not have: an existing example and a
+new variant of it, the same case "while" one more thing is true. The first
+rule for examples let that through, because the variant does describe the
+whole situation. Since then every example of a conflict must. That was
+tested on four more projects of ours, whose changes all add examples
+(`eval21`), with every run counted both ways:
+
+| | One example is enough | Every example must |
+|---|---|---|
+| a change that adds two variants of an existing example: runs with a conflict about it | 3 of 12 | 0 of 12 |
+| two examples of one case with opposite outcomes: found | 5 of 12 | 5 of 12 |
+| an example that breaks a rule by what it demands itself: found, and not doubtful | 4 of 12 | 4 of 12 |
+
+The last two rows are limits, and the change did not touch them. Two
+examples of one case are missed in 7 runs because "called once" and "never
+called" became a count and "the call did not succeed", which can hold
+together. An example that breaks a rule is found in 10 of the 12 runs, and 6
+of the 10 are marked doubtful: the example says "`start_repair` succeeds
+once", the model wrote that as a count, and the rule is about "a call of
+`start_repair` succeeds". Nothing in the formulas says that the first means
+the second.
+
+**A real project of an agent system** (5.2). It has 33 spec files with 465
+scenarios, and four open changes that each add a workflow. Its authors say
+that three can be built and one cannot, for four reasons. It is kept outside
+this repository. Each change was checked in 32 or 33 parts, which took 31 to
+55 minutes on two GPUs. This is what the reports say, each change against
+the 24 spec files of the application:
+
+| Change | Conflicts, not doubtful | Among the rules of the change, with the parts that found each | With a rule of another spec file | Doubtful |
+|---|---|---|---|---|
+| cannot be built | 6 | 3: in 16, 2 and 1 of 24 parts | 3 | 18 |
+| can be built | 5 | 2: in 1 of 24 parts each | 3 | 33 |
+| can be built | 3 | 1: in 1 of 23 parts | 2 | 43 |
+| can be built | 1 | 0 | 1 | 16 |
+
+- The conflict found in 16 parts is the first of the authors' four reasons,
+  two rules of the change that contradict each other. The report explains
+  it correctly and says that the system cannot be built as written.
+- The number of conflicts does not tell the four changes apart. The number
+  of parts does: nothing else is found in more than 2.
+- The conflicts with a rule of another spec file are artefacts, those we
+  read. Most rest on one wrong answer to the question about two outcomes,
+  between two rules about two unrelated happenings of one run. The 9 spec
+  files of the project's test harness add up to 9 more, which is what
+  `--against` is for.
+- The other three reasons are not found. One is a chain of three rules
+  across two spec files, which no pair of rules shows (6.4). One needs rules
+  of three spec files, and one is arithmetic over the steps of a run.
+- The doubtful conflicts, 16 to 43 for a change, are all marked for an
+  example. They are in the report, after the others.
+
 ### 6.3 The goals
 
 The project has five goals. This is where each one stands:
@@ -1356,9 +1565,9 @@ The project has five goals. This is where each one stands:
 | Goal | Status |
 |---|---|
 | G1: a minimal working prototype of Kiro's formal analysis | done |
-| G2: it works on any spec, in any format | done for the prototype: 2 formats, 63 small specs, two long ones, and changes checked against existing specs, removals included (part 5). A real OpenSpec project has not been tried |
+| G2: it works on any spec, in any format | done for the prototype: 2 formats, 63 small specs, two long ones, and changes checked against existing specs, removals included (part 5). Specs about the runs of an agent have options of their own, and a project of 479 scenarios is checked in parts (5.1, 5.2) |
 | G3: code and documents a person can read | done for the current state |
-| G4: research for a paper, on the local model | well under way: 20 tests on specs the design had not seen, four of them on changes of a real project. Still one main model and one real project |
+| G4: research for a paper, on the local model | well under way: 22 tests on specs the design had not seen, four of them on changes of a real project. Still one main model, one real OpenSpec project and one real project of an agent system |
 | G5: only the formal part | done: an LLM review of the text was built, measured, and switched off |
 
 ### 6.4 What does not work yet
@@ -1373,6 +1582,10 @@ The project has five goals. This is where each one stands:
 | there is no time | "then", "after" and "until" are not modelled: the logic is one snapshot |
 | real specs are harder than the ones we wrote | their rules demand two or three things each, and the symbols that the read step lists do not fit them: one rule in six to one in four gets no agreed translation or one that demands nothing, the more the longer the document. A whole project is too large to check at once (6.2) |
 | on real specs, most conflicts that nobody planted are not contradictions | of 20 that we read, 8 are in a situation that cannot happen, 4 are other artefacts, and 7 set a general rule against its own exception (6.2). The question about two conditions marks one conflict in six to nine; the rest are reported as they are |
+| with a whole run as the situation, the questions about two outcomes err more | they are asked of two rules about two unrelated happenings as well, and a wrong answer gives a conflict between the two: 1 to 3 for each change of the real project of 6.2, each found in one part |
+| an example that breaks a rule is often marked doubtful | "`start_repair` succeeds once" became a count, and the rule is about "a call of `start_repair` succeeds": the example does not make the rule apply, by the formulas (6 of 10, 6.2) |
+| a contradiction that is a chain of three rules is not found | a new workflow takes a page down in a plan; an existing rule says that what goes down in a plan was approved; the change says that this workflow asks nobody. No two of the three clash by themselves. It is explained below the table |
+| an attribute of one call becomes an attribute of the run | "the token the call was made with": two rules about two different calls then clash |
 | the question about two conditions also doubts real conflicts | in the order spec of part 2, a run made today marks R1 against R5 as doubtful: the model holds that a canceled order cannot be a submitted one. The Kiro blog reports that conflict. Two flags of one command are called impossible too (6.2) |
 | a voted rule can say less than its words | "display success message with archived name and list of updated specs" is kept as "the success message is displayed" (3.1). And a split that the vote settles is not asked about any more: 5 of the 36 planted ambiguities of `eval18` were voted on, and 1 was still found |
 | the cheaper way to check a change reads a new rule with little around it | shown only the saved symbols, the model sometimes ties a new rule to a saved event that the rule does not name. That cost 4 of 54 planted conflicts on `eval14`. On `eval15` it cost none, but one such rule was ambiguous in 3 of 3 runs (6.2). Either way, a project can have about 140 scenarios at most |
@@ -1403,6 +1616,30 @@ about the listing.
 The link step of 3.2 does not help either: asked to say "delete the listing"
 with the symbols of the other rules, the model has only the number of years to
 work with, and it answers that this cannot be expressed.
+
+**A chain of three rules, on the real project.** One reason why its fourth
+change cannot be built is this, in our words:
+
+```
+the change    a run of the new workflow takes pages down, in a plan
+existing      WHEN a page goes down in a run with a plan THEN an earlier request for approval was approved
+the change    WHEN approval is requested THEN the run is not one of the new workflow
+```
+
+1. Z3 looks for two or three rules that cannot all be obeyed in a situation
+   in which all of them apply. The third rule applies only in a run in
+   which approval is requested.
+2. In a run of the new workflow in which a page goes down, the first two
+   apply and the third does not. The three contradict each other only
+   through one more step: an approved request is a request that was made.
+3. No rule says that, and the model is not asked. The question about two
+   outcomes (3.2) compares what two rules demand, not what one rule demands
+   with the condition of another.
+
+So nothing is reported. In a trial the conflict was found in one run of two,
+through an example of the change in which pages go down and nobody is
+asked, and it was marked doubtful: the example does not say that its run
+has a plan.
 
 ### 6.5 What we tried and dropped
 
@@ -1459,16 +1696,23 @@ The full list is in research.md, section 5.
 
 ### 6.6 What is next
 
-1. **Real specs**: the weak spot that the last test showed, a mode that is
-   read as an event and makes a real conflict doubtful; and the wrong facts
-   that the questions about two outcomes add. Then a larger evaluation,
-   with another main model and another real project.
-2. **The change check, further**: whether the cheaper way becomes the
-   default, what the model is shown when it reads a new rule, and projects
-   too large for one read answer.
-3. **What is left of the choice of symbols**: retention periods that become
-   only a number, and a mark for the conflicts that exist only because the
-   logic is one snapshot.
+1. **The specs of an agent system**: what the real project showed. A
+   question that asks whether what one rule demands makes another rule
+   apply ("an approved request" and "a request was made"; "succeeds once"
+   and "a call succeeds"), which the chain of three rules and the examples
+   that break a rule both need. The wrong answers to the question about
+   two outcomes between unrelated happenings. An attribute that belongs to
+   one call.
+2. **Real specs**: a mode that is read as an event and makes a real conflict
+   doubtful. Then a larger evaluation, with another main model and another
+   real project.
+3. **The change check, further**: whether the cheaper way becomes the
+   default, what the model is shown when it reads a new rule, and a
+   conflict that needs rules of three spec files of a project in parts.
+4. **What is left of the choice of symbols**: retention periods that become
+   only a number, "called once" and "never called" as two symbols, and a
+   mark for the conflicts that exist only because the logic is one
+   snapshot.
 
 ---
 
@@ -1509,12 +1753,12 @@ that section 2 described:
 |---|---|---|
 | `speccheck/llm.py` | 80 | one function, `ask`: a prompt goes in, N answers come out as JSON |
 | `speccheck/logic.py` | 260 | `model` and `impossible`, the two questions for Z3 (1.2), and `same_meaning` |
-| `speccheck/checks.py` | 750 | `_search` forces rules to apply (2.3); `find_conflicts` runs the two searches (3.2); `_try_other_readings` (3.1); then `find_gaps` and `find_scenarios` (2.4) |
-| `speccheck/formalize.py` | 820 | the seven steps of 3.5. The prompts at the top show what the LLM is asked. With `base`, `formalize` adds new rules to a formal model that exists (part 5) |
-| `speccheck/probe.py` | 600 | the questions about concrete situations (3.1 and 3.2), and `outcomes`, the questions about two outcomes (3.2) |
-| `speccheck/explain.py` | 380 | `evidence` writes the *Proven* lines; the wording prompt is above it |
-| `speccheck/cli.py` | 200 | the three stages, called one after the other |
-| `speccheck/change.py` | 440 | part 5: `merge` applies a change to the specs and labels the scenarios; `after_model` sets the removed rules apart; `about_change` selects the findings |
+| `speccheck/checks.py` | 870 | `_search` forces rules to apply (2.3); `find_conflicts` runs the two searches (3.2); `_try_other_readings` (3.1); then `find_gaps` and `find_scenarios` (2.4); `_mark_examples` decides whether an example describes the situation of a conflict (5.1) |
+| `speccheck/formalize.py` | 1080 | the seven steps of 3.5. The prompts at the top show what the LLM is asked. With `base`, `formalize` adds new rules to a formal model that exists (part 5) |
+| `speccheck/probe.py` | 870 | the questions about concrete situations (3.1 and 3.2), and `outcomes`, the questions about two outcomes (3.2); `_renamed`, the second question about a link (3.2) |
+| `speccheck/explain.py` | 420 | `evidence` writes the *Proven* lines; the wording prompt is above it |
+| `speccheck/cli.py` | 340 | the three stages, called one after the other |
+| `speccheck/change.py` | 600 | part 5: `merge` applies a change to the specs and labels the scenarios; `after_model` sets the removed rules apart; `about_change` selects the findings; `parts` and `combine_parts` for a project too large for one document (5.2) |
 
 About half of each file is comments, docstrings and prompts.
 
@@ -1524,13 +1768,14 @@ The folders:
 speccheck/          the tool (the 8 files above; refine.py is the review that is switched off)
 specs/              3 small specs the prompts were developed on, with their saved output,
                     and auth_change, the example of part 5
-tests/              96 tests that need no LLM
+tests/              117 tests that need no LLM
 experiments/
   sets/             the 11 evaluation sets, eval to eval10 and eval12 (297 spec versions), two long specs,
                     eval16 to eval18 (eighteen specs written like real ones), real1 to real3 (48 changes of a real project),
                     real4 and real5 (21 more real changes, each also with a planted conflict),
                     eval19 (six specs with conditions that exclude each other),
-                    and for the change check eval11, eval13, eval14, eval15, mixed (one larger project)
+                    and for the change check eval11, eval13, eval14, eval15, mixed (one larger project),
+                    eval20 and eval21 (eight projects about an assistant that calls tools)
                     and change_dev (old specs as projects)
   results/          every experiment: the raw data (.json) and its tables (.md)
   examples/         saved runs that the documents quote
@@ -1557,4 +1802,6 @@ experiments/
 | doubtful | a proven conflict or gap that looks like an artefact | two events at once |
 | symbol set | the symbols of one formalization | `--symbol-sets 3` |
 | change | in an OpenSpec project, a folder with what is added, modified or removed in the specs | `specs/auth_change/openspec/changes/admin-never-locked` |
+| example | a scenario that describes one concrete case, not a rule for all cases; named by a pattern | "Example: the parcel was never delivered" (5.1) |
+| part | one document of a project that is too large for one: a spec file, and the files of the change | "found in 16 of 24 parts" (5.2) |
 | formal model | one `formal.json`: symbols, assumed facts and rules | `specs/order/formal.json` |

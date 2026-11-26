@@ -1,0 +1,29 @@
+[
+  {
+    "type": "gap",
+    "event": "ship_request_received",
+    "when": {
+      "configuration_checked": false,
+      "find_parcel_succeeded": false,
+      "postcode_missing": false,
+      "requester_is_dana": false,
+      "ship_parcel_succeeded": false,
+      "ship_request_received": true,
+      "signoff_refused": false
+    },
+    "about_change": false
+  },
+  {
+    "type": "gap",
+    "when": {
+      "configuration_checked": false,
+      "find_parcel_succeeded": false,
+      "requester_is_dana": false,
+      "ship_parcel_succeeded": false,
+      "ship_request_received": false,
+      "signoff_refused": false
+    },
+    "quiet": true,
+    "about_change": false
+  }
+]

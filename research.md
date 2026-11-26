@@ -43,6 +43,8 @@ its entries. How each mechanism works is in [plan.md](plan.md), section 5.
   | `real4/` | 13 more changes of that project, each creating a new spec; each also with one scenario of ours added | 1 conflict in the planted version | E27 |
   | `eval19/` | 6 specs of 8 scenarios whose clean versions hold two scenarios with conditions that exclude each other by their meaning | 3 conflicts (1 direct, 2 between rules with different conditions), 1 gap | E28 |
   | `real5/` | the last 8 unused changes of that project that create a new spec; each also with one scenario of ours added, under a condition of its own | 1 conflict in the planted version | E28 |
+  | `eval20/` | 16 changes on 4 OpenSpec projects about an assistant that calls tools: rules about whole runs, settings, and scenarios that are examples (3.18) | 8 conflicts: 4 between rules that react to two calls of one run, 4 direct; 8 changes that should give nothing | E29 |
+  | `eval21/` | 12 changes on 4 more projects of that kind; every change adds examples (3.18) | 8 conflicts: 4 between two examples of one case, 4 between an example and a rule; 4 changes that should give nothing | E30 |
   | `size/` | 4 versions of one spec of 30 requirements | 2 conflicts, 1 gap | E13 |
   | `size2/` | 4 versions of one spec of 100 requirements | 2 conflicts, 1 gap | E14 (not held-out: no design was tuned on it) |
 
@@ -553,6 +555,45 @@ conflicts in our own sets has it. A rule that always applies is left out,
 so "never backorder" against "backorder when stock is missing" keeps its
 title.
 
+### 3.18 The specs of an agent system: a whole run, examples, twin names, a project in parts (T36 to T38, E29, E30)
+
+The specs that the tool is meant for say what a run of an agent that calls
+tools may contain. A trial on such a project (33 spec files, 465 scenarios,
+four open changes, one of which its authors say cannot be built; T36) showed
+what stood in the way, and steps 44 and 45 are the answers:
+
+- **A situation can be a whole run** (`--whole-run`). "WHEN a call of
+  `ship_parcel` succeeds in a run with a plan THEN an earlier call of
+  `request_signoff` was approved" and "WHEN an express request is handled in
+  a run THEN `request_signoff` is not called" react to two happenings of one
+  run. Read as moments their conflict is doubtful: on held-out `eval20/` all
+  12 planted ones were found and all 12 marked. With the option, 12 of 12
+  are reported as they are (E29).
+- **An example is one case** (`--examples`). Scenarios that describe one
+  request under different fixtures clash when read as rules. A conflict
+  with examples counts as it is only when every example in it makes the
+  other rules apply by its own case, which Z3 decides. Changes that only
+  add examples had a conflict in 6 of 12 runs before and in none after
+  (`eval20/`); read as rules 11 of 12 such changes of `eval21/` have one,
+  with the mark none (E30).
+- **A link that only renames is asked about with both symbols.** The link
+  step restated "`shipping.max_batch_parcels` is 50" as a demand on
+  `shipping.max_parcels`, and the test of a link, which does not show the
+  rule's own symbol, confirmed it. A second question shows both. Changes
+  that add such a setting had a conflict in 11 of 12 runs before and in
+  none after, and the question confirmed 17 of the 18 links on the changes
+  whose conflict needs one.
+- **A project too large for one document is checked in parts**: one
+  document for each spec file that the change does not touch, with the
+  files it touches, and one report. A finding among the rules of the change
+  says in how many parts it was found.
+
+On the project itself, against the 24 spec files of its application (T38):
+the contradiction between two rules that the authors name is found in 16 of
+24 parts, and no conflict among the rules of the three changes that can be
+built is found in more than one part. What it costs and what it misses is in
+4.9.
+
 ---
 
 ## 4. What does not work yet
@@ -833,6 +874,42 @@ What the first two batches showed, before the vote:
 - **A gap is hard to read at this size**: it lists every other event as
   FALSE, 20 to 40 lines.
 
+### 4.9 What the specs of an agent system show (T36 to T38, E29, E30)
+
+One project of that kind, and two sets of our own.
+
+- **One of the four reasons why a change cannot be built is found**: the
+  contradiction between two of its rules. The second is a chain of three
+  rules across two spec files: the new workflow takes a page down in a
+  plan, an existing rule then demands an approved request, and the change
+  says that such a run asks nobody. No two of the three clash by
+  themselves, and nothing says that an approved request is a request. It
+  was found in one trial run of two, through an example, and marked
+  doubtful (T37). The third needs rules of three spec files, the fourth
+  arithmetic over the steps of a run.
+- **An example that breaks a rule by its own words is found, and marked
+  doubtful more often than not**: 10 of 12 runs on `eval21/`, 6 of the 10
+  with the mark (E30). "Succeeds once" became a count, the rule is about "a
+  call succeeds", and nothing in the formulas connects the two.
+- **Two examples of one case with opposite outcomes are found in 5 of 12
+  runs** (E30): "called once" and "never called" became a count and "the
+  call did not succeed", which can hold together.
+- **The questions about two outcomes cost more and err more when a
+  situation is a run.** They are asked of pairs of two happenings as well:
+  1,530 pairs against 74 on `eval20/`, and a change costs 87 requests where
+  it cost 55. In a document of the project, of about 30 rules, the limit of
+  40 pairs is reached in 93 of 98 runs. On the project, every conflict with
+  a rule of another spec file that we read is an artefact, most of them one
+  wrong fact of this kind between two unrelated happenings.
+- **An attribute of one call becomes an attribute of the run**: "the token
+  it was made with", "the agent that made it", "the file it is defined in".
+  Two rules about two different calls then clash.
+- **The doubtful conflicts are many**: 16 to 45 for a change of the project,
+  every one marked for an example. They are in the report, after the
+  others.
+- 4 of 131 parts could not be formalized, all specs of the project's test
+  harness: the read step returned the rules of the change alone.
+
 ## 5. What we tried and dropped
 
 | Tried | What happened | Entry |
@@ -886,6 +963,8 @@ the prompts, so it can be scored again without a GPU.
 | E26 | `eval18/` and a third real batch, held-out: the translations of a rule vote when they differ only in their symbols (T30); before and after | 2 x 90 and 2 x 32 runs | real rules of no use to the checks 54% and 62% before, 28% and 36% after; on `eval18/` 18 of 18 planted conflicts, 18 of 18 gaps and 11 of 36 ambiguities both ways (3.14) |
 | E27 | `real4/`, held-out: 13 real changes that create a new spec, each also with a planted conflict; a second read for the rules that got no symbol (T31); before and after | 2 x 52 runs | rules of no use 17% and 16% before, 16% and 14% after; planted conflicts found 24 of 26 before, 22 of 26 after (3.15) |
 | E28 | `eval19/` and `real5/`, held-out: the model is asked whether the conditions of two rules that clash can hold together (T33); each run scored with and without | 90 and 32 runs | conflicts that nobody planted 97 without, 19 with (`eval19/`), 63 and 56 (`real5/`); planted conflicts 48 of 54 and 6 of 16 both ways (3.16) |
+| E29 | `eval20/`, held-out: specs about the runs of an agent: a whole run as the situation, the mark for examples, a second question about links that only rename (T36, T37); before and after, and `eval12/` again | 2 x 48 and 108 runs | with doubtful conflicts set aside: conflicts between rules about two calls of one run 0 of 12 before, 12 of 12 after; changes that should give nothing, with a conflict about them, 17 of 24 before and 0 of 24 after; a change costs 87 requests against 55 (3.18) |
+| E30 | `eval21/`, held-out: every example of a conflict must describe its situation (T38); each run scored both ways | 36 runs | changes that only add cases, with a conflict about them: 3 of 12 with one example being enough, 0 of 12 with every example; the planted conflicts 5 and 4 of 12 either way (3.18, 4.9) |
 
 The trials (T1 to T26) were run on development data between these
 experiments. Among the last: T17 compared temperatures 0.3, 0.5 and 0.7 (3.1);
@@ -906,7 +985,9 @@ addition (2.4, 4.5). T26 ran the second model on the spec of 100 requirements
 (4.4). T27 looked at the saved translations of the real project, to see why
 they disagree (4.8). T28 tried the two remedies of 2.4 on the first real
 batch and on our own long documents. T29 counted what stops a run on such
-specs, and repaired the symbol list (2.4).
+specs, and repaired the symbol list (2.4). T36 and T37 were two trials on
+the specs of an agent system, before and with step 44, and T38 the tool's
+own runs on that project, each change in 32 or 33 parts (3.18, 4.9).
 research_log.md
 has them in order, together with the bugs that
 changed results before they were fixed (L1 to L10) and the open threats to

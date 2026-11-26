@@ -1,0 +1,160 @@
+[
+  {
+    "type": "conflict",
+    "rules": [
+      "R2",
+      "R6"
+    ],
+    "facts": [
+      "F5"
+    ],
+    "when": {
+      "express_request_handled": true,
+      "run_has_plan": true,
+      "ship_parcel_succeeded": true
+    },
+    "about_change": true,
+    "situation": "An express request is handled in the run, the current run has a plan, and a call to ship_parcel has succeeded.",
+    "title": "Express requests and signoff conflict",
+    "explanation": "The requirements state that if an express request is handled, no signoff request is made (R6), but if a parcel ships successfully in a run with a plan, a signoff must have been approved earlier (R2). In the situation described, an express request is handled in a run with a plan where a parcel ships successfully, which creates a contradiction because the successful shipment requires a prior signoff that the express handling forbids. This conflict depends on the assumption that the successful shipment in a planned run strictly requires a prior approved signoff as defined by R2.",
+    "option_a": "Keeping the requirements as written means that it is impossible to successfully ship a parcel in a run with a plan if that run also handles an express request.",
+    "option_b": "Modify R6 to state that when an express request is handled, request_signoff is not called only if no parcel shipping call succeeds in the run, or modify R2 to exclude runs where express requests are handled from the signoff requirement."
+  },
+  {
+    "type": "conflict",
+    "rules": [
+      "R4",
+      "R7"
+    ],
+    "facts": [
+      "F8"
+    ],
+    "when": {
+      "address_complete": true,
+      "express_request_received": true,
+      "parcel_id": "k7",
+      "request_parcel_ids": "k1_k2_k3",
+      "requester_is_dana": true,
+      "ship_request_received": true
+    },
+    "beyond_example": [
+      "R4",
+      "R7"
+    ],
+    "about_change": true,
+    "situation": "The address of the parcel is complete, an express request is received, the identifier of the parcel in the request is k7, the set of parcel identifiers in the express request is k1, k2, and k3, the requester is dana, and a request to ship a parcel is received.",
+    "title": "Conflicting shipping instructions",
+    "explanation": "The requirements state that when Dana asks to ship parcel k7 with a complete address, the system must call the shipping function once for that parcel. However, when Dana sends an express request for parcels k1, k2, and k3, the system must make the shipping function succeed three times. This conflict appears in the situation where Dana sends an express request for k1, k2, and k3, and the address for k7 is complete. This finding may be a false alarm because the requirements are examples of specific cases, and the situation described includes details that do not necessarily trigger both requirements simultaneously.",
+    "option_a": "Keeping the requirements as written means that if Dana sends an express request for k1, k2, and k3 while the address for k7 is complete, the system faces a contradiction between calling the shipping function once for k7 and making it succeed three times for the group.",
+    "option_b": "Modify R4 to specify that it applies only when the request is not part of an express batch, or modify R7 to clarify how individual parcel addresses are handled within an express request to ensure the shipping function is called the correct number of times."
+  },
+  {
+    "type": "conflict",
+    "rules": [
+      "R7",
+      "R9"
+    ],
+    "facts": [
+      "F9"
+    ],
+    "when": {
+      "express_request_received": true,
+      "find_parcel_succeeded": true,
+      "request_parcel_ids": "k1_k2_k3",
+      "requester_is_dana": true
+    },
+    "beyond_example": [
+      "R7"
+    ],
+    "about_change": true,
+    "situation": "An express request is received, a call to find_parcel has succeeded, the set of parcel identifiers in the express request is k1, k2, and k3, and the requester is dana.",
+    "title": "Conflict between express shipment and state stability",
+    "explanation": "The requirements state that when dana sends an express request for parcels k1, k2, and k3, the shipment must succeed (R7), and that when a parcel is found, its state must not change during that call (R9). This conflict appears in the situation where dana sends an express request for those specific parcels and a parcel lookup succeeds. This finding depends on the unstated assumption that a successful parcel shipment necessarily involves a change in the parcel's state. However, because R7 describes a specific example case rather than a general rule, and the situation described does not explicitly force the other requirements to apply in a way that creates a logical impossibility, this conflict may be a false alarm.",
+    "option_a": "Keep the requirements as written, accepting that the specific scenario in R7 might not trigger the state-change prohibition in R9 if the shipment process is distinct from the find_parcel call.",
+    "option_b": "Clarify R9 to specify that the state prohibition applies only to the find_parcel call itself and not to subsequent actions like shipping, or clarify R7 to ensure the shipment process does not rely on state changes that would violate R9."
+  },
+  {
+    "type": "gap",
+    "event": "express_request_received",
+    "when": {
+      "configuration_checked": false,
+      "express_request_handled": false,
+      "express_request_received": true,
+      "find_parcel_succeeded": false,
+      "request_signoff_refused": false,
+      "requester_is_dana": false,
+      "ship_parcel_succeeded": false,
+      "ship_request_received": false
+    },
+    "about_change": true,
+    "situation": "The system is not checking the configuration, no express request is being handled in the run, an express request is received, no call to find_parcel has succeeded, no call to request_signoff returned a refusal, the requester is not dana, no call to ship_parcel has succeeded, and no request to ship a parcel is received.",
+    "title": "Unspecified behavior for received express request",
+    "explanation": "The requirements do not specify what the system must do when an express request is received but is not yet being handled in a run. This gap appears in the situation where an express request is received, but no express request is handled, and no other specific actions like shipping or signoff have occurred.",
+    "option_a": "Keeping the requirements as written means the system's behavior for a received express request that is not yet handled is undefined and may vary.",
+    "option_b": "Add a requirement stating that when an express request is received, the system must immediately begin handling it in a run or provide a specific acknowledgment response."
+  },
+  {
+    "type": "ambiguity",
+    "rule": "R5",
+    "status": "ambiguous",
+    "found_by": "questions",
+    "split": [
+      2,
+      1,
+      1,
+      1
+    ],
+    "readings": [
+      "If a shipping request is received for parcel k7 where the address is complete but lacks a postcode, the system must not call ship_parcel and the response must request the missing postcode. [in logic: (and ship_request_received (= parcel_id k7) address_complete (not address_has_postcode)) => (and (not ship_parcel_called_after_refusal) answer_asks_for_postcode)]",
+      "If a shipping request is received for parcel k7 where the address lacks a postcode, the system must not call ship_parcel and the response must request the missing postcode. [in logic: (and ship_request_received (= parcel_id k7) (not address_has_postcode)) => (and (not ship_parcel_called_after_refusal) answer_asks_for_postcode)]"
+    ],
+    "differs_when": {
+      "address_complete": false,
+      "address_has_postcode": false,
+      "answer_asks_for_postcode": true,
+      "parcel_id": "k7",
+      "ship_parcel_called_after_refusal": true,
+      "ship_request_received": true
+    },
+    "answers": {
+      "translation": 0,
+      "other": 8,
+      "either": 0
+    },
+    "other_reading": {
+      "removes": [],
+      "adds": [],
+      "covers_gaps": 0
+    },
+    "about_change": false
+  },
+  {
+    "type": "gap",
+    "event": "ship_request_received",
+    "when": {
+      "configuration_checked": false,
+      "express_request_handled": false,
+      "find_parcel_succeeded": false,
+      "parcel_id": "other",
+      "request_signoff_refused": false,
+      "requester_is_dana": false,
+      "ship_parcel_succeeded": false,
+      "ship_request_received": true
+    },
+    "about_change": false
+  },
+  {
+    "type": "gap",
+    "when": {
+      "configuration_checked": false,
+      "express_request_handled": false,
+      "express_request_received": false,
+      "find_parcel_succeeded": false,
+      "request_signoff_refused": false,
+      "ship_parcel_succeeded": false,
+      "ship_request_received": false
+    },
+    "quiet": true,
+    "about_change": false
+  }
+]

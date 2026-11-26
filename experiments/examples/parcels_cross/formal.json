@@ -1,0 +1,998 @@
+{
+  "situation": "run",
+  "reread": {
+    "rules": [
+      "R7"
+    ],
+    "symbols": [
+      "request_parcel_ids"
+    ]
+  },
+  "symbols": [
+    {
+      "name": "configuration_checked",
+      "sort": "Bool",
+      "values": [],
+      "description": "The system is checking the configuration",
+      "event": true
+    },
+    {
+      "name": "shipping_max_parcels",
+      "sort": "Int",
+      "values": [],
+      "description": "The configured maximum number of parcels",
+      "event": false
+    },
+    {
+      "name": "ship_parcel_succeeded",
+      "sort": "Bool",
+      "values": [],
+      "description": "A call to ship_parcel has succeeded",
+      "event": true
+    },
+    {
+      "name": "run_has_plan",
+      "sort": "Bool",
+      "values": [],
+      "description": "The current run has a plan",
+      "event": false
+    },
+    {
+      "name": "signoff_approved_earlier",
+      "sort": "Bool",
+      "values": [],
+      "description": "An earlier call to request_signoff in the run was approved",
+      "event": false
+    },
+    {
+      "name": "request_signoff_refused",
+      "sort": "Bool",
+      "values": [],
+      "description": "A call to request_signoff returned a refusal",
+      "event": true
+    },
+    {
+      "name": "ship_parcel_called_after_refusal",
+      "sort": "Bool",
+      "values": [],
+      "description": "A call to ship_parcel is made after the refusal in the run",
+      "event": false
+    },
+    {
+      "name": "ship_request_received",
+      "sort": "Bool",
+      "values": [],
+      "description": "A request to ship a parcel is received",
+      "event": true
+    },
+    {
+      "name": "requester_is_dana",
+      "sort": "Bool",
+      "values": [],
+      "description": "The requester is dana",
+      "event": false
+    },
+    {
+      "name": "parcel_id",
+      "sort": "Enum",
+      "values": [
+        "k7",
+        "other"
+      ],
+      "description": "The identifier of the parcel in the request",
+      "event": false
+    },
+    {
+      "name": "address_complete",
+      "sort": "Bool",
+      "values": [],
+      "description": "The address of the parcel is complete",
+      "event": false
+    },
+    {
+      "name": "address_has_postcode",
+      "sort": "Bool",
+      "values": [],
+      "description": "The address of the parcel has a postcode",
+      "event": false
+    },
+    {
+      "name": "ship_parcel_called_count",
+      "sort": "Int",
+      "values": [],
+      "description": "The number of times ship_parcel is called for the parcel",
+      "event": false
+    },
+    {
+      "name": "answer_names_carrier",
+      "sort": "Bool",
+      "values": [],
+      "description": "The answer names the carrier",
+      "event": false
+    },
+    {
+      "name": "answer_asks_for_postcode",
+      "sort": "Bool",
+      "values": [],
+      "description": "The answer asks for the postcode",
+      "event": false
+    },
+    {
+      "name": "express_request_handled",
+      "sort": "Bool",
+      "values": [],
+      "description": "An express request is handled in the run",
+      "event": true
+    },
+    {
+      "name": "request_signoff_called",
+      "sort": "Bool",
+      "values": [],
+      "description": "request_signoff is called in the run",
+      "event": false
+    },
+    {
+      "name": "express_request_received",
+      "sort": "Bool",
+      "values": [],
+      "description": "An express request is received",
+      "event": true
+    },
+    {
+      "name": "plan_written_count",
+      "sort": "Int",
+      "values": [],
+      "description": "The number of times the plan is written",
+      "event": false
+    },
+    {
+      "name": "ship_parcel_success_count",
+      "sort": "Int",
+      "values": [],
+      "description": "The number of times ship_parcel succeeds",
+      "event": false
+    },
+    {
+      "name": "audit_entry_written",
+      "sort": "Bool",
+      "values": [],
+      "description": "The run writes an audit entry",
+      "event": false
+    },
+    {
+      "name": "audit_entry_names_parcel",
+      "sort": "Bool",
+      "values": [],
+      "description": "The audit entry names the parcel",
+      "event": false
+    },
+    {
+      "name": "find_parcel_succeeded",
+      "sort": "Bool",
+      "values": [],
+      "description": "A call to find_parcel has succeeded",
+      "event": true
+    },
+    {
+      "name": "parcel_state_changed",
+      "sort": "Bool",
+      "values": [],
+      "description": "A parcel changes its state in the call",
+      "event": false
+    },
+    {
+      "name": "request_parcel_ids",
+      "sort": "Enum",
+      "values": [
+        "k1_k2_k3",
+        "request_parcel_ids_other"
+      ],
+      "description": "The set of parcel identifiers in the express request",
+      "event": false
+    }
+  ],
+  "background": [
+    {
+      "id": "F1",
+      "text": "The number of times the plan is written is never negative.",
+      "formula": "(>= plan_written_count 0)",
+      "support": "6/8"
+    },
+    {
+      "id": "F2",
+      "text": "The number of times ship_parcel is called for the parcel is never negative.",
+      "formula": "(>= ship_parcel_called_count 0)",
+      "support": "6/8"
+    },
+    {
+      "id": "F3",
+      "text": "The number of times ship_parcel succeeds is never negative.",
+      "formula": "(>= ship_parcel_success_count 0)",
+      "support": "6/8"
+    },
+    {
+      "id": "F4",
+      "text": "If an address has a postcode, then the address is complete.",
+      "formula": "(=> address_has_postcode address_complete)",
+      "support": "6/8"
+    },
+    {
+      "id": "F5",
+      "text": "What R2 demands, in the terms of the other requirements: If a parcel shipping call succeeds during a run that has a plan, it implies that a request for signoff was previously made and approved within that run.",
+      "formula": "(=> (and (and ship_parcel_succeeded run_has_plan) signoff_approved_earlier) request_signoff_called)",
+      "support": "8/8",
+      "restates": "R2",
+      "antecedent": "(and ship_parcel_succeeded run_has_plan)",
+      "consequent": "request_signoff_called",
+      "check": {
+        "when": {
+          "request_signoff_called": false,
+          "run_has_plan": true,
+          "ship_parcel_succeeded": true
+        },
+        "renames": {
+          "own": {
+            "signoff_approved_earlier": true
+          },
+          "other": {
+            "request_signoff_called": false
+          },
+          "answers": {
+            "possible": 0,
+            "impossible": 8,
+            "unclear": 0
+          }
+        },
+        "answers": {
+          "possible": 0,
+          "impossible": 8,
+          "unclear": 0
+        },
+        "verdict": "confirmed"
+      }
+    },
+    {
+      "id": "F6",
+      "text": "What R6 demands, in the terms of the other requirements: In any execution where an express request is processed, no signoff request should be initiated.",
+      "formula": "(=> (and express_request_handled (not request_signoff_called)) (not signoff_approved_earlier))",
+      "support": "5/8",
+      "restates": "R6",
+      "antecedent": "express_request_handled",
+      "consequent": "(not signoff_approved_earlier)",
+      "check": {
+        "when": {
+          "express_request_handled": true,
+          "signoff_approved_earlier": true
+        },
+        "renames": {
+          "own": {
+            "request_signoff_called": false
+          },
+          "other": {
+            "signoff_approved_earlier": true
+          },
+          "answers": {
+            "possible": 0,
+            "impossible": 8,
+            "unclear": 0
+          }
+        },
+        "answers": {
+          "possible": 0,
+          "impossible": 8,
+          "unclear": 0
+        },
+        "verdict": "confirmed"
+      }
+    },
+    {
+      "id": "F7",
+      "text": "What R2 and R6 demand cannot both be the case: If a signoff request was approved earlier, the request_signoff function must have been called in the run.",
+      "formula": "(not (and signoff_approved_earlier (not request_signoff_called)))",
+      "support": "8/8",
+      "between": [
+        "R2",
+        "R6"
+      ]
+    },
+    {
+      "id": "F8",
+      "text": "What R4 and R7 demand cannot both be the case: A function cannot succeed three times if it is called only once.",
+      "formula": "(not (and (and (= ship_parcel_called_count 1) answer_names_carrier) (and (= plan_written_count 1) (= ship_parcel_success_count 3))))",
+      "support": "8/8",
+      "between": [
+        "R4",
+        "R7"
+      ]
+    },
+    {
+      "id": "F9",
+      "text": "What R7 and R9 demand cannot both be the case: A successful parcel shipment necessarily involves a change in the parcel's state.",
+      "formula": "(not (and (and (= plan_written_count 1) (= ship_parcel_success_count 3)) (not parcel_state_changed)))",
+      "support": "8/8",
+      "between": [
+        "R7",
+        "R9"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "R1",
+      "text": "WHEN the configuration is checked THEN shipping.max_parcels is the integer 20",
+      "trigger": "configuration_checked",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "Whenever the system checks the configuration, the configured maximum number of parcels must be equal to 20.",
+      "antecedent": "configuration_checked",
+      "consequent": "(= shipping_max_parcels 20)",
+      "probes": [
+        {
+          "reading": "The configuration check is only performed if the maximum number of parcels is already set to 20.",
+          "antecedent": "(= shipping_max_parcels 20)",
+          "consequent": "configuration_checked",
+          "situations": [
+            {
+              "when": {
+                "configuration_checked": false,
+                "shipping_max_parcels": 20
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "configuration_checked": true,
+                "shipping_max_parcels": 21
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R2",
+      "text": "WHEN a call of ship_parcel succeeds in a run with a plan THEN an earlier call of request_signoff in the run was approved",
+      "trigger": "ship_parcel_succeeded",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "In any run that has a plan, if a call to ship_parcel succeeds, it must be the case that an earlier call to request_signoff in that run was approved.",
+      "antecedent": "(and run_has_plan ship_parcel_succeeded)",
+      "consequent": "signoff_approved_earlier",
+      "probes": []
+    },
+    {
+      "id": "R3",
+      "text": "WHEN a call of request_signoff returns a refusal THEN no call of ship_parcel is made after it in the run",
+      "trigger": "request_signoff_refused",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a request for signoff is refused, then no subsequent call to ship a parcel should occur within the same run.",
+      "antecedent": "request_signoff_refused",
+      "consequent": "(not ship_parcel_called_after_refusal)",
+      "probes": []
+    },
+    {
+      "id": "R4",
+      "text": "WHEN dana asks to ship parcel k7 AND the address of k7 is complete THEN ship_parcel is called once for k7 AND the answer names the carrier",
+      "trigger": "ship_request_received",
+      "status": "accepted",
+      "clusters": [
+        4,
+        3
+      ],
+      "entropy": 0.683,
+      "reading": "When dana requests to ship parcel k7 and the address for k7 is complete, the system must call the ship_parcel function exactly once for that parcel and provide an answer that names the carrier.",
+      "antecedent": "(and requester_is_dana (= parcel_id k7) address_complete ship_request_received)",
+      "consequent": "(and (= ship_parcel_called_count 1) answer_names_carrier)",
+      "voted": "7/7",
+      "probes": [
+        {
+          "reading": "The requirement applies only when the address is complete, but the system must call ship_parcel exactly once and name the carrier regardless of whether the address is complete, provided dana requests parcel k7.",
+          "antecedent": "(and requester_is_dana (= parcel_id k7) ship_request_received)",
+          "consequent": "(and (= ship_parcel_called_count 1) answer_names_carrier)",
+          "situations": [
+            {
+              "when": {
+                "address_complete": false,
+                "answer_names_carrier": false,
+                "parcel_id": "k7",
+                "requester_is_dana": true,
+                "ship_parcel_called_count": 0,
+                "ship_request_received": true
+              },
+              "translation_says": "obeyed"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        },
+        {
+          "reading": "The requirement applies when dana requests parcel k7 and the address is complete, but the system must call ship_parcel at least once (not exactly once) and name the carrier.",
+          "antecedent": "(and requester_is_dana (= parcel_id k7) address_complete ship_request_received)",
+          "consequent": "(and (>= ship_parcel_called_count 1) answer_names_carrier)",
+          "situations": [
+            {
+              "when": {
+                "address_complete": true,
+                "answer_names_carrier": true,
+                "parcel_id": "k7",
+                "requester_is_dana": true,
+                "ship_parcel_called_count": 2,
+                "ship_request_received": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R5",
+      "text": "WHEN the same request runs while the address of k7 has no postcode THEN ship_parcel is never called AND the answer asks for the postcode",
+      "trigger": "ship_request_received",
+      "status": "accepted",
+      "clusters": [
+        2,
+        1,
+        1,
+        1
+      ],
+      "entropy": 1.332,
+      "reading": "If a shipping request is received for parcel k7 where the address is complete but lacks a postcode, the system must not call ship_parcel and the response must request the missing postcode.",
+      "antecedent": "(and ship_request_received (= parcel_id k7) address_complete (not address_has_postcode))",
+      "consequent": "(and (not ship_parcel_called_after_refusal) answer_asks_for_postcode)",
+      "voted": "3/5",
+      "probes": [
+        {
+          "reading": "If a shipping request is received for parcel k7 where the address lacks a postcode, the system must not call ship_parcel and the response must request the missing postcode.",
+          "antecedent": "(and ship_request_received (= parcel_id k7) (not address_has_postcode))",
+          "consequent": "(and (not ship_parcel_called_after_refusal) answer_asks_for_postcode)",
+          "situations": [
+            {
+              "when": {
+                "address_complete": false,
+                "address_has_postcode": false,
+                "answer_asks_for_postcode": true,
+                "parcel_id": "k7",
+                "ship_parcel_called_after_refusal": true,
+                "ship_request_received": true
+              },
+              "translation_says": "obeyed"
+            }
+          ],
+          "answers": {
+            "translation": 0,
+            "other": 8,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R6",
+      "text": "WHEN an express request is handled in a run THEN request_signoff is not called in the run",
+      "trigger": "express_request_handled",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "In any run where an express request is handled, the request_signoff function must not be called.",
+      "antecedent": "express_request_handled",
+      "consequent": "(not request_signoff_called)",
+      "probes": []
+    },
+    {
+      "id": "R7",
+      "text": "WHEN dana sends an express request for the parcels k1, k2 and k3 THEN the plan is written once AND ship_parcel succeeds three times",
+      "trigger": "express_request_received",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If dana sends an express request specifically for parcels k1, k2, and k3, then the plan must be written exactly once and ship_parcel must succeed exactly three times.",
+      "antecedent": "(and requester_is_dana express_request_received (= request_parcel_ids k1_k2_k3))",
+      "consequent": "(and (= plan_written_count 1) (= ship_parcel_success_count 3))",
+      "reread": true,
+      "probes": [
+        {
+          "reading": "If dana sends an express request for the set of parcels k1, k2, and k3, then the plan is written at least once and ship_parcel succeeds at least three times.",
+          "antecedent": "(and requester_is_dana express_request_received (= request_parcel_ids k1_k2_k3))",
+          "consequent": "(and (>= plan_written_count 1) (>= ship_parcel_success_count 3))",
+          "situations": [
+            {
+              "when": {
+                "express_request_received": true,
+                "plan_written_count": 2,
+                "request_parcel_ids": "k1_k2_k3",
+                "requester_is_dana": true,
+                "ship_parcel_success_count": 4
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R8",
+      "text": "WHEN a call of ship_parcel succeeds THEN the run writes one audit entry that names the parcel",
+      "trigger": "ship_parcel_succeeded",
+      "status": "accepted",
+      "clusters": [
+        7,
+        1
+      ],
+      "entropy": 0.377,
+      "reading": "Whenever a call to ship_parcel succeeds, the run must write an audit entry that names the parcel.",
+      "antecedent": "ship_parcel_succeeded",
+      "consequent": "(and audit_entry_written audit_entry_names_parcel)",
+      "probes": []
+    },
+    {
+      "id": "R9",
+      "text": "WHEN a call of find_parcel succeeds THEN no parcel changes its state in that call",
+      "trigger": "find_parcel_succeeded",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a find_parcel call succeeds, then no parcel changes its state during that specific call.",
+      "antecedent": "find_parcel_succeeded",
+      "consequent": "(not parcel_state_changed)",
+      "probes": []
+    }
+  ],
+  "outcome_pairs": [
+    {
+      "rules": [
+        "R1",
+        "R6"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R1",
+        "R7"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R2",
+        "R6"
+      ],
+      "answers": {
+        "possible": 0,
+        "impossible": 8,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R2",
+        "R7"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R3",
+        "R6"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R3",
+        "R7"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R4",
+        "R6"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R4",
+        "R7"
+      ],
+      "answers": {
+        "possible": 0,
+        "impossible": 8,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R5",
+        "R6"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R5",
+        "R7"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R6",
+        "R7"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R6",
+        "R8"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R6",
+        "R9"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R7",
+        "R8"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R7",
+        "R9"
+      ],
+      "answers": {
+        "possible": 0,
+        "impossible": 8,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R1",
+        "R2"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R1",
+        "R3"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R1",
+        "R4"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R1",
+        "R5"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R1",
+        "R8"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R1",
+        "R9"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R2",
+        "R3"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R2",
+        "R4"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R2",
+        "R5"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R2",
+        "R8"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R2",
+        "R9"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R3",
+        "R4"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R3",
+        "R8"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R3",
+        "R9"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R4",
+        "R5"
+      ],
+      "answers": {
+        "possible": 6,
+        "impossible": 2,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R4",
+        "R8"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R4",
+        "R9"
+      ],
+      "answers": {
+        "possible": 6,
+        "impossible": 2,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R5",
+        "R8"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R5",
+        "R9"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R8",
+        "R9"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    }
+  ],
+  "condition_pairs": [
+    {
+      "rules": [
+        "R2",
+        "R6"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R4",
+        "R7"
+      ],
+      "answers": {
+        "possible": 7,
+        "impossible": 1,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R7",
+        "R9"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    }
+  ]
+}

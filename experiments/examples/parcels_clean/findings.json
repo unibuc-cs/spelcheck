@@ -1,0 +1,145 @@
+[
+  {
+    "type": "conflict",
+    "rules": [
+      "R5",
+      "R8"
+    ],
+    "facts": [
+      "F7"
+    ],
+    "when": {
+      "parcel_delivered": true,
+      "parcel_id": "k7",
+      "postcode_missing": true,
+      "return_request_received": true,
+      "ship_request_received": true
+    },
+    "beyond_example": [
+      "R5",
+      "R8"
+    ],
+    "about_change": true,
+    "situation": "The requested parcel was delivered, the identifier of the parcel in the request is k7, the address of the requested parcel has no postcode, Dana asks to return a parcel, and Dana asks to ship a parcel.",
+    "title": "Conflicting Requests for Same Parcel",
+    "explanation": "The requirements state that if Dana asks to ship parcel k7 and the address has no postcode, the system must not call the shipping function (R5). However, if Dana asks to return parcel k7 and it was delivered, the system must call the return booking function (R8). The finding indicates that these two requirements cannot be obeyed simultaneously in a single run where both a ship request and a return request are received for the same parcel. This conflict may be a false alarm because it relies on the unstated assumption that a single run cannot be both a ship request and a return request; if the system processes these as separate, distinct runs, the conflict does not exist.",
+    "option_a": "Keep the requirements as written, accepting that the system must handle ship and return requests as separate, non-overlapping runs to avoid the conflict.",
+    "option_b": "Add a requirement stating that a single run cannot contain both a ship request and a return request for the same parcel, or clarify that R5 and R8 apply to mutually exclusive request types."
+  },
+  {
+    "type": "conflict",
+    "rules": [
+      "R9",
+      "R10"
+    ],
+    "facts": [
+      "F8"
+    ],
+    "when": {
+      "customer_cancels_return": true,
+      "parcel_id": "k7",
+      "parcel_in_warehouse": true,
+      "return_request_received": true
+    },
+    "beyond_example": [
+      "R9",
+      "R10"
+    ],
+    "about_change": true,
+    "situation": "Dana asks to return parcel k7, the parcel is still in the warehouse, and the customer cancels the return.",
+    "title": "Conflicting return rules",
+    "explanation": "The requirements state that if a parcel is still in the warehouse, the return booking function is never called, but they also state that if the customer cancels the return, the return booking function is called once. This creates a contradiction because the system cannot both never call the function and call it once in the same scenario. This finding may be a false alarm because the requirements describe specific, separate cases that might not be intended to apply simultaneously to a single request.",
+    "option_a": "Keeping the requirements as written means the system will fail or behave unpredictably if a customer cancels a return for a parcel that is still in the warehouse.",
+    "option_b": "Modify R10 to specify that the return booking function is only called if the parcel has been delivered, or clarify that the cancellation rule only applies after a successful return booking."
+  },
+  {
+    "type": "gap",
+    "event": "return_request_received",
+    "when": {
+      "book_return_succeeded": false,
+      "configuration_checked": false,
+      "customer_cancels_return": false,
+      "find_parcel_succeeded": false,
+      "parcel_id": "other",
+      "return_request_received": true,
+      "ship_parcel_succeeded": false,
+      "signoff_refused": false
+    },
+    "about_change": true,
+    "situation": "Dana asks to return a parcel, but the parcel is not k7, no call to book_return has succeeded, the system is not checking the configuration, the customer does not cancel the return, no call to find_parcel has succeeded, no call to ship_parcel has succeeded, and no call to request_signoff returned a refusal.",
+    "title": "Missing rule for returning other parcels",
+    "explanation": "The requirements only specify what happens when Dana asks to return parcel k7. They do not state what the system must do when Dana asks to return any other parcel. This gap appears in the situation where Dana asks to return a parcel that is not k7, while no other specific conditions are met.",
+    "option_a": "Keeping the requirements as written means the system has no defined behavior for return requests involving parcels other than k7.",
+    "option_b": "Add a requirement stating that when Dana asks to return any parcel other than k7, the system must call book_return once and provide a return label."
+  },
+  {
+    "type": "scenario",
+    "verdict": "accepted",
+    "rules": [
+      "R8"
+    ],
+    "when": {
+      "answer_gives_return_label": true,
+      "book_return_call_count": 1,
+      "parcel_delivered": false,
+      "parcel_id": "other",
+      "return_request_received": false
+    },
+    "about_change": true,
+    "situation": "The answer to the return request gives the return label, the number of times book_return is called for the requested parcel is 1, the requested parcel was not delivered, the identifier of the parcel in the request is other, and Dana did not ask to return a parcel.",
+    "surprise": 2,
+    "title": "Return label without request",
+    "explanation": "The requirements allow a scenario where a return label is provided and a return is booked, even though Dana never asked for a return and the parcel was not delivered. This defeats the purpose of Requirement R8, which is to handle return requests only when they are explicitly made by the user for delivered parcels.",
+    "option_a": "Keep the requirements, so the behaviour stays allowed.",
+    "option_b": "Add a requirement that a return label is only provided and a return is only booked if Dana explicitly asks to return a delivered parcel."
+  },
+  {
+    "type": "scenario",
+    "verdict": "accepted",
+    "rules": [
+      "R10"
+    ],
+    "when": {
+      "book_return_call_count": 1,
+      "cancel_return_call_count": 1,
+      "customer_cancels_return": false
+    },
+    "about_change": true,
+    "situation": "The system calls the function to book a return once and calls the function to cancel a return once, but the customer did not cancel the return.",
+    "surprise": 2,
+    "title": "Spurious return cancellation",
+    "explanation": "Requirement R10 specifies that a return should be booked and then cancelled only when the customer cancels the return. However, the requirements allow the system to perform both the booking and the cancellation even when the customer has not cancelled, which defeats the purpose of the cancellation logic and creates an inconsistent state where a return is processed and immediately voided without user intent.",
+    "option_a": "Keep the requirements, allowing the system to book and cancel returns even when the customer has not explicitly cancelled.",
+    "option_b": "Modify Requirement R10 to explicitly state that `cancel_return` SHALL NOT be called unless the customer cancels the return, or add a requirement that `cancel_return` is only called in response to a customer cancellation."
+  },
+  {
+    "type": "gap",
+    "event": "ship_request_received",
+    "when": {
+      "book_return_succeeded": false,
+      "configuration_checked": false,
+      "customer_cancels_return": false,
+      "find_parcel_succeeded": false,
+      "parcel_id": "other",
+      "ship_parcel_succeeded": false,
+      "ship_request_received": true,
+      "signoff_refused": false
+    },
+    "about_change": false
+  },
+  {
+    "type": "gap",
+    "when": {
+      "book_return_succeeded": false,
+      "configuration_checked": false,
+      "customer_cancels_return": false,
+      "find_parcel_succeeded": false,
+      "return_request_received": false,
+      "ship_parcel_succeeded": false,
+      "ship_request_received": false,
+      "signoff_refused": false
+    },
+    "quiet": true,
+    "about_change": false
+  }
+]
