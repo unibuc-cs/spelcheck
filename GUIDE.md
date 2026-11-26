@@ -1358,7 +1358,7 @@ The project has five goals. This is where each one stands:
 | G1: a minimal working prototype of Kiro's formal analysis | done |
 | G2: it works on any spec, in any format | done for the prototype: 2 formats, 63 small specs, two long ones, and changes checked against existing specs, removals included (part 5). A real OpenSpec project has not been tried |
 | G3: code and documents a person can read | done for the current state |
-| G4: research for a paper, on the local model | well under way: 20 tests on specs the design had not seen, five of them on changes of a real project. Still one main model and one real project |
+| G4: research for a paper, on the local model | well under way: 20 tests on specs the design had not seen, four of them on changes of a real project. Still one main model and one real project |
 | G5: only the formal part | done: an LLM review of the text was built, measured, and switched off |
 
 ### 6.4 What does not work yet
