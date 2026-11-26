@@ -116,6 +116,59 @@ this order:
      the facts rarely say that one of the two always holds, so only 2 of 13
      were marked (T20, E16). This is a known limit now.
 
+### 2.1 The plan for step 40: a vote among the translations of a rule (not built yet)
+
+On real specs about half of the rules without an agreed translation are lost
+to the choice of symbols (T27). The read step lists several symbols that
+overlap, a general one and a specific one, and the eight translations use
+different ones:
+
+```
+"WHEN move succeeds THEN display success message with archived name and list of updated specs"
+3 x  move_succeeds => success_message_displayed
+2 x  move_succeeds => (and success_message_displayed spec_summary_displayed)
+1 x  move_succeeds => (and success_message_displayed specs_updated)
+1 x  move_succeeds => (and success_message_displayed updated_specs_tracked spec_summary_displayed)
+```
+
+Today these are four groups, 3/2/1/1, and the rule is rejected. But all seven
+agree on one thing: the success message. The facts of step 4 are kept by
+such a vote already; the translations of a rule are not.
+
+One try, in step 3 and with no prompt changed:
+
+1. **When the vote is taken.** Only for a rule whose translations do not
+   agree (ambiguous or rejected), and only if they differ in the symbols they
+   use: no two translations that use the same symbols differ in meaning. Two
+   translations with the same symbols and two meanings ("= 5" and ">= 5") are
+   two readings of the words, and that stays a question to the author.
+2. **The vote.** For each of the translations, our code asks Z3 which of the
+   others entail it. The strongest translation that more than half of the
+   usable ones entail is chosen, and the rule is accepted with it (marked
+   `voted`, with the count). Above: `move_succeeds =>
+   success_message_displayed`, 7 of 7.
+3. If no translation has such a majority, the rule stays as it is. If the
+   chosen one demands nothing, the rule is rejected as empty (step 38).
+
+On the saved runs (no LLM, so only step 3): the rules with an accepted
+translation would go from 40% to 68% on the second real batch and from 60% to
+80% on the first. Of the 72 planted ambiguities that step 3 flags in `eval7/`
+to `eval12/`, the vote would accept 5. Without the condition of point 1 it
+would accept about half of them.
+
+**How it is tested.** First `eval18/` (make_eval.py): six specs written like
+tool specs, each clean, with a planted conflict, a planted gap and two
+planted ambiguities, to see what the vote costs. And `real3/`, the third
+batch of 16 real changes, the only real cases not yet run. Development: the
+two earlier real batches, `eval16/`, `eval17/`, and two of the sets with
+planted ambiguities. Then `eval18/` and `real3/`, with the code before and
+after.
+
+**The rule, set now.** The vote stays if on `real3/` fewer rules are of no
+use to the checks, and on `eval18/` the planted conflicts and gaps found do
+not go down and at most one planted ambiguity in ten is lost. A loss within
+that is written down as a limit.
+
 Small things that are open:
 
 - **Long documents** (E14). A spec of 100 requirements works: its read answer
@@ -1160,6 +1213,12 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       and one change that adds, rewrites, removes and renames (no design
       change). E22: 9 of 9 planted conflicts and 9 of 9 planted gaps in 3
       runs, both ways, and nothing else about the change
+- [ ] **Step 40 — a vote among the translations of a rule**: `eval18/` and
+      `real3/` first (done); where the translations of a rule differ in the
+      symbols they use, the strongest one that more than half of them entail
+      is accepted (plan in 2.1). Development on the two earlier real batches
+      and on the sets with planted ambiguities; held-out `eval18/` and
+      `real3/`, before and after
 - [x] **Step 39 — a name that is not a word**: `eval17/` written first;
       the symbol list of the read step is repaired where a name or a value
       is not a word, is declared twice, or an enum has one value. T29

@@ -1,6 +1,6 @@
-"""make_eval.py: writes the evaluation sets eval/ to eval17/, size/, size2/ and mixed/. No LLM, no GPU.
+"""make_eval.py: writes the evaluation sets eval/ to eval18/, size/, size2/ and mixed/. No LLM, no GPU.
 
-    python -m experiments.make_eval eval17     (only the sets named; all if none)
+    python -m experiments.make_eval eval18     (only the sets named; all if none)
 
 change_dev/ is development data for the change check: the OpenSpec-format
 specs of eval9/ and eval10/ as projects with a change (see as_projects).
@@ -230,6 +230,21 @@ words: `rolled back`, `in review`, `pending-sync`, `auth-only`, `50-50`,
 tracker, a DNS service, a payment gateway, a mail queue and a feature-flag
 service. Four versions each, as in eval16. This time a clean spec has no
 rule that cuts across the others. Held-out in E25; development data since.
+
+eval18/ (written 2026-11-26, after E25, before the translations of a rule
+vote when they differ in the symbols they use) has six more specs of that
+kind, 7 scenarios each (a secrets tool, a job scheduler, a webhook service, a
+linter, a migration tool, a paging service). It is there for what such a
+vote could cost: the ambiguities. Five versions each:
+
+    clean       nothing planted
+    direct      one scenario added for the condition of an existing one, with
+                an outcome that cannot hold together with its outcome
+    ambiguity1  a limit reworded so that it has two readings ("reaches 90
+                days": at 90 days only, or from 90 days on)
+    ambiguity2  one scenario reworded with "only if", with an "if" at the end
+                of two outcomes, or with "and ... or ... and"
+    gap         one of two complementary scenarios removed
 """
 
 import json
@@ -2586,9 +2601,112 @@ SPECS17 = {
         9, [1, 3, 5, 8]),
 }
 
+def _spec18(intro: str, rules: list, direct: tuple, direct_with: int, limit: tuple, other: tuple,
+            second_case: int, covered: list) -> dict:
+    """One eval18 spec: 7 scenarios and its four planted versions.
+
+    direct, direct_with  the scenario that the direct version adds, and the number of the
+                         scenario it clashes with (numbers count from 1, in the document)
+    limit                (number, scenario): the scenario with a limit, reworded for ambiguity1
+    other                (kind, number, scenario): the scenario reworded for ambiguity2, and the
+                         kind of its ambiguity ("only", "ifscope" or "andor")
+    second_case          the scenario that the gap version removes: the second of two
+                         complementary cases
+    covered              the scenarios whose event has both of its cases in the clean spec
+    """
+    kind, number, reworded = other
+    return {"format": "openspec", "intro": intro, "rules": rules, "covered": covered,
+            "variants": {"direct": ({"add": direct}, {"conflicts": [[direct_with, len(rules) + 1]]}),
+                         "ambiguity1": ({"replace": {limit[0]: limit[1]}}, {"kind": "boundary", "ambiguous": [limit[0]]}),
+                         "ambiguity2": ({"replace": {number: reworded}}, {"kind": kind, "ambiguous": [number]}),
+                         "gap": ({"remove": second_case}, {"gaps": [second_case - 1]})}}
+
+
+SPECS18 = {
+    "vault": _spec18(
+        "A command-line tool, `vlt`, keeps the secrets of a team.",
+        [("Read", "Secret exists", "WHEN the user runs `vlt get <name>` AND the secret exists THEN the tool prints the value of the secret AND writes the access to the audit log"),
+         ("Read", "Secret missing", "WHEN the user runs `vlt get <name>` AND the secret does not exist THEN the tool prints \"no such secret\" AND exits with code 4"),
+         ("Write", "Secret stored", "WHEN the user runs `vlt set <name>` THEN the tool stores the new value AND keeps the previous value as a version"),
+         ("Lock", "Wrong passphrase", "WHEN the user enters a wrong passphrase for the third time THEN the tool locks the vault"),
+         ("Rotation", "Old secret", "WHEN a secret is older than 90 days THEN the tool marks the secret as `stale`"),
+         ("Sharing", "Receiver in the team", "WHEN the user runs `vlt share <name>` AND the receiver is a member of the team THEN the tool sends the secret to the receiver"),
+         ("Sharing", "Receiver not in the team", "WHEN the user runs `vlt share <name>` AND the receiver is not a member of the team THEN the tool refuses with \"receiver is not in the team\"")],
+        ("Offline", "Empty answer", "WHEN the user runs `vlt get <name>` AND the secret does not exist THEN the tool prints an empty value AND exits with code 0"), 2,
+        (5, ("Rotation", "Old secret", "WHEN the age of a secret reaches 90 days THEN the tool marks the secret as `stale`")),
+        ("only", 6, ("Sharing", "Receiver in the team", "WHEN the user runs `vlt share <name>` THEN the tool sends the secret to the receiver only if the receiver is a member of the team")),
+        7, [1, 6]),
+    "scheduler": _spec18(
+        "A service runs the jobs of a team at the times they ask for.",
+        [("Start", "Worker free", "WHEN a job is due AND a worker is free THEN the service starts the job AND sets the job state to `running`"),
+         ("Start", "No worker free", "WHEN a job is due AND no worker is free THEN the service puts the job in the queue AND sets the job state to `waiting`"),
+         ("Finish", "Job succeeds", "WHEN a job exits with code 0 THEN the service sets the job state to `done` AND stores the output"),
+         ("Finish", "Job fails", "WHEN a job exits with a code other than 0 THEN the service sets the job state to `failed` AND sends the log to the owner"),
+         ("Timeouts", "Job too long", "WHEN a job runs for more than 60 minutes THEN the service stops the job"),
+         ("Retries", "Third failure", "WHEN a job fails for the third time in a row THEN the service disables the job"),
+         ("Pause", "Schedule paused", "WHEN the owner pauses a schedule THEN the service shows the schedule as `paused` AND writes the pause to the history")],
+        ("Overload", "Drop the job", "WHEN a job is due AND no worker is free THEN the service drops the job AND sets the job state to `skipped`"), 2,
+        (5, ("Timeouts", "Job too long", "WHEN the run time of a job reaches 60 minutes THEN the service stops the job")),
+        ("ifscope", 4, ("Finish", "Job fails", "WHEN a job exits with a code other than 0 THEN the service sets the job state to `failed` and sends the log to the owner if the owner asked for alerts")),
+        2, [1]),
+    "webhooks": _spec18(
+        "A service delivers the events of an application to the addresses of its customers.",
+        [("Delivery", "Endpoint answers", "WHEN the service sends an event AND the endpoint answers with status 200 THEN the service marks the delivery as `delivered`"),
+         ("Delivery", "Endpoint fails", "WHEN the service sends an event AND the endpoint does not answer with status 200 THEN the service marks the delivery as `failed` AND schedules another attempt"),
+         ("Signing", "Secret set", "WHEN a customer sets a signing secret THEN the service signs every event with the secret AND adds the header `X-Signature`"),
+         ("Retries", "Attempts used up", "WHEN the delivery of an event fails for the fifth time THEN the service disables the endpoint AND sends an email to the customer"),
+         ("Retention", "Old events", "WHEN an event is older than 30 days THEN the service deletes the payload of the event"),
+         ("Replay", "Payload stored", "WHEN a customer replays an event AND the payload is still stored THEN the service sends the event again"),
+         ("Replay", "Payload gone", "WHEN a customer replays an event AND the payload is not stored any more THEN the service answers with status 410")],
+        ("Lenient", "Any answer counts", "WHEN the service sends an event AND the endpoint does not answer with status 200 THEN the service marks the delivery as `delivered`"), 2,
+        (5, ("Retention", "Old events", "WHEN the age of an event reaches 30 days THEN the service deletes the payload of the event")),
+        ("andor", 6, ("Replay", "Payload stored", "WHEN a customer replays an event AND the payload is still stored or the customer has the archive plan and the event is at most a year old THEN the service sends the event again")),
+        7, [1, 6]),
+    "linter": _spec18(
+        "A command-line tool, `lnt`, checks the source files of a project.",
+        [("Check", "Clean files", "WHEN the user runs `lnt check` AND no file has a finding THEN the tool prints \"all files pass\" AND exits with code 0"),
+         ("Check", "Findings", "WHEN the user runs `lnt check` AND a file has a finding THEN the tool prints each finding with its file and line AND exits with code 1"),
+         ("Fix", "Automatic fix", "WHEN the user runs `lnt fix` AND the finding has an automatic fix THEN the tool rewrites the file AND keeps a copy with the suffix `.orig`"),
+         ("Fix", "No automatic fix", "WHEN the user runs `lnt fix` AND the finding has no automatic fix THEN the tool leaves the file unchanged AND lists the finding as `manual`"),
+         ("Configuration", "Unknown rule", "WHEN the configuration names a rule that does not exist THEN the tool prints the name of the rule AND exits with code 2"),
+         ("Cache", "Large cache", "WHEN the cache is larger than 500 megabytes THEN the tool deletes the oldest entries"),
+         ("Ignoring", "File ignored", "WHEN the user runs `lnt ignore <file>` THEN the tool adds the file to `.lntignore`")],
+        ("Soft mode", "Warnings only", "WHEN the user runs `lnt check` AND a file has a finding THEN the tool prints a summary AND exits with code 0"), 2,
+        (6, ("Cache", "Large cache", "WHEN the size of the cache reaches 500 megabytes THEN the tool deletes the oldest entries")),
+        ("only", 3, ("Fix", "Automatic fix", "WHEN the user runs `lnt fix` THEN the tool rewrites the file only if the finding has an automatic fix")),
+        4, [1, 3]),
+    "migrate": _spec18(
+        "A command-line tool, `mig`, applies the schema changes of an application to its database.",
+        [("Apply", "Change pending", "WHEN the user runs `mig up` AND a change is pending THEN the tool applies the change AND records it in the table `schema_history`"),
+         ("Apply", "Nothing pending", "WHEN the user runs `mig up` AND no change is pending THEN the tool prints \"database is up to date\" AND exits with code 0"),
+         ("Revert", "Reversible change", "WHEN the user runs `mig down` AND the last change is reversible THEN the tool reverts the change AND removes it from the table `schema_history`"),
+         ("Revert", "Irreversible change", "WHEN the user runs `mig down` AND the last change is not reversible THEN the tool prints \"cannot revert\" AND exits with code 5"),
+         ("Locking", "Lock held long", "WHEN another process holds the migration lock for more than 10 minutes THEN the tool prints the owner of the lock"),
+         ("Checks", "Edited change", "WHEN an applied change was edited afterwards THEN the tool prints the name of the change AND exits with code 6"),
+         ("Status", "Status shown", "WHEN the user runs `mig status` THEN the tool lists every change with its state")],
+        ("Strict", "Fail when idle", "WHEN the user runs `mig up` AND no change is pending THEN the tool prints \"nothing to apply\" AND exits with code 1"), 2,
+        (5, ("Locking", "Lock held long", "WHEN the time that another process holds the migration lock reaches 10 minutes THEN the tool prints the owner of the lock")),
+        ("ifscope", 6, ("Checks", "Edited change", "WHEN an applied change was edited afterwards THEN the tool prints the name of the change and exits with code 6 if the flag `--strict` is set")),
+        4, [1, 3]),
+    "pager": _spec18(
+        "A service calls the engineers on duty when an alert comes in.",
+        [("Paging", "Engineer on duty", "WHEN an alert comes in AND an engineer is on duty THEN the service pages the engineer AND sets the alert state to `paged`"),
+         ("Paging", "Nobody on duty", "WHEN an alert comes in AND no engineer is on duty THEN the service pages the team lead AND sets the alert state to `escalated`"),
+         ("Acknowledging", "Alert acknowledged", "WHEN an engineer acknowledges an alert THEN the service sets the alert state to `acknowledged` AND stops the reminders"),
+         ("Reminders", "No answer", "WHEN a page is not acknowledged for more than 15 minutes THEN the service pages the next engineer in the rota"),
+         ("Resolving", "Alert resolved", "WHEN an engineer resolves an alert THEN the service sets the alert state to `resolved` AND writes the duration to the report"),
+         ("Rota", "Swap accepted", "WHEN an engineer asks for a swap AND the other engineer accepts THEN the service exchanges the two shifts in the rota"),
+         ("Rota", "Swap not accepted", "WHEN an engineer asks for a swap AND the other engineer does not accept THEN the service keeps the rota AND informs the engineer")],
+        ("Silence", "Nobody to wake", "WHEN an alert comes in AND no engineer is on duty THEN the service sets the alert state to `ignored`"), 2,
+        (4, ("Reminders", "No answer", "WHEN the time without an acknowledgement of a page reaches 15 minutes THEN the service pages the next engineer in the rota")),
+        ("only", 6, ("Rota", "Swap accepted", "WHEN an engineer asks for a swap THEN the service exchanges the two shifts in the rota only if the other engineer accepts")),
+        7, [1, 6]),
+}
+
 SETS = {"eval": SPECS, "eval2": SPECS2, "eval3": SPECS3, "eval4": SPECS4, "eval5": SPECS5,
         "eval6": SPECS6, "eval7": SPECS7, "eval8": SPECS8, "eval9": SPECS9, "eval10": SPECS10,
-        "eval12": SPECS12, "size": SPECS_SIZE, "size2": SPECS_SIZE2, "eval16": SPECS16, "eval17": SPECS17}
+        "eval12": SPECS12, "size": SPECS_SIZE, "size2": SPECS_SIZE2, "eval16": SPECS16, "eval17": SPECS17,
+        "eval18": SPECS18}
 
 
 def _project13(capabilities: tuple, first, second, doors, pair, single, ban, notice, added, removal: dict) -> dict:
