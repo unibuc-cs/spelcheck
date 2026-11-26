@@ -273,6 +273,13 @@ An ambiguous rule becomes a question for the author: "exactly 5, or 5 or more:
 which did you mean?" The guide goes through this with a diagram
 ([GUIDE.md, section 3.1](GUIDE.md#31-does-a-rule-have-only-one-meaning)).
 
+Not every split is two readings. On real specs the eight translations often
+differ only in which symbols they use: three say `success_message_displayed`,
+two say that and `spec_summary_displayed`. Such translations vote, and the
+rule is accepted with the strongest translation that more than half of them
+entail, here the first. A split between translations that use the same
+symbols, like A and B above, is never settled that way.
+
 Until the author answers, the checks use reading A, and some findings may
 exist only because of that choice. So each ambiguous rule is tried once more
 with its other reading, by the solver alone. A conflict or a gap that is gone
@@ -671,7 +678,7 @@ Nothing in the code or in the prompts is about orders.
 | `experiments/sets/mixed` | one larger OpenSpec project (39 scenarios, four spec files) | one change that adds, rewrites, removes and renames at once |
 | `experiments/sets/eval16`, `eval17` | OpenSpec format, written like real tool specs: scenarios with two or three outcomes, and states, codes and commands in quotes | twelve specs, each clean and with a planted conflict (two kinds) or gap |
 | `experiments/sets/real1`, `real2` | a real project: the OpenSpec tool's own specs (MIT licence, see the README in each folder) | 32 of its archived changes, each with the spec files it touches as they were before it. Nothing is planted, so there is no known answer |
-| `experiments/sets/eval18`, `real3` | six more specs written like tool specs, each clean and with a planted conflict, a planted gap and two planted ambiguities; and 16 more changes of the real project | not run yet. They are set aside as the test of the next step: letting the translations of a rule vote when they differ only in the symbols they use (plan.md, section 2.1) |
+| `experiments/sets/eval18`, `real3` | six more specs written like tool specs, each clean and with a planted conflict, a planted gap and two planted ambiguities; and 16 more changes of the real project | the test of the newest step, the vote among the translations of a rule (plan.md, section 2.1). The runs are under way |
 
 ## How reliable is it
 
@@ -830,6 +837,13 @@ Some notes on these numbers:
   finished with the old code and 48 of 48 with the new one, and 22 of the 24
   planted conflicts and 10 of the 12 planted gaps were found. On the second
   real batch 16 of 16 runs finish (14 and 15 before).
+- The translations of a rule now vote when they differ only in the symbols
+  they use ([Ambiguities](#ambiguities)). So far this is measured on the data
+  it was developed on (T30): on the second real batch the rules of no use to
+  the checks fall from 60% to 23%; `eval17/`, `eval8/` and `eval7/` keep
+  their planted conflicts and gaps; and of 33 planted ambiguities that the
+  old code flagged from the split alone, the vote accepts 2. The test on
+  `eval18/` and on a third real batch is running (E26).
 - The numbers are small: the specs were written by us, and there is one main
   model. The details are in [research.md](research.md).
 
@@ -863,7 +877,7 @@ research.md, section 5.
 |---|---|
 | `speccheck/llm.py` | the one place that calls the model (answers forced into a JSON schema) |
 | `speccheck/logic.py` | symbols to Z3 variables, formula parsing, solver questions |
-| `speccheck/formalize.py` | stage 1: read, sample, cluster, facts, links; several symbol sets; adding new rules to a saved formal model |
+| `speccheck/formalize.py` | stage 1: read, sample, cluster, vote, facts, links; several symbol sets; adding new rules to a saved formal model |
 | `speccheck/probe.py` | stage 1, step 6: questions about concrete situations, and about the outcomes of two rules |
 | `speccheck/checks.py` | stage 2: conflicts, gaps, scenarios; which findings depend on a reading; merging several symbol sets |
 | `speccheck/explain.py` | stage 3: wording, the scenario judge, the Markdown report |
@@ -872,7 +886,7 @@ research.md, section 5.
 | `speccheck/refine.py` | optional LLM review, off by default |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the vLLM servers on the cluster: the main model, the second model |
 | `experiments/slurm/serve_direct.sh` | the same server for the main model, started directly on a machine with free GPUs, without the queue |
-| `tests/` | 78 tests of everything that needs no LLM |
+| `tests/` | 84 tests of everything that needs no LLM |
 | `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10`, `eval12`, `eval16` to `eval18`, `size` and `size2`; for the change check `eval11`, `eval13`, `eval14`, `eval15`, `mixed` and `change_dev`; and the script that writes them. `real1`, `real2` and `real3` are not written by it (`experiments/real/`) |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs and scores the evaluation; re-scores saved runs without a GPU |

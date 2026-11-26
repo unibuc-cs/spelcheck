@@ -354,7 +354,8 @@ ways to notice that there are two.
    translations mean the same when Z3 proves that no situation tells them
    apart (the first row of the table in 1.2). If two or three of the eight
    form a second group, that group is a second reading. If the eight scatter
-   widely (4/2/2, for example), the rule is rejected and has to be rewritten.
+   widely (4/2/2, for example), the rule is rejected and has to be rewritten,
+   unless they differ only in the symbols they use (the vote, below).
    The weakness of sampling is that one model tends to make the same choice
    every time. Here the eight split seven to one, which counts as agreement.
 
@@ -383,12 +384,44 @@ ways to notice that there are two.
    sentence the same way, so when they differ, the sentence is probably the
    reason.
 
+**When the translations differ only in their symbols, they vote.** Not every
+split is two readings. For a real rule the list of symbols often has a
+general and a specific symbol for the same outcome, and the eight
+translations pick different ones (one of the eight was not a formula here):
+
+```
+"WHEN move succeeds THEN display success message with archived name and list of updated specs"
+3 x  move_succeeds => success_message_displayed
+2 x  move_succeeds => (and success_message_displayed spec_summary_displayed)
+1 x  move_succeeds => (and success_message_displayed specs_updated)
+1 x  move_succeeds => (and success_message_displayed updated_specs_tracked spec_summary_displayed)
+```
+
+These are four groups, and the rule would be rejected. Yet all seven agree
+on the success message.
+
+1. Our code checks that the split is about symbols: no two translations that
+   use the same symbols differ in meaning. "Exactly 5" and "5 or more" use
+   the same symbols, so that rule never gets here. It stays a question.
+2. For each translation, our code asks Z3 which of the others entail it: is
+   there a situation in which the other one holds and this one does not? The
+   first line is entailed by all seven.
+3. The strongest translation that more than half of them entail becomes the
+   translation of the rule, here the first line. The rule is accepted, and
+   `formal.json` records `"voted": "7/7"`. If no translation has such a
+   majority, the rule stays as it was.
+
+A voted rule can say less than its words: the list of updated specs is not
+in the formula. That is the price of keeping the rule in the checks.
+
 The three ways together, as a diagram:
 
 ```mermaid
 flowchart TD
     S["8 translations of one rule,<br/>grouped by meaning"] --> Q1{"how do they split?"}
     Q1 -- "scattered: 4/2/2 ..." --> REJ["REJECTED<br/>the rule must be rewritten"]
+    Q1 -- "a split only in<br/>the symbols used" --> V["VOTE<br/>the strongest translation that<br/>more than half of them entail"]
+    V --> P
     Q1 -- "8, or 7/1" --> P["the LLM is asked:<br/>what else could these words mean?"]
     Q1 -- "6/2 or 5/3" --> P2["the second group<br/>is the other reading"]
     P -- "another reading" --> Q2{"8 answers about the situation<br/>where the readings differ:<br/>does our translation get<br/>more than half?"}
@@ -1166,6 +1199,12 @@ wrote six more specs full of such values (`eval17`) and ran them with the old
 and the new code: 7 of 48 runs finished before, 48 of 48 after, and 22 of the
 24 conflicts and 10 of the 12 gaps that we had planted were found.
 
+The newest step is the vote of 3.1, made for the overlapping symbols. On the
+second real batch, where it was developed, the rules of no use to the checks
+fell from 60% to 23%, and on our own sets with planted ambiguities it
+accepted 2 of 33 that the old code flagged. Its test on specs it was not
+built on (`eval18`, and a third batch of real changes, `real3`) is running.
+
 **Longer specs.** All the specs counted above have at most six requirements.
 To see what a longer document does, we wrote two more, each in four versions
 (clean, direct, overlap, gap) and run three times:
@@ -1355,11 +1394,11 @@ The folders:
 speccheck/          the tool (the 8 files above; refine.py is the review that is switched off)
 specs/              3 small specs the prompts were developed on, with their saved output,
                     and auth_change, the example of part 5
-tests/              78 tests that need no LLM
+tests/              84 tests that need no LLM
 experiments/
   sets/             the 11 evaluation sets, eval to eval10 and eval12 (297 spec versions), two long specs,
                     eval16 and eval17 (twelve specs written like real ones), real1 and real2 (32 changes of a real project),
-                    eval18 and real3 (six more such specs and 16 more real changes, not run yet: the test of the next step),
+                    eval18 and real3 (six more such specs and 16 more real changes: the test of the vote, running),
                     and for the change check eval11, eval13, eval14, eval15, mixed (one larger project)
                     and change_dev (old specs as projects)
   results/          every experiment: the raw data (.json) and its tables (.md)
