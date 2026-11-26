@@ -19,6 +19,10 @@ and counting below is done by this file:
                 half of them entail (_vote). A rule is also rejected, and
                 marked "empty", if the chosen translation demands nothing
                 (_judge).
+                A rule that is not accepted, and of which a translation
+                demands nothing, lacks a symbol for what it demands. Such
+                rules are read once more, alone, for the symbols they lack,
+                and translated again with the longer list (_read_again).
     4. facts    the LLM is asked N times which domain facts connect the
                 symbols ("a door cannot be open and closed"). A fact is kept
                 when Z3 proves that it follows from more than half of the N
@@ -160,6 +164,15 @@ words name no happening has an empty trigger, also when a listed event seems \
 related. Describe a symbol you add by the fact alone, not by a listed event \
 ("the brightness of the lamp", not "the brightness of the lamp that was \
 switched on")."""
+
+# Added after READ_MORE for the second read (_read_again). The document is
+# then only the rules that could not be written with the symbols so far.
+READ_AGAIN = """
+
+The requirements of this document were read before, and they could not be \
+written in logic: something that each of them demands has no symbol in the \
+list. Go through what each requirement demands, fact by fact, and add a \
+symbol for every fact that no listed symbol stands for."""
 
 READ_SCHEMA = {
     "type": "object",
@@ -348,6 +361,34 @@ def formalize(llm: LLM, spec_text: str, samples: int = 8, temperature: float = 0
     # are done: Z3 must not be used from several threads at the same time.
     formal_rules = [{**rule, **_judge(vocab, answers)}
                     for rule, answers in zip(rules, answers_per_rule)]
+
+    # Between steps 3 and 4: the rules that lack a symbol for what they demand
+    # are read again, and translated again if that gave new symbols. A rule
+    # takes its new translation only if it is accepted now, and a new symbol
+    # stays only if a translation that was taken uses it. So a second read
+    # that helps no rule leaves the run exactly as it was.
+    again = [index for index, rule in enumerate(formal_rules) if rule.get("demand_nothing")]
+    offered = _read_again(llm, [rules[index] for index in again], symbols, read_temperature)
+    other_answers = {}  # index of a rule -> the eight answers that its translation does not come from
+    added = []
+    if offered:
+        longer, shown_longer = Vocabulary(symbols + offered), _symbol_list(symbols + offered)
+        with ThreadPoolExecutor(max_workers=16) as pool:  # LLM calls only
+            answers_again = list(pool.map(
+                lambda index: _translate(llm, shown_longer, rules[index], samples, temperature), again))
+        used = set()
+        for index, answers in zip(again, answers_again):
+            judged = _judge(longer, answers)
+            if judged["status"] == "accepted":
+                formal_rules[index] = {**rules[index], **judged, "reread": True}
+                answers_per_rule[index], answers = answers, answers_per_rule[index]
+                used |= set(re.findall(r"[A-Za-z_][A-Za-z0-9_]*", f"{judged['antecedent']} {judged['consequent']}"))
+            other_answers[index] = answers
+        added = [symbol for symbol in offered if symbol["name"] in used]
+    if added:  # the facts are asked for again, with the list as it is now
+        symbols = symbols + added
+        vocab, shown = Vocabulary(symbols), _symbol_list(symbols)
+        fact_answers = llm.ask(FACTS_SYSTEM, f"Symbols:\n{shown}", FACTS_SCHEMA, samples, temperature)
     background = _agreed_facts(vocab, fact_answers, samples)
     if base:
         background = _more_facts(vocab, base["background"], background)
@@ -367,6 +408,9 @@ def formalize(llm: LLM, spec_text: str, samples: int = 8, temperature: float = 0
 
     formal = {
         **(base or {}),
+        # The rules that were read a second time, and the symbols that stayed.
+        **({"reread": {"rules": [rules[index]["id"] for index in again],
+                       "symbols": [symbol["name"] for symbol in added]}} if again else {}),
         "symbols": symbols,
         # Assumed domain facts. checks.py uses them only to find more conflicts.
         # The list can be edited by hand: each entry needs id, text and formula.
@@ -387,6 +431,11 @@ def formalize(llm: LLM, spec_text: str, samples: int = 8, temperature: float = 0
     if keep_samples:
         for rule, answers in zip(formal_rules, answers_per_rule):
             rule["samples"] = answers
+        # Of a rule that was translated twice, "samples" are the answers its
+        # translation comes from, and these are the other eight. Those of the
+        # second round may use a symbol that did not stay.
+        for index, answers in other_answers.items():
+            formal_rules[index]["first_samples" if formal_rules[index].get("reread") else "reread_samples"] = answers
         for rule, answers in zip(to_restate, restatements):
             rule["restated_samples"] = answers
         # The answers of a second facts question are kept apart: the vote of
@@ -453,15 +502,17 @@ def _symbol_list(symbols: list[dict], hidden: set = frozenset()) -> str:
 
 
 def _read(llm: LLM, spec_text: str, first_temperature: float,
-          existing: list[dict] = ()) -> tuple[list[dict], list[dict]]:
+          existing: list[dict] = (), again: bool = False) -> tuple[list[dict], list[dict]]:
     """Step 1: extract the rules and the symbols, retrying if the symbols are unusable.
 
     existing  the symbols of a formal model that the document adds to. The
               model is shown them and asked to use them (READ_MORE). Returned
               are the rules of the document, and all symbols: the existing
               ones first, then those the model added.
+    again     the document holds rules that were read before and lack a
+              symbol (READ_AGAIN, see _read_again)
     """
-    system = READ_SYSTEM + READ_MORE if existing else READ_SYSTEM
+    system = READ_SYSTEM + (READ_MORE if existing else "") + (READ_AGAIN if again else "")
     user = (f"Symbols of the system so far:\n{_symbol_list(existing)}\n\nDocument:\n{spec_text}"
             if existing else spec_text)
     known = {symbol["name"] for symbol in existing}
@@ -487,6 +538,45 @@ def _read(llm: LLM, spec_text: str, first_temperature: float,
         except ValueError as problem:
             error = problem
     raise RuntimeError(f"could not get a usable symbol list: {error}")
+
+
+def _read_again(llm: LLM, rules: list[dict], symbols: list[dict], temperature: float) -> list[dict]:
+    """A second read, for the rules that lack a symbol for what they demand.
+
+    The read step lists the symbols for a whole document in one answer, and
+    for a long document it leaves some out. A rule then has nothing to say
+    its outcome with:
+
+        "WHEN user runs `templates` THEN the system displays template paths"
+        templates_command_run => true
+
+    The model understood the rule (its "reading" is right); the list has no
+    symbol for the display. Such a translation demands nothing. The rules
+    that have one, and were not accepted, are read once more here: one call,
+    in which the model sees the symbols so far and only these rules, and is
+    told that something they demand has no symbol (READ_MORE + READ_AGAIN).
+
+    Used from its answer are the symbols it adds, with their names repaired
+    (_usable). The rules keep their text and their trigger. The caller
+    translates the rules again with these symbols, and keeps a symbol only if
+    a translation that it takes uses it: told that a symbol is missing, the
+    model also adds one where none was ("vehicle_not_checked_in" next to
+    "vehicle_checked_in", for a rule that was unclear for another reason).
+
+    rules    the rules to read again, as the first read gave them
+    symbols  the symbols so far
+    Returns the symbols it offers: an empty list when there is no rule to
+    read, when the model adds none, or when its answer cannot be used three
+    times in a row. A second read never stops a run.
+    """
+    if not rules or not symbols:
+        return []
+    document = "\n".join(f"{rule['id']}: {rule['text']}" for rule in rules)
+    try:
+        _, longer = _read(llm, document, temperature, symbols, again=True)
+    except RuntimeError:
+        return []
+    return longer[len(symbols):]
 
 
 def _usable(symbols: list[dict]) -> tuple[list[dict], dict]:
@@ -567,6 +657,9 @@ def _judge(vocab: Vocabulary, answers: list[dict]) -> dict:
                       the status is then "rejected", whatever the agreement
         voted         "7/8" when the rule was accepted by a vote (_vote): how
                       many of the usable translations entail the chosen one
+        demand_nothing  only for a rule that is not accepted: how many of its
+                      usable translations demand nothing, if any does. Such a
+                      rule lacks a symbol and is read again (_read_again)
     """
     clusters = _group_by_meaning(vocab, answers)
     if not clusters:  # not a single usable translation
@@ -607,6 +700,10 @@ def _judge(vocab: Vocabulary, answers: list[dict]) -> dict:
     # a real project, T27). It is rejected instead, and the report says why.
     if vocab.impossible([z3.Not(best_rule.consequent)]):
         result["status"], result["empty"] = "rejected", True
+    if result["status"] != "accepted":
+        nothing = sum(vocab.impossible([z3.Not(rule.consequent)]) for cluster in clusters for _, rule in cluster)
+        if nothing:
+            result["demand_nothing"] = nothing
     return result
 
 
