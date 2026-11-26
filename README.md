@@ -1014,4 +1014,4 @@ research.md, section 5.
 | `experiments/real/` | the trial on a real OpenSpec project: each archived change next to the specs before it, from the git history; and the real changes with a conflict planted in them |
 | `experiments/stability.py`, `fact_threshold.py` | the earlier experiments |
 | `experiments/examples/` | saved runs referred to above and in research_log.md |
-| `docs/management/` | a paper and a slide deck about the project, with their LaTeX sources, the evidence files behind their numbers, and two snapshots of the source they describe. Start with its own README |
+| `docs/management/` | a paper and a slide deck about the project, with their LaTeX sources, the evidence files behind their numbers, two snapshots of the source they describe, and the packaged editions (`speccheck-management-*.zip`, about 60 MB each). Start with its own README |
