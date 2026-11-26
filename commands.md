@@ -18,6 +18,7 @@ report has the proven findings, without wording and without scenarios.
 ```
 python -m speccheck specs/order/requirements.md --formal specs/order/formal.json --out out
 python -m speccheck --change specs/auth_change/openspec/changes/admin-never-locked --formal specs/auth_change/formal.json --out out
+python -m speccheck --change experiments/sets/eval20/parcels_cross/openspec/changes/add-express-shipping --examples "^Example:" --formal experiments/examples/parcels_cross/formal.json --out out     # a spec about the runs of an agent, with examples
 ```
 
 ## 3. Start the model
