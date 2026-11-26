@@ -10,7 +10,7 @@ from pathlib import Path
 from speccheck.change import after_model, base_document, changed_rules, merge
 from speccheck.checks import analyze
 from speccheck.formalize import (FACTS_SYSTEM, FORMALIZE_SYSTEM, READ_MORE, READ_SYSTEM, formalize)
-from speccheck.probe import OUTCOMES_SYSTEM, READINGS_SYSTEM
+from speccheck.probe import CONDITIONS_SYSTEM, OUTCOMES_SYSTEM, READINGS_SYSTEM
 from tests.test_change import project
 
 
@@ -55,6 +55,9 @@ class FakeLLM:
         if system == READINGS_SYSTEM:
             self.calls.append(("readings", user.split("Requirement ")[1].split(":")[0]))
             return [{"readings": []}]
+        if system == CONDITIONS_SYSTEM:  # check 5: can the conditions of two rules that clash both hold?
+            self.calls.append(("conditions", user))
+            return [{"reason": "", "answer": "possible", "fact": ""}] * samples
         assert system == OUTCOMES_SYSTEM
         self.calls.append(("outcomes", user))
         return [{"reason": "", "answer": "impossible", "fact": "A payment cannot be taken and refused."}] * samples
@@ -96,6 +99,10 @@ def test_new_rules_are_added_to_a_model_with_its_symbols():
         "formula": "(not (and payment_taken payment_refused))"}]
     conflict = next(f for f in analyze(model) if f["type"] == "conflict")
     assert conflict["rules"] == ["R1", "N1"] and conflict["facts"] == ["F1"]
+    # The two rules clash now, so the model was asked whether their conditions can hold
+    # together ("a card is tapped", "the canteen is closed"). They can: nothing is added.
+    assert len(llm.asked("conditions")) == 1
+    assert model["condition_pairs"] == [{"rules": ["R1", "N1"], "answers": {"possible": 8, "impossible": 0, "unclear": 0}}]
 
 
 def test_the_facts_are_asked_again_only_when_a_symbol_is_new():

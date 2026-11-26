@@ -4004,6 +4004,99 @@ rule against a special case of it.
 
 ---
 
+## T33 — Development: can the conditions of two rules that clash both hold? (2026-11-26)
+
+**Question.** Most conflicts that nobody planted in real specs are in a
+situation that cannot happen (T32). Can the model say so when it is asked
+about the two conditions, without calling a real conflict impossible?
+
+**The change** (`probe.conditions`, check 5 of step 6, after the other four).
+`eval19/` and `real5/` were written and committed first (7ddb391).
+
+```
+R5   "WHEN agent reads tasks.md AND incomplete tasks are found THEN display warning ..."
+R7   "WHEN tasks.md does not exist THEN proceed without task-related warning"
+asked     A: FALSE tasks_md_exists     B: TRUE tasks_md_read, FALSE all_tasks_complete     can both be the case?
+answers   8 of 8 "impossible": "A file cannot be read if it does not exist."
+fact      (not (and <condition of R5> <condition of R7>))      between R5 and R7, about: conditions
+```
+
+1. Our code takes the pairs of rules that can apply together by the facts so
+   far, cannot both be obeyed there, and do not react to two different
+   events: the pairs that would be reported as a conflict that is not
+   doubtful. Of those it keeps the ones whose conditions are two definite
+   states, each saying something the other does not (`_clashing_pairs`).
+2. The model is asked eight times whether the two conditions can both be
+   the case. It sees what only one condition says and what only the other
+   says, as facts with their descriptions, and no requirement.
+3. More than half "impossible": an assumed fact. `checks.py` then marks a
+   conflict proven from the rules alone as doubtful, and does not find one
+   that needs an assumed fact.
+
+The new facts are marked (`about: conditions`), so every run is scored with
+and without them, and the question can be asked on saved runs
+(`evaluate --rescore FILE --conditions-base-url URL`).
+
+**Round 1: the question asked with the prompt of check 4** (saved runs;
+"found" is with doubtful conflicts set aside).
+
+| | Planted conflicts found, without and with | Planted pairs asked about, called impossible | Conflicts nobody planted, not doubtful, without and with |
+|---|---|---|---|
+| `real4/` (E27, 52 runs) | 22 and 22 of 26 | 0 (the planted ones have one condition) | 156 and 125 |
+| third real batch (E26, 32 runs) | | | 30 and 26 about a change |
+| `eval8/` | 18 and 15 of 21 | 12, 3 | 0 and 0 |
+| `eval17/` | 20 and 18 of 24 | 6, 2 | 2 and 2 |
+| `eval7/`, `eval12/`, `eval16/`, the larger project | 17 of 18, 34 of 36, 20 of 24, 6 of 6, each both ways | 36, 0 | no change |
+| the development specs, a full run | 14 and 11 of 15 | 12, 3 | |
+
+- **On the real specs it marks what it should.** 209 pairs were asked about
+  in the 52 runs of `real4/`, and 65 called impossible. The 14 we read are
+  all excluded by the meaning of the words: "A file cannot be read if it
+  does not exist", "Artifacts cannot be both incomplete and complete at the
+  same time".
+- **It also marks real conflicts**, all of one kind: something happens while
+  the system is in a special mode. "A server in maintenance mode does not
+  allow clients to submit messages", for the planted rule "WHEN the server
+  is in maintenance mode THEN the server does not put any message in the
+  queue"; "An out-of-service machine cannot accept a container insertion";
+  and, in the order example of the Kiro blog, "An order cannot be both
+  submitted and canceled and refunded at the same time", for R1 against R5.
+  The model assumes a system that behaves.
+
+**Round 2: a prompt of its own** (`CONDITIONS_SYSTEM`). It says that
+"impossible" means excluded by the meaning of the words alone, and that a
+state in which something should not happen, is not allowed or would be
+unusual does not make it impossible: "Do not assume that the system or its
+users prevent anything, or that anything succeeds." Its examples (a candle,
+a jar, a lawn) are in no evaluation set.
+
+| | Planted conflicts found, without and with | Planted pairs asked about, called impossible | Conflicts nobody planted, not doubtful, without and with |
+|---|---|---|---|
+| `real4/` | 22 and 22 of 26 | 0 | 156 and 129 |
+| `eval8/` | 18 and 18 of 21 | 12, 0 | 0 and 0 |
+| `eval17/` | 20 and 20 of 24 | 6, 0 | 2 and 2 |
+| `eval7/`, `eval12/`, `eval16/` | as in round 1 | 32, 0 | no change |
+| the development specs, a full run | 14 and 11 of 15 | 12, 3 | |
+
+- **The planted conflicts of our own sets are left alone**: 50 pairs asked
+  about, and not one of the 400 answers says "impossible".
+- **Most of the gain stays**: 54 of the 209 real pairs are called impossible
+  (65 in round 1), and 27 conflicts fewer are reported as they are.
+- **The order example of the Kiro blog is still marked**, in 3 of 3 runs,
+  with 7, 7 and 8 answers of 8: "An order that has been canceled and
+  refunded cannot currently be an active submitted order with available
+  inventory." The conflict of R1 and R5 stays in the report, as doubtful.
+  This is the known loss of the frozen design.
+
+**Frozen** after round 2, with the commit of this entry. Next: held-out
+`eval19/` and `real5/`, each run scored with and without the new facts (E28).
+
+**Raw data.** experiments/results/T33_*.json (round 1) and T34_*.json (round
+2). Those of the saved runs are small files that name the runs they belong
+to; T33_specs, T33_size and T34_specs are full runs. Each has its table.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

@@ -1,0 +1,728 @@
+{
+ "source": "C:/Work/kiroreverse/experiments/results/T30_eval17.json",
+ "conditions_added": "2026-11-26T17:38:57",
+ "conditions_failed": 0,
+ "prompts": {
+  "conditions": "You get two statements, A and B, about ONE snapshot of a software system and its surroundings. Each is a list of facts, each marked TRUE or FALSE, or given a value. A fact marked FALSE is not the case. A is the situation in which one requirement applies, B the situation in which another applies.\n\nCan A and B both be the case in the same snapshot? Judge only by what the facts mean, as their descriptions say. Answer:\n- impossible: by the meaning of the words alone, one cannot be true while the other is (a candle that was never lit cannot be blown out; a jar cannot be both sealed and open).\n- possible: both can be the case together. This is also the answer when one of them is a state in which the other should not happen, is not allowed, or would be unusual. Do not assume that the system or its users prevent anything, or that anything succeeds (a lawn can be closed to walkers, and someone can still walk on it).\n- unclear: the descriptions can reasonably be read both ways.\n\nFirst give the reason in one or two sentences, then the answer. If the answer is impossible, also write the fact that excludes the two as one plain sentence (\"A candle that was never lit cannot be blown out.\"); otherwise leave \"fact\" empty."
+ },
+ "added": [
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "R1",
+       "R11"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A change freeze restricts the deployment or merging of changes but does not logically prevent a build from passing a health check or a user from executing a command; these actions can occur simultaneously even if the freeze renders the release ineffective or blocked.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A change freeze restricts the deployment or merging of changes but does not logically prevent a build from passing a health check or a user from executing a command; these actions can occur simultaneously even if the freeze renders the release ineffective or blocked.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "There is no logical or operational contradiction between a build passing its health check and a user executing a release command, and the existence of a change freeze. While a change freeze might typically restrict such actions, the prompt specifies that the system or users do not prevent actions, meaning the command can be executed even if it violates policy.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "There is no logical or operational contradiction between a build passing its health check and a user executing a release command, and the existence of a change freeze. While a change freeze might typically restrict such actions, the prompt specifies that the system or users do not prevent actions, meaning the command can be executed even if it violates policy.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A build passing its health check and a user executing a release command are operational events that can occur concurrently with an organizational policy of change freeze; the freeze restricts changes but does not logically prevent a build from having passed or a command from being typed, even if the subsequent deployment is blocked.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A build passing its health check and a user executing a release command are operational events that can occur concurrently with an organizational policy of change freeze; the freeze restricts changes but does not logically prevent a build from having passed or a command from being typed, even if the subsequent deployment is blocked.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A build health check passing and a user executing a release command do not inherently contradict the existence of a change freeze; a freeze restricts changes but does not prevent commands from being executed or builds from passing, even if those actions might violate policy.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A build health check passing and a user executing a release command do not inherently contradict the existence of a change freeze; a freeze restricts changes but does not prevent commands from being executed or builds from passing, even if those actions might violate policy.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     },
+     {
+      "rules": [
+       "R8",
+       "R11"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "The execution of a rollback command in a state where no previous version exists is a logical error or failure state, but it does not inherently contradict the existence of a change freeze. A change freeze is a policy or status flag that can coexist with any system state, including error states or states where specific resources (like previous versions) are missing.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The execution of a rollback command in a state where no previous version exists is a logical error or failure state, but it does not inherently contradict the existence of a change freeze. A change freeze is a policy or status flag that can coexist with any system state, including error states or states where specific resources (like previous versions) are missing.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The facts in Statement A describe the execution of a specific command and the absence of a previous version, while Statement B describes a policy status (change freeze). These are independent conditions that do not logically contradict each other; a user can execute a command during a freeze, and the absence of a previous version is compatible with a change freeze being in effect.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The facts in Statement A describe the execution of a specific command and the absence of a previous version, while Statement B describes a policy status (change freeze). These are independent conditions that do not logically contradict each other; a user can execute a command during a freeze, and the absence of a previous version is compatible with a change freeze being in effect.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A change freeze is a policy state that can coexist with a user executing a rollback command, even if no previous version exists (which would likely cause the command to fail, but the execution event itself can still occur).",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A change freeze is a policy state that can coexist with a user executing a rollback command, even if no previous version exists (which would likely cause the command to fail, but the execution event itself can still occur).",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The execution of a rollback command and the absence of a previous version do not logically preclude a change freeze from being in force; these are independent system states that can coexist.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The execution of a rollback command and the absence of a previous version do not logically preclude a change freeze from being in force; these are independent system states that can coexist.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "R1",
+       "R11"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A build can pass health checks and a release command can be executed even while a change freeze is in force, as the freeze is a policy constraint rather than a physical impossibility that prevents the execution of commands or the success of checks.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A build can pass health checks and a release command can be executed even while a change freeze is in force, as the freeze is a policy constraint rather than a physical impossibility that prevents the execution of commands or the success of checks.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A change freeze is a policy or state that restricts changes, but it does not logically prevent a build from having already passed a health check or a user from executing a specific command; these actions can occur simultaneously or independently within the snapshot.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A change freeze is a policy or state that restricts changes, but it does not logically prevent a build from having already passed a health check or a user from executing a specific command; these actions can occur simultaneously or independently within the snapshot.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A change freeze is a policy or state that restricts changes, but it does not physically or logically prevent a build from passing a health check or a user from executing a command; these events can occur simultaneously, even if the command might be rejected or the build status might be flagged later.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A change freeze is a policy or state that restricts changes, but it does not physically or logically prevent a build from passing a health check or a user from executing a command; these events can occur simultaneously, even if the command might be rejected or the build status might be flagged later.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A change freeze typically restricts changes or releases, but it does not logically prevent a build from passing a health check or a user from executing a command; these are independent states where the command execution and build status can coexist with the freeze being active.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A change freeze typically restricts changes or releases, but it does not logically prevent a build from passing a health check or a user from executing a command; these are independent states where the command execution and build status can coexist with the freeze being active.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     },
+     {
+      "rules": [
+       "R8",
+       "R11"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "The execution of a rollback command and the absence of a previous version describe the state of the deployment system and data, while a change freeze is an administrative policy status; these facts do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The execution of a rollback command and the absence of a previous version describe the state of the deployment system and data, while a change freeze is an administrative policy status; these facts do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The absence of a previous version (Statement A) does not logically prevent a change freeze from being in force (Statement B), as a freeze is a policy status independent of the repository's version history. A user can execute a rollback command in an environment under a freeze, regardless of whether a previous version actually exists to complete the action.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The absence of a previous version (Statement A) does not logically prevent a change freeze from being in force (Statement B), as a freeze is a policy status independent of the repository's version history. A user can execute a rollback command in an environment under a freeze, regardless of whether a previous version actually exists to complete the action.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The facts describe a user attempting a rollback without a previous version (Statement A) and a change freeze being in effect (Statement B). These are independent system states or conditions that do not logically exclude one another; a user can attempt an invalid action during a freeze.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The facts describe a user attempting a rollback without a previous version (Statement A) and a change freeze being in effect (Statement B). These are independent system states or conditions that do not logically exclude one another; a user can attempt an invalid action during a freeze.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The absence of a previous version and the execution of a rollback command are not mutually exclusive with a change freeze being in force; a system can be in a frozen state while a user attempts an operation (even if it might fail or be blocked), and the lack of a previous version is an independent state regarding version history.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The absence of a previous version and the execution of a rollback command are not mutually exclusive with a change freeze being in force; a system can be in a frozen state while a user attempts an operation (even if it might fail or be blocked), and the lack of a previous version is an independent state regarding version history.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "R7",
+       "R11"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A domain can be subject to a legal dispute while simultaneously having a customer initiate a transfer request with a correct code; the existence of a dispute does not logically preclude the act of requesting a transfer or the correctness of the code.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A domain can be subject to a legal dispute while simultaneously having a customer initiate a transfer request with a correct code; the existence of a dispute does not logically preclude the act of requesting a transfer or the correctness of the code.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "There is no logical or factual contradiction between a domain being subject to a legal dispute and a customer initiating a transfer request with a correct code; the system may accept the request even if the domain is disputed, or the dispute may not technically prevent the initiation of the request.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "There is no logical or factual contradiction between a domain being subject to a legal dispute and a customer initiating a transfer request with a correct code; the system may accept the request even if the domain is disputed, or the dispute may not technically prevent the initiation of the request.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "There is no logical contradiction between a domain being subject to a legal dispute and a customer initiating a transfer request with a correct code; the dispute status describes the legal state, while the other facts describe the user's action and input validation.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "There is no logical contradiction between a domain being subject to a legal dispute and a customer initiating a transfer request with a correct code; the dispute status describes the legal state, while the other facts describe the user's action and input validation.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A domain can be subject to a legal dispute while a customer initiates a transfer request and provides a valid transfer code; the existence of a dispute does not logically preclude the initiation of a transfer or the validity of the code provided, even if the transfer might be blocked or failed due to the dispute.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A domain can be subject to a legal dispute while a customer initiates a transfer request and provides a valid transfer code; the existence of a dispute does not logically preclude the initiation of a transfer or the validity of the code provided, even if the transfer might be blocked or failed due to the dispute.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "R7",
+       "R11"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A domain can simultaneously be the subject of a legal dispute while a customer initiates a transfer request with the correct transfer code; the existence of a dispute does not logically prevent the initiation of a transfer request or the validity of the code at the moment of the snapshot.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A domain can simultaneously be the subject of a legal dispute while a customer initiates a transfer request with the correct transfer code; the existence of a dispute does not logically prevent the initiation of a transfer request or the validity of the code at the moment of the snapshot.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A domain can be subject to a legal dispute while a customer simultaneously initiates a transfer request with a valid code; the presence of a dispute does not logically preclude the action of requesting a transfer or the validation of a code, even if the transfer might eventually be blocked.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A domain can be subject to a legal dispute while a customer simultaneously initiates a transfer request with a valid code; the presence of a dispute does not logically preclude the action of requesting a transfer or the validation of a code, even if the transfer might eventually be blocked.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A domain can be subject to a legal dispute while a customer simultaneously initiates a transfer request and provides the correct transfer code; the dispute does not physically prevent the customer from making the request or entering the code.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A domain can be subject to a legal dispute while a customer simultaneously initiates a transfer request and provides the correct transfer code; the dispute does not physically prevent the customer from making the request or entering the code.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A domain can be the subject of a legal dispute while a customer simultaneously initiates a transfer request with a correct code; these conditions describe different aspects of the domain's status and are not mutually exclusive.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A domain can be the subject of a legal dispute while a customer simultaneously initiates a transfer request with a correct code; these conditions describe different aspects of the domain's status and are not mutually exclusive.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "R3",
+       "R11"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A server being in maintenance mode typically restricts services, but the prompt instructions explicitly state that one should not assume the system prevents actions or that states are mutually exclusive if not logically defined as such; a client can still submit a message even if the server is in maintenance mode.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A server being in maintenance mode typically restricts services, but the prompt instructions explicitly state that one should not assume the system prevents actions or that states are mutually exclusive if not logically defined as such; a client can still submit a message even if the server is in maintenance mode.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The facts describe a client submitting a message where the sender is allowed, and the server being in maintenance mode. There is no logical contradiction between a client being able to submit a message (and the sender being allowed) while the server is in maintenance mode; maintenance mode might restrict new connections or specific features, but it does not inherently prevent the act of submitting a message or the status of the sender's permission from being true simultaneously in a snapshot.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The facts describe a client submitting a message where the sender is allowed, and the server being in maintenance mode. There is no logical contradiction between a client being able to submit a message (and the sender being allowed) while the server is in maintenance mode; maintenance mode might restrict new connections or specific features, but it does not inherently prevent the act of submitting a message or the status of the sender's permission from being true simultaneously in a snapshot.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The statements describe independent system states and events; a client can submit a message from an allowed sender while the server is simultaneously in maintenance mode, as there is no logical contradiction between these facts.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The statements describe independent system states and events; a client can submit a message from an allowed sender while the server is simultaneously in maintenance mode, as there is no logical contradiction between these facts.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A server being in maintenance mode does not logically prevent a client from submitting a message or the sender from being allowed to do so; the system might still accept requests or the client might not be aware of the maintenance status, so both situations can coexist.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A server being in maintenance mode does not logically prevent a client from submitting a message or the sender from being allowed to do so; the system might still accept requests or the client might not be aware of the maintenance status, so both situations can coexist.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "R3",
+       "R11"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A server can be in maintenance mode while a client still attempts to submit a message, and the system can logically record that the sender is allowed to do so, even if the submission is later rejected or queued due to the maintenance state.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A server can be in maintenance mode while a client still attempts to submit a message, and the system can logically record that the sender is allowed to do so, even if the submission is later rejected or queued due to the maintenance state.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A server can be in maintenance mode while a client simultaneously submits a message that is allowed by the system's rules; the facts do not contain a logical contradiction preventing these states from coexisting.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A server can be in maintenance mode while a client simultaneously submits a message that is allowed by the system's rules; the facts do not contain a logical contradiction preventing these states from coexisting.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A server being in maintenance mode typically restricts or blocks client submissions, but the prompt explicitly states not to assume the system prevents actions; a client can still submit a message (and be allowed by policy) while the server is in maintenance mode.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A server being in maintenance mode typically restricts or blocks client submissions, but the prompt explicitly states not to assume the system prevents actions; a client can still submit a message (and be allowed by policy) while the server is in maintenance mode.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A server being in maintenance mode does not logically preclude a client from submitting a message or the sender being allowed to do so; the submission and permission can exist as states or events even if the server is currently in maintenance.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A server being in maintenance mode does not logically preclude a client from submitting a message or the sender being allowed to do so; the submission and permission can exist as states or events even if the server is currently in maintenance.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ]
+ ]
+}

@@ -1,0 +1,1195 @@
+{
+ "source": "C:/Work/kiroreverse/experiments/results/T30_eval8.json",
+ "conditions_added": "2026-11-26T17:37:07",
+ "conditions_failed": 0,
+ "prompts": {
+  "conditions": "You get two statements, A and B, about ONE snapshot of a software system and its surroundings. Each is a list of facts, each marked TRUE or FALSE, or given a value. A fact marked FALSE is not the case. A is the situation in which one requirement applies, B the situation in which another applies.\n\nCan A and B both be the case in the same snapshot? Judge only by what the facts mean, as their descriptions say. Answer:\n- impossible: by the meaning of the words alone, one cannot be true while the other is (a candle that was never lit cannot be blown out; a jar cannot be both sealed and open).\n- possible: both can be the case together. This is also the answer when one of them is a state in which the other should not happen, is not allowed, or would be unusual. Do not assume that the system or its users prevent anything, or that anything succeeds (a lawn can be closed to walkers, and someone can still walk on it).\n- unclear: the descriptions can reasonably be read both ways.\n\nFirst give the reason in one or two sentences, then the answer. If the answer is impossible, also write the fact that excludes the two as one plain sentence (\"A candle that was never lit cannot be blown out.\"); otherwise leave \"fact\" empty."
+ },
+ "added": [
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "R1",
+       "R6"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A supporter can request anonymity while their card payment is approved and the donation is made; these facts describe different aspects of the transaction (identity preference vs. financial status) that are not mutually exclusive.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can request anonymity while their card payment is approved and the donation is made; these facts describe different aspects of the transaction (identity preference vs. financial status) that are not mutually exclusive.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can request anonymity (Statement B) and simultaneously initiate a donation transaction that is successfully approved via card payment (Statement A); these facts do not contradict each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can request anonymity (Statement B) and simultaneously initiate a donation transaction that is successfully approved via card payment (Statement A); these facts do not contradict each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A card payment can be approved and a donation made while the supporter simultaneously requests anonymity, as these facts describe different aspects of the transaction (payment status vs. privacy preference) that are not mutually exclusive.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A card payment can be approved and a donation made while the supporter simultaneously requests anonymity, as these facts describe different aspects of the transaction (payment status vs. privacy preference) that are not mutually exclusive.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A card payment can be approved for a donation made by a supporter who has requested anonymity; these facts describe different aspects of the transaction (payment status, transaction initiation, and donor preference) that do not logically conflict.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A card payment can be approved for a donation made by a supporter who has requested anonymity; these facts describe different aspects of the transaction (payment status, transaction initiation, and donor preference) that do not logically conflict.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     },
+     {
+      "rules": [
+       "R4",
+       "R6"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A supporter can request to cancel their monthly donation and request anonymity simultaneously; these are independent attributes of the supporter's preferences or status. There is no logical or semantic contradiction between stopping a financial transaction and hiding one's identity.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can request to cancel their monthly donation and request anonymity simultaneously; these are independent attributes of the supporter's preferences or status. There is no logical or semantic contradiction between stopping a financial transaction and hiding one's identity.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can simultaneously request to cancel their donation and request anonymity; these are independent attributes or actions that do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can simultaneously request to cancel their donation and request anonymity; these are independent attributes or actions that do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can simultaneously request to cancel their monthly donation and request anonymity; these are independent attributes of the supporter's preferences or actions that do not logically exclude one another.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can simultaneously request to cancel their monthly donation and request anonymity; these are independent attributes of the supporter's preferences or actions that do not logically exclude one another.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can request to cancel their monthly donation and simultaneously request anonymity; these are independent attributes of the supporter's preferences that do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can request to cancel their monthly donation and simultaneously request anonymity; these are independent attributes of the supporter's preferences that do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "R1",
+       "R6"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A supporter can initiate a donation transaction and have their card payment approved while simultaneously requesting anonymity; these states do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can initiate a donation transaction and have their card payment approved while simultaneously requesting anonymity; these states do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can initiate a donation, have their card payment approved, and simultaneously request to remain anonymous; these actions are not mutually exclusive.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can initiate a donation, have their card payment approved, and simultaneously request to remain anonymous; these actions are not mutually exclusive.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can initiate and successfully complete a donation while simultaneously requesting that their identity remain anonymous.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can initiate and successfully complete a donation while simultaneously requesting that their identity remain anonymous.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The facts describe a successful donation transaction where the payment was approved, and separately state that the supporter requested anonymity. There is no logical contradiction between a payment being approved and the donor requesting to remain anonymous; these are independent attributes of the transaction.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The facts describe a successful donation transaction where the payment was approved, and separately state that the supporter requested anonymity. There is no logical contradiction between a payment being approved and the donor requesting to remain anonymous; these are independent attributes of the transaction.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     },
+     {
+      "rules": [
+       "R4",
+       "R6"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A supporter can simultaneously request to cancel their monthly donation and request anonymity; these two actions address different aspects of their relationship with the organization (financial vs. identity) and do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can simultaneously request to cancel their monthly donation and request anonymity; these two actions address different aspects of their relationship with the organization (financial vs. identity) and do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can simultaneously request to cancel a donation and request to remain anonymous; these are independent attributes of the supporter's preferences.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can simultaneously request to cancel a donation and request to remain anonymous; these are independent attributes of the supporter's preferences.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can simultaneously request to cancel their monthly donation and request to remain anonymous, as these are independent attributes of a user's preferences or actions.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can simultaneously request to cancel their monthly donation and request to remain anonymous, as these are independent attributes of a user's preferences or actions.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can request to cancel their monthly donation while also requesting anonymity; these are independent attributes or actions that do not logically contradict each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can request to cancel their monthly donation while also requesting anonymity; these are independent attributes or actions that do not logically contradict each other.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "Card accepted",
+       "Anonymous supporter"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A supporter can initiate a donation and have the payment approved while simultaneously requesting anonymity, as these facts describe different aspects of the transaction (financial status vs. identity preference) that do not logically conflict.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can initiate a donation and have the payment approved while simultaneously requesting anonymity, as these facts describe different aspects of the transaction (financial status vs. identity preference) that do not logically conflict.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can request anonymity for their donation while simultaneously making the donation and having the card payment approved; these facts describe compatible aspects of a single transaction.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can request anonymity for their donation while simultaneously making the donation and having the card payment approved; these facts describe compatible aspects of a single transaction.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can initiate a successful donation while simultaneously requesting anonymity; these actions are independent and do not contradict each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can initiate a successful donation while simultaneously requesting anonymity; these actions are independent and do not contradict each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can request anonymity while simultaneously initiating a donation that is successfully processed; these facts describe different aspects of the same transaction (identity preference vs. transaction outcome) and are not mutually exclusive.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can request anonymity while simultaneously initiating a donation that is successfully processed; these facts describe different aspects of the same transaction (identity preference vs. transaction outcome) and are not mutually exclusive.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     },
+     {
+      "rules": [
+       "Stop",
+       "Anonymous supporter"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A supporter can simultaneously request to cancel their monthly donation and request to remain anonymous; these two actions are independent and do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can simultaneously request to cancel their monthly donation and request to remain anonymous; these two actions are independent and do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can simultaneously request the cancellation of a monthly donation and request anonymity, as these are independent attributes of their account or preferences that do not logically conflict.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can simultaneously request the cancellation of a monthly donation and request anonymity, as these are independent attributes of their account or preferences that do not logically conflict.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can simultaneously request the cancellation of a monthly donation and request anonymity; these are independent preferences or actions that do not logically preclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can simultaneously request the cancellation of a monthly donation and request anonymity; these are independent preferences or actions that do not logically preclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can simultaneously request the cancellation of their monthly donation and request anonymity, as these are independent preferences regarding their contribution and identity.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A supporter can simultaneously request the cancellation of their monthly donation and request anonymity, as these are independent preferences regarding their contribution and identity.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "M4",
+       "M6"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A customer can be on a payment plan while simultaneously having a specific bill that remains unpaid for more than 30 days, either because the plan covers different debts or because the customer is in default regarding that specific invoice despite the plan.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A customer can be on a payment plan while simultaneously having a specific bill that remains unpaid for more than 30 days, either because the plan covers different debts or because the customer is in default regarding that specific invoice despite the plan.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A customer can be on a payment plan while simultaneously having a specific bill that is unpaid and overdue by more than 30 days, as payment plans typically do not prevent individual invoices from becoming delinquent if the scheduled payments are missed.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A customer can be on a payment plan while simultaneously having a specific bill that is unpaid and overdue by more than 30 days, as payment plans typically do not prevent individual invoices from becoming delinquent if the scheduled payments are missed.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A bill can remain unpaid for more than 30 days while the customer is simultaneously on a payment plan, either because the plan allows for such delays or because the plan is not being adhered to, making both states logically compatible.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A bill can remain unpaid for more than 30 days while the customer is simultaneously on a payment plan, either because the plan allows for such delays or because the plan is not being adhered to, making both states logically compatible.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A customer can be on a payment plan while simultaneously having a specific bill that remains unpaid for more than 30 days, either because the plan does not cover that bill or because payments under the plan have lapsed.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A customer can be on a payment plan while simultaneously having a specific bill that remains unpaid for more than 30 days, either because the plan does not cover that bill or because payments under the plan have lapsed.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "M4",
+       "M6"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A customer can have a bill that is more than 30 days overdue while simultaneously being enrolled in an approved payment plan to settle that debt or other obligations.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A customer can have a bill that is more than 30 days overdue while simultaneously being enrolled in an approved payment plan to settle that debt or other obligations.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A bill can remain unpaid and overdue while the customer is simultaneously enrolled in a payment plan, as plans often exist specifically to manage such outstanding balances.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A bill can remain unpaid and overdue while the customer is simultaneously enrolled in a payment plan, as plans often exist specifically to manage such outstanding balances.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A bill can remain unpaid for more than 30 days while the customer is simultaneously enrolled in an approved payment plan to settle that debt.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A bill can remain unpaid for more than 30 days while the customer is simultaneously enrolled in an approved payment plan to settle that debt.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A customer can have a bill that is over 30 days past due while simultaneously being enrolled in an approved payment plan, as payment plans are often established specifically to manage such outstanding balances.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A customer can have a bill that is over 30 days past due while simultaneously being enrolled in an approved payment plan, as payment plans are often established specifically to manage such outstanding balances.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "M4",
+       "M6"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A customer can be on a payment plan while still having a specific bill that is unpaid for more than 30 days, as payment plans often coexist with outstanding balances or specific overdue items.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A customer can be on a payment plan while still having a specific bill that is unpaid for more than 30 days, as payment plans often coexist with outstanding balances or specific overdue items.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A bill can remain unpaid for over 30 days while the customer is simultaneously enrolled in a payment plan, as these describe different aspects of the billing relationship (the specific status of an invoice vs. the general contractual arrangement with the customer).",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A bill can remain unpaid for over 30 days while the customer is simultaneously enrolled in a payment plan, as these describe different aspects of the billing relationship (the specific status of an invoice vs. the general contractual arrangement with the customer).",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A customer can be enrolled in a payment plan while still having a specific bill that is unpaid and past the 30-day threshold, either due to a missed installment, a plan violation, or a delay in processing that does not immediately remove the plan status.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A customer can be enrolled in a payment plan while still having a specific bill that is unpaid and past the 30-day threshold, either due to a missed installment, a plan violation, or a delay in processing that does not immediately remove the plan status.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A customer can be enrolled in a payment plan while simultaneously having a specific bill that is overdue by more than 30 days, either because they missed a scheduled payment within the plan or because the plan does not cover that particular bill. There is no logical contradiction between being on a plan and having an overdue balance.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A customer can be enrolled in a payment plan while simultaneously having a specific bill that is overdue by more than 30 days, either because they missed a scheduled payment within the plan or because the plan does not cover that particular bill. There is no logical contradiction between being on a plan and having an overdue balance.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "Accepted container",
+       "Out of service"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A machine being out of service is a status that typically prevents operation, but it does not logically preclude the physical state of a container having been inserted or its barcode being on a list; the system state and physical object states are not mutually exclusive by definition.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A machine being out of service is a status that typically prevents operation, but it does not logically preclude the physical state of a container having been inserted or its barcode being on a list; the system state and physical object states are not mutually exclusive by definition.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A machine can be in an out-of-service state while a container is still physically inserted and its barcode is present on a list, as these facts describe different aspects of the system (operational status vs. physical/logical data) that do not inherently contradict each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A machine can be in an out-of-service state while a container is still physically inserted and its barcode is present on a list, as these facts describe different aspects of the system (operational status vs. physical/logical data) that do not inherently contradict each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A machine can be in an out-of-service state while a customer has physically inserted a container and the system has processed the barcode; being out of service is a status flag that does not physically prevent the insertion event from having occurred or the barcode from being valid.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A machine can be in an out-of-service state while a customer has physically inserted a container and the system has processed the barcode; being out of service is a status flag that does not physically prevent the insertion event from having occurred or the barcode from being valid.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A machine can be in an out-of-service state while a container is physically present inside it or inserted into it, as the out-of-service status typically prevents new operations or transactions but does not remove items already in the machine or prevent the physical presence of a container.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A machine can be in an out-of-service state while a container is physically present inside it or inserted into it, as the out-of-service status typically prevents new operations or transactions but does not remove items already in the machine or prevent the physical presence of a container.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "Accepted container",
+       "Out of service"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A machine can be in an out-of-service state while a container is physically inserted and its barcode is scanned/present on the list; the system does not necessarily prevent the physical act of insertion or the recording of data while in that state.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A machine can be in an out-of-service state while a container is physically inserted and its barcode is scanned/present on the list; the system does not necessarily prevent the physical act of insertion or the recording of data while in that state.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The machine being in an out-of-service state does not logically prevent a customer from inserting a container or the system from checking if the barcode is on the list; these are independent system states and user actions that can coexist.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The machine being in an out-of-service state does not logically prevent a customer from inserting a container or the system from checking if the barcode is on the list; these are independent system states and user actions that can coexist.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A machine being in an out-of-service state does not logically preclude the physical act of a customer inserting a container or the subsequent check of its barcode against a list; these are independent states of the system and the environment.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A machine being in an out-of-service state does not logically preclude the physical act of a customer inserting a container or the subsequent check of its barcode against a list; these are independent states of the system and the environment.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A machine can be in an out-of-service state while a container is physically inserted and its barcode is scanned or recognized by the system, as these facts describe the physical presence and data status rather than the machine's operational readiness for a transaction.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A machine can be in an out-of-service state while a container is physically inserted and its barcode is scanned or recognized by the system, as these facts describe the physical presence and data status rather than the machine's operational readiness for a transaction.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "Accepted container",
+       "Out of service"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A machine can be in an out-of-service state (e.g., due to maintenance or a fault) while a customer is still physically inserting a container and the system is still able to check if the barcode is on the deposit list. The states do not logically exclude each other; the machine's status does not automatically prevent the physical action or the data check from occurring in the snapshot.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A machine can be in an out-of-service state (e.g., due to maintenance or a fault) while a customer is still physically inserting a container and the system is still able to check if the barcode is on the deposit list. The states do not logically exclude each other; the machine's status does not automatically prevent the physical action or the data check from occurring in the snapshot.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A machine can be in an out-of-service state while a customer still physically inserts a container into it, and that container's barcode could coincidentally match an entry on the deposit list; the physical state of the machine does not logically preclude the presence of an object or the data match described in A.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A machine can be in an out-of-service state while a customer still physically inserts a container into it, and that container's barcode could coincidentally match an entry on the deposit list; the physical state of the machine does not logically preclude the presence of an object or the data match described in A.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A machine being in an out-of-service state does not logically prevent a customer from physically inserting a container, nor does it prevent the barcode of that container from being present on a deposit list; these are independent states that can coexist.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A machine being in an out-of-service state does not logically prevent a customer from physically inserting a container, nor does it prevent the barcode of that container from being present on a deposit list; these are independent states that can coexist.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A machine can be in an out-of-service state while a customer has physically inserted a container, and that container's barcode can still be checked against the deposit list.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A machine can be in an out-of-service state while a customer has physically inserted a container, and that container's barcode can still be checked against the deposit list.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ]
+ ]
+}

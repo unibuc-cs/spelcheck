@@ -125,7 +125,7 @@ this order:
      the facts rarely say that one of the two always holds, so only 2 of 13
      were marked (T20, E16). This is a known limit now.
 
-### 2.1 The plan for step 42: can the conditions of two rules that clash both hold? (not built yet)
+### 2.1 The plan for step 42: can the conditions of two rules that clash both hold? (built, frozen; held-out runs open)
 
 On real specs most conflicts that nobody planted are artefacts, and the
 largest group is a situation that cannot happen (8 of the 20 read in T32):
@@ -153,11 +153,16 @@ One try, as a fifth check of step 6 (`probe.py`), after the other four:
    are two different definite states, each saying something that the other
    does not. Two rules with the same condition, or a rule and a special
    case of it, are not asked about: they apply together by their words.
-2. **The question.** The model is asked eight times, with the prompt of the
-   questions about two outcomes, about what only one condition says and
-   what only the other says: "A: tasks_md_exists is FALSE. B: tasks_md_read
-   is TRUE, all_tasks_complete is FALSE. Can both hold in the same
-   snapshot?" It does not see the requirements.
+2. **The question.** The model is asked eight times about what only one
+   condition says and what only the other says: "A: tasks_md_exists is
+   FALSE. B: tasks_md_read is TRUE, all_tasks_complete is FALSE. Can both
+   be the case in the same snapshot?" It does not see the requirements. The
+   question has a prompt of its own since the first development runs (T33):
+   asked with the prompt of the questions about two outcomes, the model
+   also called impossible what a well-behaved system would merely prevent
+   ("a server in maintenance mode does not allow clients to submit
+   messages"). The prompt now says that "impossible" means excluded by the
+   meaning of the words alone.
 3. **The fact.** If more than half of the answers say "impossible", that is
    an assumed fact: `(not (and <condition of R5> <condition of R7>))`. A
    conflict proven from the rules alone then stays in the report, marked
@@ -1293,9 +1298,13 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       reported as a conflict that is not doubtful, and whose conditions
       differ, the model is asked whether the two conditions can hold
       together; if most answers say no, that is an assumed fact, and the
-      conflict is doubtful or gone (plan in 2.1). Development on `real4/`
-      and the sets with planted overlaps; held-out `eval19/` and `real5/`,
-      with and without the new facts on the same runs
+      conflict is doubtful or gone (plan in 2.1). T33 (development, on
+      saved runs): on `real4/` 129 conflicts that nobody planted against
+      156; no planted conflict of our own sets is touched since the question
+      has a prompt of its own; the conflict of R1 and R5 in the order
+      example is marked doubtful in 3 of 3 runs. Frozen. Open: held-out
+      `eval19/` and `real5/`, with and without the new facts on the same
+      runs (E28)
 - [x] **Step 41 — a second read for the rules that got no symbol**:
       `real4/` written first: 13 real changes that create a new spec, each
       also with one planted conflict. The rules that are not accepted and

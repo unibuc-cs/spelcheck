@@ -1,0 +1,342 @@
+{
+ "source": "C:/Work/kiroreverse/experiments/results/T31_mixed.json",
+ "conditions_added": "2026-11-26T17:07:27",
+ "conditions_failed": 0,
+ "prompts": {
+  "conditions": "You get two statements, A and B, about ONE snapshot of a software system. Each is a list of facts, each marked TRUE or FALSE, or given a value. A fact marked FALSE is not the case.\n\nCan A and B both hold in the same snapshot? Judge only by what the facts mean, as their descriptions say. Answer:\n- impossible: A and B exclude each other by their meaning (a lamp cannot be lit and dark at once; if every drawer is shut, the top drawer is not open).\n- possible: both can hold together (a form can be signed and also dated), even if a system would rarely do both.\n- unclear: the descriptions can reasonably be read both ways.\n\nFirst give the reason in one or two sentences, then the answer. If the answer is impossible, also write the fact that excludes the two as one plain sentence (\"A lamp cannot be lit and dark at once.\"); otherwise leave \"fact\" empty."
+ },
+ "added": [
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "R1",
+       "R22"
+      ],
+      "answers": {
+       "possible": 7,
+       "impossible": 1,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A runner can be in the process of collecting a bib and be cleared to start the race while their entry fee is still unpaid (e.g., if payment is pending or waived at the gate, or if the system allows clearing before final payment confirmation). These states do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "There is no logical contradiction between a runner collecting a bib and being cleared to start, and the runner's entry fee being unpaid; these are independent attributes of the runner's status and payment.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A runner can be in the process of collecting their bib and be cleared to start the race while their entry fee remains unpaid, as these statuses do not logically exclude each other in a general system context.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "In a typical race management system, a runner is only cleared to start after all administrative requirements, including payment of the entry fee, are met; therefore, the state of having an unpaid fee logically excludes being cleared to start.",
+        "answer": "impossible",
+        "fact": "A runner cannot be cleared to start the race if their entry fee is unpaid."
+       },
+       {
+        "reason": "A runner can be in the process of collecting a bib and be cleared to start the race while still having an outstanding entry fee, as payment status is a separate attribute from race readiness or bib collection.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "There is no logical contradiction between a runner collecting a bib and being cleared to start (Statement A) and having an unpaid entry fee (Statement B). While typical race rules might prevent a runner from being cleared to start without payment, the definitions provided do not state that clearance depends on payment status, so both states can coexist in the system's snapshot.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A runner can be in the process of collecting a bib and be cleared to start, while simultaneously having an unpaid entry fee if the system allows partial completion or if the fee status is tracked independently of the bib/start clearance.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A runner can be in the process of collecting a bib and be cleared to start while technically having an unpaid entry fee if the system allows entry or clearance before final payment confirmation, or if 'cleared to start' refers to eligibility rather than financial settlement. There is no logical contradiction between the physical act of collecting a bib, the status of being cleared, and the financial status of the fee.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     },
+     {
+      "rules": [
+       "R3",
+       "R7"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A runner can belong to a called start wave while a heat warning is simultaneously in force, as these are independent environmental and operational states that do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A heat warning being in force is an environmental condition that does not logically prevent a start wave from being called or a runner from belonging to it; these are independent system states.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A heat warning being in force is an environmental condition that does not logically prevent a start wave from being called or a runner from belonging to it; these events can co-occur.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The facts in Statement A concern the status of a runner and a start wave, while the fact in Statement B concerns a weather condition; these are independent states that can coexist.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The fact that a runner belongs to a called start wave and that a heat warning is in force describe independent states (participation status vs. environmental condition) that do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A heat warning being in force is an environmental condition that does not logically prevent a start wave from being called or a runner from belonging to that wave; race organizers may proceed with starts despite weather warnings.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The status of a heat warning is an environmental condition that is logically independent of the operational status of a race's start waves and runner assignments; both can occur simultaneously.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The facts in Statement A describe the status of a specific runner and a start wave, while the fact in Statement B describes an environmental condition (heat warning). These are independent aspects of a race or event system and do not logically conflict; a race can proceed with waves being called even if a heat warning is active.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     },
+     {
+      "rules": [
+       "R23",
+       "R24"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A runner crossing the finish line is an event that determines a result, and a protest against that result can be filed and remain open after the event has occurred. These two states do not contradict each other and can coexist in the same system snapshot.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A runner can cross the finish line and subsequently have a protest opened against the resulting placement; these events are not mutually exclusive.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A runner crossing the finish line is a physical event that concludes a race, while a protest being open is an administrative status that can exist concurrently or subsequently; these two facts do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A runner can cross the finish line and subsequently have a protest opened against the resulting placement; these events are sequential and compatible.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A runner can cross the finish line (completing the race) while a protest against the resulting standings is simultaneously open, as these events are not mutually exclusive.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A runner crossing the finish line is an event that triggers the need to verify results, which often leads to the opening of a protest if there is a dispute; these two states can coexist in the same system snapshot.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A runner can cross the finish line and subsequently have a protest opened against the resulting placement or timing, so these two events are not mutually exclusive and can coexist in the same system state.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A runner can cross the finish line, establishing a result, while simultaneously a protest against that specific result is open, as protests often occur after a race concludes.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "R1",
+       "R22"
+      ],
+      "answers": {
+       "possible": 7,
+       "impossible": 1,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A runner can be in the process of collecting a bib and be cleared to start the race while simultaneously having an outstanding entry fee, as these are independent states (one physical/administrative, one financial).",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A runner can be in the process of collecting a bib and be cleared to start (or marked as such) while their entry fee remains unpaid, as these are distinct administrative and physical states that do not strictly exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A runner can be in the process of collecting a bib and being cleared to start while their entry fee is technically unpaid; these are independent states that do not logically exclude each other (e.g., payment might be pending or waived).",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "In most race management systems, a runner must pay the entry fee before they can be cleared to start the race. Therefore, the state of being cleared to start implies the entry fee has been paid, which contradicts the fact that the entry fee is unpaid.",
+        "answer": "impossible",
+        "fact": "A runner cannot be cleared to start a race while their entry fee remains unpaid."
+       },
+       {
+        "reason": "A runner can be in the process of collecting their bib and be cleared to start while their entry fee is technically still unpaid or in a pending state; these administrative statuses do not strictly exclude one another in a general logical sense, as the system might allow the start clearance before the payment status flag is updated.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A runner can be in the process of collecting a bib and being cleared to start (often a preliminary clearance or status flag) while their payment status is still recorded as unpaid in the system; these states are not mutually exclusive in many race management systems where payment verification might be asynchronous or a grace period exists.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The facts in Statement A (bib collection and clearance to start) do not logically preclude the fact in Statement B (unpaid entry fee). A runner could potentially be cleared to start or have collected a bib while the payment status is still marked as unpaid due to a system lag or a specific race policy allowing start before payment confirmation.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A runner can be in the process of collecting a bib and be cleared to start a race even if their entry fee has not yet been paid (e.g., if payment is allowed at the start line or there is a grace period).",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     },
+     {
+      "rules": [
+       "R3",
+       "R7"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A heat warning being in force is an environmental condition that does not logically prevent a start wave from being called or a runner from belonging to that wave, as race organizers may still proceed despite weather warnings.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The facts in Statement A describe the operational status of a race start (runner assigned and wave called), while Statement B describes an environmental safety condition (heat warning). These two conditions are independent and can occur simultaneously.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The fact that a runner belongs to a called start wave describes the scheduling status of a participant, while a heat warning describes an environmental condition; these two facts do not logically exclude each other and can coexist.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The state of a runner's wave and a start wave being called is logically independent of the environmental condition of a heat warning being in force; a race can proceed with waves called even during a heat warning.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A runner can belong to a called start wave while a heat warning is simultaneously in force, as these conditions describe different aspects of the event environment (participation status vs. weather conditions).",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A heat warning being in force is an environmental condition that does not logically prevent a start wave from being called or a runner from belonging to that wave; these events can coexist.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "There is no logical contradiction between a runner being assigned to a called start wave and a heat warning being in force; these are independent states regarding race logistics and weather conditions.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The presence of a heat warning is an environmental condition that does not logically conflict with the procedural status of a race wave being called and a runner belonging to it; these events can coexist.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     },
+     {
+      "rules": [
+       "R23",
+       "R24"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A runner can cross the finish line (establishing a result) and subsequently have a protest filed against that result; these events are not mutually exclusive.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A runner can cross the finish line and a protest against that result can be open simultaneously; these are distinct events that do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A runner can cross the finish line while a protest regarding the race result is simultaneously open.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A runner crossing the finish line is a physical event that concludes the race for that participant, but it does not prevent an administrative or procedural protest from being opened against the resulting classification or outcome.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A runner can cross the finish line (completing the race) while a protest against that specific result is simultaneously open (pending resolution). These events do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A runner crossing the finish line determines the result, which can subsequently be challenged by a protest; these events are not mutually exclusive and can occur in the same state of the system (e.g., after the race ends but before the protest is resolved).",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A runner can cross the finish line while a protest regarding that race's result remains open, as these are independent states that can coexist.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A runner can cross the finish line while simultaneously having a protest open against the race result, as these events can occur concurrently or in close succession without logical contradiction.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ]
+ ]
+}

@@ -4,6 +4,7 @@
     python -m experiments.evaluate --rescore experiments/results/E7_eval2.json
     python -m experiments.evaluate --rescore experiments/results/E7_eval2.json --second-base-url http://localhost:18201/v1
     python -m experiments.evaluate --rescore experiments/results/E7_eval2.json --outcomes-base-url http://localhost:18200/v1 --name T22_eval2
+    python -m experiments.evaluate --rescore experiments/results/E27_real4.json --conditions-base-url http://localhost:18200/v1 --name T33_real4
 
 The first form asks the LLM. Every spec folder under --specs is formalized
 `--runs` times; each run makes `--symbol-sets` formal models of the spec (the
@@ -23,6 +24,9 @@ and needs only the formal model, so on saved runs it does what it would have
 done in the run itself. Only what it adds is saved, under the new name, in a
 small file that names the runs it belongs to; --rescore on that file loads
 both (see load).
+
+The fifth form does the same for the questions about the conditions of two
+rules that clash (probe.py, check 5), which come after check 4.
 
 All forms then score the saved runs with the solver and write
 experiments/results/<name>.md. No GPU is needed for that, so the same runs can be
@@ -70,7 +74,7 @@ from speccheck.checks import analyze, combine, find_gaps, settled
 from speccheck.formalize import formalize, formalize_sets, judge_second, second_reading
 from speccheck.llm import LLM
 from speccheck.logic import Vocabulary
-from speccheck.probe import outcomes
+from speccheck.probe import conditions, outcomes
 
 # How the check is run by default. Each configuration below changes some of it:
 #   sets         symbol sets used (the first n formal models of a run)
@@ -89,7 +93,7 @@ from speccheck.probe import outcomes
 #                pairs of outcomes (False: leave them out)
 DEFAULT = {"sets": 1, "rule": "any", "facts": True, "max_group": 3,
            "questions": True, "link_checks": True, "doubtful": True, "settle": 0.5,
-           "second": False, "repair": True, "outcomes": True}
+           "second": False, "repair": True, "outcomes": True, "conditions": True}
 
 CONFIGURATIONS = [
     ("default (1 symbol set)",               {}),
@@ -105,6 +109,8 @@ CONFIGURATIONS = [
     ("facts vote without the parentheses repair", {"repair": False}),
     ("without the questions about outcomes", {"outcomes": False}),
     ("without the questions about outcomes, doubtful set aside", {"outcomes": False, "doubtful": False}),
+    ("without the questions about conditions", {"conditions": False}),
+    ("without the questions about conditions, doubtful set aside", {"conditions": False, "doubtful": False}),
     ("pairs of rules only",                  {"max_group": 2}),
     ("3 symbol sets, found with any",        {"sets": 3}),
     ("3 symbol sets, found with most",       {"sets": 3, "rule": "majority"}),
@@ -228,6 +234,7 @@ def collect(base_url: str, specs_root: Path, runs: int, symbol_sets: int, temper
                     "link": probe_module.LINK_SYSTEM,
                     "fact": probe_module.FACT_SYSTEM,
                     "outcomes": probe_module.OUTCOMES_SYSTEM,
+                    "conditions": probe_module.CONDITIONS_SYSTEM,
                     "read_more": formalize_module.READ_MORE},
         "specs": specs,
         "runs": [{"spec": name, **result} for name, result in zip(jobs, results)],
@@ -293,38 +300,51 @@ def outcomes_one(job: tuple) -> dict:
         return {"error": str(error)}
 
 
-def add_outcomes(data: dict, base_url: str) -> None:
-    """Probe check 4 on every saved formal model, with the model at `base_url`.
+def conditions_one(job: tuple) -> dict:
+    """Probe check 5 on one saved formal model, as outcomes_one does check 4."""
+    base_url, model, temperature = job
+    try:
+        conditions(LLM(base_url), model, Vocabulary(model["symbols"]), temperature, keep_answers=True)
+        return model
+    except Exception as error:
+        return {"error": str(error)}
+
+
+def add_outcomes(data: dict, base_url: str, what: str = "outcomes") -> None:
+    """Probe check 4 (or 5, with what="conditions") on every saved formal model, with the model at `base_url`.
 
     The runs must have been made without the check: afterwards, every fact
-    with "between" counts as added by this call (see additions).
+    with "between" (check 5: with "about": "conditions") counts as added by
+    this call (see additions).
     """
     models = [model for run in data["runs"] for model in run.get("models", [])]
     temperature = data.get("temperature", 0.7)
+    one = outcomes_one if what == "outcomes" else conditions_one
     with ProcessPoolExecutor(max_workers=32) as pool:
-        done = list(pool.map(outcomes_one, [(base_url, model, temperature) for model in models]))
+        done = list(pool.map(one, [(base_url, model, temperature) for model in models]))
     failed = 0
     for model, result in zip(models, done):
         if "error" in result:
             failed += 1
         else:
             model.update(result)
-    data["prompts"]["outcomes"] = probe_module.OUTCOMES_SYSTEM
-    data["outcomes_added"] = datetime.now().isoformat(timespec="seconds")
-    data["outcomes_failed"] = failed
+    data["prompts"][what] = probe_module.OUTCOMES_SYSTEM if what == "outcomes" else probe_module.CONDITIONS_SYSTEM
+    data[f"{what}_added"] = datetime.now().isoformat(timespec="seconds")
+    data[f"{what}_failed"] = failed
 
 
-def additions(data: dict, source: Path) -> dict:
+def additions(data: dict, source: Path, what: str = "outcomes") -> dict:
     """What add_outcomes added to the runs saved in `source`, as a file of its own."""
+    pairs = "outcome_pairs" if what == "outcomes" else "condition_pairs"
+    added = (lambda fact: "between" in fact) if what == "outcomes" else (lambda fact: fact.get("about") == "conditions")
     return {
         "source": source.as_posix(),
-        "outcomes_added": data["outcomes_added"],
-        "outcomes_failed": data["outcomes_failed"],
-        "prompts": {"outcomes": data["prompts"]["outcomes"]},
+        f"{what}_added": data[f"{what}_added"],
+        f"{what}_failed": data[f"{what}_failed"],
+        "prompts": {what: data["prompts"][what]},
         # For each run, for each of its formal models: the pairs asked about
         # (with every answer) and the assumed facts they gave.
-        "added": [[{"outcome_pairs": model.get("outcome_pairs", []),
-                    "facts": [fact for fact in model["background"] if "between" in fact]}
+        "added": [[{pairs: model.get(pairs, []), "facts": [fact for fact in model["background"] if added(fact)]}
                    for model in run.get("models", [])] for run in data["runs"]],
     }
 
@@ -334,13 +354,13 @@ def load(raw_file: Path) -> dict:
     data = json.loads(raw_file.read_text(encoding="utf-8"))
     if "source" not in data:
         return data
-    runs = json.loads(Path(data["source"]).read_text(encoding="utf-8"))
+    runs = load(Path(data["source"]))  # the source may be such a file too
     for run, models in zip(runs["runs"], data["added"]):
         for model, added in zip(run.get("models", []), models):
-            model["outcome_pairs"] = added["outcome_pairs"]
             model["background"] = model["background"] + added["facts"]
+            model.update({key: value for key, value in added.items() if key != "facts"})
     runs["prompts"].update(data["prompts"])
-    return {**runs, "outcomes_added": data["outcomes_added"], "outcomes_failed": data["outcomes_failed"]}
+    return {**runs, **{key: value for key, value in data.items() if key.endswith(("_added", "_failed"))}}
 
 
 def without_repair(model: dict) -> dict:
@@ -369,8 +389,11 @@ def findings_of(run: dict, config: dict) -> tuple[list[dict], list[dict]]:
         models = [{**model, "background": []} for model in models]
     if not config["repair"]:
         models = [without_repair(model) for model in models]
-    if not config["outcomes"]:  # the facts of probe check 4 have "between"
+    if not config["outcomes"]:  # the facts of probe checks 4 and 5 have "between"
         models = [{**model, "background": [fact for fact in model["background"] if "between" not in fact]}
+                  for model in models]
+    if not config["conditions"]:  # those of check 5 also have "about": "conditions"
+        models = [{**model, "background": [fact for fact in model["background"] if fact.get("about") != "conditions"]}
                   for model in models]
     # readings=False: only the counts are needed here (see reading_effects).
     findings = combine([analyze(model, config["max_group"], questions=config["questions"],
@@ -505,6 +528,8 @@ def gap_scores(data: dict) -> list[str]:
 
 # The configurations under which a change is scored (labels as in CONFIGURATIONS).
 CHANGE_CONFIGURATIONS = ("default (1 symbol set)", "doubtful conflicts set aside",
+                         "without the questions about conditions",
+                         "without the questions about conditions, doubtful set aside",
                          "without assumed facts and links")
 
 
@@ -850,6 +875,8 @@ def main() -> None:
     parser.add_argument("--second-base-url", help="with --rescore: add step 7 with the second model at this server")
     parser.add_argument("--outcomes-base-url", help="with --rescore: add the questions about pairs of outcomes, "
                                                     "asked at this server, and save the runs under --name")
+    parser.add_argument("--conditions-base-url", help="with --rescore: add the questions about the conditions of two "
+                                                      "rules that clash, asked at this server, and save them under --name")
     parser.add_argument("--incremental", action="store_true",
                         help="OpenSpec changes: formalize the specs of a project once, and each change on top")
     args = parser.parse_args()
@@ -861,11 +888,12 @@ def main() -> None:
         if args.second_base_url:
             add_second_readings(data, args.second_base_url)
             raw_file.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-        if args.outcomes_base_url:
-            add_outcomes(data, args.outcomes_base_url)
-            raw_file = Path("experiments/results") / f"{args.name}.json"  # the old file stays as it is
-            raw_file.write_text(json.dumps(additions(data, args.rescore), indent=1, ensure_ascii=False) + "\n",
-                                encoding="utf-8")
+        for what, base_url in (("outcomes", args.outcomes_base_url), ("conditions", args.conditions_base_url)):
+            if base_url:
+                add_outcomes(data, base_url, what)
+                raw_file = Path("experiments/results") / f"{args.name}.json"  # the old file stays as it is
+                raw_file.write_text(json.dumps(additions(data, args.rescore, what), indent=1, ensure_ascii=False) + "\n",
+                                    encoding="utf-8")
     elif args.base_url:
         raw_file = Path("experiments/results") / f"{args.name}.json"
         data = collect(args.base_url, args.specs, args.runs, args.symbol_sets, args.temperature,

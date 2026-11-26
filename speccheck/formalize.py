@@ -32,13 +32,15 @@ and counting below is done by this file:
                 the outcomes of the other rules ("the record is retained").
                 If most answers agree ("not retained"), that meaning becomes
                 an assumed fact, a "link" (example: _links).
-    6. probe    four checks by simple questions (probe.py). About one
+    6. probe    five checks by simple questions (probe.py). About one
                 requirement: is the translation the only reading of the
                 words? does the rule demand what its link claims? does it
-                agree with the facts that make it impossible to obey? And
-                about two rules that can apply together: can what they
-                demand both be the case? If not, that is one more assumed
-                fact.
+                agree with the facts that make it impossible to obey? About
+                two rules that can apply together: can what they demand both
+                be the case? If not, that is one more assumed fact. And
+                about two rules that clash: can their conditions both hold?
+                If not, that is an assumed fact too, and the clash is
+                doubtful.
     7. second   optional: a second model, of another family, translates every
                 rule N times as in step 2. For each answer Z3 is asked whether
                 it means the same as the translation; if no more than half
@@ -63,7 +65,7 @@ import z3
 
 from .llm import LLM
 from .logic import Rule, Vocabulary
-from .probe import MAJORITY, outcomes, question
+from .probe import MAJORITY, conditions, outcomes, question
 
 # Entropy thresholds for the cluster step (natural logarithm).
 # With 8 samples:  8/0 -> 0.00, 7/1 -> 0.38   accepted
@@ -424,6 +426,9 @@ def formalize(llm: LLM, spec_text: str, samples: int = 8, temperature: float = 0
     question(llm, formal, vocab, shown, temperature, keep_samples, only=new)
     # Its fourth check adds assumed facts about pairs of outcomes ("between").
     outcomes(llm, formal, vocab, temperature, keep_samples, only=new)
+    # Its fifth check adds assumed facts about the conditions of two rules that
+    # clash ("between", with "about": "conditions").
+    conditions(llm, formal, vocab, temperature, keep_samples, only=new)
     # Step 7 (optional) adds "second" to the rules.
     if second is not None and not base:
         second_reading(second, formal, samples, temperature, keep_samples)

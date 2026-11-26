@@ -4,7 +4,7 @@ Why: earlier steps keep whatever most of 8 LLM answers say. But 8 answers
 from the same model often repeat the same mistake. So here the LLM gets a
 different, simpler question, about ONE requirement at a time.
 
-Four checks. Each question is asked 8 times and the answers are counted.
+Five checks. Each question is asked 8 times and the answers are counted.
 
 1. Does the requirement really mean what we translated?
 
@@ -47,8 +47,26 @@ Four checks. Each question is asked 8 times and the answers are counted.
                 assumed fact it can only add a conflict, and the report
                 quotes it.
 
+5. Can the conditions of two requirements that clash both hold?  (conditions, below)
+
+     Two rules that clash only in a situation that cannot happen: "WHEN
+     tasks.md does not exist THEN proceed without a warning" and "WHEN the
+     agent reads tasks.md AND incomplete tasks are found THEN display a
+     warning". To Z3 a file can be read and not exist, so it reports a
+     conflict there, unless a fact says that the two conditions exclude each
+     other.
+     question:  "A: tasks_md_exists is FALSE. B: tasks_md_read is TRUE,
+                 all_tasks_complete is FALSE. Can both hold in the same
+                 snapshot?"
+     result:    if most answers say "impossible", that becomes an assumed
+                fact, (not (and <condition of one> <condition of the other>)).
+                A conflict proven from the rules alone then stays in the
+                report, marked doubtful; one that needs an assumed fact is
+                not found any more (checks.find_conflicts).
+
 In formal.json the answers end up under "probes" (in a rule), "check" (in a
-link or a fact) and "outcome_pairs"; a fact of check 4 has "between".
+link or a fact), "outcome_pairs" and "condition_pairs"; a fact of check 4 or
+5 has "between", and one of check 5 also "about": "conditions".
 """
 
 from collections import Counter
@@ -491,6 +509,35 @@ def _contradicting_facts(vocab: Vocabulary, rule, facts: dict) -> list[str]:
 # ------------------------------------------------------------------- check 4
 
 
+# Check 5 asks about two conditions. Its prompt says more than that of check
+# 4 about what "impossible" may rest on. Asked with the prompt of check 4, the
+# model also called impossible what a well-behaved system would merely
+# prevent: "An out-of-service machine cannot accept a container insertion",
+# for a rule that says what the machine does when it is out of service (T33).
+CONDITIONS_SYSTEM = """\
+You get two statements, A and B, about ONE snapshot of a software system and \
+its surroundings. Each is a list of facts, each marked TRUE or FALSE, or \
+given a value. A fact marked FALSE is not the case. A is the situation in \
+which one requirement applies, B the situation in which another applies.
+
+Can A and B both be the case in the same snapshot? Judge only by what the \
+facts mean, as their descriptions say. Answer:
+- impossible: by the meaning of the words alone, one cannot be true while \
+the other is (a candle that was never lit cannot be blown out; a jar cannot \
+be both sealed and open).
+- possible: both can be the case together. This is also the answer when one \
+of them is a state in which the other should not happen, is not allowed, or \
+would be unusual. Do not assume that the system or its users prevent \
+anything, or that anything succeeds (a lawn can be closed to walkers, and \
+someone can still walk on it).
+- unclear: the descriptions can reasonably be read both ways.
+
+First give the reason in one or two sentences, then the answer. If the answer \
+is impossible, also write the fact that excludes the two as one plain \
+sentence ("A candle that was never lit cannot be blown out."); otherwise \
+leave "fact" empty."""
+
+
 def outcomes(llm: LLM, formal: dict, vocab: Vocabulary, temperature: float,
              keep_answers: bool = False, only: set | None = None) -> None:
     """Step 6, check 4: for rules that can apply together, can both get what they demand?
@@ -546,6 +593,112 @@ def outcomes(llm: LLM, formal: dict, vocab: Vocabulary, temperature: float,
                 "support": f"{counts['impossible']}/{len(answers)}",
                 "between": [first["id"], second["id"]],
             })
+
+
+def conditions(llm: LLM, formal: dict, vocab: Vocabulary, temperature: float,
+               keep_answers: bool = False, only: set | None = None) -> None:
+    """Step 6, check 5: for two rules that clash, can their conditions both hold?
+
+    Runs last, on all the facts that the other checks left or added. The
+    model sees the two conditions as facts with their descriptions, without
+    what the two conditions say alike, and not the requirements. The question
+    is that of check 4, two statements about one snapshot, with a prompt of
+    its own (CONDITIONS_SYSTEM) and the same form of answer.
+
+    Adds to formal:
+        "condition_pairs"  every pair asked about, with the count of its answers
+        "background"       one assumed fact for each pair that most answers call
+                           impossible:
+                               {"id": "F9", "between": ["R5", "R7"], "about": "conditions",
+                                "support": "7/8", "formula": "(not (and <condition of R5> <condition of R7>))", ...}
+
+    keep_answers  also store every answer with its reason (for the experiments)
+    only          ask only about pairs with one of these rules, and keep the
+                  pairs that the model has already (formalize with `base`)
+    """
+    descriptions = {s["name"]: s["description"] for s in formal["symbols"]}
+    pairs = [pair for pair in _clashing_pairs(vocab, formal)
+             if only is None or pair[0]["id"] in only or pair[1]["id"] in only]
+    if len(pairs) > MAX_PAIRS:
+        formal["condition_pairs_skipped"] = len(pairs) - MAX_PAIRS
+        pairs = pairs[:MAX_PAIRS]
+
+    def ask(pair: tuple) -> list[dict]:
+        _, _, first_only, second_only = pair
+        prompt = (f"Statement A:\n{describe(first_only, descriptions)}\n\n"
+                  f"Statement B:\n{describe(second_only, descriptions)}")
+        return llm.ask(CONDITIONS_SYSTEM, prompt, OUTCOMES_SCHEMA, ANSWERS, temperature)
+
+    with ThreadPoolExecutor(max_workers=16) as pool:  # LLM calls only
+        replies = list(pool.map(ask, pairs))
+
+    formal["condition_pairs"] = [] if only is None else list(formal.get("condition_pairs", []))
+    for (first, second, _, _), answers in zip(pairs, replies):
+        counts = Counter({choice: 0 for choice in OUTCOMES_SCHEMA["properties"]["answer"]["enum"]})
+        counts.update(reply["answer"] for reply in answers)
+        record = {"rules": [first["id"], second["id"]], "answers": dict(counts)}
+        if keep_answers:
+            record["replies"] = answers
+        formal["condition_pairs"].append(record)
+        if counts["impossible"] > MAJORITY * len(answers):
+            sentence = next((reply["fact"].strip() for reply in answers
+                             if reply["answer"] == "impossible" and reply["fact"].strip()), "")
+            formal["background"].append({
+                "id": f"F{len(formal['background']) + 1}",
+                "text": (f"The conditions of {first['id']} and {second['id']} cannot both hold"
+                         + (f": {sentence}" if sentence else ".")),
+                "formula": f"(not (and {first['antecedent']} {second['antecedent']}))",
+                "support": f"{counts['impossible']}/{len(answers)}",
+                "between": [first["id"], second["id"]],
+                "about": "conditions",
+            })
+
+
+def _clashing_pairs(vocab: Vocabulary, formal: dict) -> list[tuple]:
+    """Check 5: the pairs of rules to ask about, as (rule, rule, what only the condition of one
+    says, what only the condition of the other says).
+
+    A pair is asked about when it would be reported as a conflict that is
+    not doubtful, and its two conditions are different enough to exclude each
+    other:
+
+    - both rules can apply in one situation that the assumed facts allow, and
+      there they cannot both be obeyed (with the facts);
+    - they do not react to two different events (that conflict is marked
+      doubtful anyway, see checks._search);
+    - each condition is one definite state of its symbols, so that it can be
+      shown as a list of facts (not "x or y", not "at least 5");
+    - each condition says something that the other does not. Two rules with
+      the same condition, or a rule and a special case of it ("... AND the
+      folder already exists"), can apply together by their words.
+
+    A rejected rule takes no part, and an ambiguous one is taken with its
+    first reading, as in checks.py.
+    """
+    facts = [vocab.parse(fact["formula"]) for fact in formal["background"]
+             if fact.get("check", {}).get("verdict") != "rejected"]
+    usable = []  # (rule dict, compiled rule, the events it reacts to, its condition as facts)
+    for data in formal["rules"]:
+        if data.get("status") != "rejected":
+            rule = vocab.rule(data)
+            condition = _as_facts(vocab, rule.antecedent)
+            if condition:
+                usable.append((data, rule, vocab.events_of(data), condition))
+    pairs = []
+    for index, (first, a, a_events, a_condition) in enumerate(usable):
+        for second, b, b_events, b_condition in usable[index + 1:]:
+            if a_events and b_events and not a_events & b_events:
+                continue  # two different events
+            a_only = {name: value for name, value in a_condition.items() if name not in b_condition}
+            b_only = {name: value for name, value in b_condition.items() if name not in a_condition}
+            if not a_only or not b_only:
+                continue  # the same condition, or one is a special case of the other
+            if vocab.impossible([a.antecedent, b.antecedent] + facts):
+                continue  # they never apply together, as Z3 or the facts already say
+            if not vocab.impossible([a.antecedent, b.antecedent, a.consequent, b.consequent] + facts):
+                continue  # both can be obeyed there: nothing to doubt
+            pairs.append((first, second, a_only, b_only))
+    return pairs
 
 
 def _open_pairs(vocab: Vocabulary, formal: dict) -> list[tuple]:

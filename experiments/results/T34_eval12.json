@@ -1,0 +1,1683 @@
+{
+ "source": "C:/Work/kiroreverse/experiments/results/E18_eval12.json",
+ "conditions_added": "2026-11-26T17:43:29",
+ "conditions_failed": 0,
+ "prompts": {
+  "conditions": "You get two statements, A and B, about ONE snapshot of a software system and its surroundings. Each is a list of facts, each marked TRUE or FALSE, or given a value. A fact marked FALSE is not the case. A is the situation in which one requirement applies, B the situation in which another applies.\n\nCan A and B both be the case in the same snapshot? Judge only by what the facts mean, as their descriptions say. Answer:\n- impossible: by the meaning of the words alone, one cannot be true while the other is (a candle that was never lit cannot be blown out; a jar cannot be both sealed and open).\n- possible: both can be the case together. This is also the answer when one of them is a state in which the other should not happen, is not allowed, or would be unusual. Do not assume that the system or its users prevent anything, or that anything succeeds (a lawn can be closed to walkers, and someone can still walk on it).\n- unclear: the descriptions can reasonably be read both ways.\n\nFirst give the reason in one or two sentences, then the answer. If the answer is impossible, also write the fact that excludes the two as one plain sentence (\"A candle that was never lit cannot be blown out.\"); otherwise leave \"fact\" empty."
+ },
+ "added": [
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "A1",
+       "A6"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "There is no logical or factual contradiction between a feeder containing food and a scheduled feeding time arriving (Statement A) and a tank being treated with medicine (Statement B). These are independent states that can coexist in the same system snapshot.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "There is no logical or factual contradiction between a feeder containing food and a scheduled feeding time arriving (Statement A) and a tank being treated with medicine (Statement B). These are independent states that can coexist in the same system snapshot.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The state of the food feeder and the arrival of feeding time (Statement A) are independent of whether the tank is currently being treated with medicine (Statement B); these conditions can coexist in the same snapshot.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The state of the food feeder and the arrival of feeding time (Statement A) are independent of whether the tank is currently being treated with medicine (Statement B); these conditions can coexist in the same snapshot.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The presence of food in the feeder and the arrival of feeding time do not logically prevent the tank from being treated with medicine, as these are independent states of the system.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The presence of food in the feeder and the arrival of feeding time do not logically prevent the tank from being treated with medicine, as these are independent states of the system.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The state of the food feeder (containing food) and the scheduled feeding time are independent of whether the tank is currently being treated with medicine; these conditions do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The state of the food feeder (containing food) and the scheduled feeding time are independent of whether the tank is currently being treated with medicine; these conditions do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "A1",
+       "A6"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "The facts describe the state of a pet feeder (containing food and feeding time) and a tank (being treated). These are distinct components or conditions that do not logically contradict each other; a tank can be treated while the feeder is full and feeding time has arrived.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The facts describe the state of a pet feeder (containing food and feeding time) and a tank (being treated). These are distinct components or conditions that do not logically contradict each other; a tank can be treated while the feeder is full and feeding time has arrived.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The presence of food in the feeder and the arrival of a scheduled feeding time do not logically preclude the aquarium tank from being treated with medicine; these are independent system states.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The presence of food in the feeder and the arrival of a scheduled feeding time do not logically preclude the aquarium tank from being treated with medicine; these are independent system states.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The presence of food in the feeder and the arrival of feeding time do not logically preclude the tank from being treated with medicine, as these are independent states of different components or processes.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The presence of food in the feeder and the arrival of feeding time do not logically preclude the tank from being treated with medicine, as these are independent states of different components or processes.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The presence of food in the feeder (implied by feeder_empty being FALSE) and the arrival of feeding time do not logically preclude the tank from being treated with medicine, as these are independent system states.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The presence of food in the feeder (implied by feeder_empty being FALSE) and the arrival of feeding time do not logically preclude the tank from being treated with medicine, as these are independent system states.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "A1",
+       "A6"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "The presence of food in the feeder and the arrival of feeding time do not logically preclude the tank from being treated with medicine, as these are independent states of different components.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The presence of food in the feeder and the arrival of feeding time do not logically preclude the tank from being treated with medicine, as these are independent states of different components.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The feeder can contain food while the scheduled feeding time arrives, and the tank can simultaneously be undergoing a medical treatment; these conditions do not logically preclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The feeder can contain food while the scheduled feeding time arrives, and the tank can simultaneously be undergoing a medical treatment; these conditions do not logically preclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "There is no logical contradiction between a feeder containing food and a scheduled feeding time arriving, and a tank being treated with medicine; these are independent states that can coexist in the same snapshot.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "There is no logical contradiction between a feeder containing food and a scheduled feeding time arriving, and a tank being treated with medicine; these are independent states that can coexist in the same snapshot.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The statements describe independent aspects of the system: the status of the food feeder and feeding schedule in A, and the treatment status of the tank in B. There is no logical contradiction between having food in the feeder (or it being feeding time) and the tank being treated with medicine.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The statements describe independent aspects of the system: the status of the food feeder and feeding schedule in A, and the treatment status of the tank in B. There is no logical contradiction between having food in the feeder (or it being feeding time) and the tank being treated with medicine.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "B1",
+       "B6"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A ward can be under quarantine while simultaneously having a free bed and a patient who has arrived, as quarantine is a status of the ward and does not logically preclude the existence of free capacity or the arrival of a patient.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A ward can be under quarantine while simultaneously having a free bed and a patient who has arrived, as quarantine is a status of the ward and does not logically preclude the existence of free capacity or the arrival of a patient.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A ward can be under quarantine while still having free beds and receiving patients; quarantine restricts entry/exit but does not logically preclude the physical presence of a patient or the availability of a bed.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A ward can be under quarantine while still having free beds and receiving patients; quarantine restricts entry/exit but does not logically preclude the physical presence of a patient or the availability of a bed.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A ward can be under quarantine while simultaneously having free beds and receiving a patient; quarantine status does not logically preclude the physical availability of beds or the act of a patient arriving (even if procedurally irregular or in violation of protocol, the physical states can coexist).",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A ward can be under quarantine while simultaneously having free beds and receiving a patient; quarantine status does not logically preclude the physical availability of beds or the act of a patient arriving (even if procedurally irregular or in violation of protocol, the physical states can coexist).",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A ward can be under quarantine (restricted access or movement) while simultaneously having an available bed and a patient who has arrived, as quarantine restricts movement but does not logically preclude the physical existence of a free bed or the presence of a patient.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A ward can be under quarantine (restricted access or movement) while simultaneously having an available bed and a patient who has arrived, as quarantine restricts movement but does not logically preclude the physical existence of a free bed or the presence of a patient.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "B1",
+       "B6"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A ward can be under quarantine while still having at least one bed physically available (free) and a patient physically present (arrived), as quarantine restricts movement in and out but does not necessarily prevent the existence of free capacity or the presence of individuals within the ward.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A ward can be under quarantine while still having at least one bed physically available (free) and a patient physically present (arrived), as quarantine restricts movement in and out but does not necessarily prevent the existence of free capacity or the presence of individuals within the ward.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A ward can be under quarantine while simultaneously having a free bed and a patient present; these conditions do not logically exclude one another.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A ward can be under quarantine while simultaneously having a free bed and a patient present; these conditions do not logically exclude one another.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A ward being under quarantine is a status that restricts movement or access but does not logically preclude the existence of free beds or the arrival of a patient (who might be arriving for isolation or treatment within the quarantine protocol).",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A ward being under quarantine is a status that restricts movement or access but does not logically preclude the existence of free beds or the arrival of a patient (who might be arriving for isolation or treatment within the quarantine protocol).",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A ward can be under quarantine while simultaneously having a free bed and a patient who has arrived on the ward; quarantine restricts entry or exit but does not logically preclude the presence of a patient or the availability of a bed.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A ward can be under quarantine while simultaneously having a free bed and a patient who has arrived on the ward; quarantine restricts entry or exit but does not logically preclude the presence of a patient or the availability of a bed.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "B1",
+       "B6"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A ward can be under quarantine while simultaneously having a free bed and a patient who has arrived (for example, a new patient arriving for treatment of a non-quarantine condition, or arriving before the quarantine status was fully enforced, or the quarantine refers to specific isolation areas while the general ward status allows for other facts to hold). The facts do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A ward can be under quarantine while simultaneously having a free bed and a patient who has arrived (for example, a new patient arriving for treatment of a non-quarantine condition, or arriving before the quarantine status was fully enforced, or the quarantine refers to specific isolation areas while the general ward status allows for other facts to hold). The facts do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A ward can be under quarantine while simultaneously having at least one free bed and having received a patient arrival (such as for isolation or emergency admission), so these conditions do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A ward can be under quarantine while simultaneously having at least one free bed and having received a patient arrival (such as for isolation or emergency admission), so these conditions do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A ward can be under quarantine while still having a free bed, and a patient can arrive at a quarantined ward (even if such arrival is procedurally restricted, the physical state of the ward and the event of arrival are not logically mutually exclusive in a snapshot).",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A ward can be under quarantine while still having a free bed, and a patient can arrive at a quarantined ward (even if such arrival is procedurally restricted, the physical state of the ward and the event of arrival are not logically mutually exclusive in a snapshot).",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A ward can be under quarantine while simultaneously having free beds and having received a patient (e.g., a patient arriving for isolation or a staff member entering). These states do not logically exclude each other; quarantine restricts movement or contact but does not necessarily prevent the physical presence of a patient or the availability of a bed.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A ward can be under quarantine while simultaneously having free beds and having received a patient (e.g., a patient arriving for isolation or a staff member entering). These states do not logically exclude each other; quarantine restricts movement or contact but does not necessarily prevent the physical presence of a patient or the availability of a bed.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "R3",
+       "R6"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A guest presenting a token for retrieval and a performance being in progress are independent events that can occur simultaneously without logical contradiction.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A guest presenting a token for retrieval and a performance being in progress are independent events that can occur simultaneously without logical contradiction.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A guest can present a token for retrieval while a performance is currently in progress, as these two states do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A guest can present a token for retrieval while a performance is currently in progress, as these two states do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The act of presenting a token for retrieval and a performance being in progress are independent events that can occur simultaneously in a venue, such as a theater or event space.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The act of presenting a token for retrieval and a performance being in progress are independent events that can occur simultaneously in a venue, such as a theater or event space.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A guest can be presenting a token for retrieval (such as a coat check or ticket) while a performance is simultaneously in progress at the venue; these events do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A guest can be presenting a token for retrieval (such as a coat check or ticket) while a performance is simultaneously in progress at the venue; these events do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "R3",
+       "R6"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A guest presenting a token for retrieval can occur independently of or during a theatre performance; there is no logical contradiction between a guest holding a token and a show being in progress.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A guest presenting a token for retrieval can occur independently of or during a theatre performance; there is no logical contradiction between a guest holding a token and a show being in progress.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A guest presenting a token for retrieval (e.g., for a cloak or parking) and a theatre performance being in progress are independent events that can occur simultaneously in the same environment.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A guest presenting a token for retrieval (e.g., for a cloak or parking) and a theatre performance being in progress are independent events that can occur simultaneously in the same environment.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A guest can present a token for retrieval while a theatre performance is currently in progress; these events do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A guest can present a token for retrieval while a theatre performance is currently in progress; these events do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A guest presenting a token for retrieval (such as a cloak or bag) and a theatre performance running are independent activities that can occur simultaneously in the same location.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A guest presenting a token for retrieval (such as a cloak or bag) and a theatre performance running are independent activities that can occur simultaneously in the same location.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "R3",
+       "R6"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "A guest presenting a retrieval token and a theatre performance running are independent events that can occur simultaneously without logical contradiction.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A guest presenting a retrieval token and a theatre performance running are independent events that can occur simultaneously without logical contradiction.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A guest presenting a token for retrieval (such as for a coat or item) can occur while a theatre performance is running, as guests may leave their seats or use services during the show.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A guest presenting a token for retrieval (such as for a coat or item) can occur while a theatre performance is running, as guests may leave their seats or use services during the show.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A guest presenting a token for retrieval and a theatre performance being in progress are independent events that can occur simultaneously within a theatre environment.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A guest presenting a token for retrieval and a theatre performance being in progress are independent events that can occur simultaneously within a theatre environment.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A guest can present a token for retrieval (such as a coat or item) while a theatre performance is simultaneously in progress; these two states do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "A guest can present a token for retrieval (such as a coat or item) while a theatre performance is simultaneously in progress; these two states do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "R1",
+       "R6"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "An employee can have valid bank details and be included in a pay run process while simultaneously being on unpaid leave, as the pay run process typically handles various payroll events including the recording of zero payments or leave deductions for employees on unpaid leave.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can have valid bank details and be included in a pay run process while simultaneously being on unpaid leave, as the pay run process typically handles various payroll events including the recording of zero payments or leave deductions for employees on unpaid leave.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can have valid bank details and be included in a pay run while simultaneously being on unpaid leave, as these statuses describe different aspects of the employee's record and current situation without logical contradiction.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can have valid bank details and be included in a pay run while simultaneously being on unpaid leave, as these statuses describe different aspects of the employee's record and current situation without logical contradiction.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can have valid bank details on file and be subject to a pay run process while simultaneously being on unpaid leave, as these are independent states regarding financial data, process initiation, and employment status.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can have valid bank details on file and be subject to a pay run process while simultaneously being on unpaid leave, as these are independent states regarding financial data, process initiation, and employment status.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can have valid bank details and be subject to a pay run process while simultaneously being on unpaid leave, as the pay run process typically involves processing all employees to determine their specific payouts (which may be zero for unpaid leave).",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can have valid bank details and be subject to a pay run process while simultaneously being on unpaid leave, as the pay run process typically involves processing all employees to determine their specific payouts (which may be zero for unpaid leave).",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "R1",
+       "R6"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "An employee can have their bank details stored in the system and be part of the general pay run process (e.g., for record-keeping or zero-pay processing) while simultaneously being on unpaid leave, as these states do not mutually exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can have their bank details stored in the system and be part of the general pay run process (e.g., for record-keeping or zero-pay processing) while simultaneously being on unpaid leave, as these states do not mutually exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can have their bank details stored in the system and be on unpaid leave simultaneously. The initiation of a pay run is a system-level process that does not preclude an individual employee from being on unpaid leave, as the run may process other employees or the leave status simply means no payment is issued to this specific individual during that run.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can have their bank details stored in the system and be on unpaid leave simultaneously. The initiation of a pay run is a system-level process that does not preclude an individual employee from being on unpaid leave, as the run may process other employees or the leave status simply means no payment is issued to this specific individual during that run.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can have their bank details on file and the pay run process initiated while simultaneously being on unpaid leave; being on unpaid leave typically affects the amount or timing of payment but does not logically preclude the existence of bank records or the initiation of the payroll process.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can have their bank details on file and the pay run process initiated while simultaneously being on unpaid leave; being on unpaid leave typically affects the amount or timing of payment but does not logically preclude the existence of bank records or the initiation of the payroll process.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can have their bank details stored in the system and the pay run process can be initiated while simultaneously being on unpaid leave; being on unpaid leave typically means no salary is paid, but it does not prevent the existence of bank details or the start of the general pay run process for other employees or for processing deductions/records.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can have their bank details stored in the system and the pay run process can be initiated while simultaneously being on unpaid leave; being on unpaid leave typically means no salary is paid, but it does not prevent the existence of bank details or the start of the general pay run process for other employees or for processing deductions/records.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "R1",
+       "R6"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "An employee can be on unpaid leave while still having valid bank details on file, and a pay run can be initiated for the month even if specific employees are on unpaid leave (the system processes the payroll cycle, potentially with zero payment for those employees).",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can be on unpaid leave while still having valid bank details on file, and a pay run can be initiated for the month even if specific employees are on unpaid leave (the system processes the payroll cycle, potentially with zero payment for those employees).",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can have valid bank details and be subject to a pay run initiation while simultaneously being on unpaid leave, as these are independent states that do not logically exclude each other (e.g., the pay run might process other items or the leave might be for a specific period within the month).",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can have valid bank details and be subject to a pay run initiation while simultaneously being on unpaid leave, as these are independent states that do not logically exclude each other (e.g., the pay run might process other items or the leave might be for a specific period within the month).",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can have valid bank details on file and be included in an initiated pay run process while simultaneously being on unpaid leave, as the pay run may process other payroll items or the leave status does not automatically remove them from the process before execution.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can have valid bank details on file and be included in an initiated pay run process while simultaneously being on unpaid leave, as the pay run may process other payroll items or the leave status does not automatically remove them from the process before execution.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can have valid bank details and a pay run can be initiated while simultaneously being on unpaid leave, as these states do not logically exclude each other; the system may process the run even if the employee receives no funds or is skipped.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can have valid bank details and a pay run can be initiated while simultaneously being on unpaid leave, as these states do not logically exclude each other; the system may process the run even if the employee receives no funds or is skipped.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "R1",
+       "R6"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "The facts in Statement A describe the status and content of a specific timesheet submission, while Statement B describes the administrative status of a department. There is no logical contradiction between an employee submitting a complete timesheet and their department being under audit; these are independent states that can coexist.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The facts in Statement A describe the status and content of a specific timesheet submission, while Statement B describes the administrative status of a department. There is no logical contradiction between an employee submitting a complete timesheet and their department being under audit; these are independent states that can coexist.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can submit a timesheet that includes entries for all working days while their department is simultaneously undergoing an audit; these two states do not mutually exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can submit a timesheet that includes entries for all working days while their department is simultaneously undergoing an audit; these two states do not mutually exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The submission of a timesheet by an employee and the status of their department being under audit are independent conditions that can coexist without logical contradiction.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The submission of a timesheet by an employee and the status of their department being under audit are independent conditions that can coexist without logical contradiction.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "There is no logical contradiction between an employee submitting a timesheet where all working days have entries and their department being under audit. These are independent states that can coexist in the same system snapshot.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "There is no logical contradiction between an employee submitting a timesheet where all working days have entries and their department being under audit. These are independent states that can coexist in the same system snapshot.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "R1",
+       "R6"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "An employee can submit a timesheet that covers all working days while simultaneously their department is undergoing an audit; these states are not mutually exclusive.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can submit a timesheet that covers all working days while simultaneously their department is undergoing an audit; these states are not mutually exclusive.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can submit a timesheet where every working day has an entry, and their department can simultaneously be under audit; these facts describe different aspects of the system state that do not logically conflict.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can submit a timesheet where every working day has an entry, and their department can simultaneously be under audit; these facts describe different aspects of the system state that do not logically conflict.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The submission of a timesheet with complete entries for all working days is an employee action that can occur simultaneously with a department being under audit; the audit status does not logically prevent the existence of a submitted timesheet.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The submission of a timesheet with complete entries for all working days is an employee action that can occur simultaneously with a department being under audit; the audit status does not logically prevent the existence of a submitted timesheet.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can submit a timesheet where every working day has an entry, and independently, their department can be under audit. These two conditions do not contradict each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can submit a timesheet where every working day has an entry, and independently, their department can be under audit. These two conditions do not contradict each other.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "R1",
+       "R6"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "An employee can submit a timesheet with complete entries while their department is simultaneously undergoing an audit; these two conditions do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can submit a timesheet with complete entries while their department is simultaneously undergoing an audit; these two conditions do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The submission of a timesheet and the condition that all working days have entries are independent of the administrative status of the department being under audit; an employee can submit a complete timesheet while their department is simultaneously undergoing an audit.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The submission of a timesheet and the condition that all working days have entries are independent of the administrative status of the department being under audit; an employee can submit a complete timesheet while their department is simultaneously undergoing an audit.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The submission of a timesheet with complete entries for all working days is a routine administrative action that can occur simultaneously with a department being under audit; the audit status does not logically prevent an employee from submitting a timesheet.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The submission of a timesheet with complete entries for all working days is a routine administrative action that can occur simultaneously with a department being under audit; the audit status does not logically prevent an employee from submitting a timesheet.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can submit a timesheet with complete entries for all working days even if their department is currently undergoing an audit; these two conditions do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can submit a timesheet with complete entries for all working days even if their department is currently undergoing an audit; these two conditions do not logically exclude each other.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     },
+     {
+      "rules": [
+       "R4",
+       "R6"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "An employee being late with their timesheet and their department being under audit are independent states that can coexist without logical contradiction.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee being late with their timesheet and their department being under audit are independent states that can coexist without logical contradiction.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee being late with their timesheet and their department being under audit are independent states that can coexist in the same system snapshot.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee being late with their timesheet and their department being under audit are independent states that can coexist in the same system snapshot.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee being late with their timesheet and a department being under audit are independent states that do not logically exclude each other; both conditions can exist simultaneously within the same system snapshot.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee being late with their timesheet and a department being under audit are independent states that do not logically exclude each other; both conditions can exist simultaneously within the same system snapshot.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can be late with a timesheet while their department is simultaneously under audit; these are independent states that can coexist.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "An employee can be late with a timesheet while their department is simultaneously under audit; these are independent states that can coexist.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "T1",
+       "T6"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "The absence of open faults and the sending of a start command (Statement A) do not logically preclude the presence of ice on the blades (Statement B). Ice can accumulate on turbine blades even when no specific 'fault' is flagged in the system, or independently of the operator's action to start the turbine.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The absence of open faults and the sending of a start command (Statement A) do not logically preclude the presence of ice on the blades (Statement B). Ice can accumulate on turbine blades even when no specific 'fault' is flagged in the system, or independently of the operator's action to start the turbine.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The absence of an open fault and the sending of a start command do not preclude the physical presence of ice on the turbine blades; these are independent states that can coexist.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The absence of an open fault and the sending of a start command do not preclude the physical presence of ice on the turbine blades; these are independent states that can coexist.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The facts in Statement A indicate that there are no open faults and a start command has been sent, while Statement B indicates that ice is currently detected on the blades. These conditions describe different aspects of the system's state (fault status/command vs. environmental condition) and do not logically preclude each other; a turbine can have ice on its blades while simultaneously having no open faults and receiving a start command.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The facts in Statement A indicate that there are no open faults and a start command has been sent, while Statement B indicates that ice is currently detected on the blades. These conditions describe different aspects of the system's state (fault status/command vs. environmental condition) and do not logically preclude each other; a turbine can have ice on its blades while simultaneously having no open faults and receiving a start command.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The facts describe independent conditions: the absence of open faults, the sending of a start command, and the presence of ice on the blades. There is no logical contradiction between these states in a single snapshot.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The facts describe independent conditions: the absence of open faults, the sending of a start command, and the presence of ice on the blades. There is no logical contradiction between these states in a single snapshot.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "T1",
+       "T6"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "The absence of an open fault and the sending of a start command (Statement A) are not mutually exclusive with the detection of ice on the blades (Statement B); ice can accumulate or be detected while the turbine is idle or during startup, and the presence of ice does not logically preclude the operator from sending a start command or the system from having no other open faults.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The absence of an open fault and the sending of a start command (Statement A) are not mutually exclusive with the detection of ice on the blades (Statement B); ice can accumulate or be detected while the turbine is idle or during startup, and the presence of ice does not logically preclude the operator from sending a start command or the system from having no other open faults.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The absence of open faults and the sending of a start command are not mutually exclusive with the physical detection of ice on the turbine blades; a turbine can have ice detected while no faults are registered and a start command has been issued.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The absence of open faults and the sending of a start command are not mutually exclusive with the physical detection of ice on the turbine blades; a turbine can have ice detected while no faults are registered and a start command has been issued.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The statements describe independent conditions: the absence of open faults and the sending of a start command (A) are logically compatible with the detection of ice on the blades (B). There is no semantic contradiction between these facts; a turbine can have ice on its blades while having no recorded faults and receiving a start command.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The statements describe independent conditions: the absence of open faults and the sending of a start command (A) are logically compatible with the detection of ice on the blades (B). There is no semantic contradiction between these facts; a turbine can have ice on its blades while having no recorded faults and receiving a start command.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The facts describe independent states: the absence of open faults and the sending of a start command (A) do not logically preclude the physical presence of ice on the blades (B).",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The facts describe independent states: the absence of open faults and the sending of a start command (A) do not logically preclude the physical presence of ice on the blades (B).",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ],
+  [
+   {
+    "condition_pairs": [
+     {
+      "rules": [
+       "T1",
+       "T6"
+      ],
+      "answers": {
+       "possible": 8,
+       "impossible": 0,
+       "unclear": 0
+      },
+      "replies": [
+       {
+        "reason": "The absence of an open fault and the sending of a start command do not preclude the physical presence of ice on the blades, as these are independent states regarding system status and environmental conditions.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The absence of an open fault and the sending of a start command do not preclude the physical presence of ice on the blades, as these are independent states regarding system status and environmental conditions.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The absence of an open fault and the sending of a start command are not mutually exclusive with the detection of ice on the blades, as these are independent physical and system states that can coexist in a snapshot.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The absence of an open fault and the sending of a start command are not mutually exclusive with the detection of ice on the blades, as these are independent physical and system states that can coexist in a snapshot.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The absence of an open fault and the sending of a start command do not preclude the physical presence of ice on the turbine blades, as these are independent states that can coexist.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The absence of an open fault and the sending of a start command do not preclude the physical presence of ice on the turbine blades, as these are independent states that can coexist.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The absence of an open fault and the sending of a start command do not logically prevent ice from being detected on the turbine blades; these are independent physical and operational states that can coexist.",
+        "answer": "possible",
+        "fact": ""
+       },
+       {
+        "reason": "The absence of an open fault and the sending of a start command do not logically prevent ice from being detected on the turbine blades; these are independent physical and operational states that can coexist.",
+        "answer": "possible",
+        "fact": ""
+       }
+      ]
+     }
+    ],
+    "facts": []
+   }
+  ]
+ ]
+}
