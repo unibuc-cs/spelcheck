@@ -1,12 +1,14 @@
 # speccheck: management paper and presentation
 
-Start with **[paper.pdf](paper.pdf)**: 37 pages, comprising 2 front-matter pages, 18 main-text pages, 1 reference page and 16 appendix pages. The companion **[slides.pdf](slides.pdf)** has 31 main slides and 11 appendix slides, 42 in total. Authentication is the presentation's running example, from the early definitions through OpenSpec change checking. The paper also retains order processing as a secondary example. Deletion versus retention is a brief supporting example for assumptions. Both documents describe source revision `498dea06df250964013b2abb2b06c94d341b223b`; this documentation edition is dated 25 November 2026.
+Start with **[paper.pdf](paper.pdf)**: 37 pages, comprising 2 front-matter pages, 18 main-text pages, 1 reference page and 16 appendix pages. The companion **[slides.pdf](slides.pdf)** has 32 main slides and 11 appendix slides, 43 in total. Authentication is the presentation's running example, from the early definitions through OpenSpec change checking. The paper also retains order processing as a secondary example. Deletion versus retention is a brief supporting example for assumptions. Both documents describe source revision `498dea06df250964013b2abb2b06c94d341b223b`. The paper edition is dated 25 November 2026; an introductory slide was added on 26 November.
 
 The language is deliberately colleague-to-colleague. Essential definitions, short listings and examples stay in the main argument. Detailed pseudocode and replay instructions are in the technical appendices. Constructed examples are distinguished from saved experiment output.
 
 ## What changed in this edition
 
 The presentation now explains the four finding types together, before the detailed method. It follows six sections: Problem and example, Findings, Method, Changes, Evaluation, and Limitations and next steps. Slide titles name the topic within each section. The authentication specification is introduced first, and the definitions use its predicates and concrete cases throughout. This editorial revision retains the application baseline and historical evaluation results.
+
+The 26 November addition is **The proposed administrator exception**, immediately after the existing-project overview. It shows the actual ADDED Administrator Access requirement and the concrete clash at five failed attempts: lock the administrator account versus do not lock it. The later detailed change slide remains in place. The paper and source baseline are unchanged.
 
 The early overview distinguishes conflicts, gaps, ambiguity and generated scenarios. Each definition has a small formal question and a witness. Generated scenarios include both allowed and ruled-out consequences; they are output examples, distinct from the OpenSpec scenarios in the input. A solver witness can show that two readings differ, but does not establish which English interpretation is intended.
 
@@ -27,7 +29,7 @@ See **[EDITION-2026-11-25.md](EDITION-2026-11-25.md)** for the changes, evidence
 - `UPDATE.md`: how to update this edition when the project changes.
 - `scripts/`: build, snapshot verification, comparison, packaging and example checks.
 
-Snapshot directory dates are the source commits' dates. The archived application commit is dated 24 November; the documentation was revised on 25 November. Later application code and results in the user's current project are outside this edition's preserved source and evidence. The update uses the archived `498dea0` implementation and leaves current project work alone. Earlier delivery ZIPs remain in the working folder and are excluded from the new delivery ZIP; their names and checksums are recorded in the edition notes.
+Snapshot directory dates are the source commits' dates. The archived application commit is dated 24 November; the paper was revised on 25 November and the slide introduction on 26 November. Later application code and results in the user's current project are outside this edition's preserved source and evidence. The update uses the archived `498dea0` implementation and leaves current project work alone. Earlier delivery ZIPs remain in the working folder and are excluded from the new delivery ZIP; their names and checksums are recorded in the edition notes.
 
 ## Structure and presentation route
 
@@ -35,18 +37,18 @@ The paper and presentation cover the same six topics. The table gives the slide 
 
 | Main slides | Part |
 | --- | --- |
-| 2-4 | 1. Problem and example |
-| 5-9 | 2. Findings |
-| 10-14 | 3. Method |
-| 15-20 | 4. Changes |
-| 21-27 | 5. Evaluation |
-| 28-31 | 6. Limitations and next steps |
+| 2-5 | 1. Problem and example |
+| 6-10 | 2. Findings |
+| 11-15 | 3. Method |
+| 16-21 | 4. Changes |
+| 22-28 | 5. Evaluation |
+| 29-32 | 6. Limitations and next steps |
 
-Slide 4 introduces the four questions. Slides 5-9 define the authentication predicates, conflict, gap, ambiguity and generated scenarios in that order. Appendix A gives the authentication model; the order example is no longer part of the slide walkthrough.
+Slide 2 introduces the existing project and slide 3 its proposed administrator change. Slide 5 introduces the four questions. Slides 6-10 define the authentication predicates, conflict, gap, ambiguity and generated scenarios in that order. Appendix A gives the authentication model; the order example is no longer part of the slide walkthrough.
 
-Appendices A-K occupy PDF pages 32-42 and are for questions, outside the planned 34-minute main talk (2,040 seconds). The main slides retain short listings and diagrams; all eleven detailed algorithms are available in the paper's technical appendices. Timing in the presenter notes is a pacing plan, not a measured rehearsal. Review records in `evidence/` identify the document version checked.
+Appendices A-K occupy PDF pages 33-43 and are for questions, outside the planned 34 minutes 30 seconds for the main talk. The active presenter-note timings total 2,070 seconds; the cover note remains commented out. This is a pacing plan, not a measured rehearsal. The main slides retain short listings and diagrams; all eleven detailed algorithms are available in the paper's technical appendices. Review records in `evidence/` identify the document version checked.
 
-All 37 paper pages and all 42 slides were visually reviewed after rebuilding. The final document builds were clean; package verification is recorded separately in the evidence files.
+The earlier 25 November review covered all 37 paper pages and the previous 42-slide deck, with clean builds. The [26 November slide review](evidence/slide-update-2026-11-26.json) records the insertion, its match to the archived delta, the clean 43-page build and checked navigation. The pre-edit slide source and PDF are preserved in `build/before-admin-intro-2026-11-26/`.
 
 The evaluation distinguishes conflict detection and extra alarms, ambiguity and extra questions, changes in context, and scale/cost. Historical E17 and E18 results keep their original identities. E19 tested design `07ecd38`; E20 tested `373ae4c`. The current cache and command-line restrictions in `498dea0` were added after E20 and were not measured by it.
 
@@ -93,7 +95,7 @@ From a standalone delivered folder, run `scripts/build.ps1` there. It resolves p
 
 If an earlier PDF is open and Windows prevents replacement, use `-PdfSuffix '-updated'` to write separate PDFs. To package those under the standard names, run `scripts/package.ps1 -PaperPdf <paper path> -SlidesPdf <slides path>`. Earlier PDF variants remain in the working folder and are excluded from the delivery ZIP.
 
-The default package name is `speccheck-management-2026-11-25.zip`. Its adjacent `.sha256` file records the checksum. Both source snapshots are included; previous delivery ZIPs are not nested inside it. The delivery before this definition-focused revision is preserved as `speccheck-management-2026-11-25-before-finding-definitions.zip`, with SHA-256 `2e013a9fc325d28884fd1c2486afece2194ddde1918398c73156f8a3943a1713`. The edition notes list earlier preserved deliveries as well.
+The stored `speccheck-management-2026-11-25.zip` is the previous packaged edition; its adjacent `.sha256` file records the checksum. The current slide source and PDF include the 26 November addition, which is outside that ZIP. Both source snapshots are included in the packaged edition; previous delivery ZIPs are not nested inside it. The delivery before the earlier definition-focused revision is preserved as `speccheck-management-2026-11-25-before-finding-definitions.zip`, with SHA-256 `2e013a9fc325d28884fd1c2486afece2194ddde1918398c73156f8a3943a1713`. The edition notes list earlier preserved deliveries as well.
 
 The diagrams and charts are native LaTeX/TikZ/PGFPlots sources. The paper and slides have no network dependency at build time.
 

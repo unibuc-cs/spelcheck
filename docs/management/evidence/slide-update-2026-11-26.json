@@ -1,0 +1,42 @@
+{
+    "review_date":  "2026-11-26",
+    "scope":  "One introductory slide added immediately after The project before the change; remaining slide content and paper preserved.",
+    "snapshot_revision":  "498dea06df250964013b2abb2b06c94d341b223b",
+    "inserted_slide":  {
+                           "page":  3,
+                           "title":  "The proposed administrator exception",
+                           "literal_delta_matches_archived_example":  true,
+                           "case":  "Administrator account with five failed attempts: R3 requires lockout; added R5 forbids it."
+                       },
+    "presentation":  {
+                         "main_slides":  32,
+                         "backup_slides":  11,
+                         "total_pages":  43,
+                         "active_note_seconds":  2070,
+                         "cover_note_commented":  true,
+                         "timing":  "Planned pacing, not a measured rehearsal."
+                     },
+    "verification":  {
+                         "build":  "scripts/build.ps1 -Target slides -Render",
+                         "latex_warnings":  0,
+                         "prior_slide_content_preserved":  true,
+                         "manual_links":  43,
+                         "section_links":  31,
+                         "all_link_destinations_match":  true,
+                         "compiled_external_link_fragments":  7,
+                         "external_unique_targets":  3,
+                         "visual_review":  "Inserted slide and adjacent pages inspected at rendered size."
+                     },
+    "slides_pdf_sha256":  "49d1cf2f083430dae59a96210cfb671a7e30922abf96a506f63cc012c97a11be",
+    "preservation":  {
+                         "pre_edit_source_and_pdf":  "build/before-admin-intro-2026-11-26",
+                         "previous_delivery":  "speccheck-management-2026-11-25.zip",
+                         "previous_review":  "evidence/review.json",
+                         "previous_validation":  "evidence/validation.json",
+                         "existing_source_snapshots_unchanged":  true
+                     },
+    "limits":  [
+                   "Prior 40 documentation checks and 70 application tests are historical results; no new formulas or application code were introduced and those tests were not rerun.",
+                   "Paper and previously packaged ZIP were not rebuilt for this slide-only update."
+               ]
+}

@@ -1,7 +1,7 @@
 {
     "schema_version":  1,
     "snapshot_revision":  "498dea06df250964013b2abb2b06c94d341b223b",
-    "source_resolution":  "Project source paths refer to snapshot/2026-11-24-498dea0/source.zip; suffixes identify symbols, sections or experiments. Documentation paths refer to this package. Paper entries name LaTeX labels in the six-section edition. slides contains main-talk page numbers; appendix_slides contains appendix letters A-K (PDF pages 32-42). A reference can support part of a compound claim; slide speaker notes retain technical qualifications omitted from the visible frame. Example links are pinned to the preserved source revision. The preserved 498dea0 source remains authoritative; later code and results in the current project are outside this documentation update. Presentation section order and paper section order may differ.",
+    "source_resolution":  "Project source paths refer to snapshot/2026-11-24-498dea0/source.zip; suffixes identify symbols, sections or experiments. Documentation paths refer to this package. Paper entries name LaTeX labels in the six-section edition. slides contains main-talk page numbers; appendix_slides contains appendix letters A-K (PDF pages 33-43). A reference can support part of a compound claim; slide speaker notes retain technical qualifications omitted from the visible frame. Example links are pinned to the preserved source revision. The preserved 498dea0 source remains authoritative; later code and results in the current project are outside this documentation update. Presentation section order and paper section order may differ.",
     "historical_provenance":  "The snapshot identifies the preserved source and evidence. E19 froze its design at 07ecd38 and E20 at 373ae4c. Current cache/option guards in 498dea0 came after E20 and were not evaluated by it. No producing revision is invented for older experiments.",
     "claims":  [
                    {
@@ -9,7 +9,7 @@
                        "claim":  "Three stages with persisted formal model, findings and report; middle stage has no LLM calls",
                        "paper":  "sec:design",
                        "slides":  [
-                                      10
+                                      11
                                   ],
                        "sources":  [
                                        "speccheck/cli.py:main",
@@ -47,7 +47,7 @@
                        "claim":  "The implementation supports Bool, Int, Real and Enum symbols and antecedent-to-consequent implications in one snapshot. The slide model is authentication: p password submitted, v password correct, g access granted, d access denied, n failed attempts, ell account locked, h administrator. Grant and deny remain separate symbols.",
                        "paper":  "sec:model; app:formal-model",
                        "slides":  [
-                                      5
+                                      6
                                   ],
                        "sources":  [
                                        "speccheck/logic.py:Rule",
@@ -64,8 +64,8 @@
                        "claim":  "Extract atomic rules, triggers and symbols; retry invalid vocabulary",
                        "paper":  "sec:formalize; alg:read",
                        "slides":  [
-                                      11,
-                                      12
+                                      12,
+                                      13
                                   ],
                        "sources":  [
                                        "speccheck/formalize.py:_read",
@@ -82,7 +82,7 @@
                        "claim":  "Default eight translations at temperature 0.7; shared vocabulary; up to 16 concurrent LLM requests",
                        "paper":  "sec:formalize; alg:sample",
                        "slides":  [
-                                      12
+                                      13
                                   ],
                        "sources":  [
                                        "speccheck/formalize.py:formalize",
@@ -99,7 +99,7 @@
                        "claim":  "Whole-implication equivalence; entropy 0.4 and 1 thresholds; invalid samples excluded",
                        "paper":  "sec:formalize; alg:cluster",
                        "slides":  [
-                                      12
+                                      13
                                   ],
                        "sources":  [
                                        "speccheck/formalize.py:_judge",
@@ -116,7 +116,7 @@
                        "claim":  "Entailment-based strict majority of requested fact samples, retained set not proved inconsistent",
                        "paper":  "sec:design; alg:facts",
                        "slides":  [
-                                      13
+                                      14
                                   ],
                        "sources":  [
                                        "speccheck/formalize.py:_agreed_facts",
@@ -132,7 +132,7 @@
                        "claim":  "Private outcome restatement creates explicit assumed link after requested-N majority",
                        "paper":  "sec:design; alg:links",
                        "slides":  [
-                                      13
+                                      14
                                   ],
                        "sources":  [
                                        "speccheck/formalize.py:_links",
@@ -149,8 +149,8 @@
                        "claim":  "Alternative, link, fact and outcome-pair checks; returned-answer majority distinctions",
                        "paper":  "sec:formalize; alg:probe",
                        "slides":  [
-                                      8,
-                                      13
+                                      9,
+                                      14
                                   ],
                        "sources":  [
                                        "speccheck/probe.py",
@@ -169,7 +169,7 @@
                        "claim":  "Another model uses the same vocabulary. Confirmation requires more than half of the requested N translations; an accepted rule becomes ambiguous only when confirmation fails and a usable distinct alternative exists. Current incremental CLI excludes this mode and multiple vocabularies.",
                        "paper":  "sec:formalize; alg:second-reader",
                        "slides":  [
-                                      8
+                                      9
                                   ],
                        "sources":  [
                                        "speccheck/formalize.py:judge_second",
@@ -187,7 +187,8 @@
                        "claim":  "A conflict needs a feasible triggering case and jointly unsatisfiable obligations; a case ruled out by one rule alone is excluded. The actual authentication administrator addition yields R3/R5 at n=5 and h=true: locked and not locked. Neither rule alone excludes that trigger. Search bounds connected trigger groups to size three and deletion-minimizes cores.",
                        "paper":  "sec:solver; alg:conflicts",
                        "slides":  [
-                                      6
+                                      3,
+                                      7
                                   ],
                        "sources":  [
                                        "speccheck/checks.py:_search",
@@ -207,8 +208,8 @@
                        "claim":  "Rules-only findings are preserved; assumptions may add or doubt findings",
                        "paper":  "sec:design; sec:solver; sec:explanation; app:formal-model",
                        "slides":  [
-                                      13,
-                                      14
+                                      14,
+                                      15
                                   ],
                        "sources":  [
                                        "speccheck/checks.py:find_conflicts",
@@ -224,8 +225,8 @@
                        "claim":  "A gap is a case in which no surviving conditional antecedent holds; unconditional constraints do not supply coverage. The constructed authentication baseline variation removes Invalid credentials R2: p=true, v=false, ell=false, n=0 leaves R1/R3/R4 inactive. A usable removed rule can seed this still-handled event gap with opened_by; event retirement and replaced scenarios have separate treatment.",
                        "paper":  "sec:solver; alg:gaps; app:explanation",
                        "slides":  [
-                                      7,
-                                      19
+                                      8,
+                                      20
                                   ],
                        "sources":  [
                                        "speccheck/checks.py:find_gaps",
@@ -246,7 +247,7 @@
                        "claim":  "Generated scenarios are output consequences, distinct from OpenSpec input scenarios. An allowed case satisfies all active implications while a rule outcome holds outside that rule condition; the constructed authentication baseline permits access granted without password submission in one snapshot. A ruled-out case has feasible simultaneous conditions but one rule alone excludes it: the administrator rule forbids a locked administrator submitting a password. These are not automatically defects; an LLM judges relevance and selects at most three.",
                        "paper":  "sec:solver; app:solver",
                        "slides":  [
-                                      9
+                                      10
                                   ],
                        "sources":  [
                                        "speccheck/checks.py:find_scenarios",
@@ -266,8 +267,8 @@
                        "claim":  "Alternative readings give bounded conflict and partial-gap sensitivity hints, not proof of repair; k/K support across retained models; generated prose is unchecked",
                        "paper":  "sec:explanation; app:explanation",
                        "slides":  [
-                                      14,
-                                      29
+                                      15,
+                                      30
                                   ],
                        "sources":  [
                                        "speccheck/checks.py",
@@ -286,12 +287,13 @@
                        "paper":  "sec:change; alg:change",
                        "slides":  [
                                       2,
-                                      15,
+                                      3,
                                       16,
                                       17,
                                       18,
                                       19,
-                                      20
+                                      20,
+                                      21
                                   ],
                        "sources":  [
                                        "speccheck/change.py",
@@ -311,7 +313,7 @@
                        "claim":  "66 ordinary base specifications and 297 versions; 18 separate change projects with 102 distinct changes across eval11/eval13/eval14; two scale base documents.",
                        "paper":  "sec:experimental-setup",
                        "slides":  [
-                                      21
+                                      22
                                   ],
                        "sources":  [
                                        "research.md:sections1,4.7",
@@ -327,7 +329,7 @@
                        "claim":  "Same-saved-run ablation: 27/36 to 34/36 conflicts; clean alarm runs 0/18 to 3/18; gaps 17/18; ambiguities 16/36",
                        "paper":  "sec:rq1",
                        "slides":  [
-                                      23
+                                      24
                                   ],
                        "sources":  [
                                        "experiments/results/E18_eval12.json",
@@ -377,7 +379,7 @@
                        "claim":  "E9 ambiguity 14/36 to 30/36, clean rule flags 7 to 15; E12 17/36 to 32/36, flags 5 to 9",
                        "paper":  "sec:rq2",
                        "slides":  [
-                                      24
+                                      25
                                   ],
                        "sources":  [
                                        "experiments/results/E9_eval4.json",
@@ -395,7 +397,7 @@
                        "claim":  "E13 solver 26-34 s to 0.4-0.9 s; E14 6/6 conflicts, 3/3 gaps, 1/3 clean alarms; 35 s solver and 620 s for one full run",
                        "paper":  "sec:rq4",
                        "slides":  [
-                                      27
+                                      28
                                   ],
                        "sources":  [
                                        "research_log.md:E13,E14",
@@ -412,10 +414,10 @@
                        "claim":  "Cloakroom lifecycle, payroll retention attribute and ferry entity/time collapse; incremental reuse fixes old interpretations and can miss sentence-only edits; no independent real-world accuracy rate.",
                        "paper":  "sec:discussion; sec:next",
                        "slides":  [
-                                      28,
                                       29,
                                       30,
-                                      31
+                                      31,
+                                      32
                                   ],
                        "sources":  [
                                        "research_log.md:E18,E14",
@@ -453,7 +455,7 @@
                        "claim":  "Removed labels X1... are retained in the full raw encoding, excluded from active obligations and used as gap seeds only where an event remains handled. The slide illustration removes authentication R2 from the baseline readings, calls it X1, and finds an incorrect-password submission with no response. Its R labels are teaching identities rather than a claim of unchanged full-mode numbering. opened_by can attribute the gap without an added rule. The saved visitor removal and secondary paper order variation remain separate supporting evidence.",
                        "paper":  "sec:change; alg:gaps; alg:change",
                        "slides":  [
-                                      19
+                                      20
                                   ],
                        "appendix_slides":  [
                                                "H",
@@ -477,7 +479,7 @@
                        "claim":  "Opt-in reuse loads/builds a base keyed by generated text hash and model name, selectively translates/probes added or rewritten scenarios, then reruns ordinary solver checks on the combined active model. Old vocabulary/readings remain fixed; there is no automatic full-mode fallback.",
                        "paper":  "sec:incremental; app:incremental; alg:incremental",
                        "slides":  [
-                                      20
+                                      21
                                   ],
                        "appendix_slides":  [
                                                "J",
@@ -498,8 +500,8 @@
                        "claim":  "A requirement SHALL-sentence-only edit with unchanged scenarios, or a new requirement without scenarios, emits no incremental text. Full mode is needed; the cached model may otherwise be reused without translating the sentence.",
                        "paper":  "sec:incremental; sec:discussion; alg:incremental",
                        "slides":  [
-                                      20,
-                                      29
+                                      21,
+                                      30
                                   ],
                        "appendix_slides":  [
                                                "J"
@@ -517,7 +519,7 @@
                        "claim":  "18/18 planted conflicts (15/18 after doubtful findings excluded), 35/36 planted gaps, 2/54 quiet conflict alarms, 0/54 quiet gap alarms; 108/108 observations of six old conflicts found and excluded from change attribution.",
                        "paper":  "sec:rq3",
                        "slides":  [
-                                      25
+                                      26
                                   ],
                        "appendix_slides":  [
 
@@ -534,8 +536,8 @@
                        "claim":  "Full versus reuse: conflicts 54/54 versus 50/54; filtered 51/54 versus 45/54; gaps 36/36 each; 0/18 clean conflict/gap alarm runs each. Four missed detections concern two distinct cases; clean-case quietness does not exclude extra findings elsewhere.",
                        "paper":  "sec:rq3; sec:discussion",
                        "slides":  [
-                                      26,
-                                      31
+                                      27,
+                                      32
                                   ],
                        "appendix_slides":  [
 
@@ -554,7 +556,7 @@
                        "claim":  "Mean formalization requests per change: full 68, reuse 9, plus 61 per initial base. Raw totals: 7336 full, 1010 reused changes, 1093 bases; 71.3% fewer requests including bases for six alternative changes per base. Excludes explanation and scenario judging.",
                        "paper":  "sec:rq4",
                        "slides":  [
-                                      26
+                                      27
                                   ],
                        "appendix_slides":  [
                                                "K"
@@ -574,7 +576,7 @@
                        "paper":  "sec:problem; sec:formalize; sec:change; app:change; app:incremental",
                        "slides":  [
                                       2,
-                                      4,
+                                      3,
                                       5,
                                       6,
                                       7,
@@ -583,11 +585,12 @@
                                       10,
                                       11,
                                       12,
-                                      14,
-                                      17,
+                                      13,
+                                      15,
                                       18,
                                       19,
-                                      20
+                                      20,
+                                      21
                                   ],
                        "appendix_slides":  [
                                                "A",
@@ -617,9 +620,10 @@
                        "paper":  "sec:change; tab:auth-baseline; alg:change",
                        "slides":  [
                                       2,
-                                      15,
-                                      17,
-                                      18
+                                      3,
+                                      16,
+                                      18,
+                                      19
                                   ],
                        "appendix_slides":  [
                                                "I"
@@ -641,8 +645,8 @@
                        "claim":  "The merger applies RENAMED, REMOVED, MODIFIED and ADDED in that fixed order. Renaming changes the requirement name used by subsequent operations. REMOVED identifies the existing requirement rather than supplying replacement policy; MODIFIED supplies its full replacement body, including every scenario meant to remain. Requirements omitted from the delta stay unchanged. A new capability is populated from ADDED requirements at its new path. The actual administrator delta exercises ADDED only; other operations are explained separately.",
                        "paper":  "sec:change; tab:delta-operations; alg:change",
                        "slides":  [
-                                      15,
-                                      17
+                                      16,
+                                      18
                                   ],
                        "appendix_slides":  [
                                                "I"
@@ -662,9 +666,9 @@
                        "claim":  "Within a modified requirement, exact scenario names and normalized bodies determine four states: existing for matching name and body, modified for matching name with changed body, added for a new name, and removed for a missing old name or removal of its whole requirement. Body normalization ignores case, whitespace and selected Markdown markers; it does not establish semantic equivalence. The illustrative threshold edits are separate alternatives, while the actual administrator delta leaves four scenarios existing and adds one. Full-mode R labels follow resulting document order; saved-base reuse preserves old labels and separately tracks replaced readings.",
                        "paper":  "sec:change; tab:scenario-status; alg:change; alg:incremental",
                        "slides":  [
-                                      16,
                                       17,
-                                      18
+                                      18,
+                                      19
                                   ],
                        "appendix_slides":  [
                                                "I",
@@ -687,12 +691,12 @@
                        "claim":  "The deck introduces four review questions together before implementation: conflict, gap, ambiguity and generated scenario. Predicates and cases use authentication throughout. Conflict uses the actual administrator addition; gap separately removes the baseline invalid-password response; ambiguity and allowed behavior return to the original four baseline readings; the ruled-out example uses the administrator addition. These are not four defects asserted in one unchanged specification. Generated scenarios are output cases, not OpenSpec input scenarios.",
                        "paper":  "sec:problem; sec:solver; sec:formalize",
                        "slides":  [
-                                      4,
                                       5,
                                       6,
                                       7,
                                       8,
-                                      9
+                                      9,
+                                      10
                                   ],
                        "appendix_slides":  [
                                                "A",
@@ -716,7 +720,7 @@
                        "claim":  "Short authentication predicates map exactly to saved symbols: p=password_submitted, v=password_correct, g=access_granted, d=access_denied, n=failed_attempts_count, ell=account_locked, h=is_administrator. R1 is (p and v)=\u003eg, R2 is (p and not v)=\u003ed, R3 is n=5=\u003eell, R4 is (p and ell)=\u003ed, and actual added R5 is h=\u003enot ell. Only p is an event. R3 names p in trigger metadata but its saved antecedent contains no submission guard. Grant and deny are separate symbols, with their exclusion an assumed fact rather than a silent renaming.",
                        "paper":  "sec:problem; tab:auth-baseline",
                        "slides":  [
-                                      5
+                                      6
                                   ],
                        "appendix_slides":  [
                                                "A"
@@ -733,9 +737,9 @@
                        "claim":  "The illustrative gap projects R1-R4 from the saved merged authentication formalization and removes R2, represented as X1 for removal preprocessing. At p=true,v=false,ell=false,n=0 the old R2 condition holds and every surviving conditional antecedent is false; the original R1/R2 pair covers password submission. The allowed snapshot has p=false,v=false,g=true,d=false,n=0,ell=false,h=false and satisfies all four baseline implications and saved facts. With R5 added, p=true,ell=true,h=true is ruled out by R5 alone while R4 would apply. These are constructed/replayed cases; no separate model run or selected saved scenario report is claimed.",
                        "paper":  "sec:problem; tab:auth-baseline",
                        "slides":  [
-                                      7,
-                                      9,
-                                      19
+                                      8,
+                                      10,
+                                      20
                                   ],
                        "appendix_slides":  [
                                                "A",
@@ -761,7 +765,8 @@
                                       "slides":  [
                                                      2,
                                                      3,
-                                                     4
+                                                     4,
+                                                     5
                                                  ]
                                   },
                                   {
@@ -769,11 +774,11 @@
                                       "paper_title":  "Findings",
                                       "paper_label":  "sec:solver",
                                       "slides":  [
-                                                     5,
                                                      6,
                                                      7,
                                                      8,
-                                                     9
+                                                     9,
+                                                     10
                                                  ]
                                   },
                                   {
@@ -781,11 +786,11 @@
                                       "paper_title":  "Method",
                                       "paper_label":  "sec:design",
                                       "slides":  [
-                                                     10,
                                                      11,
                                                      12,
                                                      13,
-                                                     14
+                                                     14,
+                                                     15
                                                  ]
                                   },
                                   {
@@ -793,12 +798,12 @@
                                       "paper_title":  "Changes",
                                       "paper_label":  "sec:change",
                                       "slides":  [
-                                                     15,
                                                      16,
                                                      17,
                                                      18,
                                                      19,
-                                                     20
+                                                     20,
+                                                     21
                                                  ]
                                   },
                                   {
@@ -806,13 +811,13 @@
                                       "paper_title":  "Evaluation",
                                       "paper_label":  "sec:evaluation",
                                       "slides":  [
-                                                     21,
                                                      22,
                                                      23,
                                                      24,
                                                      25,
                                                      26,
-                                                     27
+                                                     27,
+                                                     28
                                                  ]
                                   },
                                   {
@@ -820,10 +825,10 @@
                                       "paper_title":  "Limitations and next steps",
                                       "paper_label":  "sec:discussion",
                                       "slides":  [
-                                                     28,
                                                      29,
                                                      30,
-                                                     31
+                                                     31,
+                                                     32
                                                  ]
                                   }
                               ],
@@ -880,5 +885,7 @@
                          ],
     "edition_date":  "2026-11-25",
     "snapshot_directory":  "snapshot/2026-11-24-498dea0",
-    "documentation_outline_note":  "Section numbers and order in documentation_outline describe the presentation. The paper has Problem, Method, Findings, Changes, Evaluation, and Limitations and next steps; its early authentication definitions appear in the problem discussion. Paper labels identify the corresponding topics without asserting identical numbering."
+    "documentation_outline_note":  "Section numbers and order in documentation_outline describe the presentation. The paper has Problem, Method, Findings, Changes, Evaluation, and Limitations and next steps; its early authentication definitions appear in the problem discussion. Paper labels identify the corresponding topics without asserting identical numbering.",
+    "slides_revision_date":  "2026-11-26",
+    "slides_revision_note":  "The proposed administrator exception is inserted as slide 3 immediately after the existing-project overview. It shows the actual ADDED requirement and the five-attempt lock/do-not-lock case before the formal definitions; the later detailed change slide remains. Existing main references from the former page 3 onward shift by one, giving 32 main and 11 appendix slides. Active presenter-note timings total 2070 seconds, a plan of 34 minutes 30 seconds rather than a measured rehearsal; the user-commented cover note remains commented. The paper and archived source baseline remain unchanged."
 }

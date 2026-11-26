@@ -19,12 +19,12 @@
 \else
   \setbeameroption{hide notes}
 \fi
-\hypersetup{pdftitle={speccheck: requirements analysis with LLMs and Z3},pdfsubject={31-slide academic briefing with 11 appendix slides, revision 498dea0}}
+\hypersetup{pdftitle={speccheck: requirements analysis with LLMs and Z3}}
 \title{speccheck: requirements analysis with LLMs and Z3}
 \begin{document}
 \usebeamerfont{normal text}
 
-% MAIN 01 / 31
+% MAIN 01 / 32
 
 \begin{frame}[plain,label=main01]
 \vspace{5mm}
@@ -36,16 +36,16 @@
 \vspace{8mm}
 {\large LLMs translate. Z3 checks the formulas.\\We keep the interpretation choices visible.\par}
 \vfill
-{\color{Muted}\normalsize Design, evidence and next steps\par}
-{\small\snapshotdate\quad /\quad revision \code{498dea0}\par}
-\talknote{0:30}{This is speccheck at revision 498dea0. The talk moves from a requirements problem to the approach, four evaluation questions, limitations and next work. This is an independent research prototype, not a reconstruction or assessment of Kiro's implementation. The main talk is about thirty-four minutes.}
+{\color{Muted}\normalsize Design of a Kiro clone and next steps\par}
+%{\small\snapshotdate\quad /\quad revision \code{498dea0}\par}
+%\talknote{0:30}{This is speccheck at revision 498dea0. The talk moves from a requirements problem to the approach, four evaluation questions, limitations and next work. This is an independent research prototype, not a reconstruction or assessment of Kiro's implementation. The main talk is about thirty-four minutes.}
 \end{frame}
 
 \section{Problem and example}
 
-\subsection{The project before the change}
+\subsection{Account mngt: the running example}
 
-% MAIN 02 / 31
+% MAIN 02 / 32
 
 \begin{frame}[fragile,label=main02]{The project before the change}
 \lead{Authentication already has a specification with four scenarios.}
@@ -73,11 +73,43 @@ R4: password for a locked account, deny access.
 \talknote{1:00}{Start with the project before the proposed change. This is a repository-authored teaching example, not an independently validated production system. The left column summarizes its four scenarios and uses labels from the saved merged example. The right excerpt copies the requirement and scenario headers and the scenario body, omitting the requirement's SHALL sentence and blank lines. The full source is linked. The baseline has existing findings, including an R1/R4 conflict; we do not claim it is logically clean. What matters next is whether the delta introduces a new interaction.}
 \end{frame}
 
+\subsection{The proposed administrator exception}
+
+% MAIN 03 / 32
+
+\begin{frame}[fragile,label=main03]{The proposed administrator exception}
+\vspace{0pt}
+\begin{columns}[T,onlytextwidth]
+\column{.57\textwidth}
+{\small Actual delta; blank lines omitted.\par}
+\begin{lstlisting}
+## ADDED Requirements
+### Requirement: Administrator Access
+Administrators MUST always be able to reach the system.
+#### Scenario: Administrators are never locked out
+- **WHEN** the account belongs to an administrator
+- **THEN** the system does not lock the account
+\end{lstlisting}
+{\small\href{\authchangeurl}{\textcolor{Teal}{Read the delta on GitHub}}\par}
+\column{.39\textwidth}
+\textbf{One concrete case}\par
+An administrator account has five failed login attempts.\par
+\vspace{2mm}
+\textbf{Existing R3:} lock the account.\par
+\textbf{Added R5:} do not lock it.\par
+\vspace{2mm}
+Both rules apply. Their outcomes cannot hold together.
+\end{columns}
+%\takeaway{We need to check the delta together with the existing specification.}
+\slidesource{specs/auth_change/openspec/changes/admin-never-locked/specs/auth/spec.md; specs/auth_change/findings.json}
+\talknote{1:00}{This is the actual administrator delta from the running example. The listing reproduces its text, omitting only blank lines; the GitHub link points to the documented source revision. The existing rule locks an account at five failed attempts. The new rule says an administrator is never locked out. For an administrator with five failures, both rules apply and demand opposite outcomes. Five works under both the exactly-five and at-least-five readings discussed later. We are checking the interaction between the base and the proposed addition; we are not claiming that the base has no other findings. Later we will see the formal query and the saved R3/R5 finding.}
+\end{frame}
+
 \subsection{The question and the route}
 
-% MAIN 03 / 31
+% MAIN 04 / 32
 
-\begin{frame}[label=main03]{The question and the route}
+\begin{frame}[label=main04]{The question and the route}
 \lead{Can LLM translations and solver checks give us useful questions for review?}
 \begin{tabularx}{\textwidth}{@{}lX@{}}
 \toprule
@@ -96,9 +128,9 @@ Part & What we will establish \\
 
 \subsection{Four questions for the same project}
 
-% MAIN 04 / 31
+% MAIN 05 / 32
 
-\begin{frame}[label=main04]{Four questions for the same project}
+\begin{frame}[label=main05]{Four questions for the same project}
 \begin{tabularx}{\textwidth}{@{}lX@{}}
 \toprule
 Finding & Authentication example \\
@@ -117,9 +149,9 @@ Finding & Authentication example \\
 
 \subsection{The predicates we will use}
 
-% MAIN 05 / 31
+% MAIN 06 / 32
 
-\begin{frame}[label=main05]{The predicates we will use}
+\begin{frame}[label=main06]{The predicates we will use}
 \setlength{\parskip}{2pt}
 \begin{columns}[T,onlytextwidth]
 \column{.46\textwidth}
@@ -153,9 +185,9 @@ Rule form: $\phi_i=\underbrace{a_i}_{\text{condition}}\Rightarrow\underbrace{c_i
 
 \subsection{Conflict: obligations cannot coexist}
 
-% MAIN 06 / 31
+% MAIN 07 / 32
 
-\begin{frame}[label=main06]{Conflict: obligations cannot coexist}
+\begin{frame}[label=main07]{Conflict: obligations cannot coexist}
 \lead{Baseline + administrator exception: five failed attempts.}
 {\small Trigger $T=h\land(n=5)$. R3 requires $\ell$; added R5 requires $\neg\ell$.\par}
 \begin{center}
@@ -173,9 +205,9 @@ Rule form: $\phi_i=\underbrace{a_i}_{\text{condition}}\Rightarrow\underbrace{c_i
 
 \subsection{Gap: no conditional response applies}
 
-% MAIN 07 / 31
+% MAIN 08 / 32
 
-\begin{frame}[label=main07]{Gap: no conditional response applies}
+\begin{frame}[label=main08]{Gap: no conditional response applies}
 \lead{Separate variation: baseline without R2, the invalid-password response.}
 \begin{center}
 \begin{tikzpicture}[stage/.append style={font=\normalsize,text width=3.4cm,minimum height=9mm}]
@@ -196,9 +228,9 @@ Rule form: $\phi_i=\underbrace{a_i}_{\text{condition}}\Rightarrow\underbrace{c_i
 
 \subsection{Ambiguity: interpretations differ}
 
-% MAIN 08 / 31
+% MAIN 09 / 32
 
-\begin{frame}[label=main08]{Ambiguity: interpretations differ}
+\begin{frame}[label=main09]{Ambiguity: interpretations differ}
 \lead{Original baseline: R3 says failed attempts ``reach 5''.}
 \begin{columns}[T,onlytextwidth]
 \column{.47\textwidth}
@@ -221,9 +253,9 @@ Samples and interpretation probes determine the review flag.\par
 
 \subsection{Generated scenarios: is this intended?}
 
-% MAIN 09 / 31
+% MAIN 10 / 32
 
-\begin{frame}[label=main09]{Generated scenarios: is this intended?}
+\begin{frame}[label=main10]{Generated scenarios: is this intended?}
 \begin{columns}[T,onlytextwidth]
 \column{.48\textwidth}
 \textbf{Allowed: original baseline}\par
@@ -249,9 +281,9 @@ An administrator is locked and submits a password. R5 alone rules this out.
 
 \subsection{From text to a review report}
 
-% MAIN 10 / 31
+% MAIN 11 / 32
 
-\begin{frame}[label=main10]{From text to a review report}
+\begin{frame}[label=main11]{From text to a review report}
 \begin{center}
 \begin{tikzpicture}[node distance=6mm,stage/.append style={font=\normalsize,text width=2.6cm,minimum height=12mm}]
 \node[stage] (w) {Requirements};
@@ -277,9 +309,9 @@ $\to$ conflict with R5 $\to$ a review question.
 
 \subsection{Building the formal model}
 
-% MAIN 11 / 31
+% MAIN 12 / 32
 
-\begin{frame}[label=main11]{Building the formal model}
+\begin{frame}[label=main12]{Building the formal model}
 \begin{center}
 \input{shared/slide-seven}
 \end{center}
@@ -292,9 +324,9 @@ Authentication R3 passes from its words to a selected formula.
 
 \subsection{Comparing translations}
 
-% MAIN 12 / 31
+% MAIN 13 / 32
 
-\begin{frame}[fragile,label=main12]{Comparing translations}
+\begin{frame}[fragile,label=main13]{Comparing translations}
 \lead{Eight translations share one vocabulary. Z3 compares their meanings.}
 \begin{columns}[T,onlytextwidth]
 \column{.49\textwidth}
@@ -325,9 +357,9 @@ $\UNSAT(\phi_A\oplus\phi_B)$ means no case satisfies exactly one formula.\par
 
 \subsection{Relating separate outcomes}
 
-% MAIN 13 / 31
+% MAIN 14 / 32
 
-\begin{frame}[label=main13]{Relating separate outcomes}
+\begin{frame}[label=main14]{Relating separate outcomes}
 \lead{Supporting example: deletion and audit retention.}
 {\small D2 removes the record; D4 retains it. \href{\deletionurl}{\textcolor{Teal}{Read the requirements}}.\par}
 {\small $d$: confirmation; $m$: removed; $k$: retained.\par}
@@ -348,9 +380,9 @@ Without the link, $m$ and $k$ can both hold. With it, confirmation exposes the c
 
 \subsection{From evidence to a review question}
 
-% MAIN 14 / 31
+% MAIN 15 / 32
 
-\begin{frame}[fragile,label=main14]{From evidence to a review question}
+\begin{frame}[fragile,label=main15]{From evidence to a review question}
 \vspace{0pt}
 \begin{columns}[T,onlytextwidth]
 \column{.49\textwidth}
@@ -380,9 +412,9 @@ An administrator reaches five failed attempts. R3 requires lockout; R5 forbids i
 
 \subsection{How a delta is organized}
 
-% MAIN 15 / 31
+% MAIN 16 / 32
 
-\begin{frame}[fragile,label=main15]{How a delta is organized}
+\begin{frame}[fragile,label=main16]{How a delta is organized}
 \vspace{0pt}
 \setlength{\parskip}{2pt}
 {\small The proposed change has its own folder. Its \code{auth} file targets the existing \code{auth} capability.\par}
@@ -411,9 +443,9 @@ Section header & What it supplies \\
 
 \subsection{Which scenarios changed}
 
-% MAIN 16 / 31
+% MAIN 17 / 32
 
-\begin{frame}[label=main16]{Which scenarios changed}
+\begin{frame}[label=main17]{Which scenarios changed}
 \lead{Inside a MODIFIED requirement, match scenarios by name.}
 \begin{tabularx}{\textwidth}{@{}lX@{}}
 \toprule
@@ -433,9 +465,9 @@ Status & How the merger assigns it \\
 
 \subsection{An OpenSpec change in context}
 
-% MAIN 17 / 31
+% MAIN 18 / 32
 
-\begin{frame}[label=main17]{An OpenSpec change in context}
+\begin{frame}[label=main18]{An OpenSpec change in context}
 \lead{Authentication: add an administrator exception.}
 {\small Project OpenSpec example: \href{\authbaseurl}{\textcolor{Teal}{base specification}} $\to$ \href{\authchangeurl}{\textcolor{Teal}{proposed change}}.\par}
 \begin{center}
@@ -457,9 +489,9 @@ Added R5: do not lock an administrator's account.
 
 \subsection{The administrator conflict}
 
-% MAIN 18 / 31
+% MAIN 19 / 32
 
-\begin{frame}[fragile,label=main18]{The administrator conflict}
+\begin{frame}[fragile,label=main19]{The administrator conflict}
 \vspace{0pt}
 \begin{columns}[T,onlytextwidth]
 \column{.59\textwidth}
@@ -491,9 +523,9 @@ At five, both readings require lockout. The exception forbids it.
 
 \subsection{Removing a response}
 
-% MAIN 19 / 31
+% MAIN 20 / 32
 
-\begin{frame}[fragile,label=main19]{Removing a response}
+\begin{frame}[fragile,label=main20]{Removing a response}
 \vspace{0pt}
 \setlength{\parskip}{1pt}
 {\small Return to the gap variation: remove baseline R2, labelled X1 for this illustration.\par}
@@ -518,9 +550,9 @@ Incorrect password submitted; account unlocked; failed-attempt count zero. No su
 
 \subsection{Reusing a saved base}
 
-% MAIN 20 / 31
+% MAIN 21 / 32
 
-\begin{frame}[label=main20]{Reusing a saved base}
+\begin{frame}[label=main21]{Reusing a saved base}
 \begin{center}
 \input{shared/slide-reuse}
 \end{center}
@@ -536,9 +568,9 @@ Build the base once; rebuild when base text or model name changes.
 
 \subsection{Datasets and setup}
 
-% MAIN 21 / 31
+% MAIN 22 / 32
 
-\begin{frame}[label=main21]{Datasets and setup}
+\begin{frame}[label=main22]{Datasets and setup}
 \begin{tabularx}{\textwidth}{@{}lX@{}}
 \toprule
 Corpus & What is counted \\
@@ -557,9 +589,9 @@ Main model & Qwen3.8-27B-FP8, served by vLLM \\
 
 \subsection{Measures}
 
-% MAIN 22 / 31
+% MAIN 23 / 32
 
-\begin{frame}[label=main22]{Measures}
+\begin{frame}[label=main23]{Measures}
 \begin{tabularx}{\textwidth}{@{}lXl@{}}
 \toprule
 Measure & Criterion & Unit \\
@@ -580,9 +612,9 @@ Default counts include doubtful conflicts. Filtered counts are separate.
 
 \subsection{Conflicts and extra alarms}
 
-% MAIN 23 / 31
+% MAIN 24 / 32
 
-\begin{frame}[label=main23]{Conflicts and extra alarms}
+\begin{frame}[label=main24]{Conflicts and extra alarms}
 \vspace{0pt}
 {\small E18: six new domains. 12 planted conflicts $\times$ 3 runs; 6 clean specs $\times$ 3 runs.\par}
 \begin{columns}[T,onlytextwidth]
@@ -607,9 +639,9 @@ Same saved runs, scored without/with outcome-pair facts.\\Bed conflict recovered
 
 \subsection{Ambiguity and extra questions}
 
-% MAIN 24 / 31
+% MAIN 25 / 32
 
-\begin{frame}[label=main24]{Ambiguity and extra questions}
+\begin{frame}[label=main25]{Ambiguity and extra questions}
 \vspace{-1mm}
 \begin{center}
 \begin{tabular}{@{}lrr@{}}
@@ -633,9 +665,9 @@ E12 clean-rule flags (18 runs) & 5 & 9 \\
 
 \subsection{Removal attribution}
 
-% MAIN 25 / 31
+% MAIN 26 / 32
 
-\begin{frame}[label=main25]{Removal attribution}
+\begin{frame}[label=main26]{Removal attribution}
 \vspace{0pt}
 {\small E19: 36 changes in six projects, repeated three times. Full formalization.\par}
 \begingroup\centering\small
@@ -659,9 +691,9 @@ Runs with old conflict found and excluded & 108/108 \\
 
 \subsection{Reuse: requests and detections}
 
-% MAIN 26 / 31
+% MAIN 27 / 32
 
-\begin{frame}[label=main26]{Reuse: requests and detections}
+\begin{frame}[label=main27]{Reuse: requests and detections}
 \vspace{0pt}
 \setlength{\parskip}{2pt}
 {\small E20: 36 new changes, each tested in both modes; three runs each.\par}
@@ -688,9 +720,9 @@ Mean formalization requests per change & 68 & 9 \\
 
 \subsection{Larger specifications}
 
-% MAIN 27 / 31
+% MAIN 28 / 32
 
-\begin{frame}[label=main27]{Larger specifications}
+\begin{frame}[label=main28]{Larger specifications}
 \begin{tabularx}{\textwidth}{@{}lX@{}}
 \toprule
 30-rule campsite & Saved models: solver 26--34 s $\to$ 0.4--0.9 s by skipping unrelated rule families. \\
@@ -711,9 +743,9 @@ Ferry failure: one symbol conflates a new reservation with an old seat release.
 
 \subsection{Representation limits}
 
-% MAIN 28 / 31
+% MAIN 29 / 32
 
-\begin{frame}[label=main28]{Representation limits}
+\begin{frame}[label=main29]{Representation limits}
 \lead{A coat can be listed as unclaimed, then collected later.}
 \begin{center}
 \begin{tikzpicture}
@@ -733,9 +765,9 @@ Payroll: setting \code{retention_years} to 10 does not say that deletion is forb
 
 \subsection{Limits of reuse}
 
-% MAIN 29 / 31
+% MAIN 30 / 32
 
-\begin{frame}[fragile,label=main29]{Limits of reuse}
+\begin{frame}[fragile,label=main30]{Limits of reuse}
 \lead{Illustrative edit: change the sentence, keep the scenarios.}
 \begin{lstlisting}
 Before: The system SHALL retain records for five years.
@@ -757,9 +789,9 @@ Evidence & Independent specifications and reviewer studies are still needed. \\
 
 \subsection{Next work}
 
-% MAIN 30 / 31
+% MAIN 31 / 32
 
-\begin{frame}[label=main30]{Next work}
+\begin{frame}[label=main31]{Next work}
 \begin{tabularx}{\textwidth}{@{}rX@{}}
 \textcolor{Teal}{\Large 1} & \textbf{Test beyond our own examples.}\\[-1mm]
  & Set aside fresh cases; add independent specs and reviewer decisions.\\[3mm]
@@ -776,9 +808,9 @@ Removal attribution and optional reuse are implemented.\\The next step is broade
 
 \subsection{Conclusions}
 
-% MAIN 31 / 31
+% MAIN 32 / 32
 
-\begin{frame}[label=main31]{Conclusions}
+\begin{frame}[label=main32]{Conclusions}
 \begin{tabularx}{\textwidth}{@{}rX@{}}
 \textcolor{Teal}{\Large 1} & \textbf{Solver findings can be traced back to requirements.}\\[-1mm]
  & Authentication connects text, formulas, a triggering case and saved evidence.\\[4mm]
@@ -828,7 +860,7 @@ $h$ & administrator account \\
 \textbf{Proposed addition}\quad $\phi_5=h\Rightarrow\neg\ell$
 \end{columns}
 {\small R3's alternative is $(n\ge5)\Rightarrow\ell$. Grant and deny are separate symbols.\par}
-One valuation is one snapshot. The constructed gap removes R2 from the baseline.\par\backto{main05}{the predicates}
+One valuation is one snapshot. The constructed gap removes R2 from the baseline.\par\backto{main06}{the predicates}
 \note{These abbreviations match selected formulas in specs/auth_change/formal.json at the preserved revision. The baseline illustration projects R1--R4 from that saved combined model; it is not an independently sampled base run. The full order model is retained in the paper as a separate worked example. R3's actual antecedent is n=5 without p. The selected R3 reading and its alternative are not asserted equivalent.}
 \end{frame}
 
@@ -850,7 +882,7 @@ One valuation is one snapshot. The constructed gap removes R2 from the baseline.
 \State Select the shortest formula in the largest cluster; retain an alternative if needed
 \end{algorithmic}
 \vspace{0mm}
-Illustration: $[5,3]$ gives $H\approx0.662$. Eight identical mistakes would give $H=0$.\par\vspace{0.25mm}\backto{main12}{sampling and grouping}
+Illustration: $[5,3]$ gives $H\approx0.662$. Eight identical mistakes would give $H=0$.\par\vspace{0.25mm}\backto{main13}{sampling and grouping}
 \slidesource{speccheck/formalize.py: _read, _translate, _judge, _group_by_meaning}
 \note{Entropy divides by usable translations, unlike the requested-sample denominator for fact and link majority votes. A rule with no usable cluster is rejected. Only solver-proved equivalence merges translations; unknown does not. The shortest expression is chosen from the largest cluster. When not accepted, retain the next cluster if available and seek a distinguishing witness. Types and JSON validity do not establish that the vocabulary captures the intended concepts.}
 \end{frame}
@@ -878,7 +910,7 @@ Illustration: $[5,3]$ gives $H\approx0.662$. Eight identical mistakes would give
 \end{columns}
 \vspace{1mm}
 D2: $d\Rightarrow m$; restate as $d\Rightarrow\neg k$; link: $(d\land m)\Rightarrow\neg k$.
-\takeaway{Both mechanisms add assumptions that later probes can challenge.}\par\vspace{0.25mm}\backto{main13}{outcome assumptions}
+\takeaway{Both mechanisms add assumptions that later probes can challenge.}\par\vspace{0.25mm}\backto{main14}{outcome assumptions}
 \slidesource{speccheck/formalize.py: _agreed_facts, _symbols_to_hide, _links}
 \note{Both majority thresholds use requested N; missing answers count against support. Facts are ranked by support and then formula length. A link is retained even if existing facts imply it, since those facts may later be rejected. Unknown is not proof of inconsistency or entailment. During incremental reuse, facts are asked again only when new symbols appear, and restatements cover only new rules.}
 \end{frame}
@@ -896,7 +928,7 @@ D2: $d\Rightarrow m$; restate as $d\Rightarrow\neg k$; link: $(d\land m)\Rightar
 \State Reject a suspect fact only if most replies say it contradicts the rule
 \end{algorithmic}
 \vspace{2mm}
-$n=6$, $\ell=\False$ separates the two readings. If the alternative wins, flag an ambiguity; keep the original rule.\par\vspace{0.25mm}\backto{main08}{checking readings}
+$n=6$, $\ell=\False$ separates the two readings. If the alternative wins, flag an ambiguity; keep the original rule.\par\vspace{0.25mm}\backto{main09}{checking readings}
 \slidesource{speccheck/probe.py: question, _other_readings; speccheck/checks.py: settled}
 \note{Witnesses are first sought under domain facts, then without them if necessary. If the chosen reading stands against every tested alternative it becomes accepted; otherwise ambiguous. Rejected translations remain rejected. No replies is the implementation's explicit preserve/accept fallback, not positive evidence.}
 \end{frame}
@@ -919,7 +951,7 @@ $n=6$, $\ell=\False$ separates the two readings. If the alternative wins, flag a
 \end{algorithmic}
 \vspace{2mm}
 Constructed bed vote: 6 impossible, 2 possible. Keep the assumed exclusion.\par
-Conditional retention or a numeric bound may not be definite.\par\vspace{0.25mm}\backto{main23}{conflict evaluation}
+Conditional retention or a numeric bound may not be definite.\par\vspace{0.25mm}\backto{main24}{conflict evaluation}
 \slidesource{speccheck/probe.py: outcomes, _open_pairs, _as_facts}
 \note{The illustrative bed vote has six impossible and two possible answers. E18 asked 410 eligible pairs and 58 got majority-impossible replies. The cap is important for large documents. This mechanism recovered release/hold and cloakroom retention conflicts, but also introduced the temporal unclaimed/collected artefact.}
 \end{frame}
@@ -938,7 +970,7 @@ Conditional retention or a numeric bound may not be definite.\par\vspace{0.25mm}
 \textbf{Repeated vocabulary selection}
 \quad Match conflicts by rule set and ambiguities by rule ID. A finding in $k$ of $K$ retained models has support $k/K$; retain gaps from the first model.
 {\small Illustrative second reader: $3/8$ exactly five, $5/8$ five or more.\par}
-\takeaway{These options require full mode; incremental mode excludes them.}\par\vspace{0.25mm}\backto{main24}{ambiguity evaluation}
+\takeaway{These options require full mode; incremental mode excludes them.}\par\vspace{0.25mm}\backto{main25}{ambiguity evaluation}
 \slidesource{speccheck/formalize.py: formalize_sets, judge_second; speccheck/checks.py: combine}
 \note{Additional vocabularies are currently aligned by rule count and position, not by verified text correspondence. A second model can disagree on exactly-five versus at-least-five while remaining limited by the original symbol inventory. Missing second-model answers count against requested N but alone provide no alternative to report. Agreement is not a probability of correctness. HEAD rejects incremental mode with multiple vocabularies, a second reader, or text review; it does not switch modes automatically.}
 \end{frame}
@@ -961,7 +993,7 @@ Conditional retention or a numeric bound may not be definite.\par\vspace{0.25mm}
 \State Deduplicate; assumptions may add findings or flag doubt, but cannot erase rules-only findings
 \end{algorithmic}
 \vspace{0mm}
-R3 and R5 force $\ell\land\neg\ell$ when $A_G=h\land(n=5)$.\hfill\backto{main06}{conflicts}
+R3 and R5 force $\ell\land\neg\ell$ when $A_G=h\land(n=5)$.\hfill\backto{main07}{conflicts}
 \slidesource{speccheck/checks.py: _search, _families, _minimal_conflict}
 \note{The core is deletion-minimized, hence subset-minimal with conclusive solver answers, not necessarily minimum cardinality. Five-second query timeouts can yield unknown, which is never asserted as a proof. No proof certificate is saved. The trigger-group bound is not a bound on core size.}
 \end{frame}
@@ -981,7 +1013,7 @@ Surviving conditional rules $C$; handled event $e$. Ordinary search:
 \end{algorithmic}
 \vspace{0mm}
 At most one removal-seeded gap per event. Excludes state-only removals and retirement of an event's last response.
-\takeaway{An alternative reading can leave part of a gap uncovered.}\par\vspace{0.25mm}\backto{main19}{the removal example}
+\takeaway{An alternative reading can leave part of a gap uncovered.}\par\vspace{0.25mm}\backto{main20}{the removal example}
 \slidesource{speccheck/checks.py: find_gaps, find_scenarios, _try_other_readings}
 \note{Rejected removed translations are skipped. Replaced scenarios are removed from active checks but are not seeds for this mechanism. No conditional rules means no gaps. Ordinary event search emits at most one gap per handled event and one quiet gap; without events the fallback seeks at most three generalized gaps. Unconditional rules constrain outcomes rather than supply coverage. For a sensitivity example, original (s and x) implies f has gap s=true,x=false, while alternative (s and y) implies f covers only y=true completions. The overlap test may also pass on solver unknown. Allowed scenarios instead satisfy all rule implications and an outcome outside its condition; an LLM ranks relevance and selects at most three.}
 \end{frame}
@@ -1001,7 +1033,7 @@ At most one removal-seeded gap per event. Excludes state-only removals and retir
 \State Retain other findings in JSON without presenting them as the change's
 \end{algorithmic}
 \vspace{1mm}
-Scenario matching is textual. Rewording a rule can still count as a change when its meaning is unchanged.\par\vspace{0.25mm}\backto{main17}{change analysis}
+Scenario matching is textual. Rewording a rule can still count as a change when its meaning is unchanged.\par\vspace{0.25mm}\backto{main18}{change analysis}
 \slidesource{speccheck/change.py: merge, changed_rules, after_model, about_change; speccheck/cli.py}
 \note{Unchanged scenario bodies retain existing provenance inside a modified requirement; comparisons ignore case, whitespace and selected Markdown differences. R labels identify surviving/full-mode scenarios; X labels identify removed full-mode scenarios; incremental new scenarios use N labels. Deleted requirements retain their SHALL text for matching unlabelled extracted rules. Replaced old scenarios are removed from active checks but are not removal-gap seeds. Ordinary voted domain facts remain; only assumptions tagged as restating or relating removed/replaced rules are pruned. Thus removed text can still influence full-mode extraction and ordinary domain facts. Neither changed-event relevance nor textual provenance is a general semantic causality proof.}
 \end{frame}
@@ -1022,7 +1054,7 @@ Scenario matching is textual. Rewording a rule can still count as a change when 
 \end{algorithmic}
 \vspace{1mm}
 Cache key: base text + model name. It omits sampling settings, endpoint and prompt/code changes. Invalid models abort without a full-mode fallback.
-\takeaway{Use full mode for sentence-only edits or to reconsider old interpretations.}\par\vspace{0.25mm}\backto{main20}{the two execution modes}
+\takeaway{Use full mode for sentence-only edits or to reconsider old interpretations.}\par\vspace{0.25mm}\backto{main21}{the two execution modes}
 \slidesource{speccheck/cli.py: _base_model; speccheck/formalize.py; speccheck/probe.py; speccheck/change.py}
 \note{The key includes the SHA-256 of the generated labelled base document and the model-name string. The saved cache is openspec/.speccheck/base.json. First use or a mismatch rebuilds a base model, not a freshly formalized combined change. A supplied formal JSON bypasses this cache-validation branch. Old symbol definitions win over redeclarations. Facts are requested again only if new symbols appear; old rules are not all re-probed under new facts. Outcome-pair probing remains capped at forty eligible pairs. Sentence-only changes and new requirements without scenarios produce no incremental text. Empty new text still leads to projection and solver checking; the full CLI may call the LLM for explanations and scenario judging. E20 precedes HEAD's model-name guard and stricter option checks.}
 \end{frame}
@@ -1039,7 +1071,7 @@ E19 / E20 freezes & E19: \texttt{07ecd38}. E20: \texttt{373ae4c}. Later cache gu
 \textbf{Saved inputs:} \texttt{merged.md} records the combined change document; \texttt{new.md} records incremental scenario text; \texttt{base.json} holds the cached base.
 \par
 \textbf{Replay:} \texttt{formal.json} is saved before deleted/replaced rules are separated. Replay change preprocessing before running the active-model solver checks.
-\takeaway{The snapshot preserves code and results, not model weights. Fresh model runs may differ.}\par\vspace{0.25mm}\backto{main22}{evaluation measures}
+\takeaway{The snapshot preserves code and results, not model weights. Fresh model runs may differ.}\par\vspace{0.25mm}\backto{main23}{evaluation measures}
 \slidesource{speccheck/cli.py; research_log.md; experiments/results/E17_eval11.md; docs/management/UPDATE.md}
 \note{E17 tested thirty changes in six projects, repeated three times. Its clean measure includes conflict and covered-event gap alarms. The cinema case was doubtful because two modeled events had to coincide. Most older experiments lack the exact producing commit; do not assign them retroactively to HEAD. A raw formal model is not necessarily the post-change active model. Saved formulas support solver replay without a model server, but generating prose and judging scenarios require model calls. Reused formal JSON is not copied into replay output automatically. The snapshot records inputs explicitly. E20 counters measure formalization requests only; an initial base costs about sixty-one requests and archiving a change normally invalidates it.}
 \end{frame}
