@@ -83,7 +83,9 @@ Where the project stands:
   longer the spec, and of 20 reported conflicts that nobody planted, which
   we read, none is a real contradiction: 12 are artefacts and 7 set a
   general rule against its own exception. A question about the two
-  conditions now marks one such conflict in six to nine
+  conditions now marks one such conflict in six to nine as doubtful, and
+  one in three to six says in its title that it is a rule against a special
+  case of it; about half are still reported with no mark
   ([How reliable is it](#how-reliable-is-it)).
 
 | Read next | For |
@@ -193,6 +195,12 @@ it needed for the contradiction, and our code cuts that list down to the
 smallest set that still clashes. The first three findings above are the ones
 the Kiro blog reports for this spec.
 
+These files were saved before the model was asked about the conditions of
+two rules that clash ([How sure is a finding](#how-sure-is-a-finding)). A
+run made today finds the same, and marks the second conflict, R1 against R5,
+as doubtful: the model holds that an order which is canceled and refunded
+cannot be one that is being submitted ([Known limits](#known-limits)).
+
 ### Stage 3: the LLM says it in plain language (`report.md`)
 
 The model only rewords each proven finding. This is the conflict:
@@ -298,8 +306,8 @@ nothing. Such rules are read a second time, alone, with the symbols so far,
 and the model is told that a symbol is missing. Here it added
 `error_bubbles_up_with_path`, and all eight new translations said
 `file_write_failed => error_bubbles_up_with_path`. A rule takes its new
-translation only if the eight agree now, and a new symbol is kept only if
-such a translation uses it.
+translation only if it is accepted now (the eight agree, or the vote above
+settles them), and a new symbol is kept only if such a translation uses it.
 
 Until the author answers, the checks use reading A, and some findings may
 exist only because of that choice. So each ambiguous rule is tried once more
@@ -853,8 +861,9 @@ Some notes on these numbers:
     `$PSModulePath` ... is present ... detect shell as `powershell`" can both
     apply, and nothing says which wins.
 
-  So on a real project the tool is not usable as it is. The scripts are in
-  `experiments/real/`, and the cases in `experiments/sets/real1`.
+  So on a real project the tool was not usable as it stood. The points
+  below are what was done about it. The scripts are in `experiments/real/`,
+  and the cases in `experiments/sets/real1`.
 - Two remedies for that, tested on a second batch of 16 real changes
   (`real2/`) and on `eval16/`, six specs of our own written like real ones,
   each with the code before and after (E24):
@@ -951,8 +960,9 @@ Some notes on these numbers:
   not prompt"). None of the conflicts in our own sets has the form. So of
   63 conflicts that a reader of those real reports had to sort, 7 are
   doubtful now, 22 carry this remark, and 34 are left as they were.
-- The numbers are small: the specs were written by us, and there is one main
-  model. The details are in [research.md](research.md).
+- The numbers are small: the specs were written by us, there is one main
+  model, and the real changes are those of one project. The details are in
+  [research.md](research.md).
 
 ## Known limits
 
