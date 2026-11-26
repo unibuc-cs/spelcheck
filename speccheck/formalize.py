@@ -13,9 +13,12 @@ and counting below is done by this file:
                 If they (nearly) all mean the same, the rule is accepted. If
                 they split into two camps, the rule is ambiguous, and the
                 second camp is the other reading that step 6 asks about. If
-                they scatter, the rule is rejected as too unclear. It is also
-                rejected, and marked "empty", if the chosen translation
-                demands nothing (_judge).
+                they scatter, the rule is rejected as too unclear. Where
+                the translations differ only in which symbols they use, they
+                vote first, and the rule is accepted with what more than
+                half of them entail (_vote). A rule is also rejected, and
+                marked "empty", if the chosen translation demands nothing
+                (_judge).
     4. facts    the LLM is asked N times which domain facts connect the
                 symbols ("a door cannot be open and closed"). A fact is kept
                 when Z3 proves that it follows from more than half of the N
@@ -562,6 +565,8 @@ def _judge(vocab: Vocabulary, answers: list[dict]) -> dict:
         differs_when  a situation where they differ } is not accepted
         empty         True when the most common translation demands nothing;
                       the status is then "rejected", whatever the agreement
+        voted         "7/8" when the rule was accepted by a vote (_vote): how
+                      many of the usable translations entail the chosen one
     """
     clusters = _group_by_meaning(vocab, answers)
     if not clusters:  # not a single usable translation
@@ -580,8 +585,16 @@ def _judge(vocab: Vocabulary, answers: list[dict]) -> dict:
         status = "rejected"
 
     best_answer, best_rule = _simplest(clusters[0])
+    # Translations that do not agree, but differ only in which symbols they
+    # use, vote: the rule is accepted with what more than half of them entail.
+    voted = _vote(vocab, clusters) if status != "accepted" else None
+    if voted:
+        best_answer, best_rule = _simplest(clusters[voted[0]])
+        status = "accepted"
     # abs() only turns the float "-0.0" of a single cluster into "0.0".
     result = {"status": status, "clusters": sizes, "entropy": abs(round(entropy, 3)), **best_answer}
+    if voted:
+        result["voted"] = f"{voted[1]}/{sum(sizes)}"
     if status != "accepted":
         other_answer, other_rule = _simplest(clusters[1])
         result["alternative"] = other_answer
@@ -623,6 +636,62 @@ def _group_by_meaning(vocab: Vocabulary, answers: list[dict], given: list = (),
         else:
             groups.append([(answer, compiled)])
     return groups
+
+
+def _vote(vocab: Vocabulary, clusters: list[list[tuple[dict, Rule]]]) -> tuple[int, int] | None:
+    """A vote among translations that do not agree because they use different symbols.
+
+    The read step often lists several symbols for one outcome, a general one
+    and a specific one, and the translations of a rule then use different ones:
+
+        "WHEN move succeeds THEN display success message with archived name and list of updated specs"
+        3 x  move_succeeds => success_message_displayed
+        2 x  move_succeeds => (and success_message_displayed spec_summary_displayed)
+        1 x  move_succeeds => (and success_message_displayed specs_updated)
+        1 x  move_succeeds => (and success_message_displayed updated_specs_tracked spec_summary_displayed)
+
+    These are four meanings, and by the count of step 3 the rule is rejected.
+    But every one of the seven entails the first: they agree on the success
+    message. As for the facts of step 4, what more than half of the answers
+    entail is kept. Chosen is the strongest translation with such a majority
+    (here the first, 7 of 7); with several, the one that entails most of the
+    others, then the one given most often.
+
+    The vote is taken only if no two translations that use the same symbols
+    differ in meaning. If two do,
+
+        5 x  (= failed_attempts 5) => account_locked
+        3 x  (>= failed_attempts 5) => account_locked
+
+    they are two readings of the words, and that is a question to the author,
+    not a choice of symbols (on the saved runs of eval7 to eval12 the vote
+    would otherwise accept about half of the planted ambiguities).
+
+    clusters  the translations grouped by meaning (_group_by_meaning)
+    Returns (the number of the chosen cluster, how many translations entail
+    it), or None when no vote is taken or nothing has a majority.
+    """
+    meaning_of = {}  # the symbols a translation uses -> the cluster it is in
+    for number, cluster in enumerate(clusters):
+        for _, rule in cluster:
+            used = frozenset(vocab.symbols_in(rule.antecedent) | vocab.symbols_in(rule.consequent))
+            if meaning_of.setdefault(used, number) != number:
+                return None
+
+    heads = [cluster[0][1] for cluster in clusters]
+
+    def entails(one: Rule, other: Rule) -> bool:
+        return vocab.impossible([one.formula, z3.Not(other.formula)])
+
+    usable = sum(len(cluster) for cluster in clusters)
+    votes = [sum(len(cluster) for cluster, head in zip(clusters, heads) if entails(head, candidate))
+             for candidate in heads]
+    majority = [number for number, count in enumerate(votes) if count > MAJORITY * usable]
+    if not majority:
+        return None
+    best = max(majority, key=lambda number: (sum(entails(heads[number], heads[other]) for other in majority),
+                                             len(clusters[number])))
+    return best, votes[best]
 
 
 def _simplest(cluster: list[tuple[dict, Rule]]) -> tuple[dict, Rule]:

@@ -116,7 +116,7 @@ this order:
      the facts rarely say that one of the two always holds, so only 2 of 13
      were marked (T20, E16). This is a known limit now.
 
-### 2.1 The plan for step 40: a vote among the translations of a rule (not built yet)
+### 2.1 The plan for step 40: a vote among the translations of a rule (built, frozen; held-out runs open)
 
 On real specs about half of the rules without an agreed translation are lost
 to the choice of symbols (T27). The read step lists several symbols that
@@ -1216,9 +1216,10 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
 - [ ] **Step 40 — a vote among the translations of a rule**: `eval18/` and
       `real3/` first (done); where the translations of a rule differ in the
       symbols they use, the strongest one that more than half of them entail
-      is accepted (plan in 2.1). Development on the two earlier real batches
-      and on the sets with planted ambiguities; held-out `eval18/` and
-      `real3/`, before and after
+      is accepted (plan in 2.1). Built and frozen after the development runs
+      (T30): on the second real batch the rules of no use to the checks fall
+      from 60% to 23%; 2 of 33 planted ambiguities are lost. Open: held-out
+      `eval18/` and `real3/`, before and after (E26)
 - [x] **Step 39 — a name that is not a word**: `eval17/` written first;
       the symbol list of the read step is repaired where a name or a value
       is not a word, is declared twice, or an enum has one value. T29

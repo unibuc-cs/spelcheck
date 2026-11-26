@@ -3571,6 +3571,93 @@ each with its table.
 
 ---
 
+## T30 — Development: the translations of a rule vote (2026-11-26)
+
+**Question.** On real specs about half of the rules without an agreed
+translation are lost to the choice of symbols (T27): the read step lists a
+general and a specific symbol for one outcome, and the eight translations use
+different ones. Can the rule be kept with what the translations share?
+
+**The change** (`formalize._vote`, in step 3; no prompt changes). `eval18/`
+and `real3/` were written and committed first (bccfaf5).
+
+```
+"WHEN move succeeds THEN display success message with archived name and list of updated specs"
+3 x  move_succeeds => success_message_displayed
+2 x  move_succeeds => (and success_message_displayed spec_summary_displayed)
+1 x  move_succeeds => (and success_message_displayed specs_updated)
+1 x  move_succeeds => (and success_message_displayed updated_specs_tracked spec_summary_displayed)
+```
+
+1. The vote is taken for a rule whose translations do not agree (ambiguous
+   or rejected), and only if no two translations that use the same symbols
+   differ in meaning. Two translations with the same symbols and two
+   meanings ("= 5" and ">= 5") are two readings of the words: the rule stays
+   a question to the author.
+2. Our code asks Z3, for each translation, which of the others entail it.
+   The strongest translation that more than half of the usable ones entail
+   is chosen, and the rule is accepted with it (`"voted": "7/7"` above, for
+   the first line). With no such majority the rule stays as it was.
+3. A chosen translation that demands nothing rejects the rule as empty
+   (T28).
+
+**First on the saved runs** (no LLM; step 3 judged again on the translations
+that are in the result files):
+
+| Saved run | Rules accepted before | With the vote | Planted ambiguities that step 3 flags | Accepted by the vote |
+|---|---|---|---|---|
+| second real batch (T29) | 197 of 487 (40%) | 330 (67%) | | |
+| first real batch (E23, before empty rules were rejected) | 219 of 366 (59%) | 246 (67%) | | |
+| `eval16/`, `eval17/` | 95%, 93% | 97%, 94% | | |
+| `eval7/` to `eval10/`, `eval12/` | 91 to 96% | 92 to 96% | 72 | 5 (3 in `eval7/`, 2 in `eval12/`) |
+
+Without the condition of point 1 the vote would accept 30 of those 72: a
+rule that splits 5 to 3 between "= 5" and ">= 5" has a majority too.
+
+**Results on development data** (new runs with the vote):
+
+| | Before | With the vote |
+|---|---|---|
+| second real batch: rules of no use to the checks | 60% (T29); 47% and 57% (E24) | 110 of 487 (23%) |
+| the same translations, judged by the step 3 of before | 255 accepted (52%) | 377 accepted (77%) |
+| its conflicts about a change | 13, in 6 of 16 changes | 20, in 8 of 16 |
+| `eval17/` (2 runs of 24 specs): planted conflicts, planted gaps | 22 of 24, 10 of 12 (E25) | 22 of 24, 11 of 12 |
+| `eval8/` (3 runs of 30 specs): planted conflicts, planted gaps | | 18 of 21, 17 of 18 |
+| `eval7/` (3 runs of 24 specs): planted conflicts | | 17 of 18 |
+| planted ambiguities of `eval8/` and `eval7/` that the step 3 of before flags on the same translations | 12 and 21 | 11 and 20 |
+| the three development specs: expected conflicts | | 14 of 15 |
+
+- **On the real batch three rules in four are now of use to the checks.**
+  134 rules were voted on (79 were ambiguous, 55 rejected); 122 are accepted
+  and 12 demand nothing. Of the 122, 28 have every usable translation behind
+  them and 24 have five of eight.
+- **What the vote picks is the common core.** "WHEN user specifies an
+  unknown schema THEN the system displays an error listing available
+  schemas" split 4 to 4 between `available_schemas_listed` and `(and
+  error_displayed available_schemas_listed)`; it is accepted with the first,
+  which all eight entail. So a voted rule can say less than its words.
+- **More rules give more findings**: 20 conflicts about a change where there
+  were 13. We did not read them all. The first two are of a kind we know,
+  two rules that can apply at once ("WHEN target archive already exists THEN
+  fail" against "`archive --skip-specs` ... proceed directly to moving the
+  change"), and both are marked doubtful.
+- **Two planted ambiguities are lost**, one in each set. "WHEN a bill has
+  been unpaid for 30 days" was flagged before only because one translation
+  of seven used another symbol; all seven read it as "30 or more". "A car is
+  free ... or the employee is a manager and the trip is longer than 100 km"
+  split 5 to 2, and the two used other symbols. Both were then asked about
+  in step 6, and the answers sided with the translation.
+- **On our own sets little moves**: 2 rules voted on in `eval8/`, 10 in
+  `eval7/`, 5 in `eval17/`.
+
+**Frozen** with the commit of this entry. Next: held-out `eval18/` and
+`real3/` with the code before and after (E26).
+
+**Raw data.** experiments/results/T30_real2.json, T30_eval17.json,
+T30_eval8.json, T30_eval7.json and T30_specs.json, each with its table.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |
