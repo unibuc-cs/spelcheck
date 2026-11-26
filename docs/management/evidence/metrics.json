@@ -1,0 +1,1213 @@
+{
+  "schema_version": 1,
+  "snapshot_revision": "498dea06df250964013b2abb2b06c94d341b223b",
+  "snapshot_date": "2026-11-24",
+  "provenance_note": "The snapshot revision identifies the source and evidence preserved for this edition. E19 froze its design at 07ecd38 and E20 at 373ae4c; HEAD 498dea0 adds cache and option checks after E20. Those later changes were not measured by E20. Most older experiments do not record their producing revision. Raw experiment timestamps are copied without assigning an unrecorded timezone.",
+  "verification": "Read raw JSON metadata and accompanying checked-in scored Markdown tables; no experiment, LLM call, or rescoring job was rerun for this document.",
+  "conventions": {
+    "conflict_hit": "An expected set of rule positions found in one run.",
+    "clean_conflict_alarm": "A clean run with at least one unexpected conflict; not a count of individual findings.",
+    "ambiguity_hit": "An expected ambiguous rule found in one run.",
+    "ambiguity_flag": "A flagged rule; counts on clean specs are not counts of clean runs or independently adjudicated false positives.",
+    "gap_hit": "At least one gap witness has the event of the requirement associated with a planted missing case; event-level scoring.",
+    "doubtful": "A finding marked by assumed facts or simultaneous events. The default includes it; filtered results are separately labelled.",
+    "unexpected": "Neither expected nor allowed by benchmark annotations; may be a true unplanted issue, an additional planted-rule interaction, or a modelling artefact.",
+    "repeated_runs": "Three repetitions of a defect are correlated observations, not independent real-world specifications.",
+    "formalization_request": "One LLM API request during formalization; one request can ask for eight samples. Counts exclude CLI explanation and scenario judging.",
+    "incremental_cost": "Change-only cost assumes a reusable base. Report initial base cost separately, and include it when comparing complete batches."
+  },
+  "inventory": {
+    "raw_source_paths": [
+      "experiments/sets/eval",
+      "experiments/sets/eval2",
+      "experiments/sets/eval3",
+      "experiments/sets/eval4",
+      "experiments/sets/eval5",
+      "experiments/sets/eval6",
+      "experiments/sets/eval7",
+      "experiments/sets/eval8",
+      "experiments/sets/eval9",
+      "experiments/sets/eval10",
+      "experiments/sets/eval12"
+    ],
+    "document_source": "research.md, sections 1 and 4.7",
+    "ordinary_sets": 11,
+    "ordinary_base_specs": 66,
+    "ordinary_versions": 297,
+    "versions_by_set": {
+      "eval": 21,
+      "eval2": 30,
+      "eval3": 24,
+      "eval4": 24,
+      "eval5": 24,
+      "eval6": 24,
+      "eval7": 24,
+      "eval8": 30,
+      "eval9": 30,
+      "eval10": 30,
+      "eval12": 36
+    },
+    "separate_change_projects": 18,
+    "separate_change_versions": 102,
+    "separate_scale_base_specs": 2,
+    "separate_scale_versions": 8,
+    "notes": "Ordinary inventory is unchanged: eleven sets, six domains per set, 297 versions. OpenSpec change sets contain six projects each, with 30 + 36 + 36 distinct changes; testing eval14 in two modes does not double that inventory. The three original development specs and scale variants are counted separately. All existing sets are now development data.",
+    "change_source_paths": [
+      "experiments/sets/eval11",
+      "experiments/sets/eval13",
+      "experiments/sets/eval14"
+    ],
+    "changes_by_set": {
+      "eval11": 30,
+      "eval13": 36,
+      "eval14": 36
+    }
+  },
+  "experiments": [
+    {
+      "id": "E18",
+      "dataset": "eval12",
+      "raw_source_path": "experiments/results/E18_eval12.json",
+      "scored_source_path": "experiments/results/E18_eval12.md",
+      "narrative_source_path": "research_log.md, E18",
+      "recorded_date": "2026-11-24T13:59:13",
+      "model": "Qwen/Qwen3.8-27B-FP8",
+      "runs": 108,
+      "versions": 36,
+      "base_domains": 6,
+      "runs_per_version": 3,
+      "symbol_sets": 1,
+      "samples": 8,
+      "temperature": 0.7,
+      "failed_runs": 0,
+      "historically_recorded_revisions": {
+        "dataset_written": "c6e2231",
+        "design_frozen": "f2bb7ed"
+      },
+      "comparison": "Same saved runs, omitting or including only the assumed facts added by outcome-pair questions.",
+      "metrics": [
+        {
+          "id": "conflicts_without_outcome_questions",
+          "configuration": "without the questions about outcomes",
+          "numerator": 27,
+          "denominator": 36,
+          "units": "expected-conflict/run pairs",
+          "notes": "Doubtful findings included; filtered value is identical."
+        },
+        {
+          "id": "conflicts_default",
+          "configuration": "default (1 symbol set)",
+          "numerator": 34,
+          "denominator": 36,
+          "units": "expected-conflict/run pairs",
+          "notes": "Doubtful findings included; filtered value is identical."
+        },
+        {
+          "id": "direct_without_outcome_questions",
+          "configuration": "without the questions about outcomes",
+          "numerator": 9,
+          "denominator": 18,
+          "units": "expected-conflict/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "direct_default",
+          "configuration": "default (1 symbol set)",
+          "numerator": 16,
+          "denominator": 18,
+          "units": "expected-conflict/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "overlap_without_outcome_questions",
+          "configuration": "without the questions about outcomes",
+          "numerator": 18,
+          "denominator": 18,
+          "units": "expected-conflict/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "overlap_default",
+          "configuration": "default (1 symbol set)",
+          "numerator": 18,
+          "denominator": 18,
+          "units": "expected-conflict/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "clean_alarm_runs_without_outcome_questions",
+          "configuration": "without the questions about outcomes",
+          "numerator": 0,
+          "denominator": 18,
+          "units": "clean runs",
+          "notes": ""
+        },
+        {
+          "id": "clean_alarm_runs_default",
+          "configuration": "default (1 symbol set)",
+          "numerator": 3,
+          "denominator": 18,
+          "units": "clean runs",
+          "notes": "All three are cloakroom_clean; unchanged when doubtful conflicts are excluded."
+        },
+        {
+          "id": "unexpected_conflicts_without_outcome_questions",
+          "configuration": "without the questions about outcomes",
+          "numerator": 1,
+          "denominator": null,
+          "units": "findings over all versions",
+          "notes": "Raw count, not a precision denominator."
+        },
+        {
+          "id": "unexpected_conflicts_default",
+          "configuration": "default (1 symbol set)",
+          "numerator": 28,
+          "denominator": null,
+          "units": "findings over all versions",
+          "notes": "Raw count, not a precision denominator."
+        },
+        {
+          "id": "unexpected_conflicts_without_outcome_questions_filtered",
+          "configuration": "without the questions about outcomes, doubtful set aside",
+          "numerator": 0,
+          "denominator": null,
+          "units": "findings over all versions",
+          "notes": ""
+        },
+        {
+          "id": "unexpected_conflicts_default_filtered",
+          "configuration": "doubtful conflicts set aside",
+          "numerator": 27,
+          "denominator": null,
+          "units": "findings over all versions",
+          "notes": ""
+        },
+        {
+          "id": "ambiguities_default",
+          "configuration": "default (1 symbol set)",
+          "numerator": 16,
+          "denominator": 36,
+          "units": "expected-ambiguity/run pairs",
+          "notes": "Same when outcome questions are excluded."
+        },
+        {
+          "id": "gaps_by_event",
+          "configuration": "once for each event",
+          "numerator": 17,
+          "denominator": 18,
+          "units": "expected-gap/run pairs",
+          "notes": "Same when outcome questions are excluded."
+        },
+        {
+          "id": "clean_gap_alarm_runs",
+          "configuration": "once for each event",
+          "numerator": 0,
+          "denominator": 18,
+          "units": "clean runs with a gap on a covered event",
+          "notes": ""
+        },
+        {
+          "id": "outcome_pairs_impossible",
+          "configuration": "strict majority of 8 outcome answers",
+          "numerator": 58,
+          "denominator": 410,
+          "units": "queried pairs",
+          "notes": ""
+        },
+        {
+          "id": "beds_direct_hits",
+          "configuration": "default (1 symbol set)",
+          "numerator": 3,
+          "denominator": 3,
+          "units": "expected-conflict/run pairs",
+          "notes": "Recovered because release/hold became separate symbols and every outcome answer rejected their coexistence."
+        },
+        {
+          "id": "payroll_direct_hits",
+          "configuration": "default (1 symbol set)",
+          "numerator": 1,
+          "denominator": 3,
+          "units": "expected-conflict/run pairs",
+          "notes": "One miss had a 4/8 outcome vote; another did not present one definite outcome and was not queried."
+        },
+        {
+          "id": "cloakroom_added_conflicts",
+          "configuration": "with versus without outcome questions",
+          "numerator": 24,
+          "denominator": 27,
+          "units": "additional unexpected findings",
+          "notes": "Single temporal modelling artefact across six versions; not 24 distinct underlying defects."
+        },
+        {
+          "id": "batch_wall_time",
+          "configuration": "108-run batch; two GPUs",
+          "value": 24,
+          "units": "minutes",
+          "notes": "Reported batch wall time; not single-run latency. Source: research_log.md E18."
+        }
+      ]
+    },
+    {
+      "id": "T22",
+      "dataset": "eval3 through eval10",
+      "raw_source_paths": [
+        "experiments/results/T22_eval3.json",
+        "experiments/results/T22_eval4.json",
+        "experiments/results/T22_eval5.json",
+        "experiments/results/T22_eval6.json",
+        "experiments/results/T22_eval7.json",
+        "experiments/results/T22_eval8.json",
+        "experiments/results/T22_eval9.json",
+        "experiments/results/T22_eval10.json"
+      ],
+      "base_raw_source_paths": [
+        "experiments/results/E8_eval3.json",
+        "experiments/results/E9_eval4.json",
+        "experiments/results/E10_eval5.json",
+        "experiments/results/E11_eval6.json",
+        "experiments/results/E12_eval7.json",
+        "experiments/results/E13_eval8.json",
+        "experiments/results/E15_eval9.json",
+        "experiments/results/E16_eval10.json"
+      ],
+      "narrative_source_path": "research_log.md, T22",
+      "notes": "Development-data ablation. T22 files are overlays and require their named original runs. Aggregate values are reported in the dated research log; preserve overlay and base files together.",
+      "runs": 630,
+      "clean_runs": 144,
+      "distinct_planted_conflicts": 51,
+      "metrics": [
+        {
+          "id": "conflicts_before",
+          "configuration": "without outcome questions; doubtful included",
+          "numerator": 132,
+          "denominator": 153,
+          "units": "expected-conflict/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "conflicts_after",
+          "configuration": "with outcome questions; doubtful included",
+          "numerator": 145,
+          "denominator": 153,
+          "units": "expected-conflict/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "conflicts_before_filtered",
+          "configuration": "without outcome questions; doubtful excluded",
+          "numerator": 129,
+          "denominator": 153,
+          "units": "expected-conflict/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "conflicts_after_filtered",
+          "configuration": "with outcome questions; doubtful excluded",
+          "numerator": 142,
+          "denominator": 153,
+          "units": "expected-conflict/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "clean_alarm_runs_before_filtered",
+          "configuration": "without outcome questions; doubtful excluded",
+          "numerator": 3,
+          "denominator": 144,
+          "units": "clean runs",
+          "notes": ""
+        },
+        {
+          "id": "clean_alarm_runs_after_filtered",
+          "configuration": "with outcome questions; doubtful excluded",
+          "numerator": 13,
+          "denominator": 144,
+          "units": "clean runs",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "id": "E17",
+      "dataset": "eval11",
+      "raw_source_path": "experiments/results/E17_eval11.json",
+      "scored_source_path": "experiments/results/E17_eval11.md",
+      "narrative_source_path": "research_log.md, E17",
+      "recorded_date": "2026-11-24T11:04:49",
+      "model": "Qwen/Qwen3.8-27B-FP8",
+      "runs": 90,
+      "versions": 30,
+      "projects": 6,
+      "runs_per_version": 3,
+      "symbol_sets": 1,
+      "temperature": 0.7,
+      "failed_runs": 0,
+      "historically_recorded_revisions": {
+        "design_frozen": "58599e4"
+      },
+      "notes": "Only findings attributed to changed rules count. Negations deliberately use the original outcome wording; this evaluates merge, provenance and filtering more directly than semantic generalization.",
+      "metrics": [
+        {
+          "id": "conflicts_default",
+          "configuration": "default (1 symbol set)",
+          "numerator": 36,
+          "denominator": 36,
+          "units": "expected-conflict/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "conflicts_filtered",
+          "configuration": "doubtful conflicts set aside",
+          "numerator": 33,
+          "denominator": 36,
+          "units": "expected-conflict/run pairs",
+          "notes": "Three excluded hits are cinema_modified, where the projector state was read as an event."
+        },
+        {
+          "id": "gaps_default",
+          "configuration": "default (1 symbol set)",
+          "numerator": 36,
+          "denominator": 36,
+          "units": "expected-gap/run pairs",
+          "notes": "18 added-gap and 18 narrowed-requirement opportunities; unchanged when doubtful findings are excluded."
+        },
+        {
+          "id": "clean_conflict_alarm_runs",
+          "configuration": "default (1 symbol set)",
+          "numerator": 0,
+          "denominator": 18,
+          "units": "clean change runs",
+          "notes": ""
+        },
+        {
+          "id": "clean_gap_alarm_runs",
+          "configuration": "default (1 symbol set)",
+          "numerator": 0,
+          "denominator": 18,
+          "units": "clean change runs with a gap on a covered event",
+          "notes": ""
+        },
+        {
+          "id": "scenario_labels_preserved",
+          "configuration": "default (1 symbol set)",
+          "numerator": 90,
+          "denominator": 90,
+          "units": "runs",
+          "notes": ""
+        },
+        {
+          "id": "cinema_modified_conflicts_marked_doubtful",
+          "configuration": "default (1 symbol set)",
+          "numerator": 3,
+          "denominator": 3,
+          "units": "expected-conflict/run pairs",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "id": "E19",
+      "dataset": "eval13",
+      "raw_source_path": "experiments/results/E19_eval13.json",
+      "scored_source_path": "experiments/results/E19_eval13.md",
+      "narrative_source_path": "research_log.md, E19",
+      "recorded_date": "2026-11-24T16:58:34",
+      "model": "Qwen/Qwen3.8-27B-FP8",
+      "runs": 108,
+      "versions": 36,
+      "projects": 6,
+      "runs_per_version": 3,
+      "symbol_sets": 1,
+      "samples": 8,
+      "temperature": 0.7,
+      "failed_runs": 0,
+      "historically_recorded_revisions": {
+        "dataset_written": "f1dd15f",
+        "design_frozen": "07ecd38"
+      },
+      "notes": "Six modified-conflict cases, twelve removal/narrowing gap cases, and eighteen quiet cases, each repeated three times. Quiet cases include clean additions, event retirements and unchanged siblings of edits. Old-conflict counts are six underlying conflicts observed repeatedly, not 108 distinct defects.",
+      "metrics": [
+        {
+          "id": "conflicts_default",
+          "configuration": "default; doubtful findings included",
+          "numerator": 18,
+          "denominator": 18,
+          "units": "expected-conflict/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "conflicts_filtered",
+          "configuration": "doubtful conflicts excluded",
+          "numerator": 15,
+          "denominator": 18,
+          "units": "expected-conflict/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "gaps_default",
+          "configuration": "default; doubtful findings included",
+          "numerator": 35,
+          "denominator": 36,
+          "units": "expected-gap/run pairs",
+          "notes": "Event-level scoring; unchanged after doubtful findings are excluded."
+        },
+        {
+          "id": "removed_requirement_gaps",
+          "configuration": "default; doubtful findings included",
+          "numerator": 18,
+          "denominator": 18,
+          "units": "expected-gap/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "narrowed_requirement_gaps",
+          "configuration": "default; doubtful findings included",
+          "numerator": 17,
+          "denominator": 18,
+          "units": "expected-gap/run pairs",
+          "notes": "The missed case lost a condition during translation."
+        },
+        {
+          "id": "quiet_conflict_alarm_runs",
+          "configuration": "default; doubtful findings included",
+          "numerator": 2,
+          "denominator": 54,
+          "units": "quiet change runs",
+          "notes": "Denominator includes clean, retired and sibling cases; not directly interchangeable with E17 or E20 clean-run denominators."
+        },
+        {
+          "id": "quiet_gap_alarm_runs",
+          "configuration": "default; doubtful findings included",
+          "numerator": 0,
+          "denominator": 54,
+          "units": "quiet change runs",
+          "notes": ""
+        },
+        {
+          "id": "retirement_gap_alarm_runs",
+          "configuration": "default; doubtful findings included",
+          "numerator": 0,
+          "denominator": 18,
+          "units": "event-retirement runs",
+          "notes": "Removing the last response to an event is treated as retirement."
+        },
+        {
+          "id": "old_conflict_wrongly_attributed",
+          "configuration": "default; doubtful findings included",
+          "numerator": 0,
+          "denominator": 108,
+          "units": "old-conflict/run opportunities",
+          "notes": ""
+        },
+        {
+          "id": "old_conflict_found_and_excluded",
+          "configuration": "default; doubtful findings included",
+          "numerator": 108,
+          "denominator": 108,
+          "units": "old-conflict/run opportunities",
+          "notes": "Six distinct existing conflicts observed over six changes and three repetitions."
+        },
+        {
+          "id": "all_existing_conflicts_excluded",
+          "configuration": "default; doubtful findings included",
+          "numerator": 115,
+          "denominator": null,
+          "units": "findings",
+          "notes": ""
+        },
+        {
+          "id": "other_change_conflicts",
+          "configuration": "default; doubtful findings included",
+          "numerator": 2,
+          "denominator": null,
+          "units": "findings",
+          "notes": ""
+        },
+        {
+          "id": "unplanted_ambiguity_flags",
+          "configuration": "default; doubtful findings included",
+          "numerator": 2,
+          "denominator": null,
+          "units": "flagged change rules",
+          "notes": ""
+        },
+        {
+          "id": "scenario_labels_preserved",
+          "configuration": "default; doubtful findings included",
+          "numerator": 108,
+          "denominator": 108,
+          "units": "runs",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "id": "E20_full",
+      "dataset": "eval14",
+      "raw_source_path": "experiments/results/E20_eval14_full.json",
+      "scored_source_path": "experiments/results/E20_eval14_full.md",
+      "narrative_source_path": "research_log.md, E20",
+      "recorded_date": "2026-11-24T19:30:03",
+      "model": "Qwen/Qwen3.8-27B-FP8",
+      "runs": 108,
+      "versions": 36,
+      "projects": 6,
+      "runs_per_version": 3,
+      "symbol_sets": 1,
+      "samples": 8,
+      "temperature": 0.7,
+      "failed_runs": 0,
+      "mode": "full",
+      "historically_recorded_revisions": {
+        "dataset_written": "881d1bb",
+        "design_frozen": "373ae4c"
+      },
+      "notes": "One of two modes applied to the same 36 distinct changes, three repetitions per mode. No broad false-positive rate or semantic equivalence claim follows from the clean cases.",
+      "metrics": [
+        {
+          "id": "conflicts_default",
+          "configuration": "default; doubtful findings included",
+          "numerator": 54,
+          "denominator": 54,
+          "units": "expected-conflict/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "conflicts_filtered",
+          "configuration": "doubtful conflicts excluded",
+          "numerator": 51,
+          "denominator": 54,
+          "units": "expected-conflict/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "direct_conflicts",
+          "configuration": "default; doubtful findings included",
+          "numerator": 18,
+          "denominator": 18,
+          "units": "expected-conflict/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "modified_conflicts",
+          "configuration": "default; doubtful findings included",
+          "numerator": 18,
+          "denominator": 18,
+          "units": "expected-conflict/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "overlap_conflicts",
+          "configuration": "default; doubtful findings included",
+          "numerator": 18,
+          "denominator": 18,
+          "units": "expected-conflict/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "gaps_default",
+          "configuration": "default; doubtful findings included",
+          "numerator": 36,
+          "denominator": 36,
+          "units": "expected-gap/run pairs",
+          "notes": "18 added-gap and 18 removal-gap opportunities; unchanged after doubtful findings are excluded."
+        },
+        {
+          "id": "clean_conflict_alarm_runs",
+          "configuration": "default; doubtful findings included",
+          "numerator": 0,
+          "denominator": 18,
+          "units": "clean change runs",
+          "notes": ""
+        },
+        {
+          "id": "clean_gap_alarm_runs",
+          "configuration": "default; doubtful findings included",
+          "numerator": 0,
+          "denominator": 18,
+          "units": "clean change runs",
+          "notes": ""
+        },
+        {
+          "id": "other_change_conflicts",
+          "configuration": "default; doubtful findings included",
+          "numerator": 3,
+          "denominator": null,
+          "units": "findings",
+          "notes": "The research log judges these additional interactions legitimate."
+        },
+        {
+          "id": "all_change_gaps",
+          "configuration": "default; doubtful findings included",
+          "numerator": 39,
+          "denominator": null,
+          "units": "findings",
+          "notes": "Includes gaps beyond the planted targets; do not infer no extra findings from clean-case quietness."
+        },
+        {
+          "id": "unplanted_ambiguity_flags",
+          "configuration": "default; doubtful findings included",
+          "numerator": 1,
+          "denominator": null,
+          "units": "flagged change rules",
+          "notes": ""
+        },
+        {
+          "id": "scenario_labels_preserved",
+          "configuration": "default; doubtful findings included",
+          "numerator": 108,
+          "denominator": 108,
+          "units": "runs",
+          "notes": ""
+        },
+        {
+          "id": "mean_change_requests",
+          "configuration": "default",
+          "value": 68,
+          "units": "formalization API requests per change",
+          "notes": "Rounded mean over 108 runs; excludes explanation and scenario judging."
+        },
+        {
+          "id": "mean_change_prompt_tokens",
+          "configuration": "default",
+          "value": 32431,
+          "units": "prompt tokens per change",
+          "notes": "Rounded mean; formalization stage only."
+        },
+        {
+          "id": "mean_change_completion_tokens",
+          "configuration": "default",
+          "value": 28806,
+          "units": "completion tokens per change",
+          "notes": "Rounded mean; formalization stage only."
+        },
+        {
+          "id": "total_change_requests",
+          "configuration": "default",
+          "value": 7336,
+          "units": "formalization API requests",
+          "notes": "Sum of the 108 recorded run costs."
+        },
+        {
+          "id": "batch_wall_time",
+          "configuration": "default",
+          "value": 32,
+          "units": "minutes",
+          "notes": "One reported 108-run cluster batch; not average per-change latency."
+        }
+      ]
+    },
+    {
+      "id": "E20_incremental",
+      "dataset": "eval14",
+      "raw_source_path": "experiments/results/E20_eval14_incremental.json",
+      "scored_source_path": "experiments/results/E20_eval14_incremental.md",
+      "narrative_source_path": "research_log.md, E20",
+      "recorded_date": "2026-11-24T18:58:02",
+      "model": "Qwen/Qwen3.8-27B-FP8",
+      "runs": 108,
+      "versions": 36,
+      "projects": 6,
+      "runs_per_version": 3,
+      "symbol_sets": 1,
+      "samples": 8,
+      "temperature": 0.7,
+      "failed_runs": 0,
+      "mode": "incremental",
+      "historically_recorded_revisions": {
+        "dataset_written": "881d1bb",
+        "design_frozen": "373ae4c",
+        "later_unmeasured_guards": "498dea0"
+      },
+      "bases": 18,
+      "changes_per_base": 6,
+      "notes": "The same 36 distinct changes as E20_full, with six alternative changes sharing each project/repetition base. Four missed conflict detections concern two distinct cases: drivingschool_overlap in all three runs and brewery_direct in one. Cached vocabulary and readings are retained; current model-name invalidation and option restrictions were added after this experiment.",
+      "metrics": [
+        {
+          "id": "conflicts_default",
+          "configuration": "default; doubtful findings included",
+          "numerator": 50,
+          "denominator": 54,
+          "units": "expected-conflict/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "conflicts_filtered",
+          "configuration": "doubtful conflicts excluded",
+          "numerator": 45,
+          "denominator": 54,
+          "units": "expected-conflict/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "direct_conflicts",
+          "configuration": "default; doubtful findings included",
+          "numerator": 17,
+          "denominator": 18,
+          "units": "expected-conflict/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "modified_conflicts",
+          "configuration": "default; doubtful findings included",
+          "numerator": 18,
+          "denominator": 18,
+          "units": "expected-conflict/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "overlap_conflicts",
+          "configuration": "default; doubtful findings included",
+          "numerator": 15,
+          "denominator": 18,
+          "units": "expected-conflict/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "gaps_default",
+          "configuration": "default; doubtful findings included",
+          "numerator": 36,
+          "denominator": 36,
+          "units": "expected-gap/run pairs",
+          "notes": "18 added-gap and 18 removal-gap opportunities; unchanged after doubtful findings are excluded."
+        },
+        {
+          "id": "clean_conflict_alarm_runs",
+          "configuration": "default; doubtful findings included",
+          "numerator": 0,
+          "denominator": 18,
+          "units": "clean change runs",
+          "notes": ""
+        },
+        {
+          "id": "clean_gap_alarm_runs",
+          "configuration": "default; doubtful findings included",
+          "numerator": 0,
+          "denominator": 18,
+          "units": "clean change runs",
+          "notes": ""
+        },
+        {
+          "id": "other_change_conflicts",
+          "configuration": "default; doubtful findings included",
+          "numerator": 1,
+          "denominator": null,
+          "units": "findings",
+          "notes": "The research log judges this additional interaction legitimate."
+        },
+        {
+          "id": "all_change_gaps",
+          "configuration": "default; doubtful findings included",
+          "numerator": 42,
+          "denominator": null,
+          "units": "findings",
+          "notes": "Includes gaps beyond the planted targets; do not infer no extra findings from clean-case quietness."
+        },
+        {
+          "id": "unplanted_ambiguity_flags",
+          "configuration": "default; doubtful findings included",
+          "numerator": 4,
+          "denominator": null,
+          "units": "flagged change rules",
+          "notes": ""
+        },
+        {
+          "id": "scenario_labels_preserved",
+          "configuration": "default; doubtful findings included",
+          "numerator": 108,
+          "denominator": 108,
+          "units": "runs",
+          "notes": ""
+        },
+        {
+          "id": "mean_change_requests",
+          "configuration": "default",
+          "value": 9,
+          "units": "formalization API requests per change",
+          "notes": "Rounded mean over 108 changes; base cost excluded."
+        },
+        {
+          "id": "mean_change_prompt_tokens",
+          "configuration": "default",
+          "value": 4934,
+          "units": "prompt tokens per change",
+          "notes": "Rounded mean; base cost excluded."
+        },
+        {
+          "id": "mean_change_completion_tokens",
+          "configuration": "default",
+          "value": 3816,
+          "units": "completion tokens per change",
+          "notes": "Rounded mean; base cost excluded."
+        },
+        {
+          "id": "mean_base_requests",
+          "configuration": "default",
+          "value": 61,
+          "units": "formalization API requests per base",
+          "notes": "Rounded mean over 18 base builds; a new or invalidated base incurs this initial work."
+        },
+        {
+          "id": "mean_base_prompt_tokens",
+          "configuration": "default",
+          "value": 28641,
+          "units": "prompt tokens per base",
+          "notes": "Rounded mean over 18 bases."
+        },
+        {
+          "id": "mean_base_completion_tokens",
+          "configuration": "default",
+          "value": 25969,
+          "units": "completion tokens per base",
+          "notes": "Rounded mean over 18 bases."
+        },
+        {
+          "id": "total_change_requests",
+          "configuration": "default",
+          "value": 1010,
+          "units": "formalization API requests",
+          "notes": "Sum of 108 change run costs; excludes base builds."
+        },
+        {
+          "id": "total_base_requests",
+          "configuration": "default",
+          "value": 1093,
+          "units": "formalization API requests",
+          "notes": "Sum of 18 base build costs."
+        },
+        {
+          "id": "total_requests_including_bases",
+          "configuration": "default",
+          "value": 2103,
+          "units": "formalization API requests",
+          "notes": "1093 + 1010, compared with 7336 full requests for this workload of six alternative changes per base."
+        },
+        {
+          "id": "request_reduction_excluding_bases_percent",
+          "configuration": "default",
+          "value": 86.23227917121046,
+          "units": "percent",
+          "notes": "Calculated from raw request totals, not rounded means; applies only after a base is available."
+        },
+        {
+          "id": "request_reduction_including_bases_percent",
+          "configuration": "default",
+          "value": 71.33315158124319,
+          "units": "percent",
+          "notes": "Calculated for this six-alternatives-per-base workload; not a general first-change saving."
+        },
+        {
+          "id": "batch_wall_time",
+          "configuration": "default",
+          "value": 13,
+          "units": "minutes",
+          "notes": "One reported cluster batch including 18 bases and 108 changes; not average per-change latency."
+        }
+      ]
+    },
+    {
+      "id": "E9",
+      "dataset": "eval4",
+      "raw_source_path": "experiments/results/E9_eval4.json",
+      "scored_source_path": "experiments/results/E9_eval4.md",
+      "narrative_source_path": "research.md, sections 3.8 and 4.1; research_log.md, E9 and T13",
+      "recorded_date": "2026-11-18T16:00:58",
+      "model": "Qwen/Qwen3.8-27B-FP8",
+      "second_model": "thelamapi/next-70b",
+      "runs": 72,
+      "versions": 24,
+      "runs_per_version": 3,
+      "symbol_sets": 1,
+      "failed_runs": 0,
+      "notes": "Values from scored table retained at snapshot; second-reader comparison incorporates the later T13 comparison rule. Old raw metadata does not explicitly record temperature.",
+      "metrics": [
+        {
+          "id": "ambiguities_main",
+          "configuration": "default (1 symbol set)",
+          "numerator": 14,
+          "denominator": 36,
+          "units": "expected-ambiguity/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "ambiguities_second",
+          "configuration": "second reader",
+          "numerator": 30,
+          "denominator": 36,
+          "units": "expected-ambiguity/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "clean_rule_flags_main",
+          "configuration": "default (1 symbol set)",
+          "numerator": 7,
+          "denominator": null,
+          "units": "flagged rules across 18 clean runs",
+          "notes": "Not a rate or a count of clean runs."
+        },
+        {
+          "id": "clean_rule_flags_second",
+          "configuration": "second reader",
+          "numerator": 15,
+          "denominator": null,
+          "units": "flagged rules across 18 clean runs",
+          "notes": "Not independently adjudicated false positives."
+        }
+      ]
+    },
+    {
+      "id": "E12",
+      "dataset": "eval7",
+      "raw_source_path": "experiments/results/E12_eval7.json",
+      "scored_source_path": "experiments/results/E12_eval7.md",
+      "narrative_source_path": "research_log.md, E12",
+      "recorded_date": "2026-11-19T11:55:24",
+      "model": "Qwen/Qwen3.8-27B-FP8",
+      "second_model": "thelamapi/next-70b",
+      "runs": 72,
+      "versions": 24,
+      "runs_per_version": 3,
+      "symbol_sets": 1,
+      "failed_runs": 0,
+      "notes": "Old raw metadata does not explicitly record temperature.",
+      "metrics": [
+        {
+          "id": "ambiguities_main",
+          "configuration": "default (1 symbol set)",
+          "numerator": 17,
+          "denominator": 36,
+          "units": "expected-ambiguity/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "ambiguities_second",
+          "configuration": "second reader",
+          "numerator": 32,
+          "denominator": 36,
+          "units": "expected-ambiguity/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "clean_rule_flags_main",
+          "configuration": "default (1 symbol set)",
+          "numerator": 5,
+          "denominator": null,
+          "units": "flagged rules across 18 clean runs",
+          "notes": "Not a rate or a count of clean runs."
+        },
+        {
+          "id": "clean_rule_flags_second",
+          "configuration": "second reader",
+          "numerator": 9,
+          "denominator": null,
+          "units": "flagged rules across 18 clean runs",
+          "notes": "Not independently adjudicated false positives."
+        }
+      ]
+    },
+    {
+      "id": "E13_size",
+      "dataset": "size",
+      "raw_source_path": "experiments/results/E13_size.json",
+      "scored_source_path": "experiments/results/E13_size.md",
+      "narrative_source_path": "research_log.md, E13, size subsection",
+      "recorded_date": "2026-11-20T12:45:42",
+      "model": "Qwen/Qwen3.8-27B-FP8",
+      "runs": 12,
+      "versions": 4,
+      "base_documents": 1,
+      "base_requirements": 30,
+      "runs_per_version": 3,
+      "symbol_sets": 1,
+      "failed_runs": 0,
+      "metrics": [
+        {
+          "id": "conflicts_default",
+          "configuration": "default (1 symbol set)",
+          "numerator": 6,
+          "denominator": 6,
+          "units": "expected-conflict/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "gaps_by_event",
+          "configuration": "once for each event",
+          "numerator": 3,
+          "denominator": 3,
+          "units": "expected-gap/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "clean_alarm_runs_default",
+          "configuration": "default (1 symbol set)",
+          "numerator": 3,
+          "denominator": 3,
+          "units": "clean runs",
+          "notes": ""
+        },
+        {
+          "id": "clean_alarm_runs_filtered",
+          "configuration": "doubtful conflicts set aside",
+          "numerator": 0,
+          "denominator": 3,
+          "units": "clean runs",
+          "notes": ""
+        },
+        {
+          "id": "solver_time_before",
+          "configuration": "before rule-family decomposition, code before step 26",
+          "minimum": 26,
+          "maximum": 34,
+          "units": "seconds per formal model",
+          "notes": "Timing from research log on saved campsite models, not an aggregate benchmark."
+        },
+        {
+          "id": "solver_time_after",
+          "configuration": "after rule-family decomposition",
+          "minimum": 0.4,
+          "maximum": 0.9,
+          "units": "seconds per formal model",
+          "notes": "Document splits into 16–18 weakly connected rule families; speedup is topology-dependent."
+        }
+      ]
+    },
+    {
+      "id": "E14",
+      "dataset": "size2",
+      "raw_source_path": "experiments/results/E14_size2.json",
+      "scored_source_path": "experiments/results/E14_size2.md",
+      "narrative_source_path": "research_log.md, E14",
+      "recorded_date": "2026-11-22T16:10:40",
+      "model": "Qwen/Qwen3.8-27B-FP8",
+      "runs": 12,
+      "versions": 4,
+      "base_documents": 1,
+      "base_requirements": 100,
+      "runs_per_version": 3,
+      "symbol_sets": 1,
+      "failed_runs": 0,
+      "historically_recorded_revisions": {
+        "dataset_written": "6f4e350",
+        "design_changed": "00b253c"
+      },
+      "notes": "Variants have 99, 100 or 101 rules. Two serving environments and concurrent work were involved; timings are illustrative measurements, not means.",
+      "metrics": [
+        {
+          "id": "read_rule_count_correct",
+          "configuration": "read answer limit 24576 tokens",
+          "numerator": 12,
+          "denominator": 12,
+          "units": "runs",
+          "notes": ""
+        },
+        {
+          "id": "conflicts_default",
+          "configuration": "default (1 symbol set)",
+          "numerator": 6,
+          "denominator": 6,
+          "units": "expected-conflict/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "gaps_by_event",
+          "configuration": "once for each event",
+          "numerator": 3,
+          "denominator": 3,
+          "units": "expected-gap/run pairs",
+          "notes": ""
+        },
+        {
+          "id": "clean_alarm_runs",
+          "configuration": "default (1 symbol set)",
+          "numerator": 1,
+          "denominator": 3,
+          "units": "clean runs",
+          "notes": "Seat reservation/release conflates entities and time; not marked doubtful."
+        },
+        {
+          "id": "clean_covered_event_gap_runs",
+          "configuration": "once for each event",
+          "numerator": 0,
+          "denominator": 3,
+          "units": "clean runs",
+          "notes": "Twenty events specified as covered per clean document."
+        },
+        {
+          "id": "read_output_tokens",
+          "configuration": "one ferry_clean read probe; answer cap 24576",
+          "value": 16799,
+          "units": "tokens",
+          "notes": "One measured answer; prior 8192-token cap truncated output."
+        },
+        {
+          "id": "solver_time",
+          "configuration": "one 101-rule formal model",
+          "value": 35,
+          "units": "seconds",
+          "notes": "Single reported solver-stage measurement."
+        },
+        {
+          "id": "full_cli_time",
+          "configuration": "one ferry_direct CLI run including wording; busy cluster",
+          "value": 620,
+          "units": "seconds",
+          "notes": "Single observation, not average latency."
+        },
+        {
+          "id": "second_reader_prompt_tokens",
+          "configuration": "206-symbol translation prompt",
+          "value": 4234,
+          "units": "tokens",
+          "notes": "Configured second-reader total context 6144 and answer allowance 4096 make request exceed the current server limit."
+        }
+      ]
+    }
+  ],
+  "current_limits": [
+    {
+      "id": "outcome_pair_cap",
+      "source_path": "speccheck/probe.py",
+      "symbol": "MAX_PAIRS",
+      "value": 40,
+      "units": "candidate pairs per formal model",
+      "notes": "First eligible pairs in document order. Large scale documents have several hundred candidates."
+    },
+    {
+      "id": "default_policy",
+      "source_path": "plan.md, section 3; research_log.md, E18",
+      "value": "Outcome-pair questions stay on by default",
+      "notes": "Explicit decision recorded at snapshot revision; every dependent finding quotes its assumed fact."
+    },
+    {
+      "id": "next_unseen_set",
+      "source_path": "plan.md, section 2; research_log.md, E20",
+      "value": "eval15",
+      "notes": "All existing evaluation sets have been inspected and are now development data."
+    },
+    {
+      "id": "incremental_default",
+      "source_path": "speccheck/cli.py:main",
+      "value": "Off; full formalization remains the default",
+      "notes": "Requires --change and one vocabulary; current CLI rejects multiple vocabularies, a second reader or text review in this mode."
+    },
+    {
+      "id": "incremental_edit_scope",
+      "source_path": "speccheck/change.py:_document; speccheck/cli.py:main",
+      "value": "Only added or rewritten scenarios are emitted for translation",
+      "notes": "A SHALL-sentence-only edit with unchanged scenarios, or a new requirement without scenarios, can emit no incremental text and reuse the old model. Full mode is needed for these edits; no automatic fallback is implemented."
+    },
+    {
+      "id": "incremental_cache_key",
+      "source_path": "speccheck/cli.py:_base_model",
+      "value": "Generated base-document hash and model-name string",
+      "notes": "Samples, temperature, endpoint, model-weight revision, prompt version and code version are not in the key. Retained old vocabulary and interpretations are not automatically rechecked."
+    },
+    {
+      "id": "removal_gap_scope",
+      "source_path": "speccheck/checks.py:find_gaps; speccheck/change.py:after_model",
+      "value": "Usable removed-rule seeds for still-handled events",
+      "notes": "No removed-event gap is emitted after the last conditional response to that event is retired. Replaced scenarios are excluded from active rules but are not removal seeds."
+    }
+  ],
+  "edition_date": "2026-11-25",
+  "previous_snapshot_revision": "18752f24cbfd625d23d7ae5bd967af43ee7af718"
+}

@@ -1,0 +1,16 @@
+# Intermediate builds and the extracted verification copy of the snapshot.
+build/
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.nav
+*.out
+*.snm
+*.synctex.gz
+*.toc
+*.vrb
+
+# Final PDFs, editable sources and the immutable snapshot remain deliverables.

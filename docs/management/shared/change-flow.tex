@@ -1,0 +1,10 @@
+\begin{tikzpicture}[node distance=7mm,stage/.append style={text width=2.5cm}]
+\node[stage] (base) {Existing specs\\\scriptsize lock at the threshold};
+\node[stage,below=6mm of base] (delta) {Proposed change\\\scriptsize never lock admins};
+\node[stage,right=of base,yshift=-8mm] (merge) {Merge + label\\\scriptsize retain rule provenance};
+\node[stage,right=of merge] (check) {Active model\\\scriptsize run solver checks};
+\node[stage,right=of check] (filter) {Select findings\\\scriptsize changed rules/events;\\removal gaps};
+\draw[flow] (base.east)--++(.2,0)|-(merge.west);
+\draw[flow] (delta.east)--++(.2,0)|-(merge.west);
+\draw[flow] (merge)--(check);\draw[flow] (check)--(filter);
+\end{tikzpicture}

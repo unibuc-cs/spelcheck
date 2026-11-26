@@ -1,0 +1,13 @@
+\begin{tikzpicture}[node distance=8mm]
+\node[stage] (words) {Requirements\\\footnotesize words + rule labels};
+\node[stage,right=of words] (formal) {Formal model\\\footnotesize symbols + formulas};
+\node[stage,right=of formal] (finding) {Findings\\\footnotesize rules + witness};
+\node[stage,right=of finding] (report) {Review report\\\footnotesize explanation + choices};
+\draw[flow] (words)--node[above=6mm,annotation]{LLM + Z3}(formal);
+\draw[flow] (formal)--node[above=6mm,annotation]{Z3}(finding);
+\draw[flow] (finding)--node[above=6mm,annotation]{LLM}(report);
+\node[annotation,below=4mm of words] {Input text};
+\node[annotation,below=4mm of formal] {Saved model};
+\node[annotation,below=4mm of finding] {Solver results};
+\node[annotation,below=4mm of report] {Questions for the author};
+\end{tikzpicture}

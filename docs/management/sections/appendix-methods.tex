@@ -1,0 +1,636 @@
+\section{Detailed procedures}\label{app:procedures}
+
+This appendix gives the eleven procedures behind Sections~\ref{sec:design}--\ref{sec:change}, together with their voting rules, failure cases and sensitivity checks. The formulas and constructed sample distributions are explanatory examples, not additional experimental measurements. The seven translation steps describe the full route; Algorithm~\ref{alg:incremental} identifies which work the optional reuse route repeats.
+\begin{figure}[H]
+\centering
+\resizebox{\linewidth}{!}{\input{shared/seven-steps}}
+\caption{The internal formalization flow. The dashed shortcut skips the optional second reader.}\label{fig:seven}
+\end{figure}
+
+\subsection{Translation and interpretation checks}\label{app:formalize}
+
+For the order example, the translation must preserve the clash between
+``backorder when there is no stock'' and ``never backorder.'' A solver can
+establish that conflict once it receives the right formulas. Getting those
+formulas is the harder part. The seven steps below produce and check the
+translation before the solver analysis in Figure~\ref{fig:pipeline}.
+
+We use the notation of Section~\ref{sec:model}: a rule is
+$r_i=(a_i,c_i)$, with formula $\phi_i=a_i\Rightarrow c_i$, over vocabulary
+$V$. The order symbols are $s$ (submitted), $v$ (stock available), $f$
+(fulfilled), $b$ (backordered), $c$ (cancellation event), $q$
+(cancelled-and-refunded state), and $u$ (refund). Short formulas and
+constructed sample distributions below are illustrations of the algorithms,
+not additional experimental measurements.
+
+\subsubsection{Step 1: read the requirements and choose the vocabulary}
+\example{One event, one condition, one demanded outcome}
+For R2, ``WHEN an order is submitted AND inventory is unavailable, THE
+Order System SHALL place the order on backorder,'' the reader must identify
+the submission event $s$, the stock condition $v$, and the outcome $b$.
+R3 must reuse $b$ when it says never to backorder. If the reader invents
+unrelated symbols for these two mentions, the contradiction becomes
+invisible to the solver.
+
+\textbf{Input:} the original document.
+\textbf{Output:} atomic requirements with IDs, source text and triggers,
+plus typed symbols with descriptions. The supported sorts are Boolean,
+integer, real and finite enumeration. Event markers distinguish an
+occurrence, such as submission, from a state, such as being refunded.
+The model is instructed to copy requirement text and preserve existing
+labels; it does not receive a hand-written domain vocabulary.
+
+\begin{algorithm}[H]
+\caption{Read a document into rules and symbols}\label{alg:read}
+\begin{algorithmic}[1]
+\Require Document $D$, initial temperature $t$
+\For{$\tau$ in $(t,0.3,0.9)$}
+  \State Ask for atomic rules, triggers and symbols at temperature $\tau$
+  \If{a JSON answer exists and its vocabulary is valid}
+    \State \Return rules and vocabulary
+  \EndIf
+\EndFor
+\State Fail with the extraction error
+\end{algorithmic}
+\end{algorithm}
+
+Validation rejects illegal or duplicate symbol names, unsupported sorts,
+and enumerations with fewer than two values. It does not establish that
+the reader found every requirement or chose the intended abstraction.
+A valid vocabulary can still encode the wrong meaning. The extraction
+answer can also exceed the configured
+token budget on a long document.
+\source{speccheck/formalize.py}
+
+\subsubsection{Step 2: translate each rule several times}
+\example{Eight attempts to express the same obligation}
+For R2, a translation may return $a_2=s\land\neg v$ and $c_2=b$.
+Another may write an equivalent implication with a different syntactic
+arrangement. The next step must compare meanings, rather than count
+identical strings. For an authentication rule, repeated translations may
+instead expose a real distinction: ``reaches five failed attempts'' can
+be rendered using $n=5$ or $n\ge5$.
+
+\textbf{Input:} one extracted requirement and the shared vocabulary.
+\textbf{Output:} up to $N$ translations, each containing a plain-language
+reading, an antecedent and a consequent. The defaults are $N=8$ and
+sampling temperature $0.7$. Each call is constrained to a JSON schema;
+the formulas themselves are subsequently parsed by Z3.
+
+\begin{algorithm}[H]
+\caption{Sample translations in a fixed vocabulary}\label{alg:sample}
+\begin{algorithmic}[1]
+\Require Rules $R$, vocabulary $V$, sample count $N$
+\ForAll{$r_i\in R$ in parallel}
+  \State Ask for $N$ translations of the text of $r_i$ using $V$
+  \State Store the returned JSON answers for $r_i$
+\EndFor
+\State \Return sampled translations
+\end{algorithmic}
+\end{algorithm}
+
+Up to sixteen requests are issued concurrently. Only the LLM calls run in
+these worker threads; the subsequent Z3 work is serial. Invalid JSON
+answers are dropped. Multiple samples provide evidence about variation
+within a model, but they are not independent human judgments. A model can
+repeat the same mistaken reading eight times.
+\source{speccheck/formalize.py}
+
+\subsubsection{Step 3: group translations by meaning}
+\example{Agreement, a split, and scattered readings}
+Suppose eight constructed samples of the authentication rule divide into
+five translations using $n=5$ and three using $n\ge5$. The two meanings
+disagree when $n=6$ and the account is not locked. That assignment obeys
+the first implication and violates the second. By contrast, replacing
+$n=5$ with $5=n$ changes no meaning and creates no extra cluster.
+
+\textbf{Input:} sampled translations and $V$.
+\textbf{Output:} semantic clusters, a selected reading, and an initial
+status. Two compiled translations belong together when
+\[
+ \phi\sim\psi
+ \quad\Longleftrightarrow\quad
+ \UNSAT(\phi\mathbin{\oplus}\psi).
+\]
+The comparison concerns whole implications, not their antecedents and
+consequents separately. For cluster sizes $m_1,\ldots,m_k$, the code uses
+\[
+ p_j=\frac{m_j}{\sum_\ell m_\ell},\qquad
+ H=-\sum_j p_j\ln p_j.
+\]
+
+\begin{algorithm}[H]
+\caption{Cluster and choose an initial reading}\label{alg:cluster}
+\begin{algorithmic}[1]
+\Require Sampled translations $T$
+\State Discard translations that cannot be compiled
+\State Group the rest by solver-proved equivalence
+\If{no group remains} \State \Return rejected \EndIf
+\State Compute $H$ from usable cluster sizes
+\State Set status: accepted if $H\le0.4$; ambiguous if $H\le1$; else rejected
+\State Select the shortest formula in the largest group
+\State If not accepted, retain a second reading and a distinguishing witness
+\end{algorithmic}
+\end{algorithm}
+
+Thus an illustrative $[8]$ or $[7,1]$ split is accepted, $[6,2]$ or
+$[5,3]$ is ambiguous, and $[4,2,2]$ is rejected. These thresholds are
+engineering choices. Entropy is computed over usable translations, so a
+low value does not itself establish that many requested samples succeeded.
+Later probes may change an accepted or ambiguous status. A rejected rule
+is reported for clarification and excluded from the main solver checks.
+\source{speccheck/formalize.py}
+
+\subsubsection{Step 4: propose and vote on domain facts}
+\example{Two names can describe mutually exclusive states}
+The order model uses one stock variable $v$, so ``unavailable'' is simply
+$\neg v$. If a vocabulary instead contains separate symbols
+\code{stock_available} and \code{stock_unavailable}, Boolean logic alone
+allows both to be true. A domain fact relating those symbols may be
+needed. The solver cannot infer that relation from their English names.
+
+\textbf{Input:} symbol descriptions only.
+\textbf{Output:} explicit assumed facts $B$, each with an ID and support
+count. The LLM is not shown the requirements for this question, which
+reduces the risk of restating an obligation as a supposed domain truth.
+For a proposed fact $\beta$, answer $B_j$ supports it when
+\[
+ \UNSAT\left(\bigwedge B_j\land\neg\beta\right).
+\]
+For example, ``available and unavailable cannot coexist'' supports
+``available implies not unavailable,'' even though the strings differ.
+
+\begin{algorithm}[H]
+\caption{Keep supported domain assumptions}\label{alg:facts}
+\begin{algorithmic}[1]
+\Require $N$ requested fact answers
+\State Parse usable facts; discard answer sets proved inconsistent
+\State Count, for each candidate $\beta$, the answers that entail it
+\State Order candidates by decreasing support, then increasing formula length
+\ForAll{candidates $\beta$ in that order}
+  \If{support $>N/2$ and $\beta$ is not proved entailed by $B$}
+    \State Skip $\beta$ if $B\cup\{\beta\}$ is proved inconsistent
+    \State Append $\beta$ and its support to $B$
+  \EndIf
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+The implementation also repairs missing outer parentheses in otherwise
+parseable fact expressions. Tautologies and facts already implied by
+retained assumptions add nothing and are omitted. Majority support is the
+criterion for retaining an assumption; it does not verify the assumption
+against the application. The later analysis lists any assumptions needed
+for a conflict.
+\source{speccheck/formalize.py}
+
+\subsubsection{Step 5: connect outcomes expressed with private symbols}
+\example{Removing a record and retaining a record}
+The deletion example contains D2, which demands removal after confirmation,
+and D4, which demands retention for audit. A model can encode these with
+separate outcome symbols $m$ (removed) and $k$ (retained). Z3 can then
+satisfy both. To test this vocabulary choice, the pipeline asks for D2
+again while hiding its private removal symbol.
+
+\textbf{Input:} translated rules, vocabulary and current assumptions.
+\textbf{Output:} additional assumed links. For this illustrative
+abbreviation, let D2 be $d\Rightarrow m$, with $d$ meaning confirmation.
+If the new translations agree on $d\Rightarrow\neg k$, the link is
+$(d\land m)\Rightarrow\neg k$. More generally, a restatement
+$a'_i\Rightarrow c'_i$ yields
+\[
+ \lambda_i=(a'_i\land c_i)\Rightarrow c'_i.
+\]
+
+\begin{algorithm}[H]
+\caption{Restate private outcomes and record links}\label{alg:links}
+\begin{algorithmic}[1]
+\ForAll{usable rules with a private consequent symbol and other outcomes available}
+  \State Show its own antecedent symbols and the other rules' outcome symbols
+  \State Request $N$ restatements; reject formulas using hidden symbols
+  \State Cluster the remaining answers by equivalence
+  \If{one cluster has more than $N/2$ answers}
+    \State Construct $\lambda_i$ from its shortest representative
+    \State Retain the link unless it is proved inconsistent with retained assumptions
+  \EndIf
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+Restricting the vocabulary to outcomes prevents an action from being
+explained by an unrelated event, such as confusing ``prompt for
+confirmation'' with ``the user confirms.'' An answer saying that the
+visible symbols cannot express the rule contributes no supporting vote.
+The link remains an assumption: ``remove'' might mean hiding a record
+while keeping an audit copy. Step 6 challenges precisely that inference.
+\source{speccheck/formalize.py}
+
+\subsubsection{Step 6: ask focused questions about the interpretation}
+\example{Using a situation to distinguish two readings}
+For ``lock the account when failed attempts reach five,'' the situation
+``six attempts, account unlocked'' separates $n=5$ from $n\ge5$.
+Instead of asking the model to formalize the whole sentence again, the
+pipeline asks which reading the words support in that situation: the
+translation, the alternative, or either. For the deletion link, the
+question becomes ``confirmation has occurred, but the record is still
+retained; does D2 allow that?''
+
+\textbf{Input:} current translations, assumptions and original rule text.
+\textbf{Output:} answer counts on rules and assumptions, plus possible
+new assumptions about incompatible outcomes. This step has four checks:
+alternative readings; links; facts that make a rule impossible to obey;
+and pairs of outcomes that the existing vocabulary leaves unrelated.
+
+For two readings $\phi$ and $\psi$, Z3 seeks witnesses in both directions,
+$\phi\land\neg\psi$ and $\neg\phi\land\psi$. It first tries with domain
+facts and, if necessary, without them. The code requests eight answers for
+each surviving comparison, distributed across available witnesses and both A/B presentation orders.
+For each tested alternative, the chosen reading stands when more than
+half of the usable answers prefer it, or when no answers return. If it
+stands against every tested alternative, its status becomes accepted;
+otherwise it becomes ambiguous. The denominator includes returned votes for
+the translation, the alternative, and either reading. If no probes were
+constructed, the initial status is retained instead.
+
+\begin{algorithm}[H]
+\caption{Probe translation and assumption risks}\label{alg:probe}
+\begin{algorithmic}[1]
+\State Propose up to three other readings for each accepted rule
+\State For split rules, reuse the alternative from sampling
+\State Remove equivalent or invalid readings; construct distinguishing witnesses
+\State Ask balanced A/B questions and count the answers
+\State Test links using situations that violate their restatements
+\State Ask about fact sets that make a requirement impossible to obey
+\State Select eligible unrelated outcome pairs and ask whether they can coexist
+\State Store decisions; add majority-supported outcome exclusions as assumptions
+\end{algorithmic}
+\end{algorithm}
+
+A link is retained when a majority calls its violating situation impossible;
+if no answers return, it is retained. A voted fact is rejected only when
+a majority says it contradicts the requirement. Outcome-pair checks require
+triggering conditions not proved incompatible with retained assumptions, disjoint outcome symbols and definite
+outcome values. They skip pairs reacting to disjoint events and pairs
+already excluded by assumptions. At most forty pairs are queried, in
+document order. Unlike the requested-$N$ vote for facts and links, this
+majority is counted among returned answers. Solver unknown can leave a pair
+eligible; it is not a proof that its triggering conditions are compatible.
+A majority judgment of incompatibility adds
+$\neg(c_i\land c_j)$ to the assumption list.
+
+These checks can still miss an interpretation. Proposed alternatives for
+accepted rules must use the original translation's symbols, so a meaning
+absent from that vocabulary may remain undiscovered. Even unanimous
+preference for another reading is referred to the author for a decision;
+the implementation does not silently replace the requirement's meaning.
+\source{speccheck/probe.py}
+
+\subsubsection{Step 7: optionally compare with a second model}
+\example{Agreement within one model can conceal disagreement between models}
+Suppose the first model consistently translates the threshold as $n=5$.
+In a constructed second-model sample, five answers use $n\ge5$ and three
+use $n=5$. The first reading receives support $3/8$ and is not confirmed.
+The alternative and its distinguishing situation become an ambiguity for
+the author.
+
+\textbf{Input:} the current model and an optional second model endpoint.
+\textbf{Output:} confirmation counts and, when available, another reading.
+The second model sees the same requirement and vocabulary used in step 2.
+Let $E_i$ be the event symbols entailed by $a_i$. Confirmation counts
+answers $\psi_{ij}$ for which
+\[
+ \UNSAT\left(\bigwedge E_i\land(\phi_i\mathbin{\oplus}\psi_{ij})\right).
+\]
+Conditioning on required events avoids treating an omitted explicit event
+guard as a different reading of an event-triggered requirement.
+
+\begin{algorithm}[H]
+\caption{Compare a second reader with the selected translation}\label{alg:second-reader}
+\begin{algorithmic}[1]
+\ForAll{non-rejected rules $r_i$}
+  \State Request $N$ translations from the second model
+  \State Count answers equivalent to $\phi_i$ under required events $E_i$
+  \State Confirm only if the count is greater than $N/2$
+  \State Retain the most frequent usable different reading and a witness
+  \State Mark an accepted rule ambiguous if unconfirmed and an alternative exists
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+Unusable answers count against confirmation. If none supplies a usable
+alternative, no new ambiguity is emitted. A different model family can
+expose shared errors within the first model, but both readers still inherit
+its vocabulary. The confirmation count measures agreement between the
+readers; it is not a calibrated probability of correctness.
+The current incremental CLI does not support the second reader, multiple
+vocabularies or optional text review; these remain full-mode options.
+\source{speccheck/formalize.py}
+
+\subsection{Conflict, gap and scenario searches}\label{app:solver}
+
+\subsubsection{Conflicts require feasible situations and incompatible obligations}
+\example{An order arrives with no stock}
+Take $s=\True$ and $v=\False$. R2 requires $b$, while R3 requires
+$\neg b$. Simply asking whether all five implications are satisfiable
+would miss this problem: the solver could choose a situation with no
+submission and no cancellation. The checker therefore forces selected
+antecedents to hold before testing the obligations.
+
+For trigger group $G$, write $A_G=\bigwedge_{i\in G}a_i$ and
+$\Phi=\bigwedge_i\phi_i$. With assumptions $B$, the two questions are
+\[
+ \SAT\left(A_G\land\bigwedge B\right),\qquad
+ \UNSAT\left(A_G\land\bigwedge B\land\Phi\right).
+\]
+The first establishes a feasible trigger in the encoded vocabulary; the
+second establishes that the full rule set cannot obey it. The input is
+the formal model, and the output names conflicting rules, required
+assumptions and a concrete trigger witness.
+
+\begin{algorithm}[H]
+\caption{Search for conflicts under a chosen assumption set}\label{alg:conflicts}
+\begin{algorithmic}[1]
+\ForAll{trigger groups $G$ of size one through three}
+  \State Skip unrelated symbol families and supersets of known conflicting triggers
+  \If{$A_G\land\bigwedge B$ is satisfiable}
+    \State Continue unless $A_G\land\bigwedge B\land\Phi$ is proved unsatisfiable
+    \State Extract and deletion-minimize an unsatisfiable core of rules and facts
+    \State Skip if there is no core, or one rule alone forbids the trigger with $B$
+    \State Record the necessary rule IDs, fact IDs and trigger witness
+  \EndIf
+\EndFor
+\State Remove duplicate or subsumed rule sets
+\end{algorithmic}
+\end{algorithm}
+
+The single-rule exclusion distinguishes a conflict from a prohibited
+situation. For example, an administrator being locked may simply violate
+``never lock administrators.'' It is not automatically a disagreement
+between requirements. Search groups are restricted to connected families
+of shared symbols, including connections through the current assumptions.
+
+The search runs first with $B=\varnothing$, then with retained assumptions.
+The second run may add a conflict but never suppress one from the first.
+Assumptions that exclude a rules-only trigger instead mark it doubtful.
+The default limit of three applies to trigger groups, not necessarily to
+the number of rules in an explanation. Core deletion produces a
+subset-minimal explanation when solver answers are conclusive; it does
+not optimize for minimum cardinality or enumerate every explanation.
+\source{speccheck/checks.py}
+
+\subsubsection{Gaps identify conditions with no response specified}
+\example{The order rules cover submission, but not the quiet snapshot}
+When $s$ holds, either $v$ or $\neg v$ makes R1 or R2 applicable. Thus
+submission itself has no coverage gap in the abbreviated model. When
+$s=c=q=\False$, none of its conditional rules applies. R3 still forbids
+backordering, but that unconditional restriction does not specify a
+response. The resulting quiet gap may merely describe a system waiting
+for its next event.
+
+The input is the usable rule set and its event markers. Let $C$ contain
+the rules whose antecedents are not tautologies. For each event $e$ to
+which a conditional rule reacts, the checker seeks
+\[
+ e\land\bigwedge_{e'\ne e}\neg e'
+ \land\bigwedge_{i\in C}\neg a_i.
+\]
+The output is at most one uncovered example for each such event and one
+example with no event. This is a test of antecedent coverage in one
+snapshot, not a proof that every business process has been specified.
+
+\begin{algorithm}[H]
+\caption{Find and simplify uncovered situations}\label{alg:gaps}
+\begin{algorithmic}[1]
+\Require Active usable rules $R$, usable removed rules $L$, event metadata
+\State Let $C$ contain the non-tautological antecedents in $R$
+\State Return no gaps if $C$ is empty
+\State Let $E$ be events to which a rule in $C$ reacts
+\If{event mode is off or $E$ is empty}
+  \State \Return up to three generalized uncovered cases, without removal attribution
+\EndIf
+\ForAll{removed rules $\ell\in L$}
+  \State Let $E_\ell$ be the event symbols of its trigger and antecedent
+  \State Skip if $E_\ell\cap E$ is empty; otherwise select its first sorted event $e$
+  \State Skip if a removal gap has already been saved for $e$
+  \State Seek a gap under $a_\ell$, with just the events in $E_\ell$ occurring
+  \State If found, save it for $e$, preserving $a_\ell$'s symbols and recording $\ell$'s ID
+\EndFor
+\ForAll{events $e\in E$, followed by the no-event case}
+  \State Use the saved removal gap if present; otherwise seek the ordinary gap
+  \State Prefer a witness allowed by assumptions; otherwise annotate doubt
+  \State Drop a witness variable when all its values still leave the case uncovered
+  \State Preserve the selected event and any removal-seed symbols; emit one witness
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+Without reacted-to events, the fallback searches up to three generalized
+gaps across all situations. If no conditional rule remains, the checker
+returns no gaps. Assumptions never erase a gap; they can
+identify it as implausible. Rejected rules are absent from this coverage
+check, so a translation failure can also create apparent missing coverage.
+
+The removal search uses an old antecedent and its event context to find
+an uncovered situation in the active model. It is not a general comparison
+of the before and after specifications. A lost rule involving several
+events can preserve that simultaneous-event context; its result is stored
+under the first sorted event that surviving conditional rules still handle.
+At most one such result replaces the ordinary gap for that selected event.
+Removing the last response to an event counts as retirement. State-only
+removals, rejected removed rules and the non-event fallback provide no
+removal attribution. Replaced old scenarios are removed from active checks
+but are not added to this seed collection.
+\source{speccheck/checks.py}
+
+\subsubsection{Scenarios show consequences the author may want to review}
+\example{Fulfilment without submission}
+R1 says when an order must be fulfilled; it does not say ``only then.''
+With $s=c=q=\False$, the formulas permit $f=\True$ and $b=\False$.
+The checker can therefore show an allowed fulfilment without submission.
+This is a consequence to confirm, rather than another conflict.
+
+For each rule, an allowed scenario is a witness of
+\[
+ \SAT(\Phi\land\neg a_i\land c_i).
+\]
+A second search finds mutually applicable antecedents whose situation is
+forbidden by one rule's demand alone. These become ruled-out scenarios.
+Both searches operate on the rules, without domain assumptions. An LLM
+then judges which consequences are surprising in light of the document's
+stated purpose and presents at most three. Thus the solver establishes
+the encoded possibility or prohibition; the model decides whether it is
+worth discussing. Offline replay without an LLM omits this presentation
+branch.
+\source{speccheck/checks.py}
+
+\subsection{Explanations and sensitivity checks}\label{app:explanation}
+\example{One conflict, several distinct reasons to qualify it}
+The R2--R3 conflict needs no domain assumption: in the chosen translation,
+the same $b$ must be true and false. A D2--D4 conflict may require the
+assumption that removal excludes retention. A different conflict may
+require two events at once. Those cases should not receive the same
+unqualified explanation.
+
+The reporting stage receives the finding, original requirements and an
+exact evidence sheet. It adds a title, an explanation and two choices:
+keep the requirements, or make a specific change. The structured witness
+and IDs remain available independently of this prose. If no parseable wording
+is returned, the finding is reported unworded; API exceptions can still abort
+the run. A separate optional textual review offers
+rewrite suggestions; its judgments are explicitly separated from solver
+findings.
+
+Two further checks expose sensitivity. First, the analyzer substitutes an
+ambiguous rule's alternative, one rule at a time, and records which
+conflicts the bounded search finds or no longer finds. For gaps, it tests
+whether the alternative may cover part of a reported generalized situation.
+It does not explore every combination of interpretations.
+
+For example, let $s$ be an event and $x,y$ Boolean conditions. The rule
+$(s\land x)\Rightarrow f$ leaves the generalized gap
+$s=\True,x=\False$, with $y$ unspecified. Its alternative
+$(s\land y)\Rightarrow f$ applies when $y=\True$, so the implementation
+marks that gap as dependent on the reading. Yet the completion
+$s=\True,x=y=\False$ remains uncovered. The mark is a sensitivity hint,
+not proof that the whole uncovered region disappears. This check uses
+``not proved impossible,'' so a solver unknown can also produce the hint.
+Similarly, a conflict absent from a bounded rerun is not proof of consistency.
+
+Second, the document can be formalized into $K$ retained vocabularies.
+Additional models with a different rule count are discarded. Conflicts are matched by rule sets and
+ambiguities by rule ID, with support $k/K$. Gaps remain those of the first
+model because their coordinates cannot be matched directly. The current
+implementation aligns additional models by rule count and position, not
+by a verified semantic correspondence.
+
+All solver statements are conditional on the encoding. Conflict detection,
+gap witnesses and allowed or ruled-out scenarios require explicit
+satisfiable or unsatisfiable results for their corresponding tests.
+Queries have a five-second timeout. An unknown result can reduce detection
+and affect the sensitivity hints described above; no proof certificate is
+archived. Likewise, generated prose
+is not formally checked. Reviewers need the explanation together with the
+exact witness, assumptions, uncertainty marks and source requirement IDs.
+\source{speccheck/checks.py; speccheck/explain.py}
+
+\subsection{Change merging and finding selection}\label{app:change}
+OpenSpec organizes existing behaviour and proposed changes into separate
+documents~\citep{openspec}. The checker merges them for analysis as follows.
+
+\begin{figure}[H]
+\centering
+\resizebox{\linewidth}{!}{\input{shared/change-flow}}
+\caption{The authentication example, checked against existing requirements.}
+\end{figure}
+\example{An exception that breaks an existing lockout rule}
+An existing authentication specification locks accounts at a failed-login
+threshold. A change adds ``administrators are never locked.'' Neither
+fragment alone shows the cross-document conflict. The checker must analyze
+their combined obligations while preserving which ones came from the
+change.
+
+\textbf{Input:} existing capability specifications and one OpenSpec change
+directory. \textbf{Output:} a merged analysis document, the formal model
+and findings, and a report focused on the change. The merge applies renamed,
+removed, modified and added requirements in that order. Requirements are
+matched by name; scenarios receive labels and provenance indicating existing,
+added, modified or removed content. Within a modified requirement, scenario
+names and normalized bodies determine those statuses. Normalization ignores
+case, extra whitespace and selected Markdown marks; it does not establish
+semantic equivalence. In full mode, active scenarios use R labels and removed
+scenarios use X labels. In reuse mode, old labels remain fixed in the base,
+new or rewritten scenarios use N labels, and superseded old scenarios are
+marked replaced.
+Invalid references are rejected. This produces an analysis document; it
+does not archive or apply the change to the original specifications.
+
+\begin{algorithm}[H]
+\caption{Analyze a change with provenance}\label{alg:change}
+\begin{algorithmic}[1]
+\State Merge existing specifications with the delta and classify scenario provenance
+\If{incremental mode is requested}
+  \State Obtain the combined raw model by Algorithm~\ref{alg:incremental}
+\Else
+  \State Formalize the combined document, including removed X-labelled scenarios
+\EndIf
+\State Save the raw formal model before the after-change projection
+\State Validate that every expected scenario label occurs exactly once
+\State Identify added or modified rule IDs from labels and changed requirement text
+\State Separate deleted rules as removal seeds; discard superseded old scenarios
+\State Drop links and outcome-pair facts tagged with any separated/discarded rule
+\State Analyze active obligations; supply usable removal seeds to the gap search
+\State Select conflicts and scenarios mentioning a changed rule
+\State Select ambiguities of changed rules and gaps for their reacted-to events
+\State Also select gaps carrying \code{opened_by} removal attribution
+\State Keep other defects in the findings artifact; present selected findings
+\end{algorithmic}
+\end{algorithm}
+
+The method gives existing and changed requirements one shared vocabulary,
+which makes cross-document relations visible. It is not a semantic
+before/after diff: finding selection uses provenance and event relevance.
+For an extracted rule without a scenario label, normalized source wording
+is compared with changed or removed requirement sentences. This heuristic
+can identify a separately extracted SHALL sentence; it is not verified
+semantic alignment. Ordinary voted facts are retained after deletions.
+Consequently, keeping removed text in the full translation can still affect
+the vocabulary and assumptions even though its obligations are inactive.
+
+The order removal illustrates the new attribution: X1 supplies the former
+no-stock situation, no surviving conditional rule covers it, and
+\code{opened_by: ["X1"]} makes the gap relevant to the change. The
+ordinary changed-event selection also remains: a gap on an event used by
+an added or modified rule is included, without claiming that the edit caused
+every such gap. Existing-only findings remain saved for inspection.
+\source{speccheck/change.py; speccheck/cli.py}
+
+\subsection{Optional reuse of a saved base}\label{app:incremental}
+
+\begin{algorithm}[H]
+\caption{Translate changed scenarios against a saved base}\label{alg:incremental}
+\begin{algorithmic}[1]
+\Require Existing specifications $D$, delta $\Delta$, model name $m$
+\State Reject multiple vocabularies, a second reader and optional text review
+\State Generate labelled base text $D_b$; compute $h=\operatorname{SHA256}(D_b)$
+\If{no saved base has matching text fingerprint $h$ and model name $m$}
+  \State Fully formalize $D_b$ and validate all expected scenario labels
+  \State Save the base model together with $h$ and $m$
+\EndIf
+\State Emit added or rewritten scenarios from $\Delta$ as N-labelled text $D_n$
+\If{$D_n$ is empty} \State \Return the saved base model \EndIf
+\State Extract new rules and symbols, retaining existing symbol definitions
+\State Translate and cluster new rules in the combined vocabulary
+\State Ask for domain facts only if a new symbol was added
+\State Add supported facts unless implied by or inconsistent with retained assumptions
+\State Restate and probe new rules; ask eligible outcome pairs involving a new rule
+\State Combine new translations and assumptions with the retained base
+\State \Return the raw model for projection and analysis in Algorithm~\ref{alg:change}
+\end{algorithmic}
+\end{algorithm}
+
+\example{The administrator exception against a saved lockout reading.}
+The base already contains the failed-attempt symbols and the lockout rule.
+The exception is extracted as N1 and interpreted using that vocabulary,
+possibly extending it with an administrator condition. Old definitions and
+readings do not change. If extraction redeclares an old symbol name, the
+old definition wins. Outcome-pair questions require at least one new rule
+and retain the forty-pair cap; new facts do not trigger a complete re-probe
+of the old rules. Algorithm~\ref{alg:change} then runs the normal solver checks
+on the combined active model.
+
+The saved base is accepted by generated-text fingerprint and model-name
+string only. Samples, temperature, endpoint, model-weight revision, prompts
+and code version are not part of that key. A mismatch rebuilds the base;
+it does not switch to full formalization of the proposed change. Corrupt
+cache JSON, an unusable vocabulary or failed label validation stops the run.
+Supplying a saved formal model directly bypasses this cache check.
+
+The empty-input shortcut is important. If only a requirement sentence
+changes while its scenarios stay identical, $D_n$ can be empty. Adding a
+requirement without scenarios can have the same result. Those sentences
+are present in full mode, but this route can reuse the old model without
+translating them. A separately extracted old SHALL rule is also not retired
+by scenario replacement tracking alone. These are current edit-coverage
+limits. Sharing symbols and rerunning solver checks does not prove that an
+old interpretation remains suitable after an edit.
+\source{speccheck/cli.py; speccheck/formalize.py; speccheck/probe.py; speccheck/change.py}

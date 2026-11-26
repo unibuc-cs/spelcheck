@@ -1,0 +1,40 @@
+\section{Evaluation}\label{sec:evaluation}
+
+\subsection{Setup and measures}\label{sec:experimental-setup}
+
+The experiments address the four research questions with separate comparisons. RQ1 uses the E18 outcome-pair ablation and the earlier T22 development-data comparison. RQ2 uses the E9 and E12 second-reader experiments. RQ3 uses E17's OpenSpec changes, E19's removal cases and E20's full-versus-reuse comparison. RQ4 uses the larger specification exercises and E20's formalization requests. The experiments differ in pipeline version and purpose, so their scores are reported separately.
+
+The evaluation contains eleven sets of ordinary specifications: 66 base
+documents in 297 versions. Separately, E17, E19 and E20 contain 18 OpenSpec projects with
+102 distinct changes: 30, 36 and 36 respectively. E20 runs both modes on the same changes; it does not add another 36 cases. The scale exercises contain one 30-requirement and one
+100-requirement document, each in four versions. These are project-authored
+examples in Kiro EARS and OpenSpec formats. Most versions introduce one known
+defect into a base document; the initial set also contains multiple planted
+conflicts. The three original development examples are separate from this
+inventory. Each evaluation version is run three times.
+\source{research.md, sections 1 and 4.7; experiments/sets/}
+
+The main model is \code{Qwen/Qwen3.8-27B-FP8}, served locally by vLLM. The
+standard setting uses one symbol set, eight samples per translation or
+question, and sampling temperature 0.7. E9 and E12 additionally evaluated
+\code{thelamapi/next-70b} as a second reader. These are historical experiments
+with different pipeline versions, not repeated measurements of one unchanged
+system. Their saved JSON contains the specifications, expected defects, prompts,
+formalizations and answers; the accompanying tables record solver scoring.
+
+A conflict hit means the expected set of rule positions was reported. A gap
+hit means a reported uncovered situation contains the event associated with
+the planted missing case. This tests event coverage, not every possible missing
+behaviour. Clean-run conflict alarms count runs with at least one unexpected
+conflict; ambiguity flags count individual rules needing clarification,
+including rejected translations. These quantities have
+different denominators and should not be combined into an overall accuracy.
+Repeated runs mainly expose translation instability: three runs of one defect
+are not three independent requirements problems.
+\source{experiments/evaluate.py, reported and gap_scores}
+
+
+\subsection{Versions and reproducibility}
+This report describes revision \code{498dea0}, preserved separately from the earlier \code{18752f2} edition. Historical experiments used different pipeline versions, and many older results do not identify the source commit that generated them. E19 evaluated the removal design frozen at \code{07ecd38}; E20 evaluated reuse at \code{373ae4c}. Their inputs were committed before those designs were frozen. E20 used one vocabulary, eight samples, temperature 0.7, three repetitions of 36 changes in each mode, and eighteen separately formalized bases. The model-name cache check, cache messages and second-reader/text-review option restrictions in the current revision were added after E20 and were not evaluated by those model runs.
+
+The current offline suite passed 70 tests during preparation. These engineering checks are separate from the historical model experiments, which were inspected rather than rerun. Model weights and GPU services are external, so the saved results alone are insufficient to reproduce the original stochastic runs. A formalization request is one API call, which may return several samples; request counts are not sample counts or measured monetary cost.

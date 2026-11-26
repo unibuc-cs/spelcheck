@@ -1,0 +1,50 @@
+% A restrained, editable Beamer theme. Main-frame count excludes the appendix.
+\usefonttheme{professionalfonts}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{headline}{}
+\pdfstringdefDisableCommands{\def\translate#1{#1}}
+\setbeamertemplate{itemize item}{\color{Teal}\small\textbullet}
+\setbeamertemplate{itemize subitem}{\color{Teal}\small\textendash}
+\setbeamercolor{normal text}{fg=Ink,bg=white}
+\setbeamercolor{structure}{fg=Teal}
+\setbeamercolor{frametitle}{fg=Ink,bg=white}
+\setbeamercolor{title}{fg=Ink}
+\setbeamercolor{alerted text}{fg=Amber}
+\setbeamerfont{normal text}{size=\fontsize{12.5}{16}\selectfont}
+\setbeamerfont{frametitle}{size=\fontsize{23}{27}\selectfont,series=\bfseries}
+\setbeamerfont{title}{size=\fontsize{29}{34}\selectfont,series=\bfseries}
+\setbeamerfont{subtitle}{size=\fontsize{17}{22}\selectfont}
+\setbeamersize{text margin left=10mm,text margin right=10mm}
+\newif\ifmainframe
+\mainframetrue
+\setbeamertemplate{frametitle}{%
+  \vspace{1mm}%
+  {\fontsize{8.5}{10}\selectfont\color{Muted}%
+    \ifmainframe\insertsectionnumber\quad\insertsectionhead
+    \else Technical appendix\fi\par}%
+  \vspace{0.5mm}%
+  {\usebeamerfont{frametitle}\insertframetitle\par}%
+  \vspace{1mm}}
+\setbeamertemplate{footline}{%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=3mm,dp=2.4mm,rightskip=10mm]{normal text}
+    \hfill{\fontsize{7.5}{9}\selectfont\color{Muted}\insertpagenumber}
+  \end{beamercolorbox}}
+\setlength{\parskip}{3pt}
+\setlength{\emergencystretch}{2em}
+\renewcommand{\arraystretch}{1.2}
+% Keep source pointers in the .tex file without printing them on slides.
+\newcommand{\slidesource}[1]{\vfill}
+\newcommand{\lead}[1]{{\large\color{Teal}#1\par}\vspace{1mm}}
+\newcommand{\takeaway}[1]{\par\vspace{0.5mm}{\color{Teal}#1\par}}
+% In-body navigation stays separate from the page-number-only footer.
+\newcommand{\details}[2]{{\fontsize{8.5}{10}\selectfont\color{Muted}\hyperlink{#1}{Details: Appendix #2}}}
+\newcommand{\backto}[2]{{\fontsize{8.5}{10}\selectfont\color{Muted}\hyperlink{#1}{Back to #2}}}
+\newcommand{\backuptext}{\fontsize{10.8}{13.2}\selectfont\setlength{\parskip}{3pt}}
+\newcommand{\talknote}[2]{\note{\textbf{Time: #1.}\par #2}}
+\lstset{basicstyle=\ttfamily\fontsize{9.5}{11.5}\selectfont,
+  columns=fullflexible,keepspaces=true,showstringspaces=false,
+  breaklines=true,frame=single,rulecolor=\color{Teal!35},
+  backgroundcolor=\color{Pale},aboveskip=5pt,belowskip=5pt,
+  xleftmargin=3pt,xrightmargin=3pt,framexleftmargin=3pt,framexrightmargin=3pt}
+\tikzset{slidearrow/.style={-{Stealth[length=2.2mm]},thick,Teal},
+  slidetext/.style={align=left,text=Ink,font=\normalsize}}

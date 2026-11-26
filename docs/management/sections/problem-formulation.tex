@@ -1,0 +1,94 @@
+\subsection{The authentication example}
+
+The running example starts with an \href{\authbaseurl}{authentication specification in OpenSpec} and a \href{\authchangeurl}{proposed administrator exception}. The baseline has two requirements, Login and Account Lockout, containing four scenarios. The change adds a fifth scenario. Both files are available on GitHub for readers who want the complete wording and project layout.
+
+We describe one snapshot, not a sequence of login attempts. Let $p$ mean a password is submitted, $v$ that it is correct, $g$ that access is granted, $d$ that access is denied, $n$ the failed-attempt count, $\ell$ that the account is locked, and $h$ that it belongs to an administrator. The Boolean symbols describe that snapshot; $n$ is an integer. Table~\ref{tab:auth-baseline} gives the selected formulas from the saved combined model. The four baseline formulas are projected from that model; they are not a separate formalization of the baseline.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\linewidth}{@{}lXl@{}}
+\toprule
+Rule & Scenario and required response & Selected formula \\
+\midrule
+R1 & Valid credentials: grant access for a correct submitted password. & $(p\land v)\Rightarrow g$ \\
+R2 & Invalid credentials: deny access for an incorrect submitted password. & $(p\land\neg v)\Rightarrow d$ \\
+R3 & Lockout threshold: lock when failed attempts reach five. & $(n=5)\Rightarrow\ell$ \\
+R4 & Locked account: deny access when a password is submitted for a locked account. & $(p\land\ell)\Rightarrow d$ \\
+\midrule
+R5 & Proposed addition: never lock an administrator's account. & $h\Rightarrow\neg\ell$ \\
+\bottomrule
+\end{tabularx}
+\caption{Authentication baseline R1--R4 and proposed addition R5. R1--R2 belong to Login; R3--R4 to Account Lockout. The exactly-five reading of R3 is itself open to review.}\label{tab:auth-baseline}
+\end{table}
+
+We distinguish three versions: $P_0=\{R1,R2,R3,R4\}$ is the baseline projection; $P_+=P_0\cup\{R5\}$ is the actual saved administrator change; and $P_-=P_0\setminus\{R2\}$ is a separate, constructed removal used below. The removal is not part of the administrator change. Rule labels are local to each example. We do not assume that the baseline is defect-free: the saved findings also contain an older R1/R4 conflict under an assumed grant/deny exclusion.
+\source{specs/auth_change/openspec/specs/auth/spec.md; specs/auth_change/openspec/changes/admin-never-locked/specs/auth/spec.md; specs/auth_change/formal.json; specs/auth_change/findings.json}
+
+\subsection{Four kinds of findings}
+
+An encoded rule has a condition $a_i$ and an obligation $c_i$: $\phi_i=a_i\Rightarrow c_i$. Write $\Phi_P$ for the conjunction of all implications in version $P$. A result $\SAT(F)$ means that some assignment satisfies $F$; $\UNSAT(F)$ means that none does. These definitions let us state each finding and its example together. The following queries use the rules alone; later sections explain assumptions, search bounds and solver timeouts.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\linewidth}{@{}lXX@{}}
+\toprule
+Finding & What it establishes or asks & Authentication example \\
+\midrule
+Conflict & A feasible triggering situation has incompatible obligations. & In $P_+$, five failed attempts require an administrator to be both locked and unlocked. \\
+Gap & An examined situation has no applicable conditional rule. & In constructed $P_-$, an incorrect password can be submitted with no remaining response. \\
+Ambiguity & Competing readings or an unusable translation need interpretation review. & Does ``reaches five'' mean exactly five or at least five? \\
+Scenario & The rules allow or rule out a situation the author should confirm. & $P_0$ permits access without submission; $P_+$ rules out a submitted password for a locked administrator. \\
+\bottomrule
+\end{tabularx}
+\caption{Four review questions within one example. A gap or surprising scenario is not automatically a defect.}
+\end{table}
+
+\textbf{Conflict.} For a triggering situation $T$, the test requires $\SAT(T)$ and $\UNSAT(T\land\Phi_P)$. A situation forbidden by one rule alone is treated as a ruled-out scenario instead. In the saved addition, take $T=(n=5)\land h$. The situation is feasible, but R3 requires $\ell$ and R5 requires $\neg\ell$. Both obligations cannot be met. This clash occurs under either the exactly-five or the five-or-more reading of R3.
+
+\textbf{Gap.} Let $C_P$ be the rules with non-tautological conditions and let $E$ fix the event context being examined. A gap satisfies $E\land\bigwedge_{i\in C_P}\neg a_i$. For the constructed removal $P_-$, set $p=\True$, $v=\ell=\False$ and $n=0$. A password is submitted, but R1, R3 and R4 are all inactive. The removed R2 used to require denial in this situation. This is missing conditional coverage; it does not claim that every business situation has been explored.
+
+\textbf{Ambiguity.} Two readings $\phi$ and $\psi$ can be distinguished when $\SAT(\phi\mathbin{\oplus}\psi)$, where $\oplus$ is exclusive OR. For R3, $(n=5)\Rightarrow\ell$ and $(n\ge5)\Rightarrow\ell$ differ at $n=6,\ell=\False$. That snapshot obeys the first reading and violates the second. The saved interpretation probe asks about precisely this difference. A distinguishing assignment makes the question concrete; it does not establish which reading the author intended. The ambiguity procedure also considers translation agreement and whether a usable reading was obtained.
+
+\textbf{Scenario.} An allowed consequence is witnessed by $\SAT(\Phi_P\land\neg a_i\land c_i)$: an obligation is met even though its condition is false. In $P_0$, the illustrative snapshot $p=v=\ell=d=\False$, $n=0$, $g=\True$ satisfies every rule. R1 says when to grant access, not that access is granted only then. The ruled-out search instead finds feasible combined conditions that one rule forbids on its own. In $P_+$, R4 and R5 can have the joint condition $T=p\land\ell\land h$, but $T\land\neg\ell$ is impossible because of R5. This is a consequence of the administrator policy to confirm, rather than a clash between two obligations. These scenario assignments are illustrative, not quotations from a saved report.
+
+\subsection{Further worked examples}
+
+\textbf{Order processing.} The detailed solver sections use a second worked example: accept a submission, decide whether stock is available, and handle cancellation. Table~\ref{tab:order} abbreviates the \href{\orderurl}{complete EARS requirements on GitHub}. Its R1--R5 labels refer to the order source rules and are separate from the authentication labels above. The full wording and saved solver identifiers remain available for inspection.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\linewidth}{@{}lXX@{}}
+\toprule
+Rule & When it applies & What it demands \\
+\midrule
+R1 & An order is submitted and stock is available & Fulfill the order. \\
+R2 & An order is submitted and stock is unavailable & Put the order on backorder. \\
+R3 & Always & Do not put an order on backorder. \\
+R4 & An order is canceled & Refund its payments. \\
+R5 & An order is in a canceled-and-refunded state & Do not fulfill it. \\
+\bottomrule
+\end{tabularx}
+\caption{The five order requirements, with stable rule labels. The source uses EARS wording; this is not an OpenSpec change file.}\label{tab:order}
+\end{table}
+\source{specs/order/requirements.md}
+
+Take the situation ``submitted, no stock.'' R2 requires backordering and R3 forbids it. The question for the author is whether to allow backorders, remove that branch of R2, or change the conditions under which one of the rules applies. The checker can identify the problem. It cannot decide which business policy is intended.
+
+There is another clash in the example: if an order is submitted with stock while it is already canceled and refunded, R1 requires fulfillment and R5 forbids it. Whether that combination describes a meaningful moment in the real system is a separate question. That separation will become important when we discuss assumptions and time.
+
+\textbf{Delete versus retain.} In the \href{\deletionurl}{property-deletion requirements}, D2 says to remove a property record after deletion is confirmed; D4 calls for soft deletion that retains the record for audit while hiding it from the interface. If the model invents separate symbols for ``removed'' and ``retained,'' Z3 does not know that the author might regard them as opposites. That is the example for facts, links, and outcome-pair probes. We do not assume in advance that removal means physical erasure: deciding that interpretation is precisely the difficulty.
+
+These cases come from the project; the abbreviated symbols and constructed sample counts used to explain algorithms are illustrative.
+\source{specs/delete_property/requirements.md; specs/order/requirements.md}
+
+
+\subsection{Research questions}
+
+The central question is whether this combination can produce well-supported review questions while making its translation uncertainty visible. We examine four parts of that question:
+
+\begin{description}
+\item[RQ1: Conflicts.] How does asking about relations between outcomes affect conflict detection and additional alarms?
+\item[RQ2: Ambiguity.] How does a second reader affect detection of competing interpretations and the number of additional review questions?
+\item[RQ3: Changes.] Can the checker analyze additions, rewrites and removals in context, and what detection changes when it reuses an earlier interpretation?
+\item[RQ4: Scale.] What do the larger exercises and model reuse show about runtime, formalization requests, input limits and modelling failures?
+\end{description}

@@ -1,0 +1,14 @@
+\begin{tikzpicture}[node distance=9mm and 9mm]
+\node[stage,text width=2.8cm] (full) {Full run (default)\\Whole merged text};
+\node[stage,text width=3.3cm,right=of full] (translate) {Choose vocabulary\\translate all rules};
+\node[stage,text width=3.3cm,right=of translate] (analyze) {Active model\\Run solver checks};
+\node[stage,text width=2.8cm,below=of full] (base) {Optional reuse\\Saved base model};
+\node[stage,text width=3.3cm,right=of base] (new) {Scenario edits\\Translate and probe\\Keep old readings};
+\node[stage,text width=3.3cm,right=of new] (combine) {Combine models\\Drop removed or\\replaced rules};
+\draw[flow] (full) -- (translate);
+\draw[flow] (translate) -- (analyze);
+\draw[flow] (base) -- (new);
+\draw[flow] (new) -- (combine);
+\draw[flow] (combine) -- (analyze);
+\node[annotation,below=4mm of base,text width=3.5cm] {Build the base once; reuse while\\base text and model name match};
+\end{tikzpicture}

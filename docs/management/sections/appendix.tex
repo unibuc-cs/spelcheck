@@ -1,0 +1,112 @@
+\section{A compact reference for the worked examples}\label{app:examples}
+
+\begin{longtable}{@{}p{.17\linewidth}p{.36\linewidth}p{.41\linewidth}@{}}
+\toprule
+Example & Object we carry through the pipeline & What to look for \\
+\midrule
+\endhead
+Order R2/R3 & $(s\land\neg v)\Rightarrow b$ and $\neg b$ & $s=\True,v=\False$ is a feasible trigger; no $b$ satisfies both obligations. \\
+Order R1/R5 & $(s\land v)\Rightarrow f$ and $q\Rightarrow\neg f$ & $s=v=q=\True$ forces both fulfillment and non-fulfillment. Real-world feasibility is a separate question. \\
+Order quiet gap & No conditional antecedent holds & $s=c=q=\False$ leaves R3 active as a prohibition, but no conditional rule reacts. Waiting may be intended. \\
+Order removal & Old R2 is retained separately as X1 & With R1 still active, $s=\True,v=c=q=\False$ is uncovered and attributed to X1. This is a constructed change. \\
+Order scenario & $\Phi\land\neg(s\land v)\land f$ & $s=c=q=b=\False,f=\True$ is allowed by the encoded rules. R1 did not say ``only if.'' \\
+Authentication & $(n=5)\Rightarrow\ell$ versus $(n\ge5)\Rightarrow\ell$ & At $n=6,\ell=\False$, the first holds and the second fails. This witness is an illustration of the semantic distinction. \\
+Deletion D2/D4 & Confirmation $d$, removal $m$, retention $k$ & $d\Rightarrow m$ and $k$ coexist unless an assumed relation connects $m$ to $\neg k$. The relation must be shown to the reviewer. \\
+\bottomrule
+\end{longtable}
+
+The short letters make the formulas easier to read. The deletion example shows only the outcomes needed here; D4 also describes hiding the record. Sample splits such as $[5,3]$ are made-up examples of the algorithm, not measured model responses.
+
+\section{Saved results and offline replay}\label{app:artifacts}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+Output & Contents and use \\
+\midrule
+\code{formal.json} & Typed symbols, translated rules, assumed facts, statuses, alternatives and probe evidence. Saved before removed/replaced rules are separated in change mode. Additional vocabularies use numbered files. \\
+\code{findings.json} & Finding types, rule IDs, witnesses and any assumptions, doubt markers or support counts. Generated explanations may be included. \\
+Review report & The findings and their evidence, with explanations when an LLM is used. \\
+Merged specification & Full change mode saves the combined text, including removed scenarios, with labels and provenance. \\
+Incremental input & Only the added or rewritten scenario text, alongside the saved base model used for translation. \\
+Text suggestions & Proposed rewrites from the optional text review. \\
+\bottomrule
+\end{tabularx}
+\caption{What the checker saves and how each output is used.}
+\end{table}
+
+The solver checks can be rerun from a saved formal model without a model server. Use a separate output directory to preserve the original results. Without a model-server URL, the CLI writes the solver evidence and leaves out explanatory prose and scenarios selected by the LLM judge. The supplied formal model stays in its original location.
+
+For change replay, retain the original base specifications, change directory and execution mode as well as the raw formal model. The CLI saves \code{formal.json} before it removes deleted or replaced rules. Replaying that file as an ordinary specification would treat those rules as active and can change the result. The change route must reconstruct provenance, validate labels and apply the after-change projection first. Its separate removed-rule collection supplies gap seeds; replaced old scenarios do not.
+
+Full change runs save \code{merged.md}; incremental runs save \code{new.md}. The reusable base is stored in \code{openspec/.speccheck/base.json}. A supplied \code{--formal} file bypasses cache creation and validation, so the person replaying it must ensure the base, delta and labels match. These filenames describe the saved artifacts; they are not additional evaluation evidence.
+
+Our abbreviations follow the archived order model. The older test fixture uses different names. Compare rule sets and formulas; witnesses can differ for the same finding.
+
+\clearpage
+\section{Follow one saved requirement through the files}\label{app:walkthrough}
+
+These are the requirement text and selected fields from the saved order example. Some fields are omitted for space; the values shown are unchanged.
+
+\textbf{1. The source requirements.} The input carries the IDs that must survive extraction.
+\begin{lstlisting}
+- R2: WHEN an order is submitted AND inventory is unavailable, THE Order System SHALL place the order on backorder.
+- R3: THE Order System SHALL NOT place any order on backorder.
+\end{lstlisting}
+\source{specs/order/requirements.md}
+
+\textbf{2. One symbol.} The event marker is metadata used by the checks. It is not a temporal transition operator.
+\begin{lstlisting}
+{
+  "name": "order_submitted",
+  "sort": "Bool",
+  "event": true
+}
+\end{lstlisting}
+
+\textbf{3. The selected R2 translation.} The two formula fields become an implication. The retained status describes the pipeline's selected reading; it is not proof of faithful translation.
+\begin{lstlisting}
+{
+  "id": "R2",
+  "status": "accepted",
+  "clusters": [8],
+  "entropy": 0.0,
+  "antecedent": "(and order_submitted (not inventory_available))",
+  "consequent": "order_on_backorder"
+}
+\end{lstlisting}
+\source{specs/order/formal.json}
+
+Read this as: if submission occurs and stock is unavailable, backordering is required. In the paper's shorter notation it is $(s\land\neg v)\Rightarrow b$. R3's consequent is \code{(not order_on_backorder)}, with antecedent \code{true}. Sharing the exact same outcome symbol is what makes the collision visible.
+
+\clearpage
+\textbf{4. The solver trace, written as explanatory pseudocode.} This trace illustrates the checks; it is not a literal saved API log.
+\begin{lstlisting}
+T := order_submitted AND NOT inventory_available
+check(T)                         -> SAT
+check(T AND all_rule_implications)-> UNSAT
+delete unnecessary core members  -> R2, R3
+find a witness for T              -> submitted=true, stock=false
+\end{lstlisting}
+
+Removing either R2 or R3 makes this two-rule explanation satisfiable in the triggering situation. That is the local explanation we need. It does not claim that every possible conflict in the whole document has been enumerated.
+
+\textbf{5. The saved finding.} These selected fields retain the evidence independently of generated prose.
+\begin{lstlisting}
+{
+  "type": "conflict",
+  "rules": ["R2", "R3"],
+  "when": {
+    "inventory_available": false,
+    "order_submitted": true
+  }
+}
+\end{lstlisting}
+\source{specs/order/findings.json}
+
+\textbf{6. The question for the author.} We could put it this way: ``An order arrives without stock. R2 says to backorder it; R3 forbids that. Should we allow backorders, or revise the no-stock response?'' The requirements author chooses the policy.
+
+The same discipline applies to an assumption-dependent conflict: show the assumed relation as well as the rules. For the shortened deletion example, the reviewer needs to see $(d\land m)\Rightarrow\neg k$, because whether removal excludes retention is precisely the disputed meaning.
+
+\textbf{Checking the examples.} The 40 offline checks cover the authentication findings, the saved order model, the example formulas and sample splits, gap sensitivity, removal attribution and retirement, a saved removal finding, and the two scenario-only input limitations. They check the logic and input selection without a model server. The experimental results discussed earlier come from the original saved runs.

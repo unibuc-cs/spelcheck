@@ -1,0 +1,11 @@
+\begin{tikzpicture}[node distance=9mm and 12mm]
+\node[stage,text width=3.2cm] (active) {Surviving rules\\R1, R3, R4, R5};
+\node[stage,text width=3.2cm,below=of active] (removed) {Removed X1 (old R2)\\No-stock response};
+\node[stage,text width=3.8cm,right=of active] (check) {Active obligations\\checked as usual};
+\node[stage,text width=3.8cm,right=of removed] (seed) {No conditional response\\$s=\True$\\$v=c=q=\False$};
+\node[stage,text width=2.7cm,right=of seed] (finding) {Gap from X1\\\texttt{opened\_by}};
+\draw[flow] (active) -- (check);
+\draw[flow] (active.south east) -- (seed.north west);
+\draw[flow] (removed) -- node[annotation,above] {antecedent} (seed);
+\draw[flow] (seed) -- (finding);
+\end{tikzpicture}

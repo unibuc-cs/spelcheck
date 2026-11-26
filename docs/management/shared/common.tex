@@ -1,0 +1,19 @@
+% Shared vocabulary and editable diagram styles for paper and Beamer.
+\definecolor{Ink}{HTML}{17324D}
+\definecolor{Teal}{HTML}{087F8C}
+\definecolor{Amber}{HTML}{A8670A}
+\definecolor{Pale}{HTML}{EEF5F7}
+\definecolor{Muted}{HTML}{526374}
+\newcommand{\revision}{498dea0}
+\newcommand{\snapshotdate}{25 November 2026}
+\newcommand{\SAT}{\operatorname{SAT}}
+\newcommand{\UNSAT}{\operatorname{UNSAT}}
+\newcommand{\True}{\mathsf{true}}
+\newcommand{\False}{\mathsf{false}}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\example}[1]{\paragraph{\textcolor{Teal}{#1}}}
+% Source pointers remain in the editable text and evidence index.
+\newcommand{\source}[1]{\par}
+\tikzset{stage/.style={draw=Ink,thick,rounded corners=2pt,align=center,fill=Pale,minimum height=1.05cm,text width=2.65cm,font=\small},
+  flow/.style={-{Stealth[length=2mm]},thick,draw=Teal},
+  annotation/.style={font=\scriptsize,align=center,text=Muted}}

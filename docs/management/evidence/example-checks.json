@@ -1,0 +1,210 @@
+{
+  "snapshot_revision": "498dea06df250964013b2abb2b06c94d341b223b",
+  "baseline": "C:\\Work\\kiroreverse\\docs\\management\\build\\baseline-498dea0",
+  "python": "3.12.15",
+  "z3_solver": "5.4.1.0",
+  "network_calls": 0,
+  "checks": [
+    {
+      "name": "Order global satisfiability",
+      "passed": true,
+      "detail": "All implications can hold when nothing triggers; global SAT alone misses R2/R3."
+    },
+    {
+      "name": "Order feasible trigger",
+      "passed": true,
+      "detail": "Submitted, no stock is feasible."
+    },
+    {
+      "name": "Order R2/R3 contradiction",
+      "passed": true,
+      "detail": "The feasible trigger forces b and not b."
+    },
+    {
+      "name": "Order R1/R5 contradiction",
+      "passed": true,
+      "detail": "Submission, stock and canceled/refunded force f and not f."
+    },
+    {
+      "name": "Assumption does not exclude the trigger",
+      "passed": true,
+      "detail": "The assumed exclusion of fulfillment and refunded state leaves the triggering context feasible."
+    },
+    {
+      "name": "Assumption can make R1 alone impossible",
+      "passed": true,
+      "detail": "A facts-only pass can reject the case through single-rule exclusion; rules-only checking preserves R1/R5."
+    },
+    {
+      "name": "Order allowed scenario",
+      "passed": true,
+      "detail": "Fulfillment without submission is permitted by the encoded requirements."
+    },
+    {
+      "name": "Order quiet uncovered state",
+      "passed": true,
+      "detail": "No conditional antecedent applies; R3 is an unconditional prohibition."
+    },
+    {
+      "name": "Generalized event gap",
+      "passed": true,
+      "detail": "The original s-and-x rule leaves s true and x false uncovered; y is unspecified."
+    },
+    {
+      "name": "Partial-coverage sensitivity annotation",
+      "passed": true,
+      "detail": "The alternative s-and-y rule marks the original generalized gap as reading-dependent."
+    },
+    {
+      "name": "Alternative leaves uncovered completion",
+      "passed": true,
+      "detail": "s true, x false, y false remains uncovered after substitution; the mark is not full coverage."
+    },
+    {
+      "name": "Authentication distinct readings",
+      "passed": true,
+      "detail": "Exactly five and at least five differ."
+    },
+    {
+      "name": "Authentication explicit witness",
+      "passed": true,
+      "detail": "n=6, unlocked obeys the exact-five implication and violates at-least-five."
+    },
+    {
+      "name": "Cluster [8]",
+      "passed": true,
+      "detail": "Entropy 0.0; initial status accepted; constructed samples, not a model experiment."
+    },
+    {
+      "name": "Cluster [7, 1]",
+      "passed": true,
+      "detail": "Entropy 0.377; initial status accepted; constructed samples, not a model experiment."
+    },
+    {
+      "name": "Cluster [6, 2]",
+      "passed": true,
+      "detail": "Entropy 0.562; initial status ambiguous; constructed samples, not a model experiment."
+    },
+    {
+      "name": "Cluster [5, 3]",
+      "passed": true,
+      "detail": "Entropy 0.662; initial status ambiguous; constructed samples, not a model experiment."
+    },
+    {
+      "name": "Cluster [4, 2, 2]",
+      "passed": true,
+      "detail": "Entropy 1.04; initial status rejected; constructed samples, not a model experiment."
+    },
+    {
+      "name": "Second-reader illustration",
+      "passed": true,
+      "detail": "Three matching answers out of eight do not confirm; a usable alternative exists."
+    },
+    {
+      "name": "Saved authentication formula and event vocabulary",
+      "passed": true,
+      "detail": "Only password_submitted is an event. R3 names it in trigger metadata but its saved antecedent is n=5, without an event guard."
+    },
+    {
+      "name": "Saved administrator conflict replay",
+      "passed": true,
+      "detail": "The actual saved R3/R5 conflict is reproduced at five failed attempts on an administrator account and belongs to the change."
+    },
+    {
+      "name": "Administrator conflict witness",
+      "passed": true,
+      "detail": "The case is feasible and neither rule alone forbids it; together R3 and R5 require locked and not locked, without assumed facts."
+    },
+    {
+      "name": "Authentication threshold witness from saved readings",
+      "passed": true,
+      "detail": "The saved exact-five reading permits six attempts while unlocked; the saved at-least-five alternative forbids it. This proves formula difference, not English ambiguity."
+    },
+    {
+      "name": "Saved authentication ambiguity replay",
+      "passed": true,
+      "detail": "The archived interpretation probe flags R3; the saved vote is 2 for the translation, 6 for the alternative, 0 either."
+    },
+    {
+      "name": "Authentication gap witness after removing R2",
+      "passed": true,
+      "detail": "Constructed baseline variation: an incorrect password is submitted to an unlocked account with n=0. R1, R3 and R4 do not apply; the removed R2 would apply."
+    },
+    {
+      "name": "Authentication removal produces attributed event gap",
+      "passed": true,
+      "detail": "Removing R2 creates a password-submission gap attributed to X1; R1/R2 cover that event before the constructed removal. No saved OpenSpec delta is claimed for this variation."
+    },
+    {
+      "name": "Authentication allowed scenario under baseline rules",
+      "passed": true,
+      "detail": "Constructed satisfying snapshot: grant access without a submitted password, at n=0 while unlocked; all baseline implications and saved facts hold. R1 says if, not only if."
+    },
+    {
+      "name": "Authentication ruled-out administrator scenario",
+      "passed": true,
+      "detail": "With the administrator addition, a locked administrator submitting a password is ruled out by R5 alone while R4 would apply. It is a generated ruled-out scenario, not a multi-rule conflict."
+    },
+    {
+      "name": "Deletion without assumed link",
+      "passed": true,
+      "detail": "Separate removal and retention symbols can both hold."
+    },
+    {
+      "name": "Deletion with assumed link",
+      "passed": true,
+      "detail": "The explicit illustrative link exposes the D2/D4 clash; it remains an assumption."
+    },
+    {
+      "name": "Saved order model replay",
+      "passed": true,
+      "detail": "Frozen specs/order/formal.json yields both named order conflicts under the archived implementation."
+    },
+    {
+      "name": "Saved quiet gap",
+      "passed": true,
+      "detail": "The archived order model yields a quiet gap."
+    },
+    {
+      "name": "Missing no-stock response creates event gap",
+      "passed": true,
+      "detail": "Removing R2 leaves R1 reacting to submission and exposes a submitted, no-stock coverage gap."
+    },
+    {
+      "name": "Removed order rule is separated from active obligations",
+      "passed": true,
+      "detail": "Former R2 is kept only as a removal seed; R3 remains an active prohibition."
+    },
+    {
+      "name": "Removal opens the illustrated no-stock situation",
+      "passed": true,
+      "detail": "Submission with no stock, no cancellation and no canceled/refunded state has no conditional response."
+    },
+    {
+      "name": "Removal-only gap belongs in the change report",
+      "passed": true,
+      "detail": "opened_by X1 attributes this gap even though no rule was added or modified."
+    },
+    {
+      "name": "Retiring the last submission response gives no submission gap",
+      "passed": true,
+      "detail": "The event-gap search covers events still handled by surviving conditional rules."
+    },
+    {
+      "name": "Saved visitor removal replay",
+      "passed": true,
+      "detail": "The saved encoding yields a change-related gap for an unlisted visitor after X1 is removed."
+    },
+    {
+      "name": "Sentence-only edit is absent from incremental input",
+      "passed": true,
+      "detail": "The full input includes the changed SHALL sentence; scenario-only reuse emits no new text."
+    },
+    {
+      "name": "Scenario-free added requirement is absent from incremental input",
+      "passed": true,
+      "detail": "A new requirement without scenarios also needs full formalization in this revision."
+    }
+  ],
+  "passed": 40
+}

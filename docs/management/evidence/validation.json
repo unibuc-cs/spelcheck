@@ -1,0 +1,142 @@
+{
+    "schema_version":  2,
+    "validation_date":  "2026-11-25",
+    "snapshot_revision":  "498dea06df250964013b2abb2b06c94d341b223b",
+    "scope":  "Authentication-based early finding definitions, using archived source 498dea0. Current working-tree application changes and newer experiments remain outside scope.",
+    "current_offline_tests":  {
+                                  "working_directory":  "Project source root, during the source-delta review before documentation edits",
+                                  "command":  "C:/Work/kiroreverse/.venv/Scripts/python.exe -m pytest -q tests",
+                                  "python":  "3.12.15",
+                                  "result":  "70 passed in 3.51s",
+                                  "passed":  70,
+                                  "failed":  0,
+                                  "network_calls":  0,
+                                  "note":  "Prior source-delta review result, not rerun for this documentation expansion. This task did not edit application code or the user working-tree artifacts."
+                              },
+    "worked_examples":  {
+                            "script":  "scripts/verify-examples.py",
+                            "record":  "evidence/example-checks.json",
+                            "baseline":  "Extracted snapshot 2026-11-24-498dea0",
+                            "passed":  40,
+                            "failed":  0,
+                            "network_calls":  0,
+                            "new_checks":  "Nine authentication checks: saved formulas and events, exact conflict, threshold probe, original coverage, constructed removal gap and attribution, allowed snapshot, single-rule ruled-out consequence.",
+                            "editorial_scope":  "All 40 documentation checks rerun on the archived baseline without network or model calls. The full application suite remains the prior 70-test result."
+                        },
+    "snapshots":  [
+                      {
+                          "snapshot":  "2026-11-24-18752f2",
+                          "commit":  "18752f24cbfd625d23d7ae5bd967af43ee7af718",
+                          "file_count":  1042,
+                          "archive_sha256":  "a4b6d47dd8a41f3b0ce75ed94c077ed2b50d5d59a5e611390d225fb69b7e2fcc",
+                          "manifest_sha256":  "2324809ed3b8a446c66ba9768a8929680ec99ef51866e1d2d422ba699d88762c",
+                          "archive_matches_manifest":  true,
+                          "checksum_list_matches":  true
+                      },
+                      {
+                          "snapshot":  "2026-11-24-498dea0",
+                          "commit":  "498dea06df250964013b2abb2b06c94d341b223b",
+                          "file_count":  1429,
+                          "archive_sha256":  "9211b7ef9f799302e4fe0cebcdc327c5c93b2faf24d1e1c94ffeb2b4177104e6",
+                          "manifest_sha256":  "20a24c85856ea84d2d04ecf3a8e0540e3ca561265561f61db0b977b37ef2101a",
+                          "archive_matches_manifest":  true,
+                          "checksum_list_matches":  true
+                      }
+                  ],
+    "snapshot_verification":  {
+                                  "git_blobs":  "Every archived tracked file checked against its Git blob and SHA-256 manifest.",
+                                  "extracted_comparison":  "1429 identical files; zero added, changed, removed or line-ending-only differences.",
+                                  "previous_source_preserved":  true,
+                                  "previous_delivery_preserved":  true,
+                                  "previous_delivery_sha256":  "0ea0434a29986d0369ec5384a78f21d34d4a65425e24baee359ad8b05aa663f5"
+                              },
+    "documents":  {
+                      "compiler":  "MiKTeX-pdfTeX 4.21 (MiKTeX 25.4)",
+                      "paper_pages":  37,
+                      "paper_main_text_pages":  18,
+                      "paper_appendix_pages":  16,
+                      "paper_appendix_algorithms":  11,
+                      "slides_pages":  42,
+                      "main_slides":  31,
+                      "backup_slides":  11,
+                      "planned_talk_minutes":  34,
+                      "visual_review":  "All 37 paper pages and 42 slides reviewed, including final changed pages.",
+                      "content_review":  "All four definitions and authentication witnesses checked against archived implementation; actual saved results distinguished from constructed projections.",
+                      "latex_checks":  "No final LaTeX or BibTeX warnings, no overfull/underfull boxes and no unresolved references/citations.",
+                      "navigation":  {
+                                         "source_links":  43,
+                                         "compiled_pdf_links":  43,
+                                         "all_source_targets_exist":  true,
+                                         "all_compiled_destinations_match_source":  true,
+                                         "section_header_links":  30,
+                                         "all_section_destinations_match":  true,
+                                         "external_source_links":  4,
+                                         "external_link_annotations":  4,
+                                         "external_unique_targets":  3,
+                                         "pages":  42
+                                     },
+                      "standalone_rebuild":  {
+                                                 "result":  "passed",
+                                                 "method":  "Extract the complete definitions-edition candidate to a fresh folder and build only delivered sources; inspect LaTeX and BibTeX logs.",
+                                                 "checked_at_utc":  "2026-11-25T20:35:59.2428313Z",
+                                                 "paper":  {
+                                                               "delivered_pages":  37,
+                                                               "rebuilt_pages":  37,
+                                                               "delivered_pdf_sha256":  "e716bbec5b3e26a52693bb85e38aa51763ab7118a9b37c7b1e6b254593baa386",
+                                                               "rebuilt_pdf_sha256":  "e6d2c347494081ea22d82b5378ec95e2e74d442faf8ba447499287dd46aa5955",
+                                                               "delivered_text_sha256":  "5ead5d2461046b05417b67531cbbec0063b0f5cdad35920a33036721940dc8aa",
+                                                               "rebuilt_text_sha256":  "5ead5d2461046b05417b67531cbbec0063b0f5cdad35920a33036721940dc8aa",
+                                                               "text_identical":  true,
+                                                               "latex_warnings":  [
+
+                                                                                  ]
+                                                           },
+                                                 "slides":  {
+                                                                "delivered_pages":  42,
+                                                                "rebuilt_pages":  42,
+                                                                "delivered_pdf_sha256":  "25d65af62bbf4141b153455ce52d8d1330a38bd4207cf1ee57b4cd8aa5dc5af9",
+                                                                "rebuilt_pdf_sha256":  "27351d4dd782d195364478b08d8b87052b367f1b655d4c9a4960af4aed0d908b",
+                                                                "delivered_text_sha256":  "a74b9ae3971150c790ab9e14841d9ebfa32217b984b2161a739efe6d3cc83e45",
+                                                                "rebuilt_text_sha256":  "a74b9ae3971150c790ab9e14841d9ebfa32217b984b2161a739efe6d3cc83e45",
+                                                                "text_identical":  true,
+                                                                "latex_warnings":  [
+
+                                                                                   ]
+                                                            },
+                                                 "source_entries_verified":  33,
+                                                 "bibtex_warnings":  0,
+                                                 "finalization":  "Final package retains the checked PDFs, TeX, scripts and snapshots. Only review and validation records were finalized after this build."
+                                             },
+                      "main_sections":  6
+                  },
+    "previous_edition":  {
+                             "revision":  "18752f24cbfd625d23d7ae5bd967af43ee7af718",
+                             "offline_tests":  58,
+                             "worked_example_checks":  24,
+                             "paper_pages":  29,
+                             "slides_pages":  40
+                         },
+    "limits":  [
+                   "Historical LLM experiments were inspected, not rerun.",
+                   "E19 evaluated 07ecd38 and E20 evaluated 373ae4c; later cache and option guards were not measured by those runs.",
+                   "Offline checks do not establish faithful natural-language translation or production accuracy.",
+                   "Builds require installed TeX packages; snapshots do not contain model weights, GPU services or Python environments.",
+                   "Talk timing is planned pacing, not a measured rehearsal."
+               ],
+    "before_grouping_delivery":  {
+                                     "package":  "speccheck-management-2026-11-25-before-grouping.zip",
+                                     "sha256":  "f99995d025295e5ff7255c69677663a6ec0157836893c2e36e926cdfe985dd0a",
+                                     "preserved":  true
+                                 },
+    "before_openspec_walkthrough_delivery":  {
+                                                 "package":  "speccheck-management-2026-11-25-before-openspec-walkthrough.zip",
+                                                 "sha256":  "e12153d182570e68f9b8c761934e48a53550c8c7e4692d5df147a786de31081a",
+                                                 "preserved":  true
+                                             },
+    "working_tree_scope":  "User working-tree changes were left untouched and are outside the documented source baseline 498dea0.",
+    "before_finding_definitions_delivery":  {
+                                                "package":  "speccheck-management-2026-11-25-before-finding-definitions.zip",
+                                                "sha256":  "2e013a9fc325d28884fd1c2486afece2194ddde1918398c73156f8a3943a1713",
+                                                "preserved":  true
+                                            }
+}

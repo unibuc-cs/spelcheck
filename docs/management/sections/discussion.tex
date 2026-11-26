@@ -1,0 +1,54 @@
+\section{Limitations and next steps}\label{sec:discussion}
+
+The results show that translation and representation choices determine which problems reach the solver. Outcome-pair questions recover relations that separate symbols can hide, but the cloakroom alarms show what happens when the representation collapses successive states. The payroll miss shows a different failure: a retention duration alone does not encode an obligation to keep the record. These cases explain why additional samples and stronger solver checks cannot by themselves guarantee faithful translation.
+
+\subsection{Current capabilities}
+
+For RQ1, the E18 comparison supports keeping the outcome-pair questions available, with their assumptions shown to the reviewer. They remain on by default in this revision. For RQ2, the second reader finds more planted ambiguities and also asks more questions about clean specifications. Their correctness has not been independently adjudicated. The two mechanisms add review work as well as detections.
+\source{plan.md, section 3; research_log.md, E18}
+
+RQ3 supports checking proposed changes in context and attributing tested removal gaps to the removed rules. E19 also shows why unchanged scenarios should keep their original provenance. E20 adds a practical tradeoff: keeping a base interpretation reduces repeated translation requests, but loses four of 54 planted-conflict run opportunities relative to full mode. Full formalization therefore remains the default. RQ4 shows that the prototype can process the tested larger documents and that reuse can reduce formalization work; it does not establish a general latency or capacity limit. Shared symbols, input allowance and the representation of objects and time all affect the result.
+\begin{table}[H]
+\centering
+\begin{tabularx}{\linewidth}{@{}lXX@{}}
+\toprule
+Capability & Evidence now & Remaining limitations \\
+\midrule
+End-to-end checking & Saved models, findings and reports; order and deletion examples & Translation and explanation can still misstate intent. \\
+Interpretation checks & Sampling, probes, optional second model & Shared vocabulary and correlated errors remain. \\
+Change checking & E17, E19; removed-rule gap attribution & Event retirement, state-only removals, large real projects. \\
+Saved-base reuse & E20; fewer requests, some missed conflicts & Scenario-only edit selection; fixed old readings; cache scope. \\
+Engineering checks & 70 offline tests passed during preparation & Tests do not prove the orchestration correct. \\
+Evaluation & Held-out-at-the-time sets, ablations, repeated runs & Project-authored data, limited model diversity. \\
+\bottomrule
+\end{tabularx}
+\caption{Current capabilities, supporting evidence and remaining limitations.}
+\end{table}
+
+\subsection{Limits of reuse}
+
+A saved model retains decisions as well as computation. Existing symbol definitions and rule readings are fixed, even when a new requirement would make another vocabulary preferable. New facts and links are checked selectively; the pipeline does not ask every old interpretation question again. The driving-school miss is a concrete reason to retain the full route and show the detection loss alongside request savings.
+
+The implementation also selects incremental text by scenario changes. An edit confined to the requirement's SHALL sentence can be recorded as changed text but supply no new translation input. If extraction previously created a separate unlabelled rule for that sentence, a later sentence rewrite does not itself retire that old rule. The present mode therefore needs a narrower claim than arbitrary requirement-edit support. A full run includes the revised sentence.
+
+Cache validity currently means matching generated base text and model-name strings. It does not verify sampling settings, endpoint, model weights, prompts or code version. Rebuilding a missing or mismatched base still uses the reuse route for the proposed change; it does not automatically choose full merged-document formalization. These are limits of the current implementation, not effects established by E20. They need explicit cases in the next evaluation.
+
+\subsection{Validity and generalization}
+
+The immediate use case is assisted requirements review, where reviewers can
+examine the witnesses and assumptions. The evidence does not yet establish
+production defect rates, human review savings, or sound translation of natural
+language. Most documents and all planted defects were written by the project;
+one earlier prompt example overlapped a held-out domain. Every inspected set
+is now development data, so another design change needs a fresh set written
+before that change is made.
+
+The next evaluation should prioritize independently sourced specifications and
+labels, another main model, and results per distinct defect alongside repeated
+runs. Temporal and entity distinctions deserve targeted cases such as the
+coat and seat examples. Scenario usefulness, explanation faithfulness and
+irreducible three-rule conflicts also need dedicated evaluation. Existing
+results justify continuing the prototype and identify where more work is
+needed. Doubtful and assumption-dependent findings should remain visible to
+reviewers.
+\source{plan.md, section 2; research.md, sections 4.4--4.7; speccheck/change.py; speccheck/cli.py}

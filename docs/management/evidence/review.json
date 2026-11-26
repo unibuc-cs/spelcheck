@@ -1,0 +1,149 @@
+{
+    "schema_version":  2,
+    "review_date":  "2026-11-25",
+    "scope":  "Early four-type finding definitions with authentication as the running example, checked against archived revision 498dea0.",
+    "snapshot_revision":  "498dea06df250964013b2abb2b06c94d341b223b",
+    "previous_edition":  {
+                             "source_revision":  "18752f24cbfd625d23d7ae5bd967af43ee7af718",
+                             "package":  "speccheck-management-2026-11-24.zip",
+                             "package_sha256":  "0ea0434a29986d0369ec5384a78f21d34d4a65425e24baee359ad8b05aa663f5",
+                             "preserved":  true
+                         },
+    "resolved_findings":  [
+                              {
+                                  "issue":  "Finding types were dispersed across the deck.",
+                                  "resolution":  "Slides 4–9 now introduce four questions, predicates, conflict, gap, ambiguity and generated scenarios before implementation details."
+                              },
+                              {
+                                  "issue":  "Examples switched between order and authentication during the definitions.",
+                                  "resolution":  "Authentication now runs through the main deck. Order remains a separate worked example in the paper."
+                              },
+                              {
+                                  "issue":  "Saved and constructed variants could be confused.",
+                                  "resolution":  "Original baseline, actual administrator addition and separate R2-removal variation are visibly labelled. The baseline formulas are projected from the saved combined model."
+                              },
+                              {
+                                  "issue":  "Generated scenarios could mean OpenSpec inputs, or only allowed behavior.",
+                                  "resolution":  "Slide 9 distinguishes generated output examples from input scenarios and explains both allowed and single-rule ruled-out consequences."
+                              },
+                              {
+                                  "issue":  "A formal difference between readings could be mistaken for proof of ambiguous English.",
+                                  "resolution":  "The XOR witness demonstrates different consequences. Sampling and interpretation probes determine the review flag."
+                              },
+                              {
+                                  "issue":  "New authentication witnesses needed verification.",
+                                  "resolution":  "Added nine checks against archived code and saved formulas. All 40 documentation checks pass without model calls."
+                              },
+                              {
+                                  "issue":  "Generated scenarios linked to a gap-only appendix.",
+                                  "resolution":  "Removed the irrelevant Appendix H link; both scenario tests remain on the main slide."
+                              }
+                          ],
+    "content_review":  {
+                           "paper":  "Early authentication notation and four finding definitions; order and deletion explicitly secondary. Six sections and eleven appendix algorithms retained.",
+                           "slides":  "Independent review of all 42 slides, including full-size dense appendices and the baseline/addition/removal variants.",
+                           "wording":  "Colleague-to-colleague prose retained; no printed internal source-file footers.",
+                           "application_source_changed":  false,
+                           "historical_model_experiments_rerun":  false
+                       },
+    "presentation":  {
+                         "main_slides":  31,
+                         "backup_slides":  11,
+                         "total_pages":  42,
+                         "appendix_letters":  "A-K",
+                         "full_note_seconds":  2040,
+                         "listing_slides":  [
+                                                2,
+                                                12,
+                                                14,
+                                                15,
+                                                18,
+                                                19,
+                                                29
+                                            ],
+                         "design_or_reasoning_diagram_slides":  [
+                                                                    6,
+                                                                    7,
+                                                                    10,
+                                                                    11,
+                                                                    12,
+                                                                    13,
+                                                                    17,
+                                                                    19,
+                                                                    20,
+                                                                    28
+                                                                ],
+                         "chart_slides":  [
+                                              23
+                                          ],
+                         "main_algorithms":  0,
+                         "navigation":  "43 appendix/back links and 30 section links verified; four body source links use three distinct pinned GitHub targets.",
+                         "main_sections":  [
+                                               "Problem and example",
+                                               "Findings",
+                                               "Method",
+                                               "Changes",
+                                               "Evaluation",
+                                               "Limitations and next steps"
+                                           ]
+                     },
+    "paper":  {
+                  "pages":  37,
+                  "main_text_pages":  18,
+                  "front_matter_pages":  2,
+                  "reference_pages":  1,
+                  "appendix_pages":  16,
+                  "algorithms_in_appendices":  11
+              },
+    "visual_review":  {
+                          "paper":  "All 37 rendered pages inspected; final wording changes re-rendered and checked. No layout, reference or bibliography warnings.",
+                          "slides":  "All 42 rendered slides inspected independently; final wording on slide 4 and removal of the unrelated link on slide 9 re-rendered and checked.",
+                          "final_build_warnings":  0
+                      },
+    "limits":  [
+                   "Talk timing is planned pacing, not a measured rehearsal.",
+                   "Offline checks establish properties of the encoded examples and input handling, not general translation accuracy.",
+                   "Historical model experiments were inspected, not rerun."
+               ],
+    "before_grouping_delivery":  {
+                                     "package":  "speccheck-management-2026-11-25-before-grouping.zip",
+                                     "sha256":  "f99995d025295e5ff7255c69677663a6ec0157836893c2e36e926cdfe985dd0a",
+                                     "preserved":  true
+                                 },
+    "inspected_later_revision":  {
+                                     "revision":  "cb0a5c0053ae29544f10f2a7646fc0fee94d1884",
+                                     "changed_paths":  [
+                                                           "GUIDE.md",
+                                                           "README.md"
+                                                       ],
+                                     "application_and_examples_unchanged":  true
+                                 },
+    "standalone_package_review":  {
+                                      "result":  "passed",
+                                      "paper_pages":  37,
+                                      "slides_pages":  42,
+                                      "rebuilt_text_identical":  true,
+                                      "canonical_pdf_source_entries_verified":  33,
+                                      "source_archives_checked":  2,
+                                      "latex_warnings":  0,
+                                      "bibtex_warnings":  0
+                                  },
+    "before_openspec_walkthrough_delivery":  {
+                                                 "package":  "speccheck-management-2026-11-25-before-openspec-walkthrough.zip",
+                                                 "sha256":  "e12153d182570e68f9b8c761934e48a53550c8c7e4692d5df147a786de31081a",
+                                                 "preserved":  true
+                                             },
+    "working_tree_scope":  "User working-tree changes were left untouched and are outside the documented source baseline 498dea0.",
+    "bibliography_review":  {
+                                "smtlib_year":  2025,
+                                "smtlib_year_source":  "https://smt-lib.org/biblio/BarFT-RR-25.bib",
+                                "openspec_date":  "n.d. (undated project documentation)",
+                                "final_bibtex_warnings":  0,
+                                "scope":  "Bibliography dates corrected in the prior edition; final BibTeX log checked again for this edition."
+                            },
+    "before_finding_definitions_delivery":  {
+                                                "package":  "speccheck-management-2026-11-25-before-finding-definitions.zip",
+                                                "sha256":  "2e013a9fc325d28884fd1c2486afece2194ddde1918398c73156f8a3943a1713",
+                                                "preserved":  true
+                                            }
+}

@@ -1,0 +1,15 @@
+\subsection{Next steps}\label{sec:next}
+
+The prototype turns a translated specification into review questions with solver evidence. The order example gives the author R2 and R3, a feasible no-stock submission, and incompatible obligations. For deletion, the reviewer also needs the assumed relation between removal and retention. Assumptions and alternative readings remain part of the review.
+
+The experiments support continuing this approach with qualifications. Outcome-pair questions and a second reader improve detection while adding review work. Change checking now attributes tested removal gaps and offers saved-base reuse. E20 shows fewer requests alongside lower conflict detection, so full formalization remains the default. Input, runtime and representation limits remain; production accuracy and human review savings have not been established.
+
+\paragraph{Independent evaluation.} Prepare a fresh set before another design change; the current sets have informed development. Add independently authored requirements and a real OpenSpec project's history. Report distinct defects as well as repeated runs, retain raw and doubtful-filtered findings, and measure review time. Record the requirements, reviewer decisions and fixed configuration so others can assess the results.
+
+\paragraph{Change analysis on larger projects.} Test sentence-only edits, requirements without scenarios, state-only removals, and changes to old vocabulary meanings. Fix or reject unsupported edits explicitly. Compare repeated alternatives against one base with rebuilding after each archive; test cache validity across sampling, prompt and model changes. Investigate the E20 misses on fresh cases and measure context limits on a real project. The order removal remains a useful regression example: submission stays in scope while its no-stock branch is removed.
+
+\paragraph{Vocabulary and representation.} Use the cloakroom failure and payroll miss as design cases: express retention as an obligation, test the outcome-pair cap, and investigate a doubt marker for collapsed lifecycles. Preserve contradictions such as order backordering while testing changes on fresh cases. The model remains one snapshot; a temporal extension has not been agreed. Reviewers still need to see where time and separate objects have been collapsed.
+
+The order of work is evaluation, change analysis, then vocabulary selection. These are research priorities, without a staffing estimate or delivery schedule.
+\source{plan.md, sections 2 and 5; research.md, sections 4 and 5}
+

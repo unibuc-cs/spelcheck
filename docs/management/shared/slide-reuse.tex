@@ -1,0 +1,11 @@
+\begin{tikzpicture}[stage/.append style={font=\normalsize,minimum height=12mm,inner sep=4pt}]
+\node[stage,text width=2.7cm] (full) at (0,0) {Full (default)\\Base + change};
+\node[stage,text width=3.1cm] (translate) at (4.05,0) {Choose vocabulary\\Translate all rules};
+\node[stage,text width=3.1cm] (check) at (8.4,0) {Keep active rules\\Run solver checks};
+\node[stage,text width=2.7cm] (base) at (0,-1.8) {Optional reuse\\Saved base};
+\node[stage,text width=3.1cm] (new) at (4.05,-1.8) {Translate changed\\scenarios; retain\\old readings};
+\node[stage,text width=3.1cm] (combine) at (8.4,-1.8) {Combine models\\Remove deleted or\\replaced rules};
+\draw[flow] (full)--(translate);\draw[flow] (translate)--(check);
+\draw[flow] (base)--(new);\draw[flow] (new)--(combine);
+\draw[flow] (combine)--(check);
+\end{tikzpicture}

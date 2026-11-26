@@ -1,0 +1,13 @@
+\begin{tikzpicture}[node distance=5mm,stage/.append style={text width=2.65cm,minimum height=9mm}]
+\node[stage] (r) {1. Read\\\scriptsize rules and symbols};
+\node[stage,right=of r] (s) {2. Sample\\\scriptsize eight translations};
+\node[stage,right=of s] (c) {3. Cluster\\\scriptsize equivalent meanings};
+\node[stage,right=of c] (f) {4. Facts\\\scriptsize voted assumptions};
+\node[stage,below=9mm of f] (l) {5. Links\\\scriptsize connect outcomes};
+\node[stage,left=of l] (p) {6. Probe\\\scriptsize challenge the reading};
+\node[stage,left=of p,dashed] (x) {7. Second reader\\\scriptsize optional other model};
+\node[stage,left=of x,draw=Teal] (o) {\texttt{formal.json}\\\scriptsize ready for checking};
+\draw[flow] (r)--(s);\draw[flow] (s)--(c);\draw[flow] (c)--(f);
+\draw[flow] (f)--(l);\draw[flow] (l)--(p);\draw[flow] (p)--(x);\draw[flow] (x)--(o);
+\draw[flow,dashed] (p.south) -- ++(0,-.35) -| (o.south);
+\end{tikzpicture}

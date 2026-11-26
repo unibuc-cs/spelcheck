@@ -1,0 +1,12 @@
+\section{Problem and running example}\label{sec:intro}\label{sec:problem}
+
+Suppose an authentication specification says to lock an account after five failed attempts. A proposed change says that administrators must never be locked out. Both sentences are easy to read. Together, they give the implementation an impossible job when an administrator reaches five failed attempts.
+
+We want a requirements checker to bring that decision back to the author: identify the conflicting rules, show a situation in which they clash, and explain what needs to be resolved. A general warning that the specification may be inconsistent leaves too much work to the reviewer. The harder cases arise when the obligations use different words, when a condition admits several readings, or when a proposed change conflicts with a requirement elsewhere.
+
+The project is a small reconstruction and investigation of the formal-analysis idea described in Kiro's requirements-analysis article~\citep{kiro2026}. It is not Kiro's implementation, and these experiments are not a head-to-head product comparison. The approach uses a language model to translate requirements, Z3~\citep{z3} to check the formulas, and a language model to explain the findings. Formal checking can establish a result about the supplied formulas; it cannot establish that the translation preserves the author's intent.
+
+The project provides a working pipeline with saved translations, solver witnesses and explicit assumptions; mechanisms for challenging translations and connecting separately named outcomes; and change checking that retains removal evidence and optionally reuses a saved base model. This report connects those procedures to experiments showing their gains, costs and remaining limits.
+
+The evaluation uses project-authored specifications and planted defects. It supports conclusions about these examples and comparisons, rather than production defect rates or measured savings in human review time. Authentication provides a common example for the four finding types and the OpenSpec change workflow. Order processing supplies a second worked example for the detailed solver procedures; property deletion illustrates uncertain relations between outcomes. Detailed pseudocode, full models and the saved order walkthrough are in the appendices.
+\source{speccheck/cli.py; speccheck/formalize.py; speccheck/change.py}

@@ -1,0 +1,14 @@
+% Slide-scale overview: shorter labels preserve readable type.
+\begin{tikzpicture}[node distance=5mm,stage/.append style={font=\normalsize,text width=2.5cm,minimum height=12mm}]
+\node[stage] (r) {1. Read\\\small rules + symbols};
+\node[stage,right=of r] (s) {2. Sample\\\small translations};
+\node[stage,right=of s] (c) {3. Cluster\\\small meanings};
+\node[stage,right=of c] (f) {4. Facts\\\small assumptions};
+\node[stage,below=8mm of f] (l) {5. Links\\\small outcomes};
+\node[stage,left=of l] (p) {6. Probe\\\small interpretations};
+\node[stage,left=of p,dashed] (x) {7. Second reader\\\small optional};
+\node[stage,left=of x,draw=Teal] (o) {\texttt{formal.json}\\\small ready to check};
+\draw[flow] (r)--(s);\draw[flow] (s)--(c);\draw[flow] (c)--(f);
+\draw[flow] (f)--(l);\draw[flow] (l)--(p);\draw[flow] (p)--(x);\draw[flow] (x)--(o);
+\draw[flow,dashed] (p.south) -- ++(0,-.3) -| (o.south);
+\end{tikzpicture}

@@ -1,0 +1,884 @@
+{
+    "schema_version":  1,
+    "snapshot_revision":  "498dea06df250964013b2abb2b06c94d341b223b",
+    "source_resolution":  "Project source paths refer to snapshot/2026-11-24-498dea0/source.zip; suffixes identify symbols, sections or experiments. Documentation paths refer to this package. Paper entries name LaTeX labels in the six-section edition. slides contains main-talk page numbers; appendix_slides contains appendix letters A-K (PDF pages 32-42). A reference can support part of a compound claim; slide speaker notes retain technical qualifications omitted from the visible frame. Example links are pinned to the preserved source revision. The preserved 498dea0 source remains authoritative; later code and results in the current project are outside this documentation update. Presentation section order and paper section order may differ.",
+    "historical_provenance":  "The snapshot identifies the preserved source and evidence. E19 froze its design at 07ecd38 and E20 at 373ae4c. Current cache/option guards in 498dea0 came after E20 and were not evaluated by it. No producing revision is invented for older experiments.",
+    "claims":  [
+                   {
+                       "id":  "architecture",
+                       "claim":  "Three stages with persisted formal model, findings and report; middle stage has no LLM calls",
+                       "paper":  "sec:design",
+                       "slides":  [
+                                      10
+                                  ],
+                       "sources":  [
+                                       "speccheck/cli.py:main",
+                                       "speccheck/formalize.py:formalize_sets",
+                                       "speccheck/checks.py:analyze",
+                                       "speccheck/explain.py:explain"
+                                   ],
+                       "kind":  "implementation",
+                       "appendix_slides":  [
+                                               "K"
+                                           ]
+                   },
+                   {
+                       "id":  "order-example",
+                       "claim":  "The paper retains the five-rule EARS order case as a secondary worked example, with its own R1-R5 identities and notation. Its encoded conflicts, quiet gap, allowed fulfillment and constructed R2-removal variation remain checked. It is no longer a main-deck or slide-appendix example, and no saved OpenSpec order change is claimed.",
+                       "paper":  "sec:problem; app:formal-model; app:examples",
+                       "slides":  [
+
+                                  ],
+                       "sources":  [
+                                       "specs/order/requirements.md",
+                                       "specs/order/formal.json",
+                                       "specs/order/findings.json",
+                                       "speccheck/checks.py",
+                                       "tests/test_checks.py",
+                                       "docs/management/scripts/verify-examples.py"
+                                   ],
+                       "kind":  "saved model plus verified abbreviated formulas",
+                       "appendix_slides":  [
+
+                                           ]
+                   },
+                   {
+                       "id":  "typed-model",
+                       "claim":  "The implementation supports Bool, Int, Real and Enum symbols and antecedent-to-consequent implications in one snapshot. The slide model is authentication: p password submitted, v password correct, g access granted, d access denied, n failed attempts, ell account locked, h administrator. Grant and deny remain separate symbols.",
+                       "paper":  "sec:model; app:formal-model",
+                       "slides":  [
+                                      5
+                                  ],
+                       "sources":  [
+                                       "speccheck/logic.py:Rule",
+                                       "speccheck/logic.py:Vocabulary",
+                                       "specs/auth_change/formal.json"
+                                   ],
+                       "kind":  "implementation",
+                       "appendix_slides":  [
+                                               "A"
+                                           ]
+                   },
+                   {
+                       "id":  "extract",
+                       "claim":  "Extract atomic rules, triggers and symbols; retry invalid vocabulary",
+                       "paper":  "sec:formalize; alg:read",
+                       "slides":  [
+                                      11,
+                                      12
+                                  ],
+                       "sources":  [
+                                       "speccheck/formalize.py:_read",
+                                       "speccheck/formalize.py:READ_SYSTEM",
+                                       "speccheck/logic.py:Vocabulary"
+                                   ],
+                       "kind":  "implementation",
+                       "appendix_slides":  [
+                                               "B"
+                                           ]
+                   },
+                   {
+                       "id":  "sample",
+                       "claim":  "Default eight translations at temperature 0.7; shared vocabulary; up to 16 concurrent LLM requests",
+                       "paper":  "sec:formalize; alg:sample",
+                       "slides":  [
+                                      12
+                                  ],
+                       "sources":  [
+                                       "speccheck/formalize.py:formalize",
+                                       "speccheck/llm.py:LLM.ask",
+                                       "speccheck/cli.py:main"
+                                   ],
+                       "kind":  "implementation",
+                       "appendix_slides":  [
+                                               "B"
+                                           ]
+                   },
+                   {
+                       "id":  "cluster",
+                       "claim":  "Whole-implication equivalence; entropy 0.4 and 1 thresholds; invalid samples excluded",
+                       "paper":  "sec:formalize; alg:cluster",
+                       "slides":  [
+                                      12
+                                  ],
+                       "sources":  [
+                                       "speccheck/formalize.py:_judge",
+                                       "speccheck/formalize.py:_group_by_meaning",
+                                       "speccheck/logic.py:same_meaning"
+                                   ],
+                       "kind":  "implementation and constructed verified illustrations",
+                       "appendix_slides":  [
+                                               "B"
+                                           ]
+                   },
+                   {
+                       "id":  "facts",
+                       "claim":  "Entailment-based strict majority of requested fact samples, retained set not proved inconsistent",
+                       "paper":  "sec:design; alg:facts",
+                       "slides":  [
+                                      13
+                                  ],
+                       "sources":  [
+                                       "speccheck/formalize.py:_agreed_facts",
+                                       "tests/test_checks.py"
+                                   ],
+                       "kind":  "implementation",
+                       "appendix_slides":  [
+                                               "C"
+                                           ]
+                   },
+                   {
+                       "id":  "links",
+                       "claim":  "Private outcome restatement creates explicit assumed link after requested-N majority",
+                       "paper":  "sec:design; alg:links",
+                       "slides":  [
+                                      13
+                                  ],
+                       "sources":  [
+                                       "speccheck/formalize.py:_links",
+                                       "speccheck/formalize.py:_symbols_to_hide",
+                                       "specs/delete_property/requirements.md"
+                                   ],
+                       "kind":  "implementation and abbreviated illustration",
+                       "appendix_slides":  [
+                                               "C"
+                                           ]
+                   },
+                   {
+                       "id":  "probes",
+                       "claim":  "Alternative, link, fact and outcome-pair checks; returned-answer majority distinctions",
+                       "paper":  "sec:formalize; alg:probe",
+                       "slides":  [
+                                      8,
+                                      13
+                                  ],
+                       "sources":  [
+                                       "speccheck/probe.py",
+                                       "speccheck/checks.py:settled",
+                                       "tests/test_probe.py",
+                                       "tests/test_outcomes.py"
+                                   ],
+                       "kind":  "implementation",
+                       "appendix_slides":  [
+                                               "D",
+                                               "E"
+                                           ]
+                   },
+                   {
+                       "id":  "second-reader",
+                       "claim":  "Another model uses the same vocabulary. Confirmation requires more than half of the requested N translations; an accepted rule becomes ambiguous only when confirmation fails and a usable distinct alternative exists. Current incremental CLI excludes this mode and multiple vocabularies.",
+                       "paper":  "sec:formalize; alg:second-reader",
+                       "slides":  [
+                                      8
+                                  ],
+                       "sources":  [
+                                       "speccheck/formalize.py:judge_second",
+                                       "speccheck/checks.py:settled",
+                                       "tests/test_second.py",
+                                       "speccheck/cli.py:main"
+                                   ],
+                       "kind":  "implementation and constructed 3/8 illustration",
+                       "appendix_slides":  [
+                                               "F"
+                                           ]
+                   },
+                   {
+                       "id":  "conflicts",
+                       "claim":  "A conflict needs a feasible triggering case and jointly unsatisfiable obligations; a case ruled out by one rule alone is excluded. The actual authentication administrator addition yields R3/R5 at n=5 and h=true: locked and not locked. Neither rule alone excludes that trigger. Search bounds connected trigger groups to size three and deletion-minimizes cores.",
+                       "paper":  "sec:solver; alg:conflicts",
+                       "slides":  [
+                                      6
+                                  ],
+                       "sources":  [
+                                       "speccheck/checks.py:_search",
+                                       "speccheck/checks.py:_minimal_conflict",
+                                       "speccheck/checks.py:_families",
+                                       "specs/auth_change/formal.json",
+                                       "specs/auth_change/findings.json",
+                                       "docs/management/scripts/verify-examples.py"
+                                   ],
+                       "kind":  "implementation",
+                       "appendix_slides":  [
+                                               "G"
+                                           ]
+                   },
+                   {
+                       "id":  "assumptions",
+                       "claim":  "Rules-only findings are preserved; assumptions may add or doubt findings",
+                       "paper":  "sec:design; sec:solver; sec:explanation; app:formal-model",
+                       "slides":  [
+                                      13,
+                                      14
+                                  ],
+                       "sources":  [
+                                       "speccheck/checks.py:find_conflicts",
+                                       "tests/test_checks.py:test_assumed_facts_never_remove_a_finding"
+                                   ],
+                       "kind":  "implementation",
+                       "appendix_slides":  [
+                                               "G"
+                                           ]
+                   },
+                   {
+                       "id":  "gaps",
+                       "claim":  "A gap is a case in which no surviving conditional antecedent holds; unconditional constraints do not supply coverage. The constructed authentication baseline variation removes Invalid credentials R2: p=true, v=false, ell=false, n=0 leaves R1/R3/R4 inactive. A usable removed rule can seed this still-handled event gap with opened_by; event retirement and replaced scenarios have separate treatment.",
+                       "paper":  "sec:solver; alg:gaps; app:explanation",
+                       "slides":  [
+                                      7,
+                                      19
+                                  ],
+                       "sources":  [
+                                       "speccheck/checks.py:find_gaps",
+                                       "tests/test_checks.py",
+                                       "speccheck/change.py:after_model",
+                                       "tests/test_change.py",
+                                       "specs/auth_change/formal.json",
+                                       "docs/management/scripts/verify-examples.py",
+                                       "docs/management/evidence/example-checks.json"
+                                   ],
+                       "kind":  "implementation",
+                       "appendix_slides":  [
+                                               "H"
+                                           ]
+                   },
+                   {
+                       "id":  "scenarios",
+                       "claim":  "Generated scenarios are output consequences, distinct from OpenSpec input scenarios. An allowed case satisfies all active implications while a rule outcome holds outside that rule condition; the constructed authentication baseline permits access granted without password submission in one snapshot. A ruled-out case has feasible simultaneous conditions but one rule alone excludes it: the administrator rule forbids a locked administrator submitting a password. These are not automatically defects; an LLM judges relevance and selects at most three.",
+                       "paper":  "sec:solver; app:solver",
+                       "slides":  [
+                                      9
+                                  ],
+                       "sources":  [
+                                       "speccheck/checks.py:find_scenarios",
+                                       "speccheck/explain.py:judge",
+                                       "speccheck/cli.py:main",
+                                       "specs/auth_change/formal.json",
+                                       "tests/test_checks.py:test_scenarios_list_what_the_rules_allow_and_rule_out",
+                                       "docs/management/scripts/verify-examples.py"
+                                   ],
+                       "kind":  "implementation",
+                       "appendix_slides":  [
+                                               "A"
+                                           ]
+                   },
+                   {
+                       "id":  "uncertainty",
+                       "claim":  "Alternative readings give bounded conflict and partial-gap sensitivity hints, not proof of repair; k/K support across retained models; generated prose is unchecked",
+                       "paper":  "sec:explanation; app:explanation",
+                       "slides":  [
+                                      14,
+                                      29
+                                  ],
+                       "sources":  [
+                                       "speccheck/checks.py",
+                                       "speccheck/formalize.py:formalize_sets",
+                                       "speccheck/logic.py:SOLVER_TIMEOUT_MS"
+                                   ],
+                       "kind":  "implementation",
+                       "appendix_slides":  [
+                                               "F",
+                                               "H"
+                                           ]
+                   },
+                   {
+                       "id":  "change",
+                       "claim":  "Scenario-level textual provenance; removed/replaced rules excluded from active checks; usable removed rules can seed event gaps with opened_by attribution; full formalization remains the default.",
+                       "paper":  "sec:change; alg:change",
+                       "slides":  [
+                                      2,
+                                      15,
+                                      16,
+                                      17,
+                                      18,
+                                      19,
+                                      20
+                                  ],
+                       "sources":  [
+                                       "speccheck/change.py",
+                                       "specs/auth_change",
+                                       "tests/test_change.py",
+                                       "speccheck/cli.py:main",
+                                       "tests/test_incremental.py"
+                                   ],
+                       "kind":  "implementation",
+                       "appendix_slides":  [
+                                               "I",
+                                               "J"
+                                           ]
+                   },
+                   {
+                       "id":  "inventory",
+                       "claim":  "66 ordinary base specifications and 297 versions; 18 separate change projects with 102 distinct changes across eval11/eval13/eval14; two scale base documents.",
+                       "paper":  "sec:experimental-setup",
+                       "slides":  [
+                                      21
+                                  ],
+                       "sources":  [
+                                       "research.md:sections1,4.7",
+                                       "experiments/sets"
+                                   ],
+                       "kind":  "Benchmark inventory at current snapshot; E20 modes share the same 36 changes",
+                       "appendix_slides":  [
+
+                                           ]
+                   },
+                   {
+                       "id":  "E18",
+                       "claim":  "Same-saved-run ablation: 27/36 to 34/36 conflicts; clean alarm runs 0/18 to 3/18; gaps 17/18; ambiguities 16/36",
+                       "paper":  "sec:rq1",
+                       "slides":  [
+                                      23
+                                  ],
+                       "sources":  [
+                                       "experiments/results/E18_eval12.json",
+                                       "experiments/results/E18_eval12.md",
+                                       "research_log.md:E18"
+                                   ],
+                       "kind":  "measured; defaults include doubtful findings",
+                       "appendix_slides":  [
+
+                                           ]
+                   },
+                   {
+                       "id":  "T22",
+                       "claim":  "Development ablation: 132/153 to 145/153; filtered 129/153 to 142/153; clean 3/144 to 13/144",
+                       "paper":  "sec:rq1",
+                       "slides":  [
+
+                                  ],
+                       "sources":  [
+                                       "experiments/results/T22_eval3.md",
+                                       "research_log.md:T22"
+                                   ],
+                       "kind":  "measured on older development sets; preserve overlay dependencies",
+                       "appendix_slides":  [
+
+                                           ]
+                   },
+                   {
+                       "id":  "E17",
+                       "claim":  "Historical E17: 36/36 conflicts and 36/36 gaps; filtered conflicts 33/36; no selected conflict/gap alarms on 18 clean runs. Its earlier limitations are historical, not the current implementation.",
+                       "paper":  "sec:rq3",
+                       "slides":  [
+
+                                  ],
+                       "sources":  [
+                                       "experiments/results/E17_eval11.json",
+                                       "experiments/results/E17_eval11.md",
+                                       "research_log.md:E17"
+                                   ],
+                       "kind":  "measured; direct-opposite wording exercises merge/provenance",
+                       "appendix_slides":  [
+                                               "K"
+                                           ]
+                   },
+                   {
+                       "id":  "second-reader-results",
+                       "claim":  "E9 ambiguity 14/36 to 30/36, clean rule flags 7 to 15; E12 17/36 to 32/36, flags 5 to 9",
+                       "paper":  "sec:rq2",
+                       "slides":  [
+                                      24
+                                  ],
+                       "sources":  [
+                                       "experiments/results/E9_eval4.json",
+                                       "experiments/results/E9_eval4.md",
+                                       "experiments/results/E12_eval7.json",
+                                       "experiments/results/E12_eval7.md"
+                                   ],
+                       "kind":  "measured; clean flags count rules, not runs",
+                       "appendix_slides":  [
+
+                                           ]
+                   },
+                   {
+                       "id":  "scale-results",
+                       "claim":  "E13 solver 26-34 s to 0.4-0.9 s; E14 6/6 conflicts, 3/3 gaps, 1/3 clean alarms; 35 s solver and 620 s for one full run",
+                       "paper":  "sec:rq4",
+                       "slides":  [
+                                      27
+                                  ],
+                       "sources":  [
+                                       "research_log.md:E13,E14",
+                                       "experiments/results/E14_size2.json",
+                                       "experiments/results/E14_size2.md"
+                                   ],
+                       "kind":  "limited scale observations, not latency distributions",
+                       "appendix_slides":  [
+
+                                           ]
+                   },
+                   {
+                       "id":  "limitations",
+                       "claim":  "Cloakroom lifecycle, payroll retention attribute and ferry entity/time collapse; incremental reuse fixes old interpretations and can miss sentence-only edits; no independent real-world accuracy rate.",
+                       "paper":  "sec:discussion; sec:next",
+                       "slides":  [
+                                      28,
+                                      29,
+                                      30,
+                                      31
+                                  ],
+                       "sources":  [
+                                       "research_log.md:E18,E14",
+                                       "research.md:section4",
+                                       "plan.md:section2",
+                                       "speccheck/change.py:_document",
+                                       "speccheck/cli.py:_base_model",
+                                       "research_log.md:E20"
+                                   ],
+                       "kind":  "documented failures and proposed future work",
+                       "appendix_slides":  [
+                                               "H"
+                                           ]
+                   },
+                   {
+                       "id":  "verification",
+                       "claim":  "The current documentation verifier passed 40 checks against archived 498dea0, including nine authentication checks added to the prior 31. It uses the saved formulas and constructed variants without model calls. A prior application run recorded 70 offline tests; those tests were not rerun for this editorial revision. These checks are not new empirical LLM evaluation.",
+                       "paper":  "sec:discussion; app:walkthrough",
+                       "slides":  [
+
+                                  ],
+                       "sources":  [
+                                       "tests",
+                                       "docs/management/scripts/verify-examples.py",
+                                       "docs/management/evidence/example-checks.json",
+                                       "docs/management/evidence/validation.json"
+                                   ],
+                       "kind":  "documentation preparation checks; not new empirical LLM evaluation",
+                       "appendix_slides":  [
+
+                                           ]
+                   },
+                   {
+                       "id":  "removal-attribution",
+                       "claim":  "Removed labels X1... are retained in the full raw encoding, excluded from active obligations and used as gap seeds only where an event remains handled. The slide illustration removes authentication R2 from the baseline readings, calls it X1, and finds an incorrect-password submission with no response. Its R labels are teaching identities rather than a claim of unchanged full-mode numbering. opened_by can attribute the gap without an added rule. The saved visitor removal and secondary paper order variation remain separate supporting evidence.",
+                       "paper":  "sec:change; alg:gaps; alg:change",
+                       "slides":  [
+                                      19
+                                  ],
+                       "appendix_slides":  [
+                                               "H",
+                                               "I"
+                                           ],
+                       "sources":  [
+                                       "speccheck/change.py:_document",
+                                       "speccheck/change.py:after_model",
+                                       "speccheck/change.py:about_change",
+                                       "speccheck/checks.py:find_gaps",
+                                       "experiments/examples/visitors_removed/findings.json",
+                                       "tests/test_change.py",
+                                       "specs/auth_change/formal.json",
+                                       "docs/management/scripts/verify-examples.py",
+                                       "docs/management/evidence/example-checks.json"
+                                   ],
+                       "kind":  "Implementation, saved visitor result and explicitly constructed authentication removal, with secondary order illustration in the paper"
+                   },
+                   {
+                       "id":  "incremental",
+                       "claim":  "Opt-in reuse loads/builds a base keyed by generated text hash and model name, selectively translates/probes added or rewritten scenarios, then reruns ordinary solver checks on the combined active model. Old vocabulary/readings remain fixed; there is no automatic full-mode fallback.",
+                       "paper":  "sec:incremental; app:incremental; alg:incremental",
+                       "slides":  [
+                                      20
+                                  ],
+                       "appendix_slides":  [
+                                               "J",
+                                               "K"
+                                           ],
+                       "sources":  [
+                                       "speccheck/cli.py:_base_model",
+                                       "speccheck/cli.py:main",
+                                       "speccheck/formalize.py:formalize",
+                                       "speccheck/probe.py:question",
+                                       "speccheck/probe.py:outcomes",
+                                       "tests/test_incremental.py"
+                                   ],
+                       "kind":  "Current implementation; selective translation reuse, not an incremental solver"
+                   },
+                   {
+                       "id":  "incremental-edit-boundary",
+                       "claim":  "A requirement SHALL-sentence-only edit with unchanged scenarios, or a new requirement without scenarios, emits no incremental text. Full mode is needed; the cached model may otherwise be reused without translating the sentence.",
+                       "paper":  "sec:incremental; sec:discussion; alg:incremental",
+                       "slides":  [
+                                      20,
+                                      29
+                                  ],
+                       "appendix_slides":  [
+                                               "J"
+                                           ],
+                       "sources":  [
+                                       "speccheck/change.py:_document",
+                                       "speccheck/cli.py:main",
+                                       "docs/management/scripts/verify-examples.py",
+                                       "docs/management/evidence/example-checks.json"
+                                   ],
+                       "kind":  "Code inspection and offline boundary checks; no application fix made for this edition"
+                   },
+                   {
+                       "id":  "E19",
+                       "claim":  "18/18 planted conflicts (15/18 after doubtful findings excluded), 35/36 planted gaps, 2/54 quiet conflict alarms, 0/54 quiet gap alarms; 108/108 observations of six old conflicts found and excluded from change attribution.",
+                       "paper":  "sec:rq3",
+                       "slides":  [
+                                      25
+                                  ],
+                       "appendix_slides":  [
+
+                                           ],
+                       "sources":  [
+                                       "experiments/results/E19_eval13.json",
+                                       "experiments/results/E19_eval13.md",
+                                       "research_log.md:E19"
+                                   ],
+                       "kind":  "Measured at design freeze 07ecd38; quiet cases include clean additions, retirements and sibling edits"
+                   },
+                   {
+                       "id":  "E20",
+                       "claim":  "Full versus reuse: conflicts 54/54 versus 50/54; filtered 51/54 versus 45/54; gaps 36/36 each; 0/18 clean conflict/gap alarm runs each. Four missed detections concern two distinct cases; clean-case quietness does not exclude extra findings elsewhere.",
+                       "paper":  "sec:rq3; sec:discussion",
+                       "slides":  [
+                                      26,
+                                      31
+                                  ],
+                       "appendix_slides":  [
+
+                                           ],
+                       "sources":  [
+                                       "experiments/results/E20_eval14_full.json",
+                                       "experiments/results/E20_eval14_full.md",
+                                       "experiments/results/E20_eval14_incremental.json",
+                                       "experiments/results/E20_eval14_incremental.md",
+                                       "research_log.md:E20"
+                                   ],
+                       "kind":  "Measured at 373ae4c; current cache and option guards came afterward"
+                   },
+                   {
+                       "id":  "E20-cost",
+                       "claim":  "Mean formalization requests per change: full 68, reuse 9, plus 61 per initial base. Raw totals: 7336 full, 1010 reused changes, 1093 bases; 71.3% fewer requests including bases for six alternative changes per base. Excludes explanation and scenario judging.",
+                       "paper":  "sec:rq4",
+                       "slides":  [
+                                      26
+                                  ],
+                       "appendix_slides":  [
+                                               "K"
+                                           ],
+                       "sources":  [
+                                       "experiments/results/E20_eval14_full.json",
+                                       "experiments/results/E20_eval14_incremental.json",
+                                       "experiments/evaluate.py:change_run",
+                                       "speccheck/llm.py:LLM.ask",
+                                       "research_log.md:E20"
+                                   ],
+                       "kind":  "Recorded usage and arithmetic on raw totals; not a billed-cost or end-to-end speed claim"
+                   },
+                   {
+                       "id":  "authentication-example",
+                       "claim":  "Authentication is the primary slide example for all four finding types, the method and OpenSpec changes. The saved merged formalization supplies baseline readings R1-R4; actual added R5 creates the saved R3/R5 conflict at five attempts on an administrator account. The original R3 exact-five reading and its saved at-least-five alternative differ at six attempts while unlocked; that formal difference alone does not prove English ambiguity. The R2-removal gap and baseline access-without-submission snapshot are explicit constructions, not separately saved base/removal runs. Generated scenarios include ruled-out cases as well as allowed ones. Older R1/R4 conflict, ambiguity and quiet gap remain outside the actual administrator-change report.",
+                       "paper":  "sec:problem; sec:formalize; sec:change; app:change; app:incremental",
+                       "slides":  [
+                                      2,
+                                      4,
+                                      5,
+                                      6,
+                                      7,
+                                      8,
+                                      9,
+                                      10,
+                                      11,
+                                      12,
+                                      14,
+                                      17,
+                                      18,
+                                      19,
+                                      20
+                                  ],
+                       "appendix_slides":  [
+                                               "A",
+                                               "D",
+                                               "F",
+                                               "G",
+                                               "H",
+                                               "I",
+                                               "J"
+                                           ],
+                       "sources":  [
+                                       "specs/auth_change/openspec/specs/auth/spec.md",
+                                       "specs/auth_change/openspec/changes/admin-never-locked/specs/auth/spec.md",
+                                       "specs/auth_change/formal.json",
+                                       "specs/auth_change/findings.json",
+                                       "speccheck/change.py:about_change",
+                                       "speccheck/checks.py:find_gaps",
+                                       "speccheck/checks.py:find_scenarios",
+                                       "docs/management/scripts/verify-examples.py",
+                                       "docs/management/evidence/example-checks.json"
+                                   ],
+                       "kind":  "Primary running example: literal archived inputs and selected saved findings, plus explicitly constructed and offline-checked gap/scenario variants"
+                   },
+                   {
+                       "id":  "openspec-project-and-delta",
+                       "claim":  "Existing capability specifications live under openspec/specs; the selected proposed delta lives under openspec/changes/\u003cchange\u003e/specs at corresponding capability paths. The authentication base has Login and Account Lockout requirements with four scenarios. Its actual administrator delta uses ADDED only, creating one requirement in existing capability auth. Analysis combines the base and delta without archiving or overwriting the base. The saved R3/R5 administrator conflict is selected while the older R1/R4 conflict remains outside the change report; the base is not assumed clean.",
+                       "paper":  "sec:change; tab:auth-baseline; alg:change",
+                       "slides":  [
+                                      2,
+                                      15,
+                                      17,
+                                      18
+                                  ],
+                       "appendix_slides":  [
+                                               "I"
+                                           ],
+                       "sources":  [
+                                       "specs/auth_change/openspec/specs/auth/spec.md",
+                                       "specs/auth_change/openspec/changes/admin-never-locked/specs/auth/spec.md",
+                                       "specs/auth_change/merged.md",
+                                       "specs/auth_change/findings.json",
+                                       "speccheck/change.py:merge",
+                                       "speccheck/change.py:about_change",
+                                       "tests/test_change.py:test_every_scenario_gets_a_label_and_the_added_one_is_marked",
+                                       "tests/test_change.py:test_only_the_findings_that_involve_the_change_are_selected"
+                                   ],
+                       "kind":  "Actual project-authored OpenSpec input, saved findings and implementation; no production or clean-baseline claim"
+                   },
+                   {
+                       "id":  "openspec-delta-operations",
+                       "claim":  "The merger applies RENAMED, REMOVED, MODIFIED and ADDED in that fixed order. Renaming changes the requirement name used by subsequent operations. REMOVED identifies the existing requirement rather than supplying replacement policy; MODIFIED supplies its full replacement body, including every scenario meant to remain. Requirements omitted from the delta stay unchanged. A new capability is populated from ADDED requirements at its new path. The actual administrator delta exercises ADDED only; other operations are explained separately.",
+                       "paper":  "sec:change; tab:delta-operations; alg:change",
+                       "slides":  [
+                                      15,
+                                      17
+                                  ],
+                       "appendix_slides":  [
+                                               "I"
+                                           ],
+                       "sources":  [
+                                       "speccheck/change.py:merge",
+                                       "speccheck/change.py:_sections",
+                                       "speccheck/change.py:_rewritten",
+                                       "tests/test_change.py:test_the_four_kinds_of_delta_are_applied",
+                                       "tests/test_change.py:test_a_new_capability_gets_a_spec_of_its_own",
+                                       "specs/auth_change/openspec/changes/admin-never-locked/specs/auth/spec.md"
+                                   ],
+                       "kind":  "Implementation and operation explanations; not a claim that the saved administrator change uses every operation"
+                   },
+                   {
+                       "id":  "openspec-scenario-states",
+                       "claim":  "Within a modified requirement, exact scenario names and normalized bodies determine four states: existing for matching name and body, modified for matching name with changed body, added for a new name, and removed for a missing old name or removal of its whole requirement. Body normalization ignores case, whitespace and selected Markdown markers; it does not establish semantic equivalence. The illustrative threshold edits are separate alternatives, while the actual administrator delta leaves four scenarios existing and adds one. Full-mode R labels follow resulting document order; saved-base reuse preserves old labels and separately tracks replaced readings.",
+                       "paper":  "sec:change; tab:scenario-status; alg:change; alg:incremental",
+                       "slides":  [
+                                      16,
+                                      17,
+                                      18
+                                  ],
+                       "appendix_slides":  [
+                                               "I",
+                                               "J"
+                                           ],
+                       "sources":  [
+                                       "speccheck/change.py:_rewritten",
+                                       "speccheck/change.py:_plain",
+                                       "speccheck/change.py:_document",
+                                       "tests/test_change.py:test_inside_a_rewritten_requirement_only_the_scenario_with_new_words_is_modified",
+                                       "tests/test_change.py:test_the_four_kinds_of_delta_are_applied",
+                                       "tests/test_incremental.py:test_on_a_base_the_scenarios_that_stay_keep_their_labels",
+                                       "specs/auth_change/openspec/specs/auth/spec.md",
+                                       "specs/auth_change/openspec/changes/admin-never-locked/specs/auth/spec.md"
+                                   ],
+                       "kind":  "Implementation with explicitly illustrative threshold edits and the actual ADDED-only administrator delta"
+                   },
+                   {
+                       "id":  "early-finding-definitions",
+                       "claim":  "The deck introduces four review questions together before implementation: conflict, gap, ambiguity and generated scenario. Predicates and cases use authentication throughout. Conflict uses the actual administrator addition; gap separately removes the baseline invalid-password response; ambiguity and allowed behavior return to the original four baseline readings; the ruled-out example uses the administrator addition. These are not four defects asserted in one unchanged specification. Generated scenarios are output cases, not OpenSpec input scenarios.",
+                       "paper":  "sec:problem; sec:solver; sec:formalize",
+                       "slides":  [
+                                      4,
+                                      5,
+                                      6,
+                                      7,
+                                      8,
+                                      9
+                                  ],
+                       "appendix_slides":  [
+                                               "A",
+                                               "D",
+                                               "G",
+                                               "H"
+                                           ],
+                       "sources":  [
+                                       "speccheck/checks.py:_search",
+                                       "speccheck/checks.py:find_gaps",
+                                       "speccheck/checks.py:find_ambiguities",
+                                       "speccheck/checks.py:find_scenarios",
+                                       "specs/auth_change/formal.json",
+                                       "specs/auth_change/findings.json",
+                                       "docs/management/scripts/verify-examples.py"
+                                   ],
+                       "kind":  "Presentation structure tied to archived implementation and checked running-example cases"
+                   },
+                   {
+                       "id":  "authentication-predicates",
+                       "claim":  "Short authentication predicates map exactly to saved symbols: p=password_submitted, v=password_correct, g=access_granted, d=access_denied, n=failed_attempts_count, ell=account_locked, h=is_administrator. R1 is (p and v)=\u003eg, R2 is (p and not v)=\u003ed, R3 is n=5=\u003eell, R4 is (p and ell)=\u003ed, and actual added R5 is h=\u003enot ell. Only p is an event. R3 names p in trigger metadata but its saved antecedent contains no submission guard. Grant and deny are separate symbols, with their exclusion an assumed fact rather than a silent renaming.",
+                       "paper":  "sec:problem; tab:auth-baseline",
+                       "slides":  [
+                                      5
+                                  ],
+                       "appendix_slides":  [
+                                               "A"
+                                           ],
+                       "sources":  [
+                                       "specs/auth_change/formal.json",
+                                       "docs/management/scripts/verify-examples.py",
+                                       "docs/management/evidence/example-checks.json"
+                                   ],
+                       "kind":  "Exact abbreviations of saved formulas and event metadata, verified offline"
+                   },
+                   {
+                       "id":  "authentication-constructed-variants",
+                       "claim":  "The illustrative gap projects R1-R4 from the saved merged authentication formalization and removes R2, represented as X1 for removal preprocessing. At p=true,v=false,ell=false,n=0 the old R2 condition holds and every surviving conditional antecedent is false; the original R1/R2 pair covers password submission. The allowed snapshot has p=false,v=false,g=true,d=false,n=0,ell=false,h=false and satisfies all four baseline implications and saved facts. With R5 added, p=true,ell=true,h=true is ruled out by R5 alone while R4 would apply. These are constructed/replayed cases; no separate model run or selected saved scenario report is claimed.",
+                       "paper":  "sec:problem; tab:auth-baseline",
+                       "slides":  [
+                                      7,
+                                      9,
+                                      19
+                                  ],
+                       "appendix_slides":  [
+                                               "A",
+                                               "H",
+                                               "I"
+                                           ],
+                       "sources":  [
+                                       "specs/auth_change/formal.json",
+                                       "speccheck/change.py:after_model",
+                                       "speccheck/checks.py:find_gaps",
+                                       "speccheck/checks.py:find_scenarios",
+                                       "docs/management/scripts/verify-examples.py",
+                                       "docs/management/evidence/example-checks.json"
+                                   ],
+                       "kind":  "Explicit constructed variants checked against the archived implementation; no fresh LLM evaluation"
+                   }
+               ],
+    "documentation_outline":  [
+                                  {
+                                      "section":  1,
+                                      "paper_title":  "Problem and running example",
+                                      "paper_label":  "sec:problem",
+                                      "slides":  [
+                                                     2,
+                                                     3,
+                                                     4
+                                                 ]
+                                  },
+                                  {
+                                      "section":  2,
+                                      "paper_title":  "Findings",
+                                      "paper_label":  "sec:solver",
+                                      "slides":  [
+                                                     5,
+                                                     6,
+                                                     7,
+                                                     8,
+                                                     9
+                                                 ]
+                                  },
+                                  {
+                                      "section":  3,
+                                      "paper_title":  "Method",
+                                      "paper_label":  "sec:design",
+                                      "slides":  [
+                                                     10,
+                                                     11,
+                                                     12,
+                                                     13,
+                                                     14
+                                                 ]
+                                  },
+                                  {
+                                      "section":  4,
+                                      "paper_title":  "Changes",
+                                      "paper_label":  "sec:change",
+                                      "slides":  [
+                                                     15,
+                                                     16,
+                                                     17,
+                                                     18,
+                                                     19,
+                                                     20
+                                                 ]
+                                  },
+                                  {
+                                      "section":  5,
+                                      "paper_title":  "Evaluation",
+                                      "paper_label":  "sec:evaluation",
+                                      "slides":  [
+                                                     21,
+                                                     22,
+                                                     23,
+                                                     24,
+                                                     25,
+                                                     26,
+                                                     27
+                                                 ]
+                                  },
+                                  {
+                                      "section":  6,
+                                      "paper_title":  "Limitations and next steps",
+                                      "paper_label":  "sec:discussion",
+                                      "slides":  [
+                                                     28,
+                                                     29,
+                                                     30,
+                                                     31
+                                                 ]
+                                  }
+                              ],
+    "example_sources":  [
+                            {
+                                "id":  "order",
+                                "role":  "Secondary five-rule EARS worked example retained in the paper; not a main-deck or slide-appendix example",
+                                "format":  "EARS",
+                                "url":  "https://github.com/unibuc-cs/spelcheck/blob/498dea06df250964013b2abb2b06c94d341b223b/specs/order/requirements.md",
+                                "qualification":  "The R2 removal used in the explanation is constructed; no OpenSpec order file or saved order-change result is claimed."
+                            },
+                            {
+                                "id":  "authentication-base",
+                                "role":  "Primary running OpenSpec example across slide definitions, method and changes; four baseline scenarios from the saved merged-model readings",
+                                "format":  "OpenSpec base specification",
+                                "url":  "https://github.com/unibuc-cs/spelcheck/blob/498dea06df250964013b2abb2b06c94d341b223b/specs/auth_change/openspec/specs/auth/spec.md",
+                                "qualification":  "The removal and allowed snapshots are explicit constructed variants. No independent saved baseline formalization or clean-baseline claim is made."
+                            },
+                            {
+                                "id":  "administrator-change",
+                                "role":  "Actual ADDED-only administrator requirement in existing auth capability, used for the saved conflict and a generated ruled-out consequence",
+                                "format":  "OpenSpec change specification",
+                                "url":  "https://github.com/unibuc-cs/spelcheck/blob/498dea06df250964013b2abb2b06c94d341b223b/specs/auth_change/openspec/changes/admin-never-locked/specs/auth/spec.md"
+                            },
+                            {
+                                "id":  "deletion",
+                                "role":  "Supporting example for the assumed relation between removal and retention",
+                                "format":  "EARS",
+                                "url":  "https://github.com/unibuc-cs/spelcheck/blob/498dea06df250964013b2abb2b06c94d341b223b/specs/delete_property/requirements.md",
+                                "qualification":  "The displayed D2/D4 formulas abbreviate the full requirements."
+                            }
+                        ],
+    "external_context":  [
+                             {
+                                 "title":  "Kiro requirements analysis",
+                                 "url":  "https://kiro.dev/blog/deep-spec-analysis/",
+                                 "accessed":  "2026-11-24"
+                             },
+                             {
+                                 "title":  "Z3: An Efficient SMT Solver",
+                                 "url":  "https://www.microsoft.com/en-us/research/publication/z3-an-efficient-smt-solver/",
+                                 "accessed":  "2026-11-24"
+                             },
+                             {
+                                 "title":  "SMT-LIB language reference",
+                                 "url":  "https://smt-lib.org/language.shtml",
+                                 "accessed":  "2026-11-24"
+                             },
+                             {
+                                 "title":  "OpenSpec concepts",
+                                 "url":  "https://github.com/Fission-AI/OpenSpec/blob/main/docs/concepts.md",
+                                 "accessed":  "2026-11-24"
+                             }
+                         ],
+    "edition_date":  "2026-11-25",
+    "snapshot_directory":  "snapshot/2026-11-24-498dea0",
+    "documentation_outline_note":  "Section numbers and order in documentation_outline describe the presentation. The paper has Problem, Method, Findings, Changes, Evaluation, and Limitations and next steps; its early authentication definitions appear in the problem discussion. Paper labels identify the corresponding topics without asserting identical numbering."
+}
