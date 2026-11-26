@@ -3761,6 +3761,105 @@ E26_real3.json and E26_real3_before.json, each with its table.
 
 ---
 
+## T31 — Development: a second read for the rules that got no symbol (2026-11-26)
+
+**Question.** After the vote one real rule in three is still of no use to the
+checks, and for half of those a translation says that the rule demands
+nothing (E26): the read step listed no symbol for its outcome. Can those
+rules get their symbols afterwards?
+
+**How often it happens** (no LLM; the saved runs, counted with the trigger
+below): 172 of the 1,052 rules of the third real batch (E26, with the vote),
+30 of 487 of the second (T30). In our own sets: 0 of 630 (`eval18/`), 0 of
+492 (`eval17/`), 2 of 450 (`eval8/`), 2 of 378 (`eval7/`), 0 in the larger
+project and the development specs, 2 of 1,203 in the 100-requirement spec.
+
+**The change** (`formalize._read_again`, between steps 3 and 4). `real4/` was
+written and committed first (8d60f61).
+
+```
+"WHEN file write fails THEN let the error bubble up naturally with file path"
+first round    file_write_failed => true                    (and: file_write_failed => (> exit_code 0))
+second read    adds  error_bubbles_up_with_path: "The file write error is propagated ... including the file path"
+second round   file_write_failed => error_bubbles_up_with_path        8 of 8
+```
+
+1. Our code takes the rules that are not accepted after step 3 and have at
+   least one translation that demands nothing (`_judge` counts them:
+   `demand_nothing`).
+2. One more call of the read step, in the form it has for an addition to a
+   saved model (`READ_MORE`): the model sees the symbols so far and only
+   those rules. One paragraph more (`READ_AGAIN`) tells it that something
+   these rules demand has no symbol in the list, and to add a symbol for
+   every such fact. Only the symbols it adds are used; the rules keep their
+   text and trigger. An answer that cannot be used three times: no second
+   read, and the run goes on.
+3. Those rules are translated eight more times with the longer list and
+   judged again, vote included. A rule takes its new translation only if it
+   is accepted now.
+4. An added symbol stays only if a translation that was taken uses it. If
+   any stays, the question for the assumed facts is asked again with the
+   list as it is now.
+
+Point 4 was tightened after the first development runs. In the first
+version every added symbol stayed. Told that a symbol is missing, the model
+also adds one where none was: for "WHEN a booked vehicle has not checked in
+30 minutes before departure ..." in the 100-requirement spec, whose
+translations scatter over "=", "<=" and ">=" and two of them demand nothing,
+it added `vehicle_not_checked_in` next to `vehicle_checked_in`. No rule took
+a translation with it. On the third real batch 24 of the 167 added symbols
+were of that kind. With point 4 as it is now, a second read that helps no
+rule leaves the run exactly as it was.
+
+**Results on development data.** "Before the second read" is the same run,
+counted before step 2 above.
+
+| | Before the second read | After |
+|---|---|---|
+| third real batch, 526 rules: of no use to the checks | 156 (30%) | 97 (18%) |
+| second real batch, 487 rules | 185 (38%) | 107 (21%) |
+| second real batch again, with point 4 as it is now (T31b) | 142 (29%) | 117 (24%) |
+| for comparison, runs without a second read | third batch 28% and 36% (E26), second batch 23% (T30) | |
+
+| | third batch | second batch | second batch, T31b |
+|---|---|---|---|
+| runs with a second read | 10 of 16 | 9 of 16 | 10 of 16 |
+| rules read again | 71 | 107 | 56 |
+| of them, took the new translation | 59 | 78 | 25 |
+| symbols added | 167 (24 used by no translation that was taken) | 220 | 98 kept |
+
+- **Within a run the second read brings back 5 to 17 points.** Across runs
+  the picture is less clear on the second batch: 23% of no use in one run
+  without it, 21% and 24% in two runs with it. The first read differs a lot
+  from run to run (29% and 38% of no use before the second read here), and
+  the second read repairs most where the first was worst.
+- **The added symbols are about one rule.** `openspec_dir_created` was added
+  next to `openspec_dir_exists`, `skills_generated_for_specified_tools_only`
+  next to `skills_generated`. Such a rule can be written now, but it clashes
+  with another rule only through the facts, links and questions of steps 4
+  to 6. Whether what is planted is found more often is what `real4/` is for.
+- **All 48 runs finish.**
+- **Our own specs do not move** (first version of point 4): no second read
+  in the 60 runs of `eval18/` (12 of 12 planted conflicts, 12 of 12 gaps, 5
+  of 24 ambiguities), the 12 of the development specs (14 of 15 expected
+  conflicts) and the 2 of the larger project (6 of 6 and 6 of 6).
+- **The 100-requirement spec**, one run of each version: a second read for
+  the one rule above in two of the four runs, no translation taken. Its
+  planted gap and one planted conflict are found. The other planted
+  conflict is missed: the fact "a gate cannot be open and closed" has 4 of
+  8 votes. That fact has no majority in two of the three other runs either
+  (1 and 4 of 8), in which no symbol was added, so the miss is not the
+  second read's; in E14 it had 6 to 8 of 8.
+
+**Frozen** in 0110641, after T31b. Next: held-out `real4/`, twice, with the
+code before and after (E27).
+
+**Raw data.** experiments/results/T31_real3.json, T31_real2.json,
+T31b_real2.json, T31_eval18.json, T31_specs.json, T31_mixed.json and
+T31_size2.json, each with its table.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

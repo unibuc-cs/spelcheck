@@ -118,7 +118,7 @@ this order:
      the facts rarely say that one of the two always holds, so only 2 of 13
      were marked (T20, E16). This is a known limit now.
 
-### 2.1 The plan for step 41: a second read for the rules that got no symbol (not built yet)
+### 2.1 The plan for step 41: a second read for the rules that got no symbol (built, frozen; held-out runs open)
 
 After the vote, one real rule in three is still of no use to the checks
 (E26). For half of those, at least one of the eight translations says that
@@ -143,14 +143,16 @@ One try, between steps 3 and 4:
    addition to a saved model (`READ_MORE`): the model is shown the symbols
    so far and only those rules. One more paragraph tells it that something
    these rules demand has no symbol, and to add one for each such fact.
-3. **The new symbols.** Our code repairs their names (step 39) and adds them
-   to the list. If the model adds none, or its answer cannot be used, the
-   run goes on as it was.
+3. **The new symbols.** Our code repairs their names (step 39). If the
+   model adds none, or its answer cannot be used, the run goes on as it was.
 4. **Translated again.** Those rules are translated eight more times with
    the longer list and judged again, vote included. A rule takes the new
    translation only if it is accepted now; otherwise it stays as it was.
-5. **Facts.** If symbols were added, the question for the assumed facts is
-   asked with the final list.
+5. **Which symbols stay** (tightened after the first development runs,
+   T31). An added symbol stays only if a translation that was taken uses
+   it: told that a symbol is missing, the model also adds one where none
+   was. If any stays, the question for the assumed facts is asked again with
+   the list as it is now.
 
 Reading a whole document in pieces was dropped in step 38 for three
 reasons. Two are gone since: a bad name no longer stops a run (step 39), and
@@ -1250,8 +1252,11 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       also with one planted conflict. Then: the rules that are not accepted
       and have a translation that demands nothing are read again, alone,
       with the symbols so far; the symbols the model adds go into the list,
-      and those rules are translated again (plan in 2.1). Development on
-      the three real batches; held-out `real4/`, before and after
+      and those rules are translated again (plan in 2.1). T31
+      (development): within a run, the rules of no use to the checks go
+      from 30% to 18% on the third real batch and from 38% to 21% on the
+      second; our own specs do not move. Frozen. Open: held-out `real4/`,
+      before and after (E27)
 - [x] **Step 40 — a vote among the translations of a rule**: `eval18/` and
       `real3/` written first; where the translations of a rule differ only
       in the symbols they use, the strongest one that more than half of them
