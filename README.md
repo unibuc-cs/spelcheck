@@ -55,7 +55,9 @@ project deals with what can go wrong there:
 
 Where the project stands:
 
-- it finds what the Kiro blog finds, on both of the blog's examples;
+- it finds what the Kiro blog finds, on both of the blog's examples. One of
+  the three findings of the first example, R1 against R5, is marked
+  doubtful in a run made today ([Known limits](#known-limits));
 - on 10 sets of specs it was not built on, it found 61 to 100% of the
   conflicts we had planted, with at most 1 false alarm in 18 clean runs
   (doubtful conflicts set aside);
