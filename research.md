@@ -40,7 +40,9 @@ its entries. How each mechanism works is in [plan.md](plan.md), section 5.
   | `real1/`, `real2/` | 2 x 16 archived changes of a real OpenSpec project, each against the spec files it touches (2.4) | nothing: no known answer | E23, E24 |
   | `eval18/` | 6 specs written like tool specs, 7 scenarios each | 1 conflict, 1 gap, 2 ambiguities | E26 |
   | `real3/` | the last 16 archived changes of that project that fit, laid out like `real1/` | nothing: no known answer | E26 |
-  | `real4/` | 13 more changes of that project, each creating a new spec; each also with one scenario of ours added | 1 conflict in the planted version | not run yet: held out for step 41 (plan.md 2.1) |
+  | `real4/` | 13 more changes of that project, each creating a new spec; each also with one scenario of ours added | 1 conflict in the planted version | E27 |
+  | `eval19/` | 6 specs of 8 scenarios whose clean versions hold two scenarios with conditions that exclude each other by their meaning | 3 conflicts (1 direct, 2 between rules with different conditions), 1 gap | not run yet: held out for step 42 (plan.md 2.1) |
+  | `real5/` | the last 8 unused changes of that project that create a new spec; each also with one scenario of ours added, under a condition of its own | 1 conflict in the planted version | not run yet: held out for step 42 |
   | `size/` | 4 versions of one spec of 30 requirements | 2 conflicts, 1 gap | E13 |
   | `size2/` | 4 versions of one spec of 100 requirements | 2 conflicts, 1 gap | E14 (not held-out: no design was tuned on it) |
 
@@ -249,6 +251,13 @@ the second real batch 16 of 16 runs finish (14 and 15 before).
 28% and 36% of the rules are of no use to the checks, against 54% and 62%
 without the vote.
 
+**A rule without a symbol for what it demands is read a second time** (T31,
+E27; 3.15), and **a conflict planted in a real spec is found**: in 13 real
+changes that create a new spec, each with one scenario of ours that clashes
+with one of its own, 46 of the 52 planted conflicts were found (24 of 26
+before the second read, 22 of 26 with it; 29 of 52 without the assumed facts
+and links).
+
 ---
 
 ## 3. What makes it work
@@ -448,6 +457,43 @@ rejected. Now step 3 keeps what the translations share:
   is asked about only if the model proposes another reading itself; and
   more rules in the checks give more conflicts on real specs (4.8).
 
+### 3.15 A rule without a symbol for what it demands is read a second time (T31, E27)
+
+The read step lists the symbols for a whole document in one answer, and for
+a long one it leaves some out. A rule then has nothing to say its outcome
+with, and the model writes that it demands nothing:
+
+```
+"WHEN file write fails THEN let the error bubble up naturally with file path"
+first round    file_write_failed => true
+second read    adds  error_bubbles_up_with_path
+second round   file_write_failed => error_bubbles_up_with_path        8 of 8
+```
+
+- **Which rules**: those that are not accepted after step 3 and have a
+  translation that demands nothing. In our own sets that is 0 to 2 rules in
+  a whole set; in the real batches one rule in ten to one in five.
+- **The second read** is the read step again, for those rules alone, with
+  the symbols so far in front of it and one paragraph that says a symbol is
+  missing. The rules are translated again with the longer list.
+- **Nothing gets worse**: a rule takes its new translation only if it is
+  accepted now, and an added symbol stays only if such a translation uses
+  it. Told that a symbol is missing, the model also adds one where none was
+  (`vehicle_not_checked_in` next to `vehicle_checked_in`).
+- **On the documents it was developed on** (the second and third real
+  batch, 30 to 60 scenarios each) the rules of no use to the checks fall,
+  within one run, from 30% to 18%, from 38% to 21% and from 29% to 24%.
+- **On held-out `real4/`** (13 new specs of 14 to 31 scenarios, twice each
+  way) it is one point: 16% and 14% of no use against 17% and 16%, which is
+  what two runs differ by. The rules without a symbol for their outcome
+  fall from 58 to 17, but there were few of them. No loss could be traced to
+  it. So the test shows no harm and a small gain, and the larger gain only
+  on development data; it was kept on that ground.
+- **Its limits**: the symbols it adds are about one rule
+  (`openspec_dir_created` next to `openspec_dir_exists`), so such a rule
+  can clash with another only through the facts and questions of 3.2 to
+  3.13; and a rule with no usable translation at all is not read again.
+
 ---
 
 ## 4. What does not work yet
@@ -607,8 +653,8 @@ requirements have several hundred.
 
 Eleven sets with 66 base specs (297 versions), eighteen specs written like tool specs
 (78 versions), two longer specs and twenty-five OpenSpec
-projects with 139 changes, all written by us (and 48 changes of a real
-project, E23, E24 and E26); 63 to 90 runs per experiment; one main model. One leak is known: an
+projects with 139 changes, all written by us (and 61 changes of a real
+project, E23, E24, E26 and E27); 52 to 90 runs per experiment; one main model. One leak is known: an
 example in the read prompt came from the domain of an `eval3/` spec (D4). And
 one clean spec, `shelter_clean` in `eval9/`, has a conflict we did not plan
 (E15).
@@ -620,9 +666,25 @@ E16).
 
 ---
 
-### 4.8 What a real project shows (E23, T27, T28, E24, T29, T30, E26)
+### 4.8 What a real project shows (E23, T27, T28, E24, T29, T30, E26, T31, E27, T32)
 
-Three batches of 16 changes of one real project, so a first sign.
+Three batches of 16 changes of one real project, and 13 changes that create
+a new spec, so a first sign.
+
+- **The conflicts that nobody planted are not contradictions** (T32). Of 40
+  conflicts that 13 real specs got in one run, not doubtful, 20 were read:
+  none is a contradiction that the author would not have meant. 12 are
+  artefacts, 8 of them in a situation that cannot happen (a file is read
+  and does not exist), because the solver lets two conditions hold together
+  that exclude each other by what they mean. 7 set a general rule against
+  its own exception, which is how these specs are written. 1 is a fair
+  question: two failures at once, and nothing says which error is thrown.
+  The reading was done by the assistant, not by a person.
+- **What is planted in a real spec is found** (E27): 46 of 52.
+- **How many rules are of no use depends on the length of the document**:
+  with the vote and the second read, one in six in new specs of 14 to 31
+  scenarios (E27) and about one in five in the batches of 30 to 60 (T31).
+  Without the second read it is one in three in the batches (E26).
 
 - **One real rule in three is still of no use to the checks** (E26), after
   the vote of 3.14 brought back about half of those that were lost. Of the
@@ -748,6 +810,7 @@ the prompts, so it can be scored again without a GPU.
 | E24 | `eval16/` and the second real batch, held-out: a rule that demands nothing is rejected, and a long document is read in pieces (T28); each set before and after | 2 x 48 and 3 x 16 runs | planted conflicts 19 of 22 before, 19 of 20 after, gaps 10 of 10 both; real rules of no use 57% and 47% before, 44% after; runs stopped 1 and 2 of 16 before, 3 after. The first change kept, the second taken out (2.4) |
 | E25 | `eval17/`, held-out: a symbol list with a name that is not a word is repaired (T29); before and after | 2 x 48 runs | runs that finish 7 of 48 before, 48 of 48 after; planted conflicts 22 of 24, gaps 10 of 12 (2.4) |
 | E26 | `eval18/` and a third real batch, held-out: the translations of a rule vote when they differ only in their symbols (T30); before and after | 2 x 90 and 2 x 32 runs | real rules of no use to the checks 54% and 62% before, 28% and 36% after; on `eval18/` 18 of 18 planted conflicts, 18 of 18 gaps and 11 of 36 ambiguities both ways (3.14) |
+| E27 | `real4/`, held-out: 13 real changes that create a new spec, each also with a planted conflict; a second read for the rules that got no symbol (T31); before and after | 2 x 52 runs | rules of no use 17% and 16% before, 16% and 14% after; planted conflicts found 24 of 26 before, 22 of 26 after (3.15) |
 
 The trials (T1 to T26) were run on development data between these
 experiments. Among the last: T17 compared temperatures 0.3, 0.5 and 0.7 (3.1);

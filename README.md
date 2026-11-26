@@ -48,6 +48,7 @@ project deals with what can go wrong there:
 | What goes wrong | What speccheck does about it | More |
 |---|---|---|
 | a sentence has two meanings, and the model picks one | it looks for a second reading and, if the words do not decide between them, reports an *ambiguity*: a question to the author | [Ambiguities](#ambiguities) |
+| the list of symbols has several for one thing, or none for what a rule demands | translations that differ only in their symbols vote; a rule that could not be written is read a second time, for the symbols it lacks | [Ambiguities](#ambiguities) |
 | two rules say opposite things in different words | it lets the model propose *assumed facts* ("access cannot be both granted and denied"), and asks it directly whether the outcomes of two rules can both hold. It keeps what a majority of answers agree on, and uses it only to find more conflicts | [Assumed facts and links](#assumed-facts-and-links) |
 | the logic has no time, so some proven conflicts are not real | it marks them *doubtful* instead of hiding them | [How sure is a finding](#how-sure-is-a-finding) |
 | the findings depend on the symbols the model chose | it can formalize the spec several times and say how often each finding came up | [Several symbol sets](#several-symbol-sets) |
@@ -73,10 +74,12 @@ Where the project stands:
   seventh. On one test set it found 50 conflicts where the full way found 54,
   on the next one all 72
   ([The two ways to check a change](#the-two-ways-to-check-a-change));
-- all of that is on specs we wrote. On 48 changes of a real project it does
-  much worse: one rule in three gives the checks nothing to work with (one
-  in two, before the translations of a rule were let to vote), and most of
-  the conflicts it reports look like artefacts. A few look real
+- all of that is on specs we wrote. On 61 changes of a real project it does
+  worse. What we planted in 13 of them is found: 46 of 52 conflicts. But
+  one rule in six to one in four gives the checks nothing to work with,
+  the more the longer the spec, and of 20 reported conflicts that nobody
+  planted, which we read, none is a real contradiction: 12 are artefacts
+  and 7 set a general rule against its own exception
   ([How reliable is it](#how-reliable-is-it)).
 
 | Read next | For |
@@ -283,6 +286,16 @@ entail, here the first. A split between translations that use the same
 symbols, like A and B above, is never settled that way. The price is that a
 voted rule can say less than its words: here the summary of the specs is not
 in the formula.
+
+Some rules cannot be written at all, because the list has no symbol for what
+they demand. "WHEN file write fails THEN let the error bubble up naturally
+with file path" came out as `file_write_failed => true`: a rule that demands
+nothing. Such rules are read a second time, alone, with the symbols so far,
+and the model is told that a symbol is missing. Here it added
+`error_bubbles_up_with_path`, and all eight new translations said
+`file_write_failed => error_bubbles_up_with_path`. A rule takes its new
+translation only if the eight agree now, and a new symbol is kept only if
+such a translation uses it.
 
 Until the author answers, the checks use reading A, and some findings may
 exist only because of that choice. So each ambiguous rule is tried once more
@@ -682,7 +695,8 @@ Nothing in the code or in the prompts is about orders.
 | `experiments/sets/mixed` | one larger OpenSpec project (39 scenarios, four spec files) | one change that adds, rewrites, removes and renames at once |
 | `experiments/sets/eval16`, `eval17`, `eval18` | OpenSpec format, written like real tool specs: scenarios with two or three outcomes, and states, codes and commands in quotes | eighteen specs, each clean and with a planted conflict or gap; those of `eval18` also with two planted ambiguities |
 | `experiments/sets/real1`, `real2`, `real3` | a real project: the OpenSpec tool's own specs (MIT licence, see the README in each folder) | 48 of its archived changes, each with the spec files it touches as they were before it. Nothing is planted, so there is no known answer |
-| `experiments/sets/real4` | the same project: 13 more of its changes, each of which creates a new spec | each change as it is, and once more with one scenario of ours that clashes with one of its own: a known answer on real text. Not run yet; it is set aside as the test of the next step (plan.md, section 2.1) |
+| `experiments/sets/real4` | the same project: 13 more of its changes, each of which creates a new spec | each change as it is, and once more with one scenario of ours that clashes with one of its own: a known answer on real text |
+| `experiments/sets/eval19`, `real5` | six specs of our own whose clean versions hold two scenarios with conditions that exclude each other by their meaning; and the last 8 unused changes of the real project, each also with a conflict planted under a condition of its own | not run yet. They are set aside as the test of the next step: asking whether the conditions of two rules that clash can hold together (plan.md, section 2.1) |
 
 ## How reliable is it
 
@@ -864,6 +878,29 @@ Some notes on these numbers:
     the others ("WHEN the configuration names a rule that does not exist
     ... exits with code 2"), as `eval16/` had. They report a conflict in
     every clean run, with either code.
+- A rule without a symbol for what it demands is read a second time
+  ([Ambiguities](#ambiguities)). Tested on 13 real changes that create a
+  new spec (`real4/`), each also with one conflict we planted, twice with
+  the code before and after (E27):
+  - the planted conflicts are found: 24 of 26 before, 22 of 26 after, and
+    15 and 14 without the assumed facts and links. The two that the new code
+    lost are one case, and neither of its two rules was read again;
+  - the second read does little on these specs: 16% and 14% of the rules
+    are of no use to the checks, against 17% and 16%, which is what two
+    runs differ by. They have 14 to 31 scenarios, and only one rule in
+    twenty lacked a symbol. On the longer documents it was developed on (30
+    to 60 scenarios) it brings back 5 to 17 points within a run;
+  - so the test we had set for it was not passed. It is kept because it
+    gains within every run, no loss could be traced to it, and a second
+    read that helps no rule leaves the run exactly as it was.
+- What are the conflicts that nobody planted? We read 20 of the 40 that 13
+  real specs got in one run (T32). None is a contradiction that the author
+  would not have meant. 12 are artefacts, 8 of them in a situation that
+  cannot happen: "tasks.md is read" together with "tasks.md does not
+  exist", which the solver allows. 7 set a general rule against its own
+  exception, which is how these specs are written. 1 is a fair question:
+  two failures at once, and nothing says which error is thrown. The reading
+  was done by the assistant that works on this project, not by a person.
 - The numbers are small: the specs were written by us, and there is one main
   model. The details are in [research.md](research.md).
 
@@ -881,7 +918,9 @@ Some notes on these numbers:
 | Gaps depend on the symbols, and on the events the LLM marks | "free" and "taken" as two symbols give a false gap, and it is rarely marked doubtful. The gap in which no event happens, which almost every spec has, is marked as such and is rarely something to fix |
 | One snapshot, no time | "then", "after" and "until" are not modelled |
 | A reworded scenario is the change's, whatever its new words are | if its old words gave the same finding, the finding is still shown as the change's |
-| Real specs are harder than the ones we wrote | on real changes one rule in three gets no agreed translation or one that demands nothing (one in two before the vote), because the symbols of the first step do not fit rules that demand several things. Most conflicts set a general rule against its own special case. A whole real project is also too large to check at once: a change is checked against the spec files it touches |
+| Real specs are harder than the ones we wrote | on real changes one rule in six to one in four gets no agreed translation or one that demands nothing, the more the longer the document, because the symbols of the first step do not fit rules that demand several things. A whole real project is also too large to check at once: a change is checked against the spec files it touches |
+| On real specs, most conflicts that nobody planted are not contradictions | of 20 that we read, 8 are in a situation that cannot happen (two conditions that exclude each other by their meaning, which the solver lets hold together), 4 are other artefacts, 7 set a general rule against its own exception, and 1 is a fair question. No mark tells these apart yet |
+| The second read adds symbols that are about one rule | `openspec_dir_created` next to `openspec_dir_exists`. The rule can be written then, but it clashes with another rule only through the assumed facts. A rule with no usable translation at all is not read again |
 | A voted translation can say less than the rule | when the eight translations differ only in their symbols, the rule is kept with what more than half of them entail. "Display success message with archived name and list of updated specs" became "the success message is displayed". `formal.json` marks such a rule (`"voted": "7/7"`), the report does not. A split that the vote settles is no longer a question to the author: on `eval18/` that happened to 5 of 36 planted ambiguities, and 1 was still found |
 | The cheaper way to check a change reads a new rule with little around it | by default the specs are formalized again for each change, so that old and new rules share their symbols. `--incremental` avoids that. Shown only the saved symbols, the LLM sometimes ties a new rule to a saved event that the rule does not name. That cost 4 of 54 planted conflicts on `eval14/`, and none of 72 on `eval15/`, where one such rule was ambiguous in 3 of 3 runs. Either way, a project is bounded by the read step's room, about 140 scenarios |
 
@@ -907,11 +946,11 @@ research.md, section 5.
 | `speccheck/refine.py` | optional LLM review, off by default |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the vLLM servers on the cluster: the main model, the second model |
 | `experiments/slurm/serve_direct.sh` | the same server for the main model, started directly on a machine with free GPUs, without the queue |
-| `tests/` | 84 tests of everything that needs no LLM |
-| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10`, `eval12`, `eval16` to `eval18`, `size` and `size2`; for the change check `eval11`, `eval13`, `eval14`, `eval15`, `mixed` and `change_dev`; and the script that writes them. `real1` to `real4` are not written by it (`experiments/real/`) |
+| `tests/` | 89 tests of everything that needs no LLM |
+| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10`, `eval12`, `eval16` to `eval19`, `size` and `size2`; for the change check `eval11`, `eval13`, `eval14`, `eval15`, `mixed` and `change_dev`; and the script that writes them. `real1` to `real5` are not written by it (`experiments/real/`) |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs and scores the evaluation; re-scores saved runs without a GPU |
-| `experiments/real/` | the trial on a real OpenSpec project: each archived change next to the specs before it, from the git history |
+| `experiments/real/` | the trial on a real OpenSpec project: each archived change next to the specs before it, from the git history; and the real changes with a conflict planted in them |
 | `experiments/stability.py`, `fact_threshold.py` | the earlier experiments |
 | `experiments/examples/` | saved runs referred to above and in research_log.md |
 | `docs/management/` | a paper and a slide deck about the project, with their LaTeX sources, the evidence files behind their numbers, and two snapshots of the source they describe. Start with its own README |

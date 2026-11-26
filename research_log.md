@@ -3860,6 +3860,150 @@ T31_size2.json, each with its table.
 
 ---
 
+## E27 — Held-out `real4/`: the second read, and conflicts planted in real specs (2026-11-26)
+
+**Question.** Does the second read of T31 leave fewer rules of no use on real
+changes it was not built on, and is a conflict planted in a real spec found?
+
+**Setup.** `real4/` was written first (8d60f61) and the design frozen in
+0110641. `real4/`: the 13 changes of the real project that create a new spec
+of 14 to 31 scenarios, which the pool of the three batches had left out
+because nothing existed before them. Each is there twice: as it is, and with
+one scenario of ours that repeats the condition of one of its scenarios and
+demands the opposite ("... with a key that does not exist THEN print nothing
+AND exit with code 1" against "... THEN print `undefined` AND exit with code
+0"). 26 cases, 553 rules, 2 runs each, with the code before the second read
+(commit 8d60f61, from a git worktree, on the cluster) and after it (on the
+workstation login).
+
+**Results** (the two runs of each arm side by side).
+
+| | Before | With the second read |
+|---|---|---|
+| runs that finished | 52 of 52 | 52 of 52 |
+| **rules of no use to the checks** | **95 and 91 (17% and 16%)** | **94 and 80 (16% and 14%)** |
+| the same two runs, counted before their second read | | 111 and 90 (20% and 16%) |
+| rules whose translation demands nothing, both runs | 29 | 8 |
+| rules with no symbol for what they demand, both runs | 58 | 17 |
+| **planted conflicts found** | **24 of 26** | **22 of 26** |
+| the same without assumed facts and links | 15 of 26 | 14 of 26 |
+| other conflicts, not doubtful, both runs | 148 | 156 |
+| questions about an ambiguous rule, both runs | 176 | 167 |
+| rules reported as not checked, both runs | 26 | 7 |
+| requests to the LLM for a change | 116 | 121 |
+
+- **The second read does what it was built for, and that is little here.**
+  It ran in 19 of the 52 runs, for 39 rules; 27 of them took their new
+  translation, and 71 symbols stayed. The rules without a symbol for what
+  they demand fall from 58 to 17. But on these specs only one rule in
+  twenty lacked a symbol to begin with: they have 14 to 31 scenarios, where
+  the cases of the three batches have 30 to 60, and the first read is good
+  enough. The share of rules of no use moves by one point, and two runs of
+  one arm differ by as much.
+- **Conflicts planted in real specs are found**: 46 of 52 over both arms,
+  and 29 of 52 without the assumed facts and links. One case is missed in
+  all four runs: its planted scenario ("validate all changes and all specs
+  AND exit with code 0") was rejected each time, its translations scattered.
+- **Two fewer are found with the second read, and it is not the second
+  read's doing.** Both are the same case, and neither of its two rules was
+  read again. In one run the first read had made the output a number, and
+  "print `undefined`" got no usable translation at all. In the other both
+  rules were translated and clash, but a third rule ("... with a valid
+  top-level key ... exit with code 0") had lost its condition, and the
+  solver reports that situation as a conflict of that rule.
+- **A rule with no usable translation at all is not read again**: the
+  trigger looks for a translation that demands nothing, and here there was
+  none to look at. A limit of the trigger.
+
+**Decision.** By the rule of plan.md 2.1 the second read would go: it asked
+for fewer rules of no use by more than two runs differ (94 and 80 against 95
+and 91 is not that), and for planted conflicts found no less often (22
+against 24). It stays all the same, on by default, by the user's rule for
+such cases (a version that gains more than it loses is kept, and the loss is
+written down): within a run it gains (2 and 3 points here, 5 to 17 on the
+longer documents of T31), no loss could be traced to it, it costs 5 requests
+in 116, and a second read that helps no rule leaves the run exactly as it
+was. What the held-out test shows is no harm and a small gain; the larger
+gain is measured only on the data it was developed on. `real4/` is
+development data from now on.
+
+**Raw data.** experiments/results/E27_real4.json and E27_real4_before.json,
+each with its table.
+
+---
+
+## T32 — What are the conflicts that nobody planted? A reading of 20 (2026-11-26)
+
+**Question.** The plain cases of `real4/` have no planted conflict, and the
+runs of E27 report 148 and 156 conflicts on them and their planted twins
+that are not marked doubtful. Are they findings?
+
+**Method.** No LLM in the pipeline; a reading. From the first run of each of
+the 13 plain cases with the code before the second read, the conflicts that
+are not doubtful: 40, in 11 cases. Up to two of each case were drawn, 20 in
+all, and read with the two requirements, their formulas, the situation and
+the facts each rests on. The reading was done by the assistant that wrote
+this entry, not by a person, and nobody has checked it yet.
+
+| | Case | Rules | What it is |
+|---|---|---|---|
+| 1 | bulk-validation | R7, R18 | a general rule against its exception: "`validate <item-name>` ... validate the specified item" against "GIVEN `<item-name>` exists both as a change and as a spec ... exit with code 1 without performing validation" |
+| 2 | bulk-validation | R5, R6 | a general rule against its exception (prompt the user; do not prompt when stdin is not a TTY) |
+| 3 | view-dashboard | R4, R11 | artefact, a wrong assumed fact: "Colors cannot be used for items that do not exist in the display" |
+| 4 | view-dashboard | R4, R10 | artefact, a situation that cannot happen: no specs exist, and a spec file cannot be parsed |
+| 5 | config-command | R9, R12 | artefact, a mistranslation: both rules store the value as a string |
+| 6 | artifact-graph | R10, R11 | artefact, a situation that cannot happen: one artifact that generates a single file and a set of files |
+| 7 | artifact-graph | R1, R5 | artefact, a situation that cannot happen: a valid schema with two artifacts of the same id |
+| 8 | change-manager | R1, R2 | a general rule against its exception (create the directory; throw when it already exists) |
+| 9 | change-manager | R2, R4 | two failures at once, and nothing says which error is thrown: the directory already exists, and the name is invalid |
+| 10 | artifact-workflow | R2, R27 | artefact, no time: a spinner during loading against the summary after it |
+| 11 | artifact-workflow | R6, R7 | a general rule against its exception (list the ready artifacts; say that none is ready) |
+| 12 | opsx-archive | R5, R7 | artefact, a situation that cannot happen: tasks.md is read, and tasks.md does not exist |
+| 13 | feedback | R1, R4 | a general rule against its exception (create the issue; `gh` is not installed) |
+| 14 | feedback | R1, R7 | a general rule against its exception (create the issue; `gh` is not authenticated) |
+| 15 | verify-skill | R20, R23 | artefact, a wrong assumed fact: "An agent cannot provide specific, actionable recommendations ... if it is ..." displaying warnings only |
+| 16 | verify-skill | R14, R15 | artefact, a situation that cannot happen: no design.md exists, and the implementation follows a design decision |
+| 17 | update-workflow | R19, R20 | artefact, a situation that cannot happen: artifacts are still missing, and the artifacts are complete |
+| 18 | update-workflow | R3, R17 | artefact, a situation that cannot happen: the artifacts are coherent, and coherence needs an artifact that is missing |
+| 19 | version-command | R6, R8 | artefact, a situation that cannot happen: the registry cannot be reached, and it "reports no version newer" |
+| 20 | version-command | R1, R3 | a general rule against its exception; the words "when they can be determined" of the general rule are not in its formula |
+
+**Results.**
+
+| What the 20 are | Count |
+|---|---|
+| a contradiction in the spec that its author would not have meant | 0 |
+| a general rule against its own exception | 7 |
+| two failure cases at once, with no order between them | 1 |
+| an artefact | 12 |
+| of them: a situation that cannot happen | 8 |
+| of them: a wrong assumed fact | 2 |
+| of them: no time in the logic | 1 |
+| of them: a mistranslation | 1 |
+
+- **None of the 20 is a real contradiction.** A reader of such a report
+  wades through artefacts to find one question worth asking (number 9).
+- **The largest group is a situation that cannot happen** (8 of 20). The
+  solver lets two conditions hold together that exclude each other by what
+  they mean, because nothing in the formulas says so: a file is read and
+  does not exist. Most of these conflicts are then made by a question about
+  two outcomes (3.13), which is asked for every pair of rules that Z3 thinks
+  can apply together.
+- **A general rule and its exception** (7 of 20) is how these specs are
+  written: the scenario for the normal case does not say "unless".
+- **What the solver can tell without the model** (all 40): in 4 the
+  condition of one rule is a special case of the other's; in 33 the two
+  conditions are two different definite states, so the model could be asked
+  whether they can hold together; in 3 a condition is not one definite
+  state.
+
+**What follows.** Step 42: before a conflict between two rules with
+different conditions is reported as it is, the model is asked whether the
+two conditions can hold together (plan.md 2.1). After that, a mark for a
+rule against a special case of it.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

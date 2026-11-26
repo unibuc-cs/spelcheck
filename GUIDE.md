@@ -414,6 +414,29 @@ on the success message.
 A voted rule can say less than its words: the list of updated specs is not
 in the formula. That is the price of keeping the rule in the checks.
 
+**When a rule has no symbol for what it demands, it is read again.** The
+model lists the symbols for the whole document in one answer, and for a
+long document it leaves some out. A rule then cannot be written:
+
+```
+"WHEN file write fails THEN let the error bubble up naturally with file path"
+file_write_failed => true
+```
+
+The model understood the rule; the list has no symbol for the error. A
+translation like this one demands nothing.
+
+1. Our code takes the rules that are not accepted and have a translation
+   that demands nothing.
+2. The model reads those rules again, alone, in one call. It is shown the
+   symbols so far and told that something these rules demand has no symbol.
+   Here it adds `error_bubbles_up_with_path`.
+3. The rules are translated eight more times with the longer list. Here all
+   eight say `file_write_failed => error_bubbles_up_with_path`.
+4. Our code keeps a new translation only if it is accepted now, and a new
+   symbol only if such a translation uses it. So a second read that helps
+   no rule changes nothing.
+
 The three ways together, as a diagram:
 
 ```mermaid
@@ -1222,6 +1245,39 @@ each with two planted ambiguities. Planted conflicts (18 of 18), gaps (18 of
 The vote took 5 of the 36 planted rules, and one of them was still reported
 by the question of 3.1.
 
+The second read of 3.1 was tested on 13 more real changes, each of which
+creates a new spec (`real4`). Each was run as it is and with one conflict
+that we planted in it, so for once there is a known answer on real text:
+
+| | Before | With the second read |
+|---|---|---|
+| planted conflicts found | 24 of 26 | 22 of 26 |
+| rules of no use to the checks, two runs | 17% and 16% | 16% and 14% |
+
+So what is planted in a real spec is found. The second read does little
+here: these specs are short, 14 to 31 scenarios, and only one rule in twenty
+lacked a symbol. On the longer documents it was developed on it brings back
+5 to 17 points within a run. The two planted conflicts that the new code
+lost are one case, and neither of its rules was read again. The test we had
+set was not passed; the second read is kept because it gains within every
+run and no loss is its own.
+
+**What are the conflicts that nobody planted?** We read 20 of the 40 that
+those 13 real specs got in one run:
+
+| What it is | Count | Example |
+|---|---|---|
+| a real contradiction | 0 | |
+| a general rule against its own exception | 7 | "create the directory" against "... and the directory already exists: throw an error" |
+| two failures at once, nothing says which wins | 1 | "the directory already exists" against "the name is invalid" |
+| an artefact: a situation that cannot happen | 8 | "tasks.md is read" together with "tasks.md does not exist" |
+| another artefact | 4 | a wrong assumed fact, a mistranslation, a spinner during loading against the summary after it |
+
+For the solver a file can be read and not exist, because nothing in the
+formulas says otherwise. That is the largest group, and the next step is
+about it (6.6). The reading was done by the assistant that works on this
+project, not by a person.
+
 **Longer specs.** All the specs counted above have at most six requirements.
 To see what a longer document does, we wrote two more, each in four versions
 (clean, direct, overlap, gap) and run three times:
@@ -1263,7 +1319,8 @@ The project has five goals. This is where each one stands:
 | two words for one yes/no question give a false gap | "the slot is free" and "the slot is taken" as two symbols: in 3 to 5 of 18 clean runs (6.2) |
 | a fact or a link can be wrong, even with a majority behind it | which is why the report quotes every one that a conflict depends on |
 | there is no time | "then", "after" and "until" are not modelled: the logic is one snapshot |
-| real specs are harder than the ones we wrote | their rules demand two or three things each, and the symbols that the read step lists do not fit them: one rule in three gets no agreed translation or one that demands nothing (one in two before the vote of 3.1; the second kind is reported as "Not checked"). They put a general rule next to its special cases, and each such pair can be reported as a conflict. A whole project is too large to check at once (6.2) |
+| real specs are harder than the ones we wrote | their rules demand two or three things each, and the symbols that the read step lists do not fit them: one rule in six to one in four gets no agreed translation or one that demands nothing, the more the longer the document. A whole project is too large to check at once (6.2) |
+| on real specs, most conflicts that nobody planted are not contradictions | of 20 that we read, 8 are in a situation that cannot happen, 4 are other artefacts, and 7 set a general rule against its own exception (6.2). No mark tells these apart yet |
 | a voted rule can say less than its words | "display success message with archived name and list of updated specs" is kept as "the success message is displayed" (3.1). And a split that the vote settles is not asked about any more: 5 of the 36 planted ambiguities of `eval18` were voted on, and 1 was still found |
 | the cheaper way to check a change reads a new rule with little around it | shown only the saved symbols, the model sometimes ties a new rule to a saved event that the rule does not name. That cost 4 of 54 planted conflicts on `eval14`. On `eval15` it cost none, but one such rule was ambiguous in 3 of 3 runs (6.2). Either way, a project can have about 140 scenarios at most |
 | the evaluation is small | the specs were written by us, and there is one main model |
@@ -1349,9 +1406,11 @@ The full list is in research.md, section 5.
 
 ### 6.6 What is next
 
-1. **Real specs**: rules for whose outcome the read step lists no symbol,
-   and the conflicts between a general rule and its special case. Then a
-   larger evaluation, with another main model.
+1. **Real specs**: the conflicts in a situation that cannot happen. Before
+   such a conflict is reported, the model will be asked whether the
+   conditions of the two rules can hold together; the test sets for that
+   are written (`eval19`, `real5`). Then a mark for a rule against a
+   special case of it, and a larger evaluation, with another main model.
 2. **The change check, further**: whether the cheaper way becomes the
    default, what the model is shown when it reads a new rule, and projects
    too large for one read answer.
@@ -1413,11 +1472,12 @@ The folders:
 speccheck/          the tool (the 8 files above; refine.py is the review that is switched off)
 specs/              3 small specs the prompts were developed on, with their saved output,
                     and auth_change, the example of part 5
-tests/              84 tests that need no LLM
+tests/              89 tests that need no LLM
 experiments/
   sets/             the 11 evaluation sets, eval to eval10 and eval12 (297 spec versions), two long specs,
                     eval16 to eval18 (eighteen specs written like real ones), real1 to real3 (48 changes of a real project),
-                    real4 (13 more real changes, each also with a planted conflict; not run yet),
+                    real4 (13 more real changes, each also with a planted conflict),
+                    eval19 and real5 (the test sets of the next step, not run yet),
                     and for the change check eval11, eval13, eval14, eval15, mixed (one larger project)
                     and change_dev (old specs as projects)
   results/          every experiment: the raw data (.json) and its tables (.md)

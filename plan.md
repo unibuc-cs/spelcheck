@@ -72,18 +72,25 @@ this order:
      translations then disagreed over which symbol to use;
    - **overlapping symbols**: translations that differ only in the symbols
      they use now vote (step 40), and one rule in three is of no use, not
-     one in two. Half of what is left has no symbol for what the rule
-     demands, which is the read step's doing. Not tried: a second read
-     answer for the rules that got none;
-   - **most conflicts on real specs** set a general rule against its own
-     special case, through a question about two outcomes. Not tried;
-   - the parentheses of a translation could be repaired as those of a fact.
+     one in two;
+   - **no symbol for what a rule demands**: such rules are read a second
+     time (step 41). Within a run that brings back 5 to 17 points on the
+     batches; on shorter real specs it is 2 to 3;
+   - **the conflicts that nobody planted are not contradictions**: of 20
+     that were read (T32), 8 are in a situation that cannot happen, 7 set a
+     general rule against its own exception, and none is a contradiction.
+     Step 42 asks the model whether the two conditions can hold together
+     (plan in 2.1). After it: a mark for a rule against a special case of
+     it, which the solver can prove;
+   - the parentheses of a translation could be repaired as those of a fact;
+     a rule with no usable translation at all could be read again too.
 
    A larger invented project with a change that does everything at once is
    done (step 36).
-   All eighteen sets and the three real batches have been read (E26), so a
-   new design needs `eval19/`, written first, and a test on real changes
-   needs changes outside this pool of 48, from another project.
+   All eighteen sets, the three real batches and `real4/` have been read
+   (E27). `eval19/` and `real5/` are written for step 42; after that a test
+   on real changes needs another project: the 8 changes of `real5/` are the
+   last of this one that fit.
 2. **The change check, further** (G2). The gap that a removal opens is done
    (step 33), and so is a way to check a change on a saved model of the
    specs (step 34, `--incremental`). What is left:
@@ -118,61 +125,67 @@ this order:
      the facts rarely say that one of the two always holds, so only 2 of 13
      were marked (T20, E16). This is a known limit now.
 
-### 2.1 The plan for step 41: a second read for the rules that got no symbol (built, frozen; held-out runs open)
+### 2.1 The plan for step 42: can the conditions of two rules that clash both hold? (not built yet)
 
-After the vote, one real rule in three is still of no use to the checks
-(E26). For half of those, at least one of the eight translations says that
-the rule demands nothing:
+On real specs most conflicts that nobody planted are artefacts, and the
+largest group is a situation that cannot happen (8 of the 20 read in T32):
 
 ```
-"WHEN user runs `templates` THEN the system displays template paths"
-templates_command_run => true
+R5   "WHEN agent reads tasks.md AND incomplete tasks are found THEN display warning ..."
+     (and tasks_md_read (not all_tasks_complete)) => incomplete_tasks_warning_displayed
+R7   "WHEN tasks.md does not exist THEN proceed without task-related warning"
+     (not tasks_md_exists) => (not incomplete_tasks_warning_displayed)
+conflict in:  tasks_md_read = true, tasks_md_exists = false
 ```
 
-The model understood the rule (its own summary is right) and found no symbol
-for the display: the read step, which lists the symbols for the whole
-document in one answer, left it out. In two runs of the third real batch
-that is 172 of the 341 rules of no use. In our own sets it is 0 to 2 rules
-in a whole set.
+To Z3 a file can be read and not exist. The doubtful mark exists for this (a
+conflict in a situation that the assumed facts rule out, 5.2), but the facts
+of step 4 rarely say such a thing. And the questions about two outcomes
+(5.7) make more of these conflicts, because they are asked for every pair of
+rules that Z3 thinks can apply together.
 
-One try, between steps 3 and 4:
+One try, as a fifth check of step 6 (`probe.py`), after the other four:
 
-1. **Which rules.** Our code takes the rules that are not accepted after
-   step 3 and have at least one translation that demands nothing.
-2. **The second read.** One call, the read step in the form it has for an
-   addition to a saved model (`READ_MORE`): the model is shown the symbols
-   so far and only those rules. One more paragraph tells it that something
-   these rules demand has no symbol, and to add one for each such fact.
-3. **The new symbols.** Our code repairs their names (step 39). If the
-   model adds none, or its answer cannot be used, the run goes on as it was.
-4. **Translated again.** Those rules are translated eight more times with
-   the longer list and judged again, vote included. A rule takes the new
-   translation only if it is accepted now; otherwise it stays as it was.
-5. **Which symbols stay** (tightened after the first development runs,
-   T31). An added symbol stays only if a translation that was taken uses
-   it: told that a symbol is missing, the model also adds one where none
-   was. If any stays, the question for the assumed facts is asked again with
-   the list as it is now.
+1. **Which pairs.** Our code takes the pairs of rules that would be reported
+   as a conflict that is not doubtful: both can apply in one situation that
+   the facts allow, they cannot both be obeyed there, and they do not react
+   to two different events. Of those it keeps the pairs whose conditions
+   are two different definite states, each saying something that the other
+   does not. Two rules with the same condition, or a rule and a special
+   case of it, are not asked about: they apply together by their words.
+2. **The question.** The model is asked eight times, with the prompt of the
+   questions about two outcomes, about what only one condition says and
+   what only the other says: "A: tasks_md_exists is FALSE. B: tasks_md_read
+   is TRUE, all_tasks_complete is FALSE. Can both hold in the same
+   snapshot?" It does not see the requirements.
+3. **The fact.** If more than half of the answers say "impossible", that is
+   an assumed fact: `(not (and <condition of R5> <condition of R7>))`. A
+   conflict proven from the rules alone then stays in the report, marked
+   doubtful, with the fact quoted; a conflict that needs an assumed fact is
+   not found there any more. `checks.py` does both already.
 
-Reading a whole document in pieces was dropped in step 38 for three
-reasons. Two are gone since: a bad name no longer stops a run (step 39), and
-translations that pick different symbols now vote (step 40). The third, a
-state read as an event in a later piece, cannot happen here: the second read
-adds symbols and changes no trigger.
+On the 40 conflicts of T32 the question could be asked for 33.
 
-**How it is tested.** First `real4/` (experiments/real/planted.py): the 13
-changes of the real project that create a new spec of 14 to 31 scenarios,
-which the pool left out. Each is there twice, as it is and with one scenario
-of ours that clashes with one of its own, so for the first time there is a
-known answer on real text. Development: the three earlier real batches, and
-our own sets to see that nothing moves. Then `real4/`, twice, with the code
-before and after.
+**The risk** is a real conflict between two rules whose conditions can hold
+together, which the model calls impossible: it would be marked doubtful.
 
-**The rule, set now.** The second read stays if on `real4/` fewer rules are
-of no use to the checks, by more than two runs of one arm differ; no more
-runs stop; and the planted conflicts are found no less often. If the gains
-are larger than the losses it is on by default, and a loss within that is
-written down as a limit.
+**How it is tested.** First `eval19/` (make_eval.py): six specs whose clean
+versions hold two scenarios with conditions that exclude each other by their
+meaning ("a playlist has no tracks", "the first track of a playlist has an
+album image") and that set one thing to two values; each also with a direct
+conflict, two conflicts between rules whose conditions can hold together
+(one under a mode of the system, one under a state of the same thing), and
+a gap. And `real5/` (experiments/real/planted.py): the last 8 unused real
+changes that create a new spec, each also with a conflict planted under a
+condition of its own. Development: `real4/` and the earlier sets with
+planted overlaps. The new facts are marked, so the same runs are scored with
+and without them.
+
+**The rule, set now.** The question stays if on `eval19/` and `real5/`,
+doubtful conflicts set aside, fewer conflicts that nobody planted are
+reported, and no more than one planted conflict in ten is lost that was
+found without it. A reading of what it marks on `real5/` goes with the
+numbers.
 
 Small things that are open:
 
@@ -214,6 +227,22 @@ with a conflict that was not planted from 3 to 13 of 144 (T22). On held-out
 loss, and each added conflict quotes the fact it rests on. The rule for such
 decisions from now on: when the gains are larger than the losses, the new
 version becomes the default, and the loss is written down as a limit.
+
+Decided on 2026-11-26: **a rule without a symbol for what it demands is read
+a second time** (step 41). The rules that are not accepted after step 3 and
+have a translation that demands nothing are read again, alone, with the
+symbols so far and one more paragraph in the read prompt; they are
+translated again with the symbols this adds. A rule takes its new
+translation only if it is accepted now, and an added symbol stays only if
+such a translation uses it (`formalize._read_again`, 5.1). The rule set
+before the test was not met: on held-out `real4/` 16% and 14% of the rules
+are of no use against 17% and 16%, which two runs differ by, and 22 of 26
+planted conflicts are found against 24 (E27). It stays by the rule for such
+cases: within a run it gains 2 to 3 points there and 5 to 17 on the longer
+documents of T31, no loss could be traced to it (the two conflicts were lost
+to rules it did not touch), and it costs 5 requests in 116. Written down as
+limits: the gain is shown on development data only, its symbols are about
+one rule, and a rule with no usable translation at all is not read again.
 
 Decided on 2026-11-26: **the translations of a rule vote when they differ
 only in the symbols they use** (step 40). On real specs the read step lists a
@@ -463,6 +492,16 @@ effect       the rule is accepted with it, and carries "voted": "7/8"
 
   With no such group, or when the condition fails ("= 5" against ">= 5"),
   the table above decides
+- a rule that is still not accepted, and of which a translation demands
+  nothing, lacks a symbol and is read again (step 41):
+
+```
+which rules   status != accepted, and some translation whose "then" part is always true
+second read   the read step, shown the symbols so far and only these rules:
+              "something that each of them demands has no symbol in the list"
+again         8 new translations of each with the longer list, judged as above
+taken         a new translation only if it is accepted; an added symbol only if such a translation uses it
+```
 
 - this finds where the model is unsure
 - a split is not final: the question of 5.7 decides between the two groups
@@ -987,6 +1026,8 @@ With `--incremental`:
 | `rules[].status` | `accepted` (samples agree), `ambiguous` (two readings; the rule also carries `alternative` and `differs_when`), `rejected` (no stable reading; left out of the checks) |
 | `rules[].clusters` | how the samples split by meaning, e.g. `[5, 3]` |
 | `rules[].voted` | only when the rule was accepted by the vote of 5.1: how many of the usable translations entail the chosen one, e.g. `"7/8"` |
+| `rules[].demand_nothing` | only for a rule that is not accepted: how many of its translations demand nothing. Such a rule is read again (5.1) |
+| `reread`, `rules[].reread` | only when there was a second read: `reread` names the rules that were read again and the symbols that stayed; a rule has `reread: true` when its translation comes from the second round |
 | `symbols[].event` | true for something that happens at one moment (5.2) |
 | `rules[].trigger` | the event the rule reacts to (5.2), or empty |
 | `rules[].probes` | step 6: each other reading, the situations asked about, and the answers |
@@ -1247,16 +1288,26 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       and one change that adds, rewrites, removes and renames (no design
       change). E22: 9 of 9 planted conflicts and 9 of 9 planted gaps in 3
       runs, both ways, and nothing else about the change
-- [ ] **Step 41 — a second read for the rules that got no symbol**:
-      `real4/` first (done): 13 real changes that create a new spec, each
-      also with one planted conflict. Then: the rules that are not accepted
-      and have a translation that demands nothing are read again, alone,
-      with the symbols so far; the symbols the model adds go into the list,
-      and those rules are translated again (plan in 2.1). T31
-      (development): within a run, the rules of no use to the checks go
+- [ ] **Step 42 — can the conditions of two rules that clash both hold?**:
+      `eval19/` and `real5/` first (done). Then: for two rules that would be
+      reported as a conflict that is not doubtful, and whose conditions
+      differ, the model is asked whether the two conditions can hold
+      together; if most answers say no, that is an assumed fact, and the
+      conflict is doubtful or gone (plan in 2.1). Development on `real4/`
+      and the sets with planted overlaps; held-out `eval19/` and `real5/`,
+      with and without the new facts on the same runs
+- [x] **Step 41 — a second read for the rules that got no symbol**:
+      `real4/` written first: 13 real changes that create a new spec, each
+      also with one planted conflict. The rules that are not accepted and
+      have a translation that demands nothing are read again, alone, with
+      the symbols so far, and translated again with the symbols this adds.
+      T31 (development): within a run, the rules of no use to the checks go
       from 30% to 18% on the third real batch and from 38% to 21% on the
-      second; our own specs do not move. Frozen. Open: held-out `real4/`,
-      before and after (E27)
+      second; our own specs do not move. E27 (held-out): 16% and 14%
+      against 17% and 16%, 22 of 26 planted conflicts against 24. The rule
+      set beforehand was not met; kept because it gains within a run and no
+      loss is its own. T32: of 20 conflicts that nobody planted, none is a
+      contradiction
 - [x] **Step 40 — a vote among the translations of a rule**: `eval18/` and
       `real3/` written first; where the translations of a rule differ only
       in the symbols they use, the strongest one that more than half of them
