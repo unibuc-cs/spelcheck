@@ -1,6 +1,6 @@
-"""make_eval.py: writes the evaluation sets eval/ to eval19/, size/, size2/ and mixed/. No LLM, no GPU.
+"""make_eval.py: writes the evaluation sets eval/ to eval20/, size/, size2/ and mixed/. No LLM, no GPU.
 
-    python -m experiments.make_eval eval19     (only the sets named; all if none)
+    python -m experiments.make_eval eval20     (only the sets named; all if none)
 
 change_dev/ is development data for the change check: the OpenSpec-format
 specs of eval9/ and eval10/ as projects with a change (see as_projects).
@@ -268,6 +268,25 @@ Five versions each:
                 scenario is about ("the card is valid", "the account of the
                 reader is blocked"): these two must still be found
     gap         one of two complementary scenarios removed
+
+eval20/ (written 2026-11-26, after E28 and a first look at the specs of an
+agent system, before three things were built for specs of that kind) has four
+OpenSpec projects whose rules are about a whole run of an assistant that
+calls tools: "WHEN a call of `ship_parcel` succeeds in a run with a plan THEN
+an earlier call of `request_signoff` in the run was approved". Each has
+settings, rules about calls, and examples: scenarios about one concrete case
+("WHEN dana asks to ship parcel k7 ..."), whose names start with "Example:".
+Four changes each:
+
+    clean   a requirement with three examples of one request under three
+            conditions, and a rule about a call; nothing may be reported.
+            Read as general rules, the examples clash with each other
+    cross   a rule about one kind of run that forbids what an existing rule
+            demands when another call succeeds in such a run: two rules that
+            react to two different happenings of the same run
+    direct  two rules about one function that cannot both hold
+    twins   a setting whose name differs from an existing setting by one
+            word, with another value; nothing may be reported
 """
 
 import json
@@ -3736,8 +3755,187 @@ def as_projects(specs: dict) -> dict:
 
 # Folder -> the OpenSpec projects written into it, each with one change.
 # change_dev is made from eval9 and eval10, which have been read (E15, E16).
+def _project20(rules: str, audit: str, purposes: tuple, setting: tuple, gate: tuple, refusal: tuple, examples: list,
+               audited: tuple, lookup: tuple, clean: tuple, cross: tuple, direct: tuple, twin: tuple, names: dict) -> dict:
+    """One eval20 project: two spec files about the runs of an assistant, and four changes.
+
+    rules, audit  the names of the two spec files; purposes: their purpose
+    setting       (requirement, sentence, scenario, text): a setting and its value
+    gate          the rule that a call needs an earlier approved call in the same run
+    refusal       the rule that a refusal stops the plan
+    examples      two scenarios about one concrete request, each named "Example: ..."
+    audited, lookup   two more rules about calls, in the second file
+    clean         (requirement, sentence, three examples, a rule): what the clean change adds
+    cross         (requirement, sentence, the rule that clashes with `gate`, an example)
+    direct        (requirement, sentence, two scenarios that cannot both hold)
+    twin          (requirement, sentence, scenario, text): a setting named like `setting`
+    names         for each change: (folder name, why)
+    """
+    requirement = lambda name, sentence, *scenarios: (name, sentence, list(scenarios))
+    return {
+        "specs": {
+            rules: (purposes[0], [requirement(setting[0], setting[1], (setting[2], setting[3])),
+                                  requirement(gate[0], gate[1], (gate[2], gate[3])),
+                                  requirement(refusal[0], refusal[1], (refusal[2], refusal[3])),
+                                  requirement("Requests", "The assistant SHALL handle the requests below as described.", *examples)]),
+            audit: (purposes[1], [requirement(audited[0], audited[1], (audited[2], audited[3])),
+                                  requirement(lookup[0], lookup[1], (lookup[2], lookup[3]))]),
+        },
+        "changes": {
+            "clean": {"name": names["clean"][0], "why": names["clean"][1],
+                      "delta": {audit: {"ADDED": [requirement(clean[0], clean[1], *clean[2]),
+                                                  requirement(clean[3][0], clean[3][1], (clean[3][2], clean[3][3]))]}},
+                      "expected": {"nothing": True}},
+            "cross": {"name": names["cross"][0], "why": names["cross"][1],
+                      "delta": {rules: {"ADDED": [requirement(cross[0], cross[1], cross[2], cross[3])]}},
+                      "expected": {"conflicts": [[f"{rules}/{gate[0]}/{gate[2]}", f"{rules}/{cross[0]}/{cross[2][0]}"]]}},
+            "direct": {"name": names["direct"][0], "why": names["direct"][1],
+                       "delta": {audit: {"ADDED": [requirement(direct[0], direct[1], direct[2], direct[3])]}},
+                       "expected": {"conflicts": [[f"{audit}/{direct[0]}/{direct[2][0]}", f"{audit}/{direct[0]}/{direct[3][0]}"]]}},
+            "twins": {"name": names["twins"][0], "why": names["twins"][1],
+                      "delta": {rules: {"ADDED": [requirement(twin[0], twin[1], (twin[2], twin[3]))]}},
+                      "expected": {"nothing": True}},
+        },
+    }
+
+
+PROJECTS20 = {
+    "parcels": _project20(
+        "shipping", "shipping-audit",
+        ("A dispatcher assistant plans the shipping of parcels and calls the tools of a warehouse.",
+         "What the runs of the dispatcher leave behind."),
+        ("Parcel limit", "The setting `shipping.max_parcels` MUST be 20.",
+         "The parcel limit is configured", "WHEN the configuration is checked THEN `shipping.max_parcels` is the integer 20"),
+        ("Sign-off before shipping", "A parcel SHALL NOT be shipped in a planned run without an approved sign-off.",
+         "No shipping in a plan without a sign-off", "WHEN a call of `ship_parcel` succeeds in a run with a plan THEN an earlier call of `request_signoff` in the run was approved"),
+        ("Refusal", "A refused sign-off SHALL stop the plan.",
+         "A refusal stops the plan", "WHEN a call of `request_signoff` returns a refusal THEN no call of `ship_parcel` is made after it in the run"),
+        [("Example: a parcel with a complete address", "WHEN dana asks to ship parcel k7 AND the address of k7 is complete THEN `ship_parcel` is called once for k7 AND the answer names the carrier"),
+         ("Example: the postcode is missing", "WHEN the same request runs while the address of k7 has no postcode THEN `ship_parcel` is never called AND the answer asks for the postcode")],
+        ("Audit", "Every shipment SHALL be audited.",
+         "Every shipment is audited", "WHEN a call of `ship_parcel` succeeds THEN the run writes one audit entry that names the parcel"),
+        ("Lookups", "A lookup SHALL change nothing.",
+         "A lookup changes nothing", "WHEN a call of `find_parcel` succeeds THEN no parcel changes its state in that call"),
+        ("Returns", "The dispatcher SHALL handle returns.",
+         [("Example: a return is booked", "WHEN dana asks to return parcel k7 AND k7 was delivered THEN `book_return` is called once AND the answer gives the return label"),
+          ("Example: the parcel was never delivered", "WHEN the same request runs while k7 is still in the warehouse THEN `book_return` is never called AND the answer says that k7 was not delivered"),
+          ("Example: the customer cancels", "WHEN the same request runs and the customer cancels the return THEN `book_return` is called once AND `cancel_return` is called once after it")],
+         ("Return audit", "Every return SHALL be audited.", "Every return is audited", "WHEN a call of `book_return` succeeds THEN the run writes one audit entry that names the parcel")),
+        ("Express shipping", "An express request SHALL ship at once, and nobody is asked.",
+         ("An express run asks nobody", "WHEN an express request is handled in a run THEN `request_signoff` is not called in the run"),
+         ("Example: three express parcels", "WHEN dana sends an express request for the parcels k1, k2 and k3 THEN the plan is written once AND `ship_parcel` succeeds three times")),
+        ("Weight check", "The function `weight_ok` SHALL say whether a parcel may be shipped.",
+         ("The rule holds for every weight", "WHEN `weight_ok(grams, limit)` is called with a limit of at least 1 THEN the result is true exactly when grams is at least 1 and at most the limit"),
+         ("An empty parcel is accepted", "WHEN `weight_ok(grams, limit)` is called with grams equal to 0 and a limit of at least 1 THEN the result is true")),
+        ("Batch limit", "The setting `shipping.max_batch_parcels` MUST be 50.",
+         "The batch limit is configured", "WHEN the configuration is checked THEN `shipping.max_batch_parcels` is the integer 50"),
+        {"clean": ("add-returns", "Customers send parcels back."),
+         "cross": ("add-express-shipping", "Some parcels must leave within the hour."),
+         "direct": ("add-weight-check", "Overweight parcels were refused by the carrier."),
+         "twins": ("add-batch-limit", "Batches are larger than single requests.")}),
+    "trips": _project20(
+        "booking", "booking-audit",
+        ("A travel assistant plans trips for the staff of a company and calls the tools of a booking system.",
+         "What the runs of the travel assistant leave behind."),
+        ("Budget", "The setting `travel.max_nights` MUST be 14.",
+         "The night limit is configured", "WHEN the configuration is checked THEN `travel.max_nights` is the integer 14"),
+        ("Confirmation before paying", "A trip SHALL NOT be paid in a planned run without a confirmation of the traveller.",
+         "No payment in a plan without a confirmation", "WHEN a call of `pay_booking` succeeds in a run with a plan THEN an earlier call of `ask_traveller` in the run was answered with yes"),
+        ("Refusal", "A traveller who says no SHALL stop the plan.",
+         "A no stops the plan", "WHEN a call of `ask_traveller` is answered with no THEN no call of `pay_booking` is made after it in the run"),
+        [("Example: a flight with seats", "WHEN omar asks for a flight to Lyon on Monday AND the flight has free seats THEN `hold_seat` is called once AND the answer gives the price"),
+         ("Example: the flight is full", "WHEN the same request runs while the flight has no free seats THEN `hold_seat` is never called AND the answer offers the next flight")],
+        ("Audit", "Every payment SHALL be audited.",
+         "Every payment is audited", "WHEN a call of `pay_booking` succeeds THEN the run writes one audit entry that names the traveller"),
+        ("Searches", "A search SHALL book nothing.",
+         "A search books nothing", "WHEN a call of `search_flights` succeeds THEN no seat is held in that call"),
+        ("Hotel rooms", "The assistant SHALL book hotel rooms.",
+         [("Example: a room is booked", "WHEN omar asks for a room in Lyon for two nights AND the hotel has a free room THEN `book_room` is called once AND the answer gives the address of the hotel"),
+          ("Example: the hotel is full", "WHEN the same request runs while the hotel has no free room THEN `book_room` is never called AND the answer names another hotel"),
+          ("Example: the traveller changes the dates", "WHEN the same request runs and omar changes the dates afterwards THEN `book_room` is called once AND `change_room_dates` is called once after it")],
+         ("Room audit", "Every room booking SHALL be audited.", "Every room booking is audited", "WHEN a call of `book_room` succeeds THEN the run writes one audit entry that names the hotel")),
+        ("Urgent trips", "An urgent trip SHALL be paid at once, and the traveller is not asked.",
+         ("An urgent run asks nobody", "WHEN an urgent trip request is handled in a run THEN `ask_traveller` is not called in the run"),
+         ("Example: an urgent trip of two legs", "WHEN omar sends an urgent request for a flight to Lyon and a train to Geneva THEN the plan is written once AND `pay_booking` succeeds twice")),
+        ("Stay length", "The function `stay_ok` SHALL say whether a stay may be booked.",
+         ("The rule holds for every stay", "WHEN `stay_ok(nights, limit)` is called with a limit of at least 1 THEN the result is true exactly when nights is at least 1 and at most the limit"),
+         ("A day trip is accepted", "WHEN `stay_ok(nights, limit)` is called with nights equal to 0 and a limit of at least 1 THEN the result is true")),
+        ("Group budget", "The setting `travel.max_group_nights` MUST be 60.",
+         "The group limit is configured", "WHEN the configuration is checked THEN `travel.max_group_nights` is the integer 60"),
+        {"clean": ("add-hotel-rooms", "Travellers also need a place to sleep."),
+         "cross": ("add-urgent-trips", "Some trips are decided an hour before departure."),
+         "direct": ("add-stay-length-check", "Stays longer than the budget were booked by mistake."),
+         "twins": ("add-group-budget", "Groups travel on one budget.")}),
+    "samples": _project20(
+        "lab-runs", "lab-records",
+        ("A lab assistant plans the processing of samples and calls the tools of the instruments.",
+         "What the runs of the lab assistant leave behind."),
+        ("Rack size", "The setting `lab.max_tubes` MUST be 24.",
+         "The rack size is configured", "WHEN the configuration is checked THEN `lab.max_tubes` is the integer 24"),
+        ("Supervisor before the centrifuge", "The centrifuge SHALL NOT be started in a planned run without the supervisor.",
+         "No spin in a plan without the supervisor", "WHEN a call of `start_centrifuge` succeeds in a run with a plan THEN an earlier call of `ask_supervisor` in the run was approved"),
+        ("Refusal", "A supervisor who refuses SHALL stop the plan.",
+         "A refusal stops the plan", "WHEN a call of `ask_supervisor` returns a refusal THEN no call of `start_centrifuge` is made after it in the run"),
+        [("Example: a labelled tube", "WHEN ines asks to weigh tube t4 AND t4 has a label THEN `weigh_tube` is called once for t4 AND the answer gives the weight"),
+         ("Example: the label is missing", "WHEN the same request runs while t4 has no label THEN `weigh_tube` is never called AND the answer asks for the label")],
+        ("Records", "Every spin SHALL be recorded.",
+         "Every spin is recorded", "WHEN a call of `start_centrifuge` succeeds THEN the run writes one record that names the rack"),
+        ("Readings", "A reading SHALL move nothing.",
+         "A reading moves nothing", "WHEN a call of `read_scale` succeeds THEN no tube is moved in that call"),
+        ("Freezing", "The assistant SHALL freeze samples.",
+         [("Example: a tube is frozen", "WHEN ines asks to freeze tube t4 AND the freezer has a free slot THEN `store_in_freezer` is called once AND the answer gives the slot"),
+          ("Example: the freezer is full", "WHEN the same request runs while the freezer has no free slot THEN `store_in_freezer` is never called AND the answer names the tubes that could be removed"),
+          ("Example: the tube is taken out again", "WHEN the same request runs and ines asks for the tube back afterwards THEN `store_in_freezer` is called once AND `take_from_freezer` is called once after it")],
+         ("Freezer records", "Every stored tube SHALL be recorded.", "Every stored tube is recorded", "WHEN a call of `store_in_freezer` succeeds THEN the run writes one record that names the slot")),
+        ("Night runs", "A night run SHALL spin at once, and no supervisor is asked.",
+         ("A night run asks nobody", "WHEN a night request is handled in a run THEN `ask_supervisor` is not called in the run"),
+         ("Example: two racks at night", "WHEN ines sends a night request for the racks r1 and r2 THEN the plan is written once AND `start_centrifuge` succeeds twice")),
+        ("Fill check", "The function `fill_ok` SHALL say whether a rack may be spun.",
+         ("The rule holds for every count of tubes", "WHEN `fill_ok(tubes, limit)` is called with a limit of at least 2 THEN the result is true exactly when tubes is at least 2 and at most the limit"),
+         ("A single tube is accepted", "WHEN `fill_ok(tubes, limit)` is called with tubes equal to 1 and a limit of at least 2 THEN the result is true")),
+        ("Plate size", "The setting `lab.max_plate_tubes` MUST be 96.",
+         "The plate size is configured", "WHEN the configuration is checked THEN `lab.max_plate_tubes` is the integer 96"),
+        {"clean": ("add-freezing", "Samples must be kept for later runs."),
+         "cross": ("add-night-runs", "The centrifuge is free at night."),
+         "direct": ("add-fill-check", "A rack with one tube broke the rotor."),
+         "twins": ("add-plate-size", "Plates hold more than racks.")}),
+    "transfers": _project20(
+        "payments", "payments-ledger",
+        ("A support assistant of a bank plans the requests of customers and calls the tools of the payment system.",
+         "What the runs of the support assistant leave behind."),
+        ("Transfer limit", "The setting `payments.max_transfers` MUST be 10.",
+         "The transfer limit is configured", "WHEN the configuration is checked THEN `payments.max_transfers` is the integer 10"),
+        ("Second approval before a transfer", "Money SHALL NOT be sent in a planned run without a second approval.",
+         "No transfer in a plan without a second approval", "WHEN a call of `send_transfer` succeeds in a run with a plan THEN an earlier call of `ask_second_approver` in the run was approved"),
+        ("Refusal", "A second approver who refuses SHALL stop the plan.",
+         "A refusal stops the plan", "WHEN a call of `ask_second_approver` returns a refusal THEN no call of `send_transfer` is made after it in the run"),
+        [("Example: a card is blocked", "WHEN lena asks to block her card c2 AND c2 is active THEN `block_card` is called once for c2 AND the answer confirms the block"),
+         ("Example: the card is already blocked", "WHEN the same request runs while c2 is blocked already THEN `block_card` is never called AND the answer says that the card was blocked before")],
+        ("Ledger", "Every transfer SHALL be written to the ledger.",
+         "Every transfer is in the ledger", "WHEN a call of `send_transfer` succeeds THEN the run writes one ledger entry that names the account"),
+        ("Balance questions", "A balance question SHALL move no money.",
+         "A balance question moves nothing", "WHEN a call of `read_balance` succeeds THEN no money is moved in that call"),
+        ("Standing orders", "The assistant SHALL set up standing orders.",
+         [("Example: a standing order is set up", "WHEN lena asks for a monthly payment of her rent AND her account is active THEN `create_standing_order` is called once AND the answer gives the first date"),
+          ("Example: the account is closed", "WHEN the same request runs while her account is closed THEN `create_standing_order` is never called AND the answer says that the account is closed"),
+          ("Example: the order is stopped again", "WHEN the same request runs and lena stops the order afterwards THEN `create_standing_order` is called once AND `stop_standing_order` is called once after it")],
+         ("Order ledger", "Every standing order SHALL be written to the ledger.", "Every standing order is in the ledger", "WHEN a call of `create_standing_order` succeeds THEN the run writes one ledger entry that names the order")),
+        ("Fraud refunds", "A fraud refund SHALL be sent at once, and no second approver is asked.",
+         ("A fraud run asks nobody", "WHEN a fraud refund request is handled in a run THEN `ask_second_approver` is not called in the run"),
+         ("Example: two refunds after a fraud", "WHEN lena sends a fraud refund request for the payments y1 and y2 THEN the plan is written once AND `send_transfer` succeeds twice")),
+        ("Amount check", "The function `amount_ok` SHALL say whether an amount may be sent.",
+         ("The rule holds for every amount", "WHEN `amount_ok(cents, limit)` is called with a limit of at least 1 THEN the result is true exactly when cents is at least 1 and at most the limit"),
+         ("A transfer of nothing is accepted", "WHEN `amount_ok(cents, limit)` is called with cents equal to 0 and a limit of at least 1 THEN the result is true")),
+        ("Daily limit", "The setting `payments.max_daily_transfers` MUST be 30.",
+         "The daily limit is configured", "WHEN the configuration is checked THEN `payments.max_daily_transfers` is the integer 30"),
+        {"clean": ("add-standing-orders", "Customers pay their rent every month."),
+         "cross": ("add-fraud-refunds", "A customer who was robbed should not wait."),
+         "direct": ("add-amount-check", "A transfer of nothing went through."),
+         "twins": ("add-daily-limit", "The number of transfers in a day is limited too.")}),
+}
+
 PROJECT_SETS = {"eval11": PROJECTS11, "eval13": PROJECTS13, "eval14": PROJECTS14, "eval15": PROJECTS15,
-                "mixed": PROJECTS_MIXED,
+                "mixed": PROJECTS_MIXED, "eval20": PROJECTS20,
                 "change_dev": as_projects({**SPECS9, **SPECS10})}
 
 

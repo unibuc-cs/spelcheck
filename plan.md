@@ -130,6 +130,63 @@ this order:
      the facts rarely say that one of the two always holds, so only 2 of 13
      were marked (T20, E16). This is a known limit now.
 
+### 2.1 The plan for step 44: specs about the runs of an agent system (not built yet)
+
+The specs that the tool is meant for are those of an agent system: an
+orchestrator and specialist agents that call tools, with rules about what a
+run may contain ("WHEN a call of `ship_parcel` succeeds in a run with a
+plan THEN an earlier `request_signoff` in the run was approved"). A first
+trial on such a project (33 spec files, 465 scenarios, four open changes, one
+of which its authors know to be impossible to implement) showed five things
+that stand in the way. None is about that project's words; `eval20/` has
+specs of the same kind in other domains.
+
+1. **A situation is a whole run, not a moment** (option `--whole-run`). Two
+   rules that react to two different calls can both apply in one run, and
+   there they can clash. Today such a conflict is marked doubtful ("needs
+   two events at the same moment"), and the questions about two outcomes
+   and two conditions skip the pair. With the option the mark is not given,
+   the pairs are asked about, and the two question prompts say "run" where
+   they say "snapshot". The formal model records it (`situation: run`).
+2. **An example is one case, not a rule** (option `--examples PATTERN`). A
+   scenario that the pattern matches is a concrete case ("WHEN the same
+   request runs while the address has no postcode ..."). Two examples of
+   one request under different conditions are read as two general rules
+   and clash; a conflict between examples only is marked doubtful ("only
+   examples"). An example against a general rule stays a conflict.
+3. **A link that only renames is checked with both symbols in view.** The
+   link step restated "`shipping.max_parcels` is 20" as
+   "`shipping.max_batch_parcels` is 20", and the check confirmed it, because
+   it hides the rule's own symbol. When a restatement is the rule's own
+   demand with one symbol swapped for another, the model is asked whether
+   the two can differ, with both descriptions shown; the link stays only if
+   most answers say that they cannot.
+4. **On a change, the pairs with a rule of the change are asked about
+   first.** At most 40 pairs are asked about, in document order, so in a
+   long document the rules of the change, which come last, were never
+   reached.
+5. **A project too large for one read is checked in parts.** `--change`
+   then runs once for each spec file that the change does not touch (or
+   those that `--against PATTERN` names), each time with the files the
+   change touches. A finding among the rules of the change says in how
+   many parts it was found; a gap about the change is kept only if every
+   part has it.
+
+**How it is tested.** `eval20/` (make_eval.py): four projects about the runs
+of an assistant in other domains, each with settings, rules about calls and
+examples, and four changes: one that adds examples and must give nothing,
+one that clashes with a rule that reacts to another call of the same run, one
+that contradicts itself, and one that adds a setting named like an existing
+one. Then the project itself.
+
+**The rule, set now.** Points 1 to 3 stay if on `eval20/`, with doubtful
+conflicts set aside and the two options given, the conflicts of the "cross"
+changes are found more often than without, the "clean" and "twins" changes
+get fewer conflicts, and the "direct" conflicts are found no less often; and
+if, with the options not given, `eval12/` gives what it gave. Points 4 and 5
+change no answer on a project that fits one read and has fewer than 40
+pairs; they are checked by tests.
+
 Small things that are open:
 
 - **Long documents** (E14). A spec of 100 requirements works: its read answer
@@ -1293,6 +1350,12 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       and one change that adds, rewrites, removes and renames (no design
       change). E22: 9 of 9 planted conflicts and 9 of 9 planted gaps in 3
       runs, both ways, and nothing else about the change
+- [ ] **Step 44 — specs about the runs of an agent system**: `eval20/`
+      first (done). A situation can be a whole run (`--whole-run`); a
+      scenario can be an example (`--examples`); a link that only renames is
+      checked with both symbols; on a change the pairs with one of its rules
+      are asked about first; a project too large for one read is checked in
+      parts (plan in 2.1)
 - [x] **Step 43 — a conflict between a rule and a special case of it says
       so**: solver only (`checks._mark_special_cases`). A remark in the
       title, no count changes. T35: on 22 of 56 and 26 of 148 conflicts that
