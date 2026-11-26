@@ -62,8 +62,9 @@ the change touches. The documents and formal models of the parts are written
 into parts/ (merged_01.md, formal_01.json, ...), the parts are formalized at
 the same time, and one report is written. A finding among the rules of the
 change says in how many parts it was found as it is shown, and what is not
-doubtful comes first. Not with --symbol-sets,
---second-base-url, --review or --incremental; scenarios are not looked for.
+doubtful comes first. Not with --symbol-sets, --second-base-url or --review;
+scenarios are not looked for. --incremental does not split a project: it
+keeps one model of all the specs, which must fit one document.
 
     --symbol-sets K   formalize K times, each time with its own symbols. Every
                       finding then says with how many of the K sets it was

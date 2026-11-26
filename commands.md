@@ -97,8 +97,9 @@ is checked in parts, without an option: one document for each spec file that
 the change does not touch, holding that file and the files of the change. The
 parts are formalized at the same time and give one report, in which a finding
 among the rules of the change says in how many parts it was found, and what
-is not doubtful comes first. Not with
-`--incremental`, `--symbol-sets`, `--second-base-url` or `--review`.
+is not doubtful comes first. Not with `--symbol-sets`, `--second-base-url` or
+`--review`. `--incremental` does not split a project: its saved model holds
+all the specs, which must fit one document.
 
 ## 6. What comes out
 

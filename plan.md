@@ -1225,7 +1225,9 @@ With `--incremental`:
   depends on the symbols, as the count of symbol sets does (5.6)
 - what is lost: a conflict that needs rules of three spec files; the
   scenarios to confirm (5.5), which are consequences of one whole document;
-  `--incremental`, several symbol sets, the second reader and the review
+  several symbol sets, the second reader and the review. `--incremental`
+  does not split a project: its saved model holds all the specs, which must
+  fit one document
 
 **Kept simple:**
 - if a label does not come back as a rule id, the tool stops: it could not
