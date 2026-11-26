@@ -4250,6 +4250,186 @@ setting, and the runs it was measured on were made before it existed.
 
 ---
 
+## T36 — A first trial on the specs of an agent system (2026-11-26)
+
+**Question.** The tool is meant for the specs of an agent system: an
+orchestrator and specialist agents that call tools. What does it report on
+such a project as it is?
+
+**The project.** 33 spec files in the OpenSpec format with 465 scenarios,
+and four open changes that each add a workflow. Its authors say which can be
+built: three can, and one cannot, for four reasons that they list. One is a
+plain contradiction between two rules of the change (two contracts for one
+function). Two set the change against rules of other spec files (an approval
+that an existing rule demands, a hand-over that existing rules forbid). The
+fourth is arithmetic over a whole run (a batch of 60 against step budgets of
+12 and 40). The project and all runs on it are kept outside this repository.
+
+**How it was run.** The project is too large for one document, so each
+change was put next to one existing spec file at a time, and once alone: 79
+small projects, run with the code as it was (`experiments.evaluate`, the
+change that cannot be built twice, the others once).
+
+| Change | Runs | Conflicts about it, not doubtful | Runs with one |
+|---|---|---|---|
+| cannot be built | 40 | 51 | 34 |
+| can be built, first | 20 | 16 | 11 |
+| can be built, second | 19 | 25 | 11 |
+| can be built, third | 20 | 10 | 8 |
+
+- **The contradiction between two rules was found in 27 of 40 runs.**
+- **A conflict that is not there was found in 23 of 40**: two step budgets
+  with names that differ by one word. The link step restated the rule about
+  one as a rule about the other, 8 answers of 8, and the check of the link
+  confirmed it, because its question does not show the rule's own symbol.
+- **The approval conflict was found once, and marked doubtful**: its two
+  rules react to two different calls, "two events at the same moment". The
+  rules of such a spec are about a whole run.
+- **The changes that can be built got as many conflicts.** Almost all are
+  between two examples: scenarios that describe one request under two
+  fixtures, read as two general rules.
+- **The questions about pairs of outcomes stopped at their limit** of 40
+  pairs in 19 of the 40 runs, with up to 290 pairs left.
+- The hand-over and the arithmetic were not found.
+
+**What followed.** The plan of step 44 (plan.md 2.1), written before any
+code, and `eval20/`, a set of our own with the same properties in other
+domains.
+
+---
+
+## T37 — Development: the same trial with the code of step 44 (2026-11-26)
+
+**Question.** Do a whole run as the situation, the mark for examples and
+the second question for links do on the project what they were planned for?
+
+**How it was run.** The same 79 small projects, with `--whole-run` and
+`--examples` (the pattern of the project's own mark for an example). The
+code was the plan of 2.1, before its one refinement.
+
+**What the plan gave, and the refinement.** The wrong conflict between the
+two budgets went from 23 runs to 1: in the 40 runs of the change that cannot
+be built, 106 of 232 links were asked about with both symbols, and 99 of
+those were rejected. The contradiction between two rules was found in 32 of
+40 runs. But that change now had 73 conflicts, not 51: 34 set an example
+against a rule, almost all an example of an existing spec against a rule of
+the change. In each, the questions about two outcomes (asked of such pairs
+now, since both can be in one run) had called the outcome of the example
+and the outcome of the rule impossible together, and the situation mixed
+the two: the concrete case of the example, taken to be also a run of the
+new workflow. The plan had marked a conflict between examples only. The
+mark became: a conflict with an example is doubtful unless the example's own
+case, its condition and what it demands, entails the conditions of the other
+rules (`checks._mark_examples`; Z3, no question). Scored again on the same
+runs:
+
+| Change | Runs | Conflicts about it, not doubtful: before step 44 (T36) | With step 44 | Doubtful with step 44, all marked for an example |
+|---|---|---|---|---|
+| cannot be built | 40 | 51 (in 34 runs) | 39 (in 34 runs) | 51 |
+| can be built, first | 20 | 16 (in 11 runs) | 4 (in 4 runs) | 22 |
+| can be built, second | 19, then 18 | 25 (in 11 runs) | 5 (in 5 runs) | 23 |
+| can be built, third | 20 | 10 (in 8 runs) | 1 (in 1 run) | 19 |
+
+- **Of the 39, 32 are the contradiction between two rules**, and one more is
+  the missing approval in another form (a tool that stays guarded against an
+  example in which it runs with no approval). The other six are artefacts:
+  three give one attribute to every call of a run ("the agent that made the
+  call", "the token it carried"), where two rules speak of two different
+  calls.
+- **The approval conflict itself is found in one run of two, and is now
+  doubtful.** It sets a rule of another spec against an example of the
+  change, and nothing in the example's formulas says that its run has a
+  plan and a successful call of the kind the rule is about. The report
+  shows it with that reason.
+- **The limit of 40 pairs is reached in 39 of 40 runs** (93 of 98 in all):
+  with a whole run as the situation, a document of about 30 rules has some
+  175 pairs. The pairs with a rule of the change come first, so the limit
+  now cuts among them.
+- The hand-over and the arithmetic are still not found.
+
+One run of 99 stopped: the model declared one name twice.
+
+---
+
+## E29 — Held-out `eval20/`: specs about the runs of an agent system (2026-11-26)
+
+**Question.** Three parts of step 44 act on a project of any size: a whole
+run as the situation, the mark for examples, and the second question about
+a link. Do they do on specs they were not built on what they did on the
+project of T37?
+
+**The set** (`eval20/`, written and committed before any code). Four
+projects about an assistant that calls tools: a dispatcher of parcels, a
+travel assistant, a lab assistant, a bank's support assistant. Each has a
+setting, rules about calls ("WHEN a call of `ship_parcel` succeeds in a run
+with a plan THEN an earlier call of `request_signoff` in the run was
+approved") and examples, whose names start with "Example:". Each has four
+changes:
+
+| Change | What it adds | Expected |
+|---|---|---|
+| clean | three examples of one request under three conditions, and a rule about a call | nothing |
+| cross | a rule about one kind of run ("WHEN an express request is handled in a run THEN `request_signoff` is not called in the run"), which forbids what an existing rule demands when another call succeeds in such a run | that conflict |
+| direct | two rules about one function that cannot both hold | that conflict |
+| twins | a setting whose name differs from an existing one by a word (`shipping.max_parcels`, `shipping.max_batch_parcels`), with another value | nothing |
+
+**The rule, set before the build** (plan.md 2.1). With doubtful conflicts
+set aside and the two options given: the "cross" conflicts are found more
+often than without, the "clean" and "twins" changes get fewer conflicts, and
+the "direct" conflicts are found no less often. And with the options not
+given, `eval12/` gives what it gave.
+
+**Result.** 16 changes, 3 runs each: once with the code before step 44, once
+with the frozen code and `--whole-run --examples "^Example:"`. Doubtful
+conflicts are set aside. The last three columns are the runs of step 44
+scored again with one part switched off (`E29_eval20_before`, `E29_eval20`).
+
+| | Before step 44 | Step 44 | a run read as one moment | examples read as rules | links not asked about twice |
+|---|---|---|---|---|---|
+| "cross" conflicts found | 0/12 | 12/12 | 0/12 | 12/12 | 12/12 |
+| "direct" conflicts found | 12/12 | 12/12 | 12/12 | 12/12 | 12/12 |
+| "clean" changes with a conflict about them (conflicts) | 6/12 (6) | 0/12 | 0/12 | 11/12 (21) | 0/12 |
+| "twins" changes with a conflict about them (conflicts) | 11/12 (11) | 0/12 | 0/12 | 0/12 | 9/12 (9) |
+| other conflicts about a change with a planted one | 0 | 0 | 0 | 12 | 0 |
+
+- **The rule is met on every point**, and each part does one thing. Read as
+  one moment, all 12 "cross" conflicts are doubtful, as they were before.
+  With the examples read as rules, 11 of the 12 clean changes have a
+  conflict about them. Without the second question, 9 of the 12 changes
+  that only add a setting have one.
+- **The examples.** In the default configuration 34 conflicts about the
+  changes are doubtful, and every one is marked because its situation says
+  more than an example does: 22 on the clean changes and 12 on the cross
+  ones. The 12 are the example of the cross change ("WHEN dana sends an
+  express request for the parcels k1, k2 and k3 THEN the plan is written
+  once AND `ship_parcel` succeeds three times") against an existing example
+  or rule. No planted conflict got the mark.
+- **The second question.** 51 of 131 links moved a rule's demand to another
+  symbol and were asked about twice. On the "twins" changes that is 26
+  links: the first question had confirmed 15 of them, and the second
+  rejected all 26. On the "cross" changes it confirmed 17 of 18, among them
+  the link that the planted conflict needs ("an earlier call was approved"
+  means that there was a call).
+- **The price.** With a whole run as the situation, the pairs of two
+  happenings are asked about too: 1,530 pairs of outcomes against 74, and
+  55 assumed facts from them against 9. A change costs 87 requests and
+  51,065 tokens written, against 55 and 27,691. The wrong ones among those
+  facts are what the examples' conflicts rest on ("A parcel's state must
+  change when a return is booked and subsequently cancelled", for an
+  example against the rule that a lookup changes nothing).
+- **Gaps are as before**: 23 about the changes, 21 before, and 8 and 9 of
+  the 24 changes that should give nothing have one.
+- **`eval12/`, with no option** (`E29_eval12`): 34 of 36 planted conflicts,
+  as in E18, and 4 of 18 clean runs with a false alarm, where E18 had 3. No
+  part of step 44 caused the difference: the only part that acts without an
+  option is the second question, and the row without it is the same in
+  every column.
+
+**Decision.** Step 44 stays as it was frozen. All twenty sets are
+development data now.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

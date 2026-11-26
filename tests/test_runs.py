@@ -404,6 +404,19 @@ def test_a_gap_about_the_change_is_kept_only_if_every_part_has_it():
     assert combine_parts([[other], [gap]], models, changed) == []  # not about the change, and not in both
 
 
+def test_a_part_with_a_rule_that_has_no_label_is_left_out(tmp_path, monkeypatch):
+    piece = merge(project(tmp_path), only={"gifts", "depot"})
+    model = part_models()[0]
+    job = ("http://nowhere/v1", "a model", piece, 8, 0.7, False, None)
+    monkeypatch.setattr(cli, "LLM", lambda base_url, model_name: None)
+    monkeypatch.setattr(cli, "formalize", lambda *args, **options: model)
+    assert cli._formalize_part(job) == model
+    # R3 is the label of a scenario in the other part: a rule of that name here would be taken for it.
+    extra = {**model, "rules": model["rules"] + [{**model["rules"][0], "id": "R3"}]}
+    monkeypatch.setattr(cli, "formalize", lambda *args, **options: extra)
+    assert cli._formalize_part(job) == {"error": "the read step made rules without a scenario label (R3)"}
+
+
 @pytest.mark.parametrize("broken", [False, True])
 def test_the_command_line_checks_a_large_project_in_parts(tmp_path, monkeypatch, capsys, broken):
     change = project(tmp_path / "project")

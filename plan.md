@@ -130,7 +130,7 @@ this order:
      the facts rarely say that one of the two always holds, so only 2 of 13
      were marked (T20, E16). This is a known limit now.
 
-### 2.1 Step 44: specs about the runs of an agent system (built; `eval20/` not run yet)
+### 2.1 Step 44: specs about the runs of an agent system (built; held-out result in E29)
 
 The specs that the tool is meant for are those of an agent system: an
 orchestrator and specialist agents that call tools, with rules about what a
@@ -175,8 +175,9 @@ specs of the same kind in other domains.
 **One refinement before the freeze** (point 2). The plan said: a conflict
 between examples only is doubtful, and an example against a rule stays a
 conflict. A second trial on the project, with the code as planned, gave 73
-conflicts about the change that cannot be implemented, in 40 runs. 33 of
-them set an example of an existing spec against a rule of the change, in a
+conflicts about the change that cannot be implemented, in 40 runs. 34 of
+them set an example against a rule, almost all an example of an existing
+spec against a rule of the change, in a
 situation that mixes the two: the concrete case of the example, taken to be
 also a run of the new workflow. The example says nothing of the kind. So the
 mark became what point 2 says now, and Z3 decides it. On the same 40 runs
@@ -198,6 +199,16 @@ changes get fewer conflicts, and the "direct" conflicts are found no less
 often; and if, with the options not given, `eval12/` gives what it gave.
 Points 4 and 5 change no answer on a project that fits one read and has
 fewer than 40 pairs; they are checked by tests.
+
+**The result** (E29, research_log.md). The rule is met on every point. With
+doubtful conflicts set aside, on 12 runs of each kind of change: the "cross"
+conflicts are found in 12, and in 0 before; the "direct" ones in 12, as
+before; a "clean" change has a conflict about it in 0 runs, 6 before; a
+"twins" change in 0, 11 before. `eval12/`, with no option, gives 34 of 36 as
+it did. The price: a change costs 87 requests to the LLM where it cost 55.
+Step 44 stays. Not done yet: reading what the tool itself reports on the
+four changes of the project (it is run there in 33 parts), and GUIDE.md,
+README.md and research.md.
 
 Small things that are open:
 
@@ -1465,8 +1476,11 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       conflict in a situation that says more than the example does is
       doubtful; a link that only renames is asked about with both symbols;
       on a change the pairs with one of its rules are asked about first; a
-      project too large for one document is checked in parts (2.1). Not run
-      yet: `eval20/`
+      project too large for one document is checked in parts (2.1).
+      Held-out `eval20/` (E29): "cross" conflicts 0 → 12 of 12, clean changes
+      with a conflict 6 → 0 of 12, "twins" changes 11 → 0 of 12, "direct" 12
+      of 12 as before. Left: the tool's own runs on the project, and
+      GUIDE.md, README.md, research.md
 - [x] **Step 43 — a conflict between a rule and a special case of it says
       so**: solver only (`checks._mark_special_cases`). A remark in the
       title, no count changes. T35: on 22 of 56 and 26 of 148 conflicts that

@@ -282,7 +282,9 @@ def _formalize_part(job: tuple) -> dict:
     job = (base_url, model name, the part's document (a Merged), samples,
     temperature, whole_run, the rules of the change). Returns the formal
     model, or {"error": the reason} when the part could not be formalized in
-    two tries: the LLM failed, or it did not keep the scenario labels.
+    two tries: the LLM failed, it did not keep the scenario labels, or it
+    made a rule without a label (the id of such a rule could be the label
+    that a scenario of another part has).
     """
     base_url, model_name, piece, samples, temperature, whole_run, first = job
     reason = ""
@@ -291,6 +293,9 @@ def _formalize_part(job: tuple) -> dict:
             llm = LLM(base_url, model_name)
             model = formalize(llm, piece.text, samples, temperature, whole_run=whole_run, first=first)
             changed_rules(model, piece)  # raises if a scenario label did not come back
+            unlabelled = [rule["id"] for rule in model["rules"] if rule["id"] not in piece.scenarios]
+            if unlabelled:
+                raise ValueError(f"the read step made rules without a scenario label ({', '.join(unlabelled)})")
             return model
         except Exception as error:  # one part must not stop the others
             reason = str(error)
