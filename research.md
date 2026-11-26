@@ -41,8 +41,8 @@ its entries. How each mechanism works is in [plan.md](plan.md), section 5.
   | `eval18/` | 6 specs written like tool specs, 7 scenarios each | 1 conflict, 1 gap, 2 ambiguities | E26 |
   | `real3/` | the last 16 archived changes of that project that fit, laid out like `real1/` | nothing: no known answer | E26 |
   | `real4/` | 13 more changes of that project, each creating a new spec; each also with one scenario of ours added | 1 conflict in the planted version | E27 |
-  | `eval19/` | 6 specs of 8 scenarios whose clean versions hold two scenarios with conditions that exclude each other by their meaning | 3 conflicts (1 direct, 2 between rules with different conditions), 1 gap | not run yet: held out for step 42 (plan.md 2.1) |
-  | `real5/` | the last 8 unused changes of that project that create a new spec; each also with one scenario of ours added, under a condition of its own | 1 conflict in the planted version | not run yet: held out for step 42 |
+  | `eval19/` | 6 specs of 8 scenarios whose clean versions hold two scenarios with conditions that exclude each other by their meaning | 3 conflicts (1 direct, 2 between rules with different conditions), 1 gap | E28 |
+  | `real5/` | the last 8 unused changes of that project that create a new spec; each also with one scenario of ours added, under a condition of its own | 1 conflict in the planted version | E28 |
   | `size/` | 4 versions of one spec of 30 requirements | 2 conflicts, 1 gap | E13 |
   | `size2/` | 4 versions of one spec of 100 requirements | 2 conflicts, 1 gap | E14 (not held-out: no design was tuned on it) |
 
@@ -257,6 +257,13 @@ changes that create a new spec, each with one scenario of ours that clashes
 with one of its own, 46 of the 52 planted conflicts were found (24 of 26
 before the second read, 22 of 26 with it; 29 of 52 without the assumed facts
 and links).
+
+**Before a conflict is reported as it is, the model is asked whether the
+conditions of the two rules can hold together** (T33, E28; 3.16). On 8 more
+real changes the conflicts that nobody planted go from 63 to 56, and on six
+specs of ours that hold such pairs from 97 to 19; no planted conflict is
+lost. A conflict planted in a real spec under a condition of its own is
+found in 10 of 16 runs, 4 of them marked doubtful.
 
 ---
 
@@ -494,6 +501,44 @@ second round   file_write_failed => error_bubbles_up_with_path        8 of 8
   can clash with another only through the facts and questions of 3.2 to
   3.13; and a rule with no usable translation at all is not read again.
 
+### 3.16 A question about the conditions of two rules that clash (T32, T33, E28)
+
+Most conflicts that nobody planted in real specs are in a situation that
+cannot happen (T32): to the solver a file can be read and not exist. The
+doubtful mark of 3.7 is made for that, but it needs an assumed fact that
+says so, and the facts of step 4 rarely do.
+
+```
+R5   "WHEN agent reads tasks.md AND incomplete tasks are found THEN display warning ..."
+R7   "WHEN tasks.md does not exist THEN proceed without task-related warning"
+asked     A: TRUE tasks_md_read, FALSE all_tasks_complete     B: FALSE tasks_md_exists
+answers   6 of 8 "impossible": "A file cannot be read if it does not exist."
+```
+
+- **Which pairs**: two rules that would be reported as a conflict that is
+  not doubtful, with two different conditions. A rule and a special case of
+  it are not asked about.
+- **What an answer does**: more than half "impossible" is an assumed fact
+  about the two conditions. A conflict proven from the rules alone stays,
+  marked doubtful; one that needed an assumed fact is not found.
+- **Its own prompt.** Asked with the prompt of 3.13, the model also called
+  impossible what a well-behaved system would prevent ("A server in
+  maintenance mode does not allow clients to submit messages"), and 5 of 50
+  planted conflicts of our sets were marked. The prompt now says that
+  "impossible" means excluded by the meaning of the words alone; with it,
+  none of the 50 is.
+- **Held-out** (each run scored with and without the new facts):
+  `eval19/`, six specs whose clean versions hold such a pair: clean runs
+  with a conflict 0 of 18 against 11, conflicts that nobody planted 19
+  against 97, planted conflicts 48 of 54 both ways. `real5/`, 8 real
+  changes: conflicts that nobody planted 56 against 63, planted conflicts
+  unchanged.
+- **Its limits**: it still marks R1 against R5 in the order example of the
+  Kiro blog ("An order that has been canceled and refunded cannot currently
+  be an active submitted order ..."), in 3 of 3 runs; and of its 10 marks on
+  `real5/`, 3 call two flags of one command impossible ("--default" and
+  "--no-default"), where what the tool does with both is a fair question.
+
 ---
 
 ## 4. What does not work yet
@@ -653,8 +698,9 @@ requirements have several hundred.
 
 Eleven sets with 66 base specs (297 versions), eighteen specs written like tool specs
 (78 versions), two longer specs and twenty-five OpenSpec
-projects with 139 changes, all written by us (and 61 changes of a real
-project, E23, E24, E26 and E27); 52 to 90 runs per experiment; one main model. One leak is known: an
+projects with 139 changes, six more specs with conditions that exclude each other (30 versions),
+all written by us (and 69 changes of a real
+project, E23, E24, E26, E27 and E28); 32 to 90 runs per experiment; one main model. One leak is known: an
 example in the read prompt came from the domain of an `eval3/` spec (D4). And
 one clean spec, `shelter_clean` in `eval9/`, has a conflict we did not plan
 (E15).
@@ -666,10 +712,20 @@ E16).
 
 ---
 
-### 4.8 What a real project shows (E23, T27, T28, E24, T29, T30, E26, T31, E27, T32)
+### 4.8 What a real project shows (E23, T27, T28, E24, T29, T30, E26, T31, E27, T32, T33, E28)
 
-Three batches of 16 changes of one real project, and 13 changes that create
+Three batches of 16 changes of one real project, and 21 changes that create
 a new spec, so a first sign.
+
+- **The question about two conditions removes one conflict in six to one in
+  nine** of those that nobody planted (129 of 156 left in T33, 56 of 63 in
+  E28), and what it marks is right in 7 of 10 marks that were read. What is
+  left is the rest of T32: a general rule against its exception, wrong
+  facts, and the situations that the model did not call impossible.
+- **A conflict planted under a condition of its own is found in 10 of 16
+  runs** (E28), against 46 of 52 for one with a copied condition (E27). 4 of
+  the 10 are marked doubtful, because the planted mode was read as an
+  event; 4 of the 6 misses are a rule without an agreed translation.
 
 - **The conflicts that nobody planted are not contradictions** (T32). Of 40
   conflicts that 13 real specs got in one run, not doubtful, 20 were read:
@@ -811,6 +867,7 @@ the prompts, so it can be scored again without a GPU.
 | E25 | `eval17/`, held-out: a symbol list with a name that is not a word is repaired (T29); before and after | 2 x 48 runs | runs that finish 7 of 48 before, 48 of 48 after; planted conflicts 22 of 24, gaps 10 of 12 (2.4) |
 | E26 | `eval18/` and a third real batch, held-out: the translations of a rule vote when they differ only in their symbols (T30); before and after | 2 x 90 and 2 x 32 runs | real rules of no use to the checks 54% and 62% before, 28% and 36% after; on `eval18/` 18 of 18 planted conflicts, 18 of 18 gaps and 11 of 36 ambiguities both ways (3.14) |
 | E27 | `real4/`, held-out: 13 real changes that create a new spec, each also with a planted conflict; a second read for the rules that got no symbol (T31); before and after | 2 x 52 runs | rules of no use 17% and 16% before, 16% and 14% after; planted conflicts found 24 of 26 before, 22 of 26 after (3.15) |
+| E28 | `eval19/` and `real5/`, held-out: the model is asked whether the conditions of two rules that clash can hold together (T33); each run scored with and without | 90 and 32 runs | conflicts that nobody planted 97 without, 19 with (`eval19/`), 63 and 56 (`real5/`); planted conflicts 48 of 54 and 6 of 16 both ways (3.16) |
 
 The trials (T1 to T26) were run on development data between these
 experiments. Among the last: T17 compared temperatures 0.3, 0.5 and 0.7 (3.1);

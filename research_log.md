@@ -4016,8 +4016,8 @@ about the two conditions, without calling a real conflict impossible?
 ```
 R5   "WHEN agent reads tasks.md AND incomplete tasks are found THEN display warning ..."
 R7   "WHEN tasks.md does not exist THEN proceed without task-related warning"
-asked     A: FALSE tasks_md_exists     B: TRUE tasks_md_read, FALSE all_tasks_complete     can both be the case?
-answers   8 of 8 "impossible": "A file cannot be read if it does not exist."
+asked     A: TRUE tasks_md_read, FALSE all_tasks_complete     B: FALSE tasks_md_exists     can both be the case?
+answers   6 of 8 "impossible" (7 of 8 in round 1 below): "A file cannot be read if it does not exist."
 fact      (not (and <condition of R5> <condition of R7>))      between R5 and R7, about: conditions
 ```
 
@@ -4094,6 +4094,108 @@ a jar, a lawn) are in no evaluation set.
 **Raw data.** experiments/results/T33_*.json (round 1) and T34_*.json (round
 2). Those of the saved runs are small files that name the runs they belong
 to; T33_specs, T33_size and T34_specs are full runs. Each has its table.
+
+---
+
+## E28 — Held-out `eval19/` and `real5/`: can the conditions of two rules that clash both hold? (2026-11-26)
+
+**Question.** Does the question of T33 mark the conflicts in a situation that
+cannot happen, on specs it was not built on, and does it leave the conflicts
+alone that we planted between rules whose conditions can hold together?
+
+**Setup.** `eval19/` and `real5/` were written first (7ddb391) and the design
+frozen in 30513fc. One arm: the new facts are marked, so each run is scored
+with them and without them, and "without" is the pipeline before the step.
+
+- `eval19/`: six specs of 8 scenarios (a playlist service, a greenhouse
+  controller, a library hold shelf, a stadium gate, a photo archive, a
+  freezer monitor). The clean version holds two scenarios whose conditions
+  exclude each other by their meaning, and that set one thing to two values
+  ("WHEN a playlist has no tracks THEN ... sets the cover ... to `blank`",
+  "WHEN the first track of a playlist has an album image THEN ... to
+  `album`"). The other versions add a direct conflict, a conflict under a
+  mode of the system ("WHEN the stadium is being evacuated THEN the gate
+  issues no re-entry pass"), a conflict under a state of the same thing
+  ("WHEN the account of the reader is blocked for unpaid fines THEN ..."),
+  or remove one of two complementary scenarios. 3 runs each, on the cluster.
+- `real5/`: the last 8 unused real changes that create a new spec (seven of
+  11 to 13 scenarios, one of 45), each as it is and with one scenario of
+  ours whose condition is a mode or a flag of its own ("WHEN a pull request
+  carries the label `docs-only` THEN the CI SHALL NOT prevent merging").
+  2 runs each, on the workstation login.
+
+**Results on `eval19/`** (90 runs, all finish; "found" is with doubtful
+conflicts set aside).
+
+| | Without the question | With it |
+|---|---|---|
+| planted conflicts found | 48 of 54 | 48 of 54 |
+| direct | 18 of 18 | 18 of 18 |
+| under a mode, under a state of the same thing | 15 and 15 of 18 | 15 and 15 of 18 |
+| **clean runs with a conflict** | **11 of 18** | **0 of 18** |
+| **conflicts that nobody planted** | **97** | **19** |
+| the two scenarios made for it, reported as a conflict that is not doubtful | 58 of 90 runs | 2 of 90 |
+| planted gaps found | 18 of 18 | 18 of 18 |
+
+- **The pair it was made for is marked**: asked about it 58 times, the model
+  called it impossible 56 times ("A playlist with zero tracks cannot have a
+  first track.", in the words of one answer).
+- **No planted conflict is touched.** The 30 planted pairs it was asked
+  about were all called possible. The 6 planted conflicts that are doubtful
+  either way are those of the greenhouse: "the price of electricity is at
+  its daily peak" and "the heater is in its yearly service" were read as
+  events, and a conflict between two events is doubtful (the limit of 3.7).
+- **It calls 27 other pairs impossible**, and 22 conflicts fewer of that
+  kind are reported as they are. 15 of the 27 are one pair of the hold shelf
+  that we had not seen: "a reader places a hold" against "a reader has no
+  holds". The model says that whoever places a hold has one; by the clock
+  that is the moment after.
+
+**Results on `real5/`** (32 runs, all finish).
+
+| | Without the question | With it |
+|---|---|---|
+| planted conflicts found, doubtful ones counted | 10 of 16 | 10 of 16 |
+| planted conflicts found, doubtful ones set aside | 6 of 16 | 6 of 16 |
+| **conflicts that nobody planted, not doubtful** | **63** | **56** |
+| the same, doubtful ones counted | 87 | 80 |
+
+- **It asks about 66 pairs and calls 10 impossible**, 5 different ones. Read:
+  - right, by the meaning of the words (7 of the 10): "all artifacts are
+    completed" with "an artifact is blocked" (4 times); "config.json ...
+    contains invalid JSON" with "config.json contains fields not in the
+    current schema" (3 times);
+  - wrong (3 of the 10): two flags or modes of one command that a user can
+    give together. "The --default and --no-default flags are mutually
+    exclusive and cannot both be provided in the same command"; `--force`
+    with interactive mode; `--no-default` with a user who confirms the
+    default. What the tool does then is a fair question, and it is now
+    marked doubtful. The prompt says not to assume that users prevent
+    anything; here the model did.
+- **The planted conflicts are left alone**: 6 pairs asked about, 48 answers
+  "possible".
+- **A conflict planted under a condition of its own is harder to find in
+  real text than one with a copied condition** (10 of 16 here, 46 of 52 in
+  E27), and not because of this step:
+  - 4 of the 10 are marked doubtful: the planted condition, a mode ("the
+    loader runs in lenient mode"), was read as an event, and a conflict
+    between two events is doubtful;
+  - 4 of the 6 misses are a rule without an agreed translation (in one case
+    the returned path is a number in some answers and a name in others);
+  - 2 are two symbols for one thing: `build_output_displayed` and
+    `no_build_output_displayed`, with no fact between them.
+
+**Decision.** The question stays, on by default: the rule of plan.md 2.1
+asked for fewer conflicts that nobody planted on both sets (19 against 97,
+56 against 63) and for at most one planted conflict in ten lost (none is).
+Written down as limits: in the order example of the Kiro blog it marks R1
+against R5 as doubtful (T33); it calls two flags of one command impossible
+(3 of its 10 marks on `real5/`); and it costs one question for each pair of
+rules that clash, about 2 for a real change and 1.5 for a spec of ours.
+`eval19/` and `real5/` are development data from now on.
+
+**Raw data.** experiments/results/E28_eval19.json and E28_real5.json, each
+with its table.
 
 ---
 

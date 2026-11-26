@@ -7,7 +7,7 @@ options do and what the output means is in [README.md](README.md).
 
 ```
 uv sync                      # on a "hardlink" error: set UV_LINK_MODE=copy and retry
-python -m pytest tests       # 89 tests, no LLM
+python -m pytest tests       # 95 tests, no LLM
 ```
 
 ## 2. Try it without a GPU
@@ -122,6 +122,7 @@ python -m experiments.evaluate --base-url http://localhost:18200/v1 --specs expe
 python -m experiments.evaluate --base-url http://localhost:18200/v1 --specs experiments/sets/eval15 --runs 3 --symbol-sets 1 --name my_run_incremental --incremental
 python -m experiments.evaluate --rescore experiments/results/my_run.json          # score saved runs again, no LLM
 python -m experiments.evaluate --rescore experiments/results/my_run.json --second-base-url http://localhost:18201/v1    # add the second model to saved runs
+python -m experiments.evaluate --rescore experiments/results/my_run.json --conditions-base-url http://localhost:18200/v1 --name my_run_conditions    # ask the question about two conditions on saved runs that were made without it
 ```
 
 The changes of the real project (`experiments/sets/real1` to `real5`) are run

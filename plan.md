@@ -79,18 +79,22 @@ this order:
    - **the conflicts that nobody planted are not contradictions**: of 20
      that were read (T32), 8 are in a situation that cannot happen, 7 set a
      general rule against its own exception, and none is a contradiction.
-     Step 42 asks the model whether the two conditions can hold together
-     (plan in 2.1). After it: a mark for a rule against a special case of
-     it, which the solver can prove;
+     Since step 42 the model is asked whether the two conditions can hold
+     together, which marks one such conflict in six to nine. Next: a mark
+     for a rule against a special case of it, which the solver can prove
+     (step 43). Not tried: the wrong facts of the questions about outcomes;
+   - **a conflict under a condition of its own** is found in 10 of 16 runs
+     when planted in a real spec, and 4 of the 10 are doubtful because the
+     mode was read as an event (E28). The event mark is the weak spot;
    - the parentheses of a translation could be repaired as those of a fact;
      a rule with no usable translation at all could be read again too.
 
    A larger invented project with a change that does everything at once is
    done (step 36).
-   All eighteen sets, the three real batches and `real4/` have been read
-   (E27). `eval19/` and `real5/` are written for step 42; after that a test
-   on real changes needs another project: the 8 changes of `real5/` are the
-   last of this one that fit.
+   All nineteen sets, the three real batches, `real4/` and `real5/` have
+   been read (E28). A new design needs `eval20/`, written first, and a test
+   on real changes needs another project: the 8 changes of `real5/` were
+   the last of this one that fit.
 2. **The change check, further** (G2). The gap that a removal opens is done
    (step 33), and so is a way to check a change on a saved model of the
    specs (step 34, `--incremental`). What is left:
@@ -124,73 +128,6 @@ this order:
      once (step 30): a gap the assumed facts rule out is marked doubtful, but
      the facts rarely say that one of the two always holds, so only 2 of 13
      were marked (T20, E16). This is a known limit now.
-
-### 2.1 The plan for step 42: can the conditions of two rules that clash both hold? (built, frozen; held-out runs open)
-
-On real specs most conflicts that nobody planted are artefacts, and the
-largest group is a situation that cannot happen (8 of the 20 read in T32):
-
-```
-R5   "WHEN agent reads tasks.md AND incomplete tasks are found THEN display warning ..."
-     (and tasks_md_read (not all_tasks_complete)) => incomplete_tasks_warning_displayed
-R7   "WHEN tasks.md does not exist THEN proceed without task-related warning"
-     (not tasks_md_exists) => (not incomplete_tasks_warning_displayed)
-conflict in:  tasks_md_read = true, tasks_md_exists = false
-```
-
-To Z3 a file can be read and not exist. The doubtful mark exists for this (a
-conflict in a situation that the assumed facts rule out, 5.2), but the facts
-of step 4 rarely say such a thing. And the questions about two outcomes
-(5.7) make more of these conflicts, because they are asked for every pair of
-rules that Z3 thinks can apply together.
-
-One try, as a fifth check of step 6 (`probe.py`), after the other four:
-
-1. **Which pairs.** Our code takes the pairs of rules that would be reported
-   as a conflict that is not doubtful: both can apply in one situation that
-   the facts allow, they cannot both be obeyed there, and they do not react
-   to two different events. Of those it keeps the pairs whose conditions
-   are two different definite states, each saying something that the other
-   does not. Two rules with the same condition, or a rule and a special
-   case of it, are not asked about: they apply together by their words.
-2. **The question.** The model is asked eight times about what only one
-   condition says and what only the other says: "A: tasks_md_exists is
-   FALSE. B: tasks_md_read is TRUE, all_tasks_complete is FALSE. Can both
-   be the case in the same snapshot?" It does not see the requirements. The
-   question has a prompt of its own since the first development runs (T33):
-   asked with the prompt of the questions about two outcomes, the model
-   also called impossible what a well-behaved system would merely prevent
-   ("a server in maintenance mode does not allow clients to submit
-   messages"). The prompt now says that "impossible" means excluded by the
-   meaning of the words alone.
-3. **The fact.** If more than half of the answers say "impossible", that is
-   an assumed fact: `(not (and <condition of R5> <condition of R7>))`. A
-   conflict proven from the rules alone then stays in the report, marked
-   doubtful, with the fact quoted; a conflict that needs an assumed fact is
-   not found there any more. `checks.py` does both already.
-
-On the 40 conflicts of T32 the question could be asked for 33.
-
-**The risk** is a real conflict between two rules whose conditions can hold
-together, which the model calls impossible: it would be marked doubtful.
-
-**How it is tested.** First `eval19/` (make_eval.py): six specs whose clean
-versions hold two scenarios with conditions that exclude each other by their
-meaning ("a playlist has no tracks", "the first track of a playlist has an
-album image") and that set one thing to two values; each also with a direct
-conflict, two conflicts between rules whose conditions can hold together
-(one under a mode of the system, one under a state of the same thing), and
-a gap. And `real5/` (experiments/real/planted.py): the last 8 unused real
-changes that create a new spec, each also with a conflict planted under a
-condition of its own. Development: `real4/` and the earlier sets with
-planted overlaps. The new facts are marked, so the same runs are scored with
-and without them.
-
-**The rule, set now.** The question stays if on `eval19/` and `real5/`,
-doubtful conflicts set aside, fewer conflicts that nobody planted are
-reported, and no more than one planted conflict in ten is lost that was
-found without it. A reading of what it marks on `real5/` goes with the
-numbers.
 
 Small things that are open:
 
@@ -232,6 +169,20 @@ with a conflict that was not planted from 3 to 13 of 144 (T22). On held-out
 loss, and each added conflict quotes the fact it rests on. The rule for such
 decisions from now on: when the gains are larger than the losses, the new
 version becomes the default, and the loss is written down as a limit.
+
+Decided on 2026-11-26: **the model is asked whether the conditions of two
+rules that clash can both hold** (step 42, check 5 of step 6, 5.7). For two
+rules that would be reported as a conflict that is not doubtful, with two
+different conditions, eight answers; more than half "impossible" is an
+assumed fact about the two conditions, and the conflict is doubtful, or not
+found if it needed an assumed fact. The question got a prompt of its own
+after the first development runs (T33). On held-out `eval19/` the clean runs
+with a conflict go from 11 of 18 to 0 and the conflicts that nobody planted
+from 97 to 19, with 48 of 54 planted conflicts found both ways; on held-out
+`real5/` 63 to 56, with the planted ones unchanged (E28). The price: R1
+against R5 of the order example is marked doubtful in 3 of 3 runs; two flags
+of one command are called impossible (3 of its 10 marks on `real5/`); one
+question for each pair of rules that clash.
 
 Decided on 2026-11-26: **a rule without a symbol for what it demands is read
 a second time** (step 41). The rules that are not accepted after step 3 and
@@ -736,7 +687,7 @@ formal model K ─► findings ─┘
 - gaps cannot be matched (a gap is a situation over one model's own symbols):
   the gaps of the first model are kept
 
-### 5.7 Four checks by questions (`probe.py`, step 6)
+### 5.7 Five checks by questions (`probe.py`, step 6)
 
 - all 8 samples can agree and still be wrong: one model tends to make the same
   choice every time
@@ -830,6 +781,29 @@ conflict    C1 and C6, "if the assumed facts hold"                    (5.3, run 
   (`MAX_PAIRS`). A spec of six rules has 2 to 5; one of 100 requirements has
   several hundred
 - what it finds and what it costs: research.md 3.13 and 4.6
+
+**Check 5: can the conditions of two rules that clash both hold?** (step 42)
+
+- asked last, for every pair of rules *a*, *b* that would be reported as a
+  conflict that is not doubtful, and whose conditions differ:
+
+```
+they can apply together   A_a and A_b and the facts           satisfiable
+they clash there          A_a and A_b and C_a and C_b and the facts   unsatisfiable
+not two different events  (as in 5.2)
+two definite states       A_a and A_b each fix one value for each of their symbols,
+                          and each says something that the other does not
+```
+
+- the model sees what only A_a says and what only A_b says, as facts with
+  their descriptions, and no requirement; 8 answers: possible, impossible or
+  unclear (`CONDITIONS_SYSTEM`)
+- more than half "impossible" → an assumed fact, `(not (and A_a A_b))`, with
+  `between` and `about: conditions`
+- effect, by the two searches of 5.2: a conflict of the rules alone gets the
+  fact in `doubted_by` and is doubtful; a conflict that needs an assumed
+  fact is not found in a situation that the facts rule out
+- the same condition, or a rule and a special case of it: not asked about
 
 ### 5.8 A second reader (`formalize.py`, step 7, optional)
 
@@ -1032,6 +1006,7 @@ With `--incremental`:
 | `rules[].clusters` | how the samples split by meaning, e.g. `[5, 3]` |
 | `rules[].voted` | only when the rule was accepted by the vote of 5.1: how many of the usable translations entail the chosen one, e.g. `"7/8"` |
 | `rules[].demand_nothing` | only for a rule that is not accepted: how many of its translations demand nothing. Such a rule is read again (5.1) |
+| `condition_pairs` | step 6, check 5: each pair of rules asked about, and the count of its answers. A fact that came from one has `between`, the ids of the two rules, and `about: conditions` |
 | `reread`, `rules[].reread` | only when there was a second read: `reread` names the rules that were read again and the symbols that stayed; a rule has `reread: true` when its translation comes from the second round |
 | `symbols[].event` | true for something that happens at one moment (5.2) |
 | `rules[].trigger` | the event the rule reacts to (5.2), or empty |
@@ -1293,18 +1268,18 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       and one change that adds, rewrites, removes and renames (no design
       change). E22: 9 of 9 planted conflicts and 9 of 9 planted gaps in 3
       runs, both ways, and nothing else about the change
-- [ ] **Step 42 — can the conditions of two rules that clash both hold?**:
-      `eval19/` and `real5/` first (done). Then: for two rules that would be
+- [x] **Step 42 — can the conditions of two rules that clash both hold?**:
+      `eval19/` and `real5/` written first. For two rules that would be
       reported as a conflict that is not doubtful, and whose conditions
       differ, the model is asked whether the two conditions can hold
       together; if most answers say no, that is an assumed fact, and the
-      conflict is doubtful or gone (plan in 2.1). T33 (development, on
-      saved runs): on `real4/` 129 conflicts that nobody planted against
-      156; no planted conflict of our own sets is touched since the question
-      has a prompt of its own; the conflict of R1 and R5 in the order
-      example is marked doubtful in 3 of 3 runs. Frozen. Open: held-out
-      `eval19/` and `real5/`, with and without the new facts on the same
-      runs (E28)
+      conflict is doubtful or gone. T33 (development, on saved runs): on
+      `real4/` 129 conflicts that nobody planted against 156; no planted
+      conflict of our own sets is touched since the question has a prompt of
+      its own; R1 against R5 of the order example is marked doubtful in 3
+      of 3 runs. E28 (held-out, each run with and without): `eval19/` 19
+      against 97, clean runs with a conflict 0 of 18 against 11; `real5/`
+      56 against 63; no planted conflict lost. Kept
 - [x] **Step 41 — a second read for the rules that got no symbol**:
       `real4/` written first: 13 real changes that create a new spec, each
       also with one planted conflict. The rules that are not accepted and

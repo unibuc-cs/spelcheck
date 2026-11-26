@@ -687,6 +687,32 @@ The two conditions became two separate yes/no symbols, so Z3 can make both
 true. A conflict whose situation the assumed facts rule out is marked as
 doubtful too.
 
+The model rarely proposes such a fact by itself. So it is asked, for every
+two rules that clash under two different conditions. Take two rules of a
+real spec:
+
+```
+R5   "WHEN agent reads tasks.md AND incomplete tasks are found THEN display warning ..."
+R7   "WHEN tasks.md does not exist THEN proceed without task-related warning"
+```
+
+1. Z3 finds a situation in which both apply, a file that is read and does
+   not exist, and there the two cannot both be obeyed: a conflict.
+2. Our code takes what only one condition says and what only the other
+   says, and the model is asked eight times: "A: tasks_md_read is TRUE,
+   all_tasks_complete is FALSE. B: tasks_md_exists is FALSE. Can both be
+   the case in the same snapshot?" It sees no requirement.
+3. Six of the eight answer "impossible", and one of them writes: "A file
+   cannot be read if it does not exist." More than half is enough: that
+   sentence becomes an assumed fact, and the conflict is marked doubtful
+   with it.
+
+The prompt says that "impossible" means excluded by the meaning of the
+words, not prevented by a system that behaves. Without that sentence the
+model also doubted conflicts we had planted: "a server in maintenance mode
+does not allow clients to submit messages", for a rule that says what the
+server does in maintenance mode.
+
 A gap can have this second shape as well. In a laundry spec, "the slot is
 free" and "the slot is taken" became two symbols, and Z3 can make both false:
 
@@ -1274,9 +1300,26 @@ those 13 real specs got in one run:
 | another artefact | 4 | a wrong assumed fact, a mistranslation, a spinner during loading against the summary after it |
 
 For the solver a file can be read and not exist, because nothing in the
-formulas says otherwise. That is the largest group, and the next step is
-about it (6.6). The reading was done by the assistant that works on this
-project, not by a person.
+formulas says otherwise. That is the largest group. The reading was done by
+the assistant that works on this project, not by a person.
+
+The question of 3.3 about two conditions was made for that group. It was
+tested on six specs of ours that hold such pairs (`eval19`) and on the last
+8 unused real changes (`real5`), and every run was counted with and without
+its answers:
+
+| | Without the question | With it |
+|---|---|---|
+| `eval19`: clean runs with a conflict | 11 of 18 | 0 of 18 |
+| `eval19`: conflicts that nobody planted | 97 | 19 |
+| `eval19`: planted conflicts found | 48 of 54 | 48 of 54 |
+| `real5`: conflicts that nobody planted | 63 | 56 |
+
+On the real changes it called 10 pairs impossible. Seven are right ("all
+artifacts are completed" with "an artifact is blocked"). Three are two flags
+of one command that a user can type together, `--default` and
+`--no-default`: what the tool does then is a fair question, and it is now
+marked doubtful.
 
 **Longer specs.** All the specs counted above have at most six requirements.
 To see what a longer document does, we wrote two more, each in four versions
@@ -1320,7 +1363,8 @@ The project has five goals. This is where each one stands:
 | a fact or a link can be wrong, even with a majority behind it | which is why the report quotes every one that a conflict depends on |
 | there is no time | "then", "after" and "until" are not modelled: the logic is one snapshot |
 | real specs are harder than the ones we wrote | their rules demand two or three things each, and the symbols that the read step lists do not fit them: one rule in six to one in four gets no agreed translation or one that demands nothing, the more the longer the document. A whole project is too large to check at once (6.2) |
-| on real specs, most conflicts that nobody planted are not contradictions | of 20 that we read, 8 are in a situation that cannot happen, 4 are other artefacts, and 7 set a general rule against its own exception (6.2). No mark tells these apart yet |
+| on real specs, most conflicts that nobody planted are not contradictions | of 20 that we read, 8 are in a situation that cannot happen, 4 are other artefacts, and 7 set a general rule against its own exception (6.2). The question about two conditions marks one conflict in six to nine; the rest are reported as they are |
+| the question about two conditions also doubts real conflicts | in the order spec of part 2, a run made today marks R1 against R5 as doubtful: the model holds that a canceled order cannot be a submitted one. The Kiro blog reports that conflict. Two flags of one command are called impossible too (6.2) |
 | a voted rule can say less than its words | "display success message with archived name and list of updated specs" is kept as "the success message is displayed" (3.1). And a split that the vote settles is not asked about any more: 5 of the 36 planted ambiguities of `eval18` were voted on, and 1 was still found |
 | the cheaper way to check a change reads a new rule with little around it | shown only the saved symbols, the model sometimes ties a new rule to a saved event that the rule does not name. That cost 4 of 54 planted conflicts on `eval14`. On `eval15` it cost none, but one such rule was ambiguous in 3 of 3 runs (6.2). Either way, a project can have about 140 scenarios at most |
 | the evaluation is small | the specs were written by us, and there is one main model |
@@ -1406,11 +1450,10 @@ The full list is in research.md, section 5.
 
 ### 6.6 What is next
 
-1. **Real specs**: the conflicts in a situation that cannot happen. Before
-   such a conflict is reported, the model will be asked whether the
-   conditions of the two rules can hold together; the test sets for that
-   are written (`eval19`, `real5`). Then a mark for a rule against a
-   special case of it, and a larger evaluation, with another main model.
+1. **Real specs**: a mark for a rule against a special case of it, which
+   the solver can prove. Then the weak spot that the last test showed: a
+   mode that is read as an event makes a real conflict doubtful. And a
+   larger evaluation, with another main model and another real project.
 2. **The change check, further**: whether the cheaper way becomes the
    default, what the model is shown when it reads a new rule, and projects
    too large for one read answer.
@@ -1472,12 +1515,12 @@ The folders:
 speccheck/          the tool (the 8 files above; refine.py is the review that is switched off)
 specs/              3 small specs the prompts were developed on, with their saved output,
                     and auth_change, the example of part 5
-tests/              89 tests that need no LLM
+tests/              95 tests that need no LLM
 experiments/
   sets/             the 11 evaluation sets, eval to eval10 and eval12 (297 spec versions), two long specs,
                     eval16 to eval18 (eighteen specs written like real ones), real1 to real3 (48 changes of a real project),
-                    real4 (13 more real changes, each also with a planted conflict),
-                    eval19 and real5 (the test sets of the next step, not run yet),
+                    real4 and real5 (21 more real changes, each also with a planted conflict),
+                    eval19 (six specs with conditions that exclude each other),
                     and for the change check eval11, eval13, eval14, eval15, mixed (one larger project)
                     and change_dev (old specs as projects)
   results/          every experiment: the raw data (.json) and its tables (.md)
