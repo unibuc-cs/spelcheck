@@ -206,9 +206,47 @@ conflicts are found in 12, and in 0 before; the "direct" ones in 12, as
 before; a "clean" change has a conflict about it in 0 runs, 6 before; a
 "twins" change in 0, 11 before. `eval12/`, with no option, gives 34 of 36 as
 it did. The price: a change costs 87 requests to the LLM where it cost 55.
-Step 44 stays. Not done yet: reading what the tool itself reports on the
-four changes of the project (it is run there in 33 parts), and GUIDE.md,
-README.md and research.md.
+Step 44 stays.
+
+### 2.2 The plan for step 45: every example of a conflict must describe its situation (not built yet)
+
+The tool itself was then run on the four changes of the project, each in
+32 or 33 parts. The contradiction between two rules that its authors name is
+in the report, "found in 18 of 32 parts". But a change that can be built
+has a conflict with as much support, 21 of 32 parts. It is between an
+existing example and an example that the change adds: the same test case,
+and in the second "while" one more thing is true. Read as rules, the second
+is a special case of the first, and the two clash. The mark of step 44 is
+not given, because one of the two, the second, describes the whole
+situation.
+
+1. **Every example, not one.** A conflict with examples counts as it is only
+   when every example among its rules describes the whole situation: its
+   condition and what it demands, with the assumed facts, entail the
+   conditions of the other rules. An existing example does not say that the
+   condition of its new variant holds, so the two do not contradict each
+   other. Two examples with the same condition still do.
+2. **In a project that is checked in parts, a count means what is shown.**
+   Today a conflict that is plain in one part and doubtful in twenty says
+   "found in 21 parts". It will say in how many parts it was found as it is
+   shown, and the findings that are not doubtful will come first. This
+   changes no finding.
+
+**How it is tested.** `eval21/` (make_eval.py): four more projects about an
+assistant that calls tools, each with a rule about a call and one example
+that has no condition of its own. Three changes each, all of which add
+examples: two more cases of the request of the existing example, each under
+a condition of its own (nothing may be reported); an example with the words
+of the existing one in its WHEN part and the opposite outcome (that conflict
+must be found); and an example that breaks the rule about the call by what
+it demands itself (that conflict must be found).
+
+**The rule, set now.** Point 1 stays if on `eval21/`, with doubtful
+conflicts set aside and the same runs scored both ways, the "variant"
+changes have a conflict about them less often than when one example is
+enough, and the conflicts of the "same" and the "breaks" changes are found
+no less often; and if the saved runs of `eval20/` (E29), scored again, give
+what they gave. Point 2 is checked by tests.
 
 Small things that are open:
 

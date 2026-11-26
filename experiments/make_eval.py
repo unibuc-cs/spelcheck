@@ -1,6 +1,6 @@
-"""make_eval.py: writes the evaluation sets eval/ to eval20/, size/, size2/ and mixed/. No LLM, no GPU.
+"""make_eval.py: writes the evaluation sets eval/ to eval21/, size/, size2/ and mixed/. No LLM, no GPU.
 
-    python -m experiments.make_eval eval20     (only the sets named; all if none)
+    python -m experiments.make_eval eval21     (only the sets named; all if none)
 
 change_dev/ is development data for the change check: the OpenSpec-format
 specs of eval9/ and eval10/ as projects with a change (see as_projects).
@@ -287,6 +287,25 @@ Four changes each:
     direct  two rules about one function that cannot both hold
     twins   a setting whose name differs from an existing setting by one
             word, with another value; nothing may be reported
+
+eval21/ (written 2026-11-27, after E29 and the first runs of the tool on a
+real project of that kind, before the mark for examples was changed) has
+four more projects about an assistant that calls tools. Each has one rule
+about a call, and one example with no condition of its own: "Example: a book
+is lent: WHEN mira asks to borrow book b12 THEN `lend_book` is called once
+...". Three changes each, all of which add examples:
+
+    variant  two more cases of the request of the existing example, each
+             under a condition of its own ("WHEN the same request runs while
+             b12 is reserved for another reader THEN `lend_book` is never
+             called ..."); nothing may be reported. Read as rules, the first
+             is a special case of the existing example and clashes with it
+    same     an example with the words of the existing one in its WHEN part
+             and the opposite outcome: the two describe one case, and that
+             conflict must be found
+    breaks   an example whose own outcome makes the rule about the call
+             apply, and breaks it ("... THEN `lend_book` succeeds once AND
+             `check_card` is never called"): that conflict must be found
 """
 
 import json
@@ -3934,8 +3953,130 @@ PROJECTS20 = {
          "twins": ("add-daily-limit", "The number of transfers in a day is limited too.")}),
 }
 
+def _project21(rules: str, records: str, purposes: tuple, gate: tuple, base: tuple, lookup: tuple, recorded: tuple,
+               variants: tuple, same: tuple, breaks: tuple, names: dict) -> dict:
+    """One eval21 project: two spec files about the runs of an assistant, and three changes that add examples.
+
+    rules, records  the names of the two spec files; purposes: their purpose
+    gate            (requirement, sentence, scenario, text): a call needs an earlier call in the same run
+    base            (scenario, text): the existing example, with no condition of its own
+    lookup, recorded   two more rules about calls
+    variants        (requirement, sentence, two examples of the same request under a condition of their own)
+    same            (requirement, sentence, an example of the case of `base` with the opposite outcome)
+    breaks          (requirement, sentence, an example that breaks `gate` by what it demands itself)
+    names           for each change: (folder name, why)
+    """
+    requirement = lambda name, sentence, *scenarios: (name, sentence, list(scenarios))
+    return {
+        "specs": {
+            rules: (purposes[0], [requirement(gate[0], gate[1], (gate[2], gate[3])),
+                                  requirement("Requests", "The assistant SHALL handle the requests below as described.", base),
+                                  requirement(lookup[0], lookup[1], (lookup[2], lookup[3]))]),
+            records: (purposes[1], [requirement(recorded[0], recorded[1], (recorded[2], recorded[3]))]),
+        },
+        "changes": {
+            "variant": {"name": names["variant"][0], "why": names["variant"][1],
+                        "delta": {rules: {"ADDED": [requirement(variants[0], variants[1], *variants[2])]}},
+                        "expected": {"nothing": True}},
+            "same": {"name": names["same"][0], "why": names["same"][1],
+                     "delta": {rules: {"ADDED": [requirement(same[0], same[1], same[2])]}},
+                     "expected": {"conflicts": [[f"{rules}/Requests/{base[0]}", f"{rules}/{same[0]}/{same[2][0]}"]]}},
+            "breaks": {"name": names["breaks"][0], "why": names["breaks"][1],
+                       "delta": {rules: {"ADDED": [requirement(breaks[0], breaks[1], breaks[2])]}},
+                       "expected": {"conflicts": [[f"{rules}/{gate[0]}/{gate[2]}", f"{rules}/{breaks[0]}/{breaks[2][0]}"]]}},
+        },
+    }
+
+
+PROJECTS21 = {
+    "library": _project21(
+        "lending", "lending-records",
+        ("A library assistant handles the requests of readers and calls the tools of the lending system.",
+         "What the runs of the library assistant leave behind."),
+        ("Card check before a loan", "A book SHALL NOT be lent without a card check.",
+         "No loan without a card check", "WHEN a call of `lend_book` succeeds THEN an earlier call of `check_card` in the run succeeded"),
+        ("Example: a book is lent", "WHEN mira asks to borrow book b12 THEN `lend_book` is called once AND the answer gives the due date"),
+        ("Searches", "A search SHALL change nothing.",
+         "A search changes nothing", "WHEN a call of `find_book` succeeds THEN no loan changes in that call"),
+        ("Loan records", "Every loan SHALL be recorded.",
+         "Every loan is recorded", "WHEN a call of `lend_book` succeeds THEN the run writes one loan record that names the book"),
+        ("Other cases of a loan", "The assistant SHALL handle the cases below as described.",
+         [("Example: the book is reserved", "WHEN the same request runs while b12 is reserved for another reader THEN `lend_book` is never called AND the answer names the waiting list"),
+          ("Example: the loan is extended at once", "WHEN the same request runs and mira asks for two more weeks THEN `lend_book` is called once AND `extend_loan` is called once after it")]),
+        ("Loans at the desk", "A loan SHALL be made at the desk.",
+         ("Example: borrowing at the desk only", "WHEN mira asks to borrow book b12 THEN `lend_book` is never called AND the answer sends mira to the desk")),
+        ("Quick loans", "A quick loan SHALL be made at once.",
+         ("Example: a quick loan", "WHEN mira sends a quick request for book b12 THEN `lend_book` succeeds once AND `check_card` is never called")),
+        {"variant": ("add-loan-cases", "Two cases of a loan were not written down."),
+         "same": ("loans-at-the-desk", "The desk wants to see every reader."),
+         "breaks": ("add-quick-loans", "Readers should not wait at the terminal.")}),
+    "garage": _project21(
+        "repairs", "repairs-records",
+        ("A garage assistant handles the requests of customers and calls the tools of the workshop.",
+         "What the runs of the garage assistant leave behind."),
+        ("Estimate before a repair", "A repair SHALL NOT be started without an approved estimate.",
+         "No repair without an approved estimate", "WHEN a call of `start_repair` succeeds THEN an earlier call of `get_estimate_approval` in the run succeeded"),
+        ("Example: a repair is started", "WHEN tomas asks to repair the brakes of car c4 THEN `start_repair` is called once AND the answer gives the pickup day"),
+        ("Lookups", "A lookup SHALL change nothing.",
+         "A lookup changes nothing", "WHEN a call of `find_car` succeeds THEN no repair order changes in that call"),
+        ("Work records", "Every repair SHALL be recorded.",
+         "Every repair is recorded", "WHEN a call of `start_repair` succeeds THEN the run writes one work record that names the car"),
+        ("Other cases of a repair", "The assistant SHALL handle the cases below as described.",
+         [("Example: the part is not in stock", "WHEN the same request runs while the brake pads are out of stock THEN `start_repair` is never called AND the answer gives the delivery day of the part"),
+          ("Example: a courtesy car is booked", "WHEN the same request runs and tomas asks for a courtesy car THEN `start_repair` is called once AND `book_courtesy_car` is called once after it")]),
+        ("Inspections first", "Brakes SHALL be inspected before they are repaired.",
+         ("Example: brakes need an inspection first", "WHEN tomas asks to repair the brakes of car c4 THEN `start_repair` is never called AND the answer offers an inspection")),
+        ("Roadside repairs", "A roadside repair SHALL start at once.",
+         ("Example: a roadside repair", "WHEN tomas sends a roadside request for car c4 THEN `start_repair` succeeds once AND `get_estimate_approval` is never called")),
+        {"variant": ("add-repair-cases", "Two cases of a repair were not written down."),
+         "same": ("inspect-brakes-first", "A wrong brake repair came back twice."),
+         "breaks": ("add-roadside-repairs", "A car on the road cannot wait for an estimate.")}),
+    "pharmacy": _project21(
+        "dispensing", "dispensing-records",
+        ("A pharmacy assistant handles the requests of patients and calls the tools of the dispensary.",
+         "What the runs of the pharmacy assistant leave behind."),
+        ("Verification before dispensing", "A medicine SHALL NOT be dispensed without a verified prescription.",
+         "No medicine without a verified prescription", "WHEN a call of `dispense_medicine` succeeds THEN an earlier call of `verify_prescription` in the run succeeded"),
+        ("Example: a prescription is filled", "WHEN nora asks to fill prescription p9 THEN `dispense_medicine` is called once AND the answer gives the dosage"),
+        ("Lookups", "A lookup SHALL change nothing.",
+         "A lookup changes nothing", "WHEN a call of `find_prescription` succeeds THEN no stock changes in that call"),
+        ("Dispensing records", "Every dispensed medicine SHALL be recorded.",
+         "Every dispensed medicine is recorded", "WHEN a call of `dispense_medicine` succeeds THEN the run writes one dispensing record that names the prescription"),
+        ("Other cases of a prescription", "The assistant SHALL handle the cases below as described.",
+         [("Example: the prescription has expired", "WHEN the same request runs while p9 has expired THEN `dispense_medicine` is never called AND the answer asks for a new prescription"),
+          ("Example: a reminder is set", "WHEN the same request runs and nora asks for a refill reminder THEN `dispense_medicine` is called once AND `set_reminder` is called once after it")]),
+        ("The pharmacist on duty", "A prescription SHALL be filled by the pharmacist on duty.",
+         ("Example: filling needs the pharmacist", "WHEN nora asks to fill prescription p9 THEN `dispense_medicine` is never called AND the answer names the pharmacist on duty")),
+        ("The night counter", "A refill at the night counter SHALL be handed out at once.",
+         ("Example: a night-counter refill", "WHEN nora sends a night-counter request for prescription p9 THEN `dispense_medicine` succeeds once AND `verify_prescription` is never called")),
+        {"variant": ("add-prescription-cases", "Two cases of a prescription were not written down."),
+         "same": ("pharmacist-on-duty", "The pharmacist wants to see every prescription."),
+         "breaks": ("add-night-counter", "Patients come at night with a refill.")}),
+    "irrigation": _project21(
+        "watering", "watering-records",
+        ("A farm assistant handles the requests of growers and calls the tools of the irrigation system.",
+         "What the runs of the farm assistant leave behind."),
+        ("Soil check before watering", "A field SHALL NOT be watered without a soil check.",
+         "No watering without a soil check", "WHEN a call of `open_valve` succeeds THEN an earlier call of `check_soil` in the run succeeded"),
+        ("Example: a field is watered", "WHEN iris asks to water field f3 THEN `open_valve` is called once AND the answer gives the minutes"),
+        ("Weather", "Reading the weather SHALL change nothing.",
+         "Reading the weather changes nothing", "WHEN a call of `read_weather` succeeds THEN no valve changes in that call"),
+        ("Watering records", "Every watering SHALL be recorded.",
+         "Every watering is recorded", "WHEN a call of `open_valve` succeeds THEN the run writes one watering record that names the field"),
+        ("Other cases of watering", "The assistant SHALL handle the cases below as described.",
+         [("Example: rain is forecast", "WHEN the same request runs while rain is forecast for f3 THEN `open_valve` is never called AND the answer gives the forecast"),
+          ("Example: a second pass is planned", "WHEN the same request runs and iris asks for a second pass in the evening THEN `open_valve` is called once AND `schedule_pass` is called once after it")]),
+        ("Watering by hand", "Young plants SHALL be watered by hand.",
+         ("Example: watering by hand only", "WHEN iris asks to water field f3 THEN `open_valve` is never called AND the answer tells iris to water by hand")),
+        ("Frost alarms", "At a frost alarm the valves SHALL open at once.",
+         ("Example: a frost alarm", "WHEN iris sends a frost-alarm request for field f3 THEN `open_valve` succeeds once AND `check_soil` is never called")),
+        {"variant": ("add-watering-cases", "Two cases of watering were not written down."),
+         "same": ("water-by-hand", "The valves broke young plants."),
+         "breaks": ("add-frost-alarms", "Frost does not wait for a soil check.")}),
+}
+
 PROJECT_SETS = {"eval11": PROJECTS11, "eval13": PROJECTS13, "eval14": PROJECTS14, "eval15": PROJECTS15,
-                "mixed": PROJECTS_MIXED, "eval20": PROJECTS20,
+                "mixed": PROJECTS_MIXED, "eval20": PROJECTS20, "eval21": PROJECTS21,
                 "change_dev": as_projects({**SPECS9, **SPECS10})}
 
 
