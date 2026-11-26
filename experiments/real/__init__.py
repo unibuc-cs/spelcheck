@@ -19,8 +19,9 @@ with the licence of the project they come from; they can be run from there:
 
     python -m experiments.evaluate --base-url ... --specs experiments/sets/real2 --runs 1 --symbol-sets 1 --name ...
 
-real4 is written by planted.py: the changes that create a new spec, each
-also with one scenario of ours that clashes with one of its own.
+real4 and real5 are written by planted.py: changes that create a new spec,
+each also with one scenario of ours that clashes with one of its own.
 
-    python experiments/real/planted.py .scratch/real_cases experiments/sets/real4
+    python experiments/real/planted.py .scratch/real_cases experiments/sets/real4 real4
+    python experiments/real/planted.py .scratch/real_cases experiments/sets/real5 real5
 """

@@ -1,6 +1,6 @@
-"""make_eval.py: writes the evaluation sets eval/ to eval18/, size/, size2/ and mixed/. No LLM, no GPU.
+"""make_eval.py: writes the evaluation sets eval/ to eval19/, size/, size2/ and mixed/. No LLM, no GPU.
 
-    python -m experiments.make_eval eval18     (only the sets named; all if none)
+    python -m experiments.make_eval eval19     (only the sets named; all if none)
 
 change_dev/ is development data for the change check: the OpenSpec-format
 specs of eval9/ and eval10/ as projects with a change (see as_projects).
@@ -244,6 +244,29 @@ vote could cost: the ambiguities. Five versions each:
                 days": at 90 days only, or from 90 days on)
     ambiguity2  one scenario reworded with "only if", with an "if" at the end
                 of two outcomes, or with "and ... or ... and"
+    gap         one of two complementary scenarios removed
+
+eval19/ (written 2026-11-26, after E27, before the model is asked whether
+the conditions of two rules can hold together) has six specs of 8 scenarios
+(a playlist service, a greenhouse controller, a library hold shelf, a stadium
+gate, a photo archive, a freezer monitor). Its clean versions hold what real
+specs are full of and ours were not: two scenarios whose conditions exclude
+each other by what they mean, though no word of one is the opposite of a
+word of the other ("a playlist has no tracks", "the first track of a
+playlist has an album image"), and that set the same thing to two values.
+For the solver both conditions can hold, and the two scenarios clash there.
+Five versions each:
+
+    clean       nothing planted; the two scenarios above must not be reported
+                as a conflict (or only as a doubtful one)
+    direct      one scenario added for the condition of an existing one, with
+                an outcome that cannot hold together with its outcome
+    overlap1    one scenario added whose condition is a mode of the whole
+                system, and can hold together with the condition of an
+                existing scenario; the outcomes cannot
+    overlap2    the same with a condition about the thing that the existing
+                scenario is about ("the card is valid", "the account of the
+                reader is blocked"): these two must still be found
     gap         one of two complementary scenarios removed
 """
 
@@ -2703,10 +2726,121 @@ SPECS18 = {
         7, [1, 6]),
 }
 
+def _spec19(intro: str, rules: list, direct: tuple, direct_with: int, overlap1: tuple, overlap1_with: int,
+            overlap2: tuple, overlap2_with: int, second_case: int, covered: list) -> dict:
+    """One eval19 spec: 8 scenarios and its four planted versions.
+
+    The last two scenarios are the pair whose conditions exclude each other by
+    their meaning; nothing is expected about them.
+
+    direct, direct_with      the scenario that the direct version adds, and the number of the
+                             scenario it clashes with (numbers count from 1, in the document)
+    overlap1, overlap1_with  the same for a scenario whose condition is a mode of the system
+    overlap2, overlap2_with  the same for a scenario whose condition is about the thing that
+                             the existing scenario is about
+    second_case              the scenario that the gap version removes: the second of two
+                             complementary cases
+    covered                  the scenarios whose event has both of its cases in the clean spec
+    """
+    added = len(rules) + 1
+    return {"format": "openspec", "intro": intro, "rules": rules, "covered": covered,
+            "variants": {"direct": ({"add": direct}, {"conflicts": [[direct_with, added]]}),
+                         "overlap1": ({"add": overlap1}, {"conflicts": [[overlap1_with, added]]}),
+                         "overlap2": ({"add": overlap2}, {"conflicts": [[overlap2_with, added]]}),
+                         "gap": ({"remove": second_case}, {"gaps": [second_case - 1]})}}
+
+
+SPECS19 = {
+    "playlists": _spec19(
+        "A service keeps the playlists of its users.",
+        [("Adding", "Track available", "WHEN a user adds a track to a playlist AND the track is available in the country of the user THEN the service appends the track to the playlist AND sets the track state to `playable`"),
+         ("Adding", "Track not available", "WHEN a user adds a track to a playlist AND the track is not available in the country of the user THEN the service appends the track to the playlist AND sets the track state to `greyed out`"),
+         ("Sharing", "Public playlist", "WHEN a user asks for a share link AND the playlist is public THEN the service answers with status 200 AND returns the link of the playlist"),
+         ("Sharing", "Private playlist", "WHEN a user asks for a share link AND the playlist is not public THEN the service answers with status 403"),
+         ("Deleting", "Playlist deleted", "WHEN a user deletes a playlist THEN the service moves the playlist to the trash"),
+         ("Offline", "Kept on the device", "WHEN a playlist is marked for offline use THEN the service keeps the tracks of the playlist on the device"),
+         ("Cover", "Empty playlist", "WHEN a playlist has no tracks THEN the service sets the cover of the playlist to `blank`"),
+         ("Cover", "Album image", "WHEN the first track of a playlist has an album image THEN the service sets the cover of the playlist to `album`")],
+        ("Open links", "Link for everyone", "WHEN a user asks for a share link AND the playlist is not public THEN the service answers with status 200"), 4,
+        ("Storage", "Device almost full", "WHEN the storage of the device is almost full THEN the service keeps no tracks of any playlist on the device"), 6,
+        ("Followers", "Followed playlist", "WHEN a playlist is followed by other users THEN the service does not move the playlist to the trash"), 5,
+        4, [1, 3]),
+    "greenhouse": _spec19(
+        "A controller runs the vents, the pump and the lamps of a greenhouse.",
+        [("Vents", "Hot and calm", "WHEN the air in the greenhouse becomes too hot AND the wind is calm THEN the controller opens the roof vents"),
+         ("Vents", "Hot and windy", "WHEN the air in the greenhouse becomes too hot AND the wind is not calm THEN the controller keeps the roof vents closed AND starts the fans"),
+         ("Watering", "Soil dry", "WHEN the morning check runs AND the soil is dry THEN the controller starts the pump"),
+         ("Watering", "Soil not dry", "WHEN the morning check runs AND the soil is not dry THEN the controller leaves the pump off"),
+         ("Lamps", "Dark day", "WHEN the daylight sensor reports a dark day THEN the controller switches the grow lamps on"),
+         ("Frost", "Frost forecast", "WHEN frost is forecast for the night THEN the controller sets the heater mode to `night`"),
+         ("Tank light", "Tank empty", "WHEN the water tank is empty THEN the controller sets the tank light to `red`"),
+         ("Tank light", "Water frozen", "WHEN the water in the tank is frozen THEN the controller sets the tank light to `blue`")],
+        ("Extra watering", "Water anyway", "WHEN the morning check runs AND the soil is not dry THEN the controller starts the pump"), 4,
+        ("Tariff", "Peak price", "WHEN the price of electricity is at its daily peak THEN the controller switches the grow lamps off"), 5,
+        ("Service", "Heater in service", "WHEN the heater is in its yearly service THEN the controller sets the heater mode to `off`"), 6,
+        4, [1, 3]),
+    "holds": _spec19(
+        "A library system keeps the books that readers have asked for on a hold shelf.",
+        [("Placing", "Copy in the branch", "WHEN a reader places a hold AND a copy is in the branch THEN the system puts the copy on the hold shelf AND sends the pickup message"),
+         ("Placing", "No copy in the branch", "WHEN a reader places a hold AND no copy is in the branch THEN the system adds the reader to the waiting list"),
+         ("Pickup", "Card valid", "WHEN a reader scans a card at the hold shelf AND the card is valid THEN the system checks the book out to the reader"),
+         ("Pickup", "Card not valid", "WHEN a reader scans a card at the hold shelf AND the card is not valid THEN the system checks no book out to the reader AND shows \"see the desk\""),
+         ("Shelf", "Shelf label", "WHEN a copy is put on the hold shelf THEN the system prints a label with the name of the reader"),
+         ("Transfer", "Other branch", "WHEN a reader asks to collect a hold at another branch THEN the system sends the book to that branch"),
+         ("Notice", "No holds", "WHEN a reader has no holds THEN the system sets the pickup notice of the reader to `none`"),
+         ("Notice", "Hold ready", "WHEN a hold of a reader is ready on the shelf THEN the system sets the pickup notice of the reader to `ready`")],
+        ("Closed list", "No waiting", "WHEN a reader places a hold AND no copy is in the branch THEN the system does not add the reader to the waiting list AND shows \"not available\""), 2,
+        ("Renovation", "Branch closed", "WHEN a branch is closed for renovation THEN the system sends no book to that branch"), 6,
+        ("Fines", "Account blocked", "WHEN the account of the reader is blocked for unpaid fines THEN the system checks no book out to the reader"), 3,
+        4, [1, 3]),
+    "gates": _spec19(
+        "A gate system lets visitors into a stadium.",
+        [("Entry", "Ticket valid", "WHEN a visitor scans a ticket AND the ticket is valid for the match of the day THEN the gate opens the turnstile AND marks the ticket as used"),
+         ("Entry", "Ticket not valid", "WHEN a visitor scans a ticket AND the ticket is not valid for the match of the day THEN the gate keeps the turnstile closed AND shows \"ticket not valid\""),
+         ("Bags", "Bag within the limit", "WHEN a steward checks a bag AND the bag is within the size limit THEN the gate prints a bag tag"),
+         ("Bags", "Bag too large", "WHEN a steward checks a bag AND the bag is not within the size limit THEN the gate prints a cloakroom slip"),
+         ("Board", "Stand full", "WHEN the last free seat of a stand is taken THEN the gate shows the stand as full on the board"),
+         ("Re-entry", "Visitor leaves", "WHEN a visitor leaves through the turnstile THEN the gate issues a re-entry pass"),
+         ("Lane sign", "No match", "WHEN no match is scheduled for the day THEN the gate sets the lane sign to `closed`"),
+         ("Lane sign", "Match started", "WHEN the match of the day has started THEN the gate sets the lane sign to `late entry`")],
+        ("Open doors", "Let everyone in", "WHEN a visitor scans a ticket AND the ticket is not valid for the match of the day THEN the gate opens the turnstile"), 2,
+        ("Evacuation", "Stadium evacuated", "WHEN the stadium is being evacuated THEN the gate issues no re-entry pass"), 6,
+        ("Banned", "Ticket holder banned", "WHEN the holder of a ticket is on the list of banned visitors THEN the gate keeps the turnstile closed"), 1,
+        4, [1, 3]),
+    "photos": _spec19(
+        "A command-line tool, `pho`, keeps the photos of a family in albums.",
+        [("Import", "New photo", "WHEN the user runs `pho import <file>` AND the photo is not in the archive THEN the tool copies the photo into the archive AND prints the id of the photo"),
+         ("Import", "Known photo", "WHEN the user runs `pho import <file>` AND the photo is already in the archive THEN the tool copies nothing AND prints \"already imported\""),
+         ("Export", "Album exists", "WHEN the user runs `pho export <album>` AND the album exists THEN the tool writes a zip file of the album AND exits with code 0"),
+         ("Export", "Album missing", "WHEN the user runs `pho export <album>` AND the album does not exist THEN the tool prints \"no such album\" AND exits with code 3"),
+         ("Tags", "Tag added", "WHEN the user runs `pho tag <photo> <word>` THEN the tool adds the word to the tags of the photo"),
+         ("Sharing", "Album shared", "WHEN the user runs `pho share <album>` THEN the tool creates a public link for the album"),
+         ("Thumbnail", "Empty album", "WHEN an album has no photos THEN the tool sets the thumbnail of the album to `placeholder`"),
+         ("Thumbnail", "Video first", "WHEN the newest photo of an album is a video still THEN the tool sets the thumbnail of the album to `video`")],
+        ("Lenient export", "Empty archive file", "WHEN the user runs `pho export <album>` AND the album does not exist THEN the tool writes an empty zip file AND exits with code 0"), 4,
+        ("Read-only", "Archive read-only", "WHEN the archive is in read-only mode THEN the tool creates no public link for any album"), 6,
+        ("Locked photos", "Photo locked", "WHEN a photo is marked as locked THEN the tool adds no word to the tags of the photo"), 5,
+        4, [1, 3]),
+    "freezers": _spec19(
+        "A monitor watches the freezers of a laboratory.",
+        [("Door", "Closed in time", "WHEN a freezer door is opened AND it is closed again within a minute THEN the monitor writes the opening to the log"),
+         ("Door", "Left open", "WHEN a freezer door is opened AND it is not closed again within a minute THEN the monitor writes the opening to the log AND sounds the door alarm"),
+         ("Readings", "In range", "WHEN a temperature reading arrives AND the reading is within the range of the freezer THEN the monitor stores the reading"),
+         ("Readings", "Out of range", "WHEN a temperature reading arrives AND the reading is not within the range of the freezer THEN the monitor stores the reading AND pages the technician on duty"),
+         ("Samples", "Sample registered", "WHEN a researcher registers a sample THEN the monitor assigns the sample a shelf position"),
+         ("Defrost", "Defrost due", "WHEN a freezer has run for half a year without a defrost THEN the monitor puts a defrost on the calendar"),
+         ("Status light", "Switched off", "WHEN a freezer is switched off THEN the monitor sets the status light of the freezer to `grey`"),
+         ("Status light", "Compressor running", "WHEN the compressor of a freezer is running THEN the monitor sets the status light of the freezer to `green`")],
+        ("Quiet nights", "No page", "WHEN a temperature reading arrives AND the reading is not within the range of the freezer THEN the monitor stores the reading AND does not page the technician on duty"), 4,
+        ("Studies", "Running study", "WHEN a freezer holds the samples of a running study THEN the monitor puts no defrost on the calendar"), 6,
+        ("Capacity", "Shelves full", "WHEN every shelf of the freezers is full THEN the monitor assigns the sample no shelf position"), 5,
+        4, [1, 3]),
+}
+
 SETS = {"eval": SPECS, "eval2": SPECS2, "eval3": SPECS3, "eval4": SPECS4, "eval5": SPECS5,
         "eval6": SPECS6, "eval7": SPECS7, "eval8": SPECS8, "eval9": SPECS9, "eval10": SPECS10,
         "eval12": SPECS12, "size": SPECS_SIZE, "size2": SPECS_SIZE2, "eval16": SPECS16, "eval17": SPECS17,
-        "eval18": SPECS18}
+        "eval18": SPECS18, "eval19": SPECS19}
 
 
 def _project13(capabilities: tuple, first, second, doors, pair, single, ban, notice, added, removal: dict) -> dict:
