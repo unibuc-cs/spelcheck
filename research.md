@@ -539,6 +539,20 @@ answers   6 of 8 "impossible": "A file cannot be read if it does not exist."
   `real5/`, 3 call two flags of one command impossible ("--default" and
   "--no-default"), where what the tool does with both is a fair question.
 
+### 3.17 A conflict between a rule and a special case of it says so (T35)
+
+Real specs state a rule and, next to it, its exception, and the two clash
+wherever the exception applies. The solver cannot know what was meant, but
+it can prove the form: the condition of one rule entails the condition of
+the other, and not the other way round. Such a conflict gets a remark in
+its title ("R2 is a special case of R1") and one sentence: "If R2 is meant
+as an exception, R1 does not say so." It stays a conflict and is counted as
+before. On real specs one conflict in three to six that nobody planted has
+the form (22 of 56 in `real5/`, 26 of 148 in `real4/`); none of the
+conflicts in our own sets has it. A rule that always applies is left out,
+so "never backorder" against "backorder when stock is missing" keeps its
+title.
+
 ---
 
 ## 4. What does not work yet
@@ -726,6 +740,10 @@ a new spec, so a first sign.
   runs** (E28), against 46 of 52 for one with a copied condition (E27). 4 of
   the 10 are marked doubtful, because the planted mode was read as an
   event; 4 of the 6 misses are a rule without an agreed translation.
+- **What a reader of a real report still has to sort**: of the 63 conflicts
+  that `real5/` reported as they were, 7 are doubtful since the question
+  about two conditions, 22 carry the remark of 3.17, and 34 are left
+  without any mark (T35).
 
 - **The conflicts that nobody planted are not contradictions** (T32). Of 40
   conflicts that 13 real specs got in one run, not doubtful, 20 were read:

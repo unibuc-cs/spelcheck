@@ -444,6 +444,7 @@ The title of each finding says how far to trust it. These are real titles:
 | "found with k of K symbol sets" | optional: the spec was translated K times, each time with other symbols, and k of them found it | "Conflict (found with 3 of 3 symbol sets): Conflict between removal and retention" |
 | "Not checked: ..." | not a finding about the spec: the requirement could not be written in logic, because no symbol stands for what it demands, and it took no part in the checks | "Not checked: Uncheckable Success Message Requirement", for a rule that demands a message with three prompts in it (a real project, below) |
 | "opened by removing X1" | only when a change is checked: a rule that the change removes used to cover this situation | "Gap (opened by removing X1): Missing rule for unauthorized check-in" ([Checking a change](#checking-a-change-against-existing-specs)) |
+| "R2 is a special case of R1" | only for a conflict between two rules: R2 applies only where R1 does, which the solver proves. Not a doubt. If R2 is meant as the exception, R1 does not say so | "Conflict (if the assumed facts hold, R2 is a special case of R1)", for "`createChange(...)` is called: create the directory" against "... and the directory already exists: throw an error" (a real project) |
 
 A conflict is marked *doubtful* in two cases, and a gap in the second one. A
 marked finding stays in the report.
@@ -940,6 +941,14 @@ Some notes on these numbers:
     in 10 of 16 runs, where one with a copied condition is found in 46 of
     52. Four of the 10 are marked doubtful, because the planted mode ("the
     loader runs in lenient mode") was read as an event.
+- A conflict between a rule and a special case of it now says so in its
+  title (T35). The solver proves the form, and no count changes. On those
+  real changes it is on 22 of the 56 conflicts that nobody planted and that
+  are not doubtful, mostly a command and its fallback ("... without
+  arguments THEN prompt user" against "GIVEN stdin is not a TTY ... THEN do
+  not prompt"). None of the conflicts in our own sets has the form. So of
+  63 conflicts that a reader of those real reports had to sort, 7 are
+  doubtful now, 22 carry this remark, and 34 are left as they were.
 - The numbers are small: the specs were written by us, and there is one main
   model. The details are in [research.md](research.md).
 
@@ -958,7 +967,7 @@ Some notes on these numbers:
 | One snapshot, no time | "then", "after" and "until" are not modelled |
 | A reworded scenario is the change's, whatever its new words are | if its old words gave the same finding, the finding is still shown as the change's |
 | Real specs are harder than the ones we wrote | on real changes one rule in six to one in four gets no agreed translation or one that demands nothing, the more the longer the document, because the symbols of the first step do not fit rules that demand several things. A whole real project is also too large to check at once: a change is checked against the spec files it touches |
-| On real specs, most conflicts that nobody planted are not contradictions | of 20 that we read, 8 are in a situation that cannot happen (two conditions that exclude each other by their meaning, which the solver lets hold together), 4 are other artefacts, 7 set a general rule against its own exception, and 1 is a fair question. The question about two conditions marks one conflict in six to nine as doubtful; the rest are reported as they are |
+| On real specs, most conflicts that nobody planted are not contradictions | of 20 that we read, 8 are in a situation that cannot happen (two conditions that exclude each other by their meaning, which the solver lets hold together), 4 are other artefacts, 7 set a general rule against its own exception, and 1 is a fair question. The question about two conditions marks one conflict in six to nine as doubtful, and one in three to six says that it is a rule against a special case of it; about half are still reported with no mark |
 | The question about two conditions also doubts real conflicts | in the order example above, a run made today marks R1 against R5 as doubtful: "An order that has been canceled and refunded cannot currently be an active submitted order with available inventory." The Kiro blog reports that conflict. And it calls two flags of one command impossible ("--default" and "--no-default"), where what the tool does with both is a fair question. A doubtful conflict stays in the report, with the sentence it is doubted for |
 | The second read adds symbols that are about one rule | `openspec_dir_created` next to `openspec_dir_exists`. The rule can be written then, but it clashes with another rule only through the assumed facts. A rule with no usable translation at all is not read again |
 | A voted translation can say less than the rule | when the eight translations differ only in their symbols, the rule is kept with what more than half of them entail. "Display success message with archived name and list of updated specs" became "the success message is displayed". `formal.json` marks such a rule (`"voted": "7/7"`), the report does not. A split that the vote settles is no longer a question to the author: on `eval18/` that happened to 5 of 36 planted ambiguities, and 1 was still found |
@@ -986,7 +995,7 @@ research.md, section 5.
 | `speccheck/refine.py` | optional LLM review, off by default |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the vLLM servers on the cluster: the main model, the second model |
 | `experiments/slurm/serve_direct.sh` | the same server for the main model, started directly on a machine with free GPUs, without the queue |
-| `tests/` | 95 tests of everything that needs no LLM |
+| `tests/` | 96 tests of everything that needs no LLM |
 | `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10`, `eval12`, `eval16` to `eval19`, `size` and `size2`; for the change check `eval11`, `eval13`, `eval14`, `eval15`, `mixed` and `change_dev`; and the script that writes them. `real1` to `real5` are not written by it (`experiments/real/`) |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs and scores the evaluation; re-scores saved runs without a GPU |

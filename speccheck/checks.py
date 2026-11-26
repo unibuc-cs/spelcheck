@@ -74,6 +74,7 @@ def analyze(formal: dict, max_group: int = 3, questions: bool = True,
     rules = [vocab.rule(r) for r in decided if r.get("status") != "rejected"]
     ambiguities = find_ambiguities(decided)
     conflicts = find_conflicts(vocab, rules, facts, max_group)
+    _mark_special_cases(vocab, rules, conflicts)
     # The rules that a change removes (change.after_model). They take no part
     # in any check; they only show which gap the change opened.
     lost = [vocab.rule(rule) for rule in formal.get("removed_rules", []) if rule.get("status") != "rejected"]
@@ -291,6 +292,42 @@ def find_conflicts(vocab: Vocabulary, rules: list[Rule], facts: dict, max_group:
         if "facts" in finding
         and not any(set(p["rules"]) <= set(finding["rules"]) for p in proven)
     ]
+
+
+def _mark_special_cases(vocab: Vocabulary, rules: list[Rule], conflicts: list[dict]) -> None:
+    """Say of a conflict between two rules when one of them applies only where the other does.
+
+    Real specs state a rule and, next to it, its exceptions:
+
+        R1  "WHEN createChange(projectRoot, 'add-auth') is called THEN the system creates
+             openspec/changes/add-auth/ directory"
+        R2  "WHEN createChange(projectRoot, 'add-auth') is called and openspec/changes/add-auth/
+             already exists THEN the system throws an error ..."
+
+    The two clash wherever R2 applies, and their author meant that: R2 is the
+    exception. The solver cannot know what was meant, but it can prove the
+    form: the condition of R2 entails the condition of R1, and not the other
+    way round. Such a conflict gets
+
+        "special_case": {"general": "R1", "special": "R2"}
+
+    and the report says so. It stays a conflict, and it is not doubtful: R1
+    does not say "unless". Two rules with the same condition get no mark, and
+    neither does a conflict of three rules. A rule that always applies ("THE
+    system SHALL NOT ...") is not a general rule in this sense: every rule is
+    a special case of it, so the mark would say nothing.
+    """
+    by_id = {rule.id: rule for rule in rules}
+    for finding in conflicts:
+        if len(finding["rules"]) != 2:
+            continue
+        first, second = (by_id[rule_id] for rule_id in finding["rules"])
+        first_is_special = vocab.implies([first.antecedent], second.antecedent)
+        second_is_special = vocab.implies([second.antecedent], first.antecedent)
+        if first_is_special != second_is_special:
+            general, special = (second, first) if first_is_special else (first, second)
+            if not vocab.impossible([z3.Not(general.antecedent)]):  # the general rule has a condition
+                finding["special_case"] = {"general": general.id, "special": special.id}
 
 
 def _search(vocab: Vocabulary, rules: list[Rule], facts: dict, max_group: int,

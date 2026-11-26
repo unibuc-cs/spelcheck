@@ -179,6 +179,10 @@ def evidence(finding: dict, formal: dict) -> str:
             text += ("\nBut this situation needs these events to happen at the same moment: "
                      f"{', '.join(finding['simultaneous_events'])}. The requirements are "
                      "probably not meant for that, so the conflict may be a false alarm.")
+        if finding.get("special_case"):
+            general, special = finding["special_case"]["general"], finding["special_case"]["special"]
+            text += (f"\n{special} applies only where {general} applies: its condition is a special case of "
+                     f"the condition of {general}. If {special} is meant as an exception, {general} does not say so.")
         # The conflict was found with the first reading of an ambiguous rule.
         for rule_id, reading in finding.get("depends_on_reading", {}).items():
             text += (f"\nBut {rule_id} is ambiguous (see its finding). With its other reading "
@@ -378,6 +382,8 @@ def render(findings: list[dict], models: list[dict], title: str, note: list[str]
         if "support" in finding:  # several symbol sets were used
             found, total = finding["support"].split("/")
             remarks.append(f"found with {found} of {total} symbol sets")
+        if finding.get("special_case"):
+            remarks.append(f"{finding['special_case']['special']} is a special case of {finding['special_case']['general']}")
         if remarks:
             kind += f" ({', '.join(remarks)})"
         # The footer is the exact fact behind the wording, so the reader can check it.

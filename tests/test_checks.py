@@ -430,3 +430,30 @@ def test_rules_with_nothing_in_common_are_not_tried_together():
 
     conflicts = [f for f in analyze({"symbols": symbols, "rules": rules}) if f["type"] == "conflict"]
     assert conflicts == [{"type": "conflict", "rules": ["R2", "R3"], "when": {"order": True, "stock": False}}]
+
+
+def test_a_conflict_between_a_rule_and_a_special_case_of_it_says_so():
+    """R2 applies only where R1 does (its condition entails R1's, not the other way round)."""
+    def conflicts(rules: list[dict]) -> list[dict]:
+        formal = {"symbols": [{"name": name, "sort": "Bool", "values": [], "description": name, "event": name == "called"}
+                              for name in ("called", "folder_exists", "quiet", "folder_made", "error_thrown")],
+                  "background": [],
+                  "rules": [{"status": "accepted", "text": "", "trigger": "called", **rule} for rule in rules]}
+        return [f for f in analyze(formal) if f["type"] == "conflict"]
+
+    general = {"id": "R1", "antecedent": "called", "consequent": "folder_made"}
+    special = {"id": "R2", "antecedent": "(and called folder_exists)", "consequent": "(not folder_made)"}
+    (found,) = conflicts([general, special])
+    assert found["rules"] == ["R1", "R2"] and found["special_case"] == {"general": "R1", "special": "R2"}
+    assert "doubted_by" not in found and "simultaneous_events" not in found  # it stays a plain conflict
+    # The order in the document does not matter.
+    (found,) = conflicts([{**special, "id": "R1"}, {**general, "id": "R2"}])
+    assert found["special_case"] == {"general": "R2", "special": "R1"}
+    # A rule that always applies: every rule is a special case of it, so the mark would say nothing.
+    (found,) = conflicts([{"id": "R1", "antecedent": "true", "consequent": "(not folder_made)"}, {**general, "id": "R2"}])
+    assert "special_case" not in found
+    # The same condition, or two conditions of which neither entails the other: no mark.
+    (found,) = conflicts([general, {"id": "R2", "antecedent": "called", "consequent": "(not folder_made)"}])
+    assert "special_case" not in found
+    (found,) = conflicts([{**general, "antecedent": "(and called quiet)"}, special])
+    assert "special_case" not in found

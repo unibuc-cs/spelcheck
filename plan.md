@@ -80,9 +80,10 @@ this order:
      that were read (T32), 8 are in a situation that cannot happen, 7 set a
      general rule against its own exception, and none is a contradiction.
      Since step 42 the model is asked whether the two conditions can hold
-     together, which marks one such conflict in six to nine. Next: a mark
-     for a rule against a special case of it, which the solver can prove
-     (step 43). Not tried: the wrong facts of the questions about outcomes;
+     together, which marks one such conflict in six to nine. Since step 43
+     a conflict between a rule and a special case of it says so: one in
+     three to six on real specs. Not tried: the wrong facts of the questions
+     about outcomes;
    - **a conflict under a condition of its own** is found in 10 of 16 runs
      when planted in a real spec, and 4 of the 10 are doubtful because the
      mode was read as an event (E28). The event mark is the weak spot;
@@ -169,6 +170,15 @@ with a conflict that was not planted from 3 to 13 of 144 (T22). On held-out
 loss, and each added conflict quotes the fact it rests on. The rule for such
 decisions from now on: when the gains are larger than the losses, the new
 version becomes the default, and the loss is written down as a limit.
+
+Decided on 2026-11-26: **a conflict between a rule and a special case of it
+says so** (step 43, 5.2). Z3 proves that the condition of one rule entails
+the condition of the other and not the other way round; the finding gets
+`special_case` and a remark in its title. It is not a doubt, and no count
+changes. A rule that always applies is left out. On saved runs the remark is
+on 22 of 56 conflicts that nobody planted in `real5/`, on 26 of 148 in
+`real4/`, and on none of the conflicts of our own sets (T35). No new set was
+written for it: it has no setting, and the runs were made before it existed.
 
 Decided on 2026-11-26: **the model is asked whether the conditions of two
 rules that clash can both hold** (step 42, check 5 of step 6, 5.7). For two
@@ -518,6 +528,18 @@ taken         a new translation only if it is accepted; an added symbol only if 
 
 Result on the held-out `eval3/`: every marked conflict was a false alarm;
 setting them aside cut false alarms on clean runs from 9 to 1 of 18 (E8).
+
+- a conflict between two rules *a* and *b* gets a remark when one is a
+  special case of the other (step 43):
+
+```
+A_b entails A_a     A_b and (not A_a)    unsatisfiable
+not the other way   A_a and (not A_b)    satisfiable
+A_a is a condition  (not A_a)            satisfiable        (a rule that always applies is left out)
+remark              "b is a special case of a"; the finding has special_case: {general: a, special: b}
+```
+
+  It is not a doubt: the conflict is reported and counted as before
 
 ### 5.3 Which facts are assumed, and how are they used?
 
@@ -1036,7 +1058,9 @@ It is the only input of `checks.py`, so the solver stage can be re-run without a
 - A conflict with a `facts` list holds only if those assumed facts are true. A
   conflict without one is proven from the rules alone. It is doubtful when it
   has `simultaneous_events` (the events it needs at once) or `doubted_by` (the
-  facts that say its situation cannot happen).
+  facts that say its situation cannot happen). A conflict between a rule and a
+  special case of it has `special_case`, with the ids of the `general` and the
+  `special` rule (5.2); that is a remark, not a doubt.
 - An ambiguity has `found_by`: `samples` (5.1), `questions` (5.7) or `models` (5.8).
 - A scenario looks like `{"type": "scenario", "verdict": "accepted", "rules": ["R1"], "when": {...}}`
   (`"rejected"` for a situation the rules rule out).
@@ -1088,6 +1112,7 @@ scenario, and "added" or "modified".
 | gap marked "no event happens" | a proof, but it may only mean that the system waits. Nearly every spec has one |
 | conflict "if the assumed facts hold" | a proof that also needs the listed facts or links. Judge them |
 | conflict marked "doubtful" | a proof, but likely an artefact of the model (two events at once, or a situation the facts rule out). On `eval3/`, all 60 marked conflicts were false alarms |
+| conflict marked "R2 is a special case of R1" | a proof like any other; the remark says that R2 applies only where R1 does. If R2 is the exception that its author meant, the fix is one word in R1 ("unless") |
 | gap marked "doubtful" | a proof, but the assumed facts say its situation cannot happen; usually two symbols for one yes/no question ("free", "taken"). Rare: most such false gaps are not marked |
 | ambiguity | a real question: the model's own translations disagree, the words did not decide between two readings it was shown, or a second model reads it otherwise. Expect about half of the real ambiguities to be found; with the second reader most, with about one extra question per spec |
 | scenario | a proven consequence of the rules. Which scenarios are shown is chosen by an LLM judge; whether one is a problem is for the author to decide |
@@ -1268,6 +1293,10 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       and one change that adds, rewrites, removes and renames (no design
       change). E22: 9 of 9 planted conflicts and 9 of 9 planted gaps in 3
       runs, both ways, and nothing else about the change
+- [x] **Step 43 — a conflict between a rule and a special case of it says
+      so**: solver only (`checks._mark_special_cases`). A remark in the
+      title, no count changes. T35: on 22 of 56 and 26 of 148 conflicts that
+      nobody planted in real specs, on none in our own sets
 - [x] **Step 42 — can the conditions of two rules that clash both hold?**:
       `eval19/` and `real5/` written first. For two rules that would be
       reported as a conflict that is not doubtful, and whose conditions

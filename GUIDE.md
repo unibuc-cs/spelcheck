@@ -771,6 +771,7 @@ how much weight the finding carries:
 | "Conflict: ..." | proven from the rules alone | a lot. It is wrong only if the translation is wrong |
 | "Conflict (if the assumed facts hold): ..." | proven only with a guessed fact, which the report quotes | read the quoted fact and judge it yourself |
 | "Conflict (doubtful: ...)" | proven, but it has the shape of the artefacts in 3.3 | little. In the evaluation nearly all of these were false alarms |
+| "Conflict (R2 is a special case of R1): ..." | proven like any conflict. The remark says that R2 applies only where R1 does: "create the directory" and "... and the directory already exists: throw an error" | as much as without the remark. If R2 is the exception that the author meant, R1 lacks an "unless" |
 | "... (depends on the reading of R4)" | proven with the first reading of R4, which is ambiguous; gone with its other reading | answer the question about R4 first |
 | "... (found with k of K symbol sets)" | k of the K formalizations found it | the higher k, the better |
 | "Ambiguity: ..." | not a proof, a question to the author | a fair question, though some are asked about clear rules |
@@ -1321,6 +1322,14 @@ of one command that a user can type together, `--default` and
 `--no-default`: what the tool does then is a fair question, and it is now
 marked doubtful.
 
+The other large group of 6.2, a general rule against its own exception,
+needs no model: the solver can prove that one rule applies only where the
+other does. Such a conflict now says so in its title (part 4). On the same
+real changes that is 22 of the 56 conflicts that are left; in our own sets
+it is none. So of 63 conflicts that the reader of those reports had to sort,
+7 are doubtful, 22 are a rule and its special case, and 34 are left with no
+mark.
+
 **Longer specs.** All the specs counted above have at most six requirements.
 To see what a longer document does, we wrote two more, each in four versions
 (clean, direct, overlap, gap) and run three times:
@@ -1450,10 +1459,10 @@ The full list is in research.md, section 5.
 
 ### 6.6 What is next
 
-1. **Real specs**: a mark for a rule against a special case of it, which
-   the solver can prove. Then the weak spot that the last test showed: a
-   mode that is read as an event makes a real conflict doubtful. And a
-   larger evaluation, with another main model and another real project.
+1. **Real specs**: the weak spot that the last test showed, a mode that is
+   read as an event and makes a real conflict doubtful; and the wrong facts
+   that the questions about two outcomes add. Then a larger evaluation,
+   with another main model and another real project.
 2. **The change check, further**: whether the cheaper way becomes the
    default, what the model is shown when it reads a new rule, and projects
    too large for one read answer.
@@ -1515,7 +1524,7 @@ The folders:
 speccheck/          the tool (the 8 files above; refine.py is the review that is switched off)
 specs/              3 small specs the prompts were developed on, with their saved output,
                     and auth_change, the example of part 5
-tests/              95 tests that need no LLM
+tests/              96 tests that need no LLM
 experiments/
   sets/             the 11 evaluation sets, eval to eval10 and eval12 (297 spec versions), two long specs,
                     eval16 to eval18 (eighteen specs written like real ones), real1 to real3 (48 changes of a real project),

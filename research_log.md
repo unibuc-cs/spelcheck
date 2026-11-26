@@ -4199,6 +4199,57 @@ with its table.
 
 ---
 
+## T35 — A conflict between a rule and a special case of it says so (2026-11-26)
+
+**Question.** A third of the conflicts that nobody planted in real specs set
+a general rule against its own exception (T32). The solver can prove that
+form. How many conflicts have it?
+
+**The change** (`checks._mark_special_cases`, `explain.py`; no LLM, no
+prompt). For a conflict between two rules, Z3 is asked whether the condition
+of one entails the condition of the other. If it does, and not the other way
+round, and the general rule has a condition at all, the finding gets
+`special_case: {general, special}`, a remark in its title and one sentence
+in what was proven:
+
+```
+## 6. Conflict (if the assumed facts hold, R2 is a special case of R1)
+R1  "WHEN createChange(projectRoot, 'add-auth') is called THEN the system creates openspec/changes/add-auth/ directory"
+R2  "WHEN createChange(projectRoot, 'add-auth') is called and openspec/changes/add-auth/ already exists THEN the system throws an error ..."
+"R2 applies only where R1 applies: its condition is a special case of the condition of R1.
+ If R2 is meant as an exception, R1 does not say so."
+```
+
+It is a remark, not a doubt: the conflict is counted as before. A rule that
+always applies ("THE system SHALL NOT ...") is left out, because every rule
+is a special case of it; so the two examples of the Kiro blog keep their
+titles. Two rules with the same condition get no remark.
+
+**How often** (saved runs, scored again; nothing was tuned on them).
+
+| Runs | Conflicts that nobody planted, not doubtful | With the remark | Planted conflicts with the remark |
+|---|---|---|---|
+| `real5/` (E28, with the question of step 42) | 56 | 22 | 0 of 10 |
+| `real4/` (E27, the code before the second read) | 148 | 26 | 1 of 24 |
+| `eval19/`, `eval17/`, `eval12/`, `eval8/`, the larger project, the development specs | 51 | 0 | 0 of 151 |
+
+- **On real specs one conflict in three to six has the form**: mostly a
+  command and its fallback ("WHEN executing `openspec show` without
+  arguments THEN prompt user ..." against "GIVEN stdin is not a TTY ...
+  WHEN executing `openspec show` without arguments THEN do not prompt ...").
+- **None of ours has it.** Our planted conflicts repeat a condition or set
+  two unrelated conditions against each other. The one planted conflict
+  with the remark is a translation in which the copied condition lost a
+  part.
+- **With steps 42 and 43**, of the 63 conflicts that `real5/` reported as
+  they were, 7 are doubtful now, 22 carry this remark, and 34 are left as
+  they were.
+
+No new set was written for this: the remark changes no count and has no
+setting, and the runs it was measured on were made before it existed.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

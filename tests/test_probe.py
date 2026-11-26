@@ -267,7 +267,8 @@ def test_a_conflict_that_the_other_reading_adds_or_removes_is_named():
     (conflict,) = conflicts(findings)
     assert conflict["depends_on_reading"] == {"L5": "exactly 14 days"}
     assert ambiguities(findings)[0]["other_reading"]["removes"] == [["L5", "L6"]]
-    assert "Conflict (depends on the reading of L5)" in render(findings, [formal], "loans")
+    # "A loan of 20 days" is also a special case of "14 days or more", and the title says both.
+    assert "Conflict (depends on the reading of L5, L6 is a special case of L5)" in render(findings, [formal], "loans")
 
     # The experiments can switch this off: the findings are then as before.
     plain = analyze(formal, readings=False)
