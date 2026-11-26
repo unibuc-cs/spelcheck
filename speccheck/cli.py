@@ -48,9 +48,9 @@ Options that change what is done:
                       with --change: a scenario whose text (its name and the
                       lines below it) matches the pattern is an example, one
                       concrete case and not a rule for all cases. A conflict
-                      with an example is marked doubtful, unless the example
-                      itself says that the other rules apply in its case.
-                      PATTERN is a regular expression, e.g. "^Example:".
+                      with examples is marked doubtful, unless every example
+                      in it says by itself that the other rules apply in its
+                      case. PATTERN is a regular expression, e.g. "^Example:".
     --against PATTERN with --change: check the change only against the spec
                       files whose name matches ("billing-*"), besides the
                       files it touches.
@@ -61,7 +61,8 @@ each spec file that the change does not touch, with that file and the files
 the change touches. The documents and formal models of the parts are written
 into parts/ (merged_01.md, formal_01.json, ...), the parts are formalized at
 the same time, and one report is written. A finding among the rules of the
-change says in how many parts it was found. Not with --symbol-sets,
+change says in how many parts it was found as it is shown, and what is not
+doubtful comes first. Not with --symbol-sets,
 --second-base-url, --review or --incremental; scenarios are not looked for.
 
     --symbol-sets K   formalize K times, each time with its own symbols. Every

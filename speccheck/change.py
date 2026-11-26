@@ -83,7 +83,7 @@ from fnmatch import fnmatch
 from pathlib import Path
 from typing import NamedTuple
 
-from .checks import weakness
+from .checks import is_doubtful, weakness
 from .logic import Vocabulary
 
 # A document with more scenarios than this is checked in parts (see parts). It
@@ -483,7 +483,10 @@ def combine_parts(findings_per_part: list[list[dict]], models: list[dict], chang
 
         "model"  the index of the part its situation is written in
         "parts"  "7/19": found in 7 of the 19 parts that hold all its rules
-                 (left out when one part holds them)
+                 (left out when one part holds them). A finding is shown as
+                 the strongest part has it, and the count is of the parts
+                 that have it so: a conflict that is doubtful in twenty
+                 parts and not in one says "1"
 
     A gap is a situation over the symbols of one part. Two gaps count as the
     same when they are about the same rules of the change (those that react
@@ -496,8 +499,9 @@ def combine_parts(findings_per_part: list[list[dict]], models: list[dict], chang
     holds = [{rule["id"] for rule in model["rules"]} for model in models]
     merged: dict[tuple, dict] = {}   # key -> the finding shown for it
     seen_in: Counter = Counter()     # key -> number of parts that have it
+    sure_in: Counter = Counter()     # key -> number of parts that have it and do not doubt it
     for index, findings in enumerate(findings_per_part):
-        keys = set()
+        keys, sure = set(), set()
         for finding in findings:
             finding = {**finding, "model": index}
             if finding["type"] == "ambiguity":
@@ -512,10 +516,13 @@ def combine_parts(findings_per_part: list[list[dict]], models: list[dict], chang
             else:  # conflict
                 key = (finding["type"], frozenset(finding["rules"]))
             keys.add(key)
+            if not is_doubtful(finding):
+                sure.add(key)
             # Show the first occurrence, unless a later one is stronger.
             if key not in merged or weakness(finding) < weakness(merged[key]):
                 merged[key] = finding
         seen_in.update(keys)
+        sure_in.update(sure)
 
     kept = []
     for key, finding in merged.items():
@@ -526,11 +533,13 @@ def combine_parts(findings_per_part: list[list[dict]], models: list[dict], chang
             rules = [finding["rule"]] if key[0] == "ambiguity" else finding["rules"]
             possible = sum(part.issuperset(rules) for part in holds)
             if possible > 1:
-                finding["parts"] = f"{seen_in[key]}/{possible}"
+                found = seen_in[key] if is_doubtful(finding) else sure_in[key]
+                finding["parts"] = f"{found}/{possible}"
         kept.append(finding)
-    # The usual order of types; within a type, the finding of most parts first.
+    # The usual order of types. Within a type, what is not doubtful comes
+    # first, and then the finding of most parts.
     order = {"ambiguity": 0, "conflict": 1, "gap": 2}
-    return sorted(kept, key=lambda f: (order[f["type"]], -int(f.get("parts", "0/1").split("/")[0])))
+    return sorted(kept, key=lambda f: (order[f["type"]], is_doubtful(f), -int(f.get("parts", "0/1").split("/")[0])))
 
 
 def about_change(finding: dict, models: list[dict], changed: list[set]) -> bool:

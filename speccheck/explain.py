@@ -184,9 +184,11 @@ def evidence(finding: dict, formal: dict) -> str:
                      "probably not meant for that, so the conflict may be a false alarm.")
         if finding.get("beyond_example"):
             examples = finding["beyond_example"]
-            text += (f"\nBut {', '.join(examples)} {'is an example' if len(examples) == 1 else 'are examples'}: "
-                     "one concrete case each. No example here says that its case is this situation: what it "
-                     "describes does not make the other requirement(s) apply. So the conflict may be a false alarm.")
+            text += (f"\nBut {', '.join(examples)} "
+                     + ("is an example, one concrete case, and what it describes" if len(examples) == 1
+                        else "are examples, one concrete case each, and what each describes")
+                     + " does not make the other requirement(s) apply: this situation says more than "
+                     + ("it does" if len(examples) == 1 else "they do") + ". So the conflict may be a false alarm.")
         if finding.get("special_case"):
             general, special = finding["special_case"]["general"], finding["special_case"]["special"]
             text += (f"\n{special} applies only where {general} applies: its condition is a special case of "

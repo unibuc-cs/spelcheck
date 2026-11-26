@@ -54,7 +54,7 @@ def is_doubtful(finding: dict) -> bool:
 
 def analyze(formal: dict, max_group: int = 3, questions: bool = True,
             link_checks: bool = True, settle: float = SETTLE, second: bool = True,
-            readings: bool = True) -> list[dict]:
+            readings: bool = True, every_example: bool = True) -> list[dict]:
     """Run every check on one formal.json and return all findings.
 
     max_group    how many rules may be triggered together when hunting conflicts
@@ -65,6 +65,8 @@ def analyze(formal: dict, max_group: int = 3, questions: bool = True,
     second       use the second reader of formalize step 7, if it ran (see settled)
     readings     say which findings depend on the reading of an ambiguous rule
                  (see _try_other_readings)
+    every_example  every example of a conflict must describe its situation,
+                 not one of them (see _mark_examples)
 
     The switches exist so that the experiments can score the same formal
     models with and without steps 6 and 7, and can skip `readings` where only
@@ -87,7 +89,8 @@ def analyze(formal: dict, max_group: int = 3, questions: bool = True,
     whole_run = formal.get("situation") == "run"
     conflicts = find_conflicts(vocab, rules, facts, max_group, whole_run)
     _mark_special_cases(vocab, rules, conflicts)
-    _mark_examples(vocab, rules, facts, conflicts, {rule["id"] for rule in formal["rules"] if rule.get("example")})
+    _mark_examples(vocab, rules, facts, conflicts, {rule["id"] for rule in formal["rules"] if rule.get("example")},
+                   every_example)
     # The rules that a change removes (change.after_model). They take no part
     # in any check; they only show which gap the change opened.
     lost = [vocab.rule(rule) for rule in formal.get("removed_rules", []) if rule.get("status") != "rejected"]
@@ -100,11 +103,13 @@ def analyze(formal: dict, max_group: int = 3, questions: bool = True,
 
 
 def _mark_examples(vocab: Vocabulary, rules: list[Rule], facts: dict, conflicts: list[dict],
-                   examples: set) -> None:
+                   examples: set, every: bool = True) -> None:
     """Mark the conflicts that need more than an example says ("beyond_example").
 
     examples  the ids of the rules that are examples ("example": true in the
               formal model, set from `speccheck --examples`)
+    every     every example of a conflict must describe its situation. False:
+              one is enough, as it was before step 45 (for the experiments)
 
     An example describes one concrete case, not a rule for all cases:
 
@@ -115,31 +120,43 @@ def _mark_examples(vocab: Vocabulary, rules: list[Rule], facts: dict, conflicts:
 
     Read as rules, R9 and R10 clash for a parcel that was delivered and is
     still in the warehouse. But each is about its own case, and R9 does not
-    say that its parcel is in the warehouse. So a conflict with an example
-    counts as it is only when the case of one example is the whole situation:
-    its condition and what it demands, with the assumed facts, entail the
+    say that its parcel is in the warehouse. So an example describes the
+    situation of a conflict only when its own case is that situation: its
+    condition and what it demands, with the assumed facts, entail the
     conditions of the other rules of the conflict. Then the example itself
     says that they apply ("WHEN dana sends an express request THEN
     ship_parcel succeeds three times", against a rule about every successful
-    ship_parcel). Otherwise the situation says more than any example in it,
-    and the conflict is kept and marked as doubtful, with the examples among
-    its rules:
+    ship_parcel).
 
-        "beyond_example": ["R9", "R10"]
+    A conflict counts as it is only when every example among its rules
+    describes its situation. That also holds for an example and a variant of
+    it:
+
+        R2   "WHEN mira asks to borrow book b12 THEN lend_book is called once ..."
+        R4   "WHEN the same request runs while b12 is reserved for another
+              reader THEN lend_book is never called ..."
+
+    R4 makes R2 apply, but R2 does not say that its book is reserved: the two
+    are two cases. Two examples with the same condition and opposite demands
+    do contradict each other. A conflict in a situation that says more than
+    one of its examples is kept and marked as doubtful, with those examples:
+
+        "beyond_example": ["R2"]
     """
     by_id = {rule.id: rule for rule in rules}
     given = list(facts.values())
 
-    def is_whole_situation(example: Rule, others: list[Rule]) -> bool:
+    def describes_situation(example: Rule, others: list[Rule]) -> bool:
         case = given + [example.antecedent, example.consequent]
         return not vocab.impossible(case) and all(vocab.implies(case, other.antecedent) for other in others)
 
     for finding in conflicts:
         chosen = [by_id[rule_id] for rule_id in finding["rules"]]
         inside = [rule for rule in chosen if rule.id in examples]
-        if inside and not any(is_whole_situation(example, [rule for rule in chosen if rule is not example])
-                              for example in inside):
-            finding["beyond_example"] = [rule.id for rule in inside]
+        short = [example for example in inside
+                 if not describes_situation(example, [rule for rule in chosen if rule is not example])]
+        if short and (every or len(short) == len(inside)):
+            finding["beyond_example"] = [rule.id for rule in short]
 
 
 def weakness(finding: dict) -> tuple:

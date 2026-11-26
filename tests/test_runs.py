@@ -302,8 +302,27 @@ def test_two_examples_of_one_request_clash_only_in_a_situation_that_neither_desc
     assert [rule.get("example") for rule in marked["rules"]] == [True, True]
     (conflict,) = conflicts(analyze(marked))
     assert conflict["beyond_example"] == ["R9", "R10"] and is_doubtful(conflict)
-    assert "R9, R10 are examples: one concrete case each" in evidence(conflict, marked)
+    assert ("R9, R10 are examples, one concrete case each, and what each describes does not make the other "
+            "requirement(s) apply: this situation says more than they do.") in evidence(conflict, marked)
     assert "doubtful: the situation says more than the example does" in render([conflict], [marked], "t")
+
+
+def test_an_example_and_a_variant_of_it_are_two_cases():
+    # "WHEN mira asks to borrow book b12 THEN lend_book is called once" and
+    # "WHEN the same request runs while b12 is reserved THEN lend_book is never called".
+    base = {"id": "R2", "antecedent": "return_asked", "consequent": "return_booked"}
+    variant = {"id": "R4", "antecedent": "(and return_asked in_warehouse)", "consequent": "(not return_booked)"}
+    marked = returns([base, variant], examples=("R2", "R4"))
+    (conflict,) = conflicts(analyze(marked))
+    # The variant makes the first example apply, but the first does not say what the variant adds.
+    assert conflict["beyond_example"] == ["R2"] and is_doubtful(conflict)
+    assert "R2 is an example, one concrete case, and what it describes" in evidence(conflict, marked)
+    # As it was before step 45: one example that describes the situation was enough.
+    (conflict,) = conflicts(analyze(marked, every_example=False))
+    assert not is_doubtful(conflict) and conflict["special_case"] == {"general": "R2", "special": "R4"}
+    # The first one as a rule for all cases: the variant is an example that breaks it.
+    (conflict,) = conflicts(analyze(returns([base, variant], examples=("R4",))))
+    assert not is_doubtful(conflict)
 
 
 def test_two_examples_of_the_same_case_that_demand_opposite_things_are_a_conflict():
@@ -324,7 +343,7 @@ def test_an_example_against_a_rule_counts_when_the_example_itself_makes_the_rule
     marked = returns([elsewhere, example], examples=("R7",))
     (conflict,) = conflicts(analyze(marked))
     assert conflict["beyond_example"] == ["R7"] and is_doubtful(conflict)
-    assert "R7 is an example: one concrete case" in evidence(conflict, marked)
+    assert "R7 is an example, one concrete case, and what it describes" in evidence(conflict, marked)
     # An assumed fact can say that the example's case is one in which the rule applies.
     with_fact = returns([elsewhere, example], examples=("R7",), facts=("(=> express in_warehouse)",))
     (conflict,) = conflicts(analyze(with_fact))
@@ -392,6 +411,20 @@ def test_the_findings_of_the_parts_are_put_together():
     assert "parts" not in found["R5", "R6"] and found["R5", "R6"]["model"] == 1
     # The gaps among the rules of one other file are not findings about the project.
     assert [f for f in findings if f["type"] == "gap"] == []
+
+
+def test_a_count_of_parts_is_of_the_parts_that_have_the_finding_as_it_is_shown():
+    models, changed = part_models(), [{"R6", "R7"}, {"R6", "R7"}]
+    plain = {"type": "conflict", "rules": ["R6", "R7"], "when": {}}
+    doubted = {**plain, "beyond_example": ["R7"]}
+    other = {"type": "conflict", "rules": ["R5", "R6"], "when": {}, "beyond_example": ["R5"]}
+    # Doubtful in one part and not in the other: shown as it is in the other, and counted there.
+    (first, second) = combine_parts([[doubted], [other, plain]], models, changed)
+    assert first["rules"] == ["R6", "R7"] and first["parts"] == "1/2" and not is_doubtful(first) and first["model"] == 1
+    assert second["rules"] == ["R5", "R6"] and is_doubtful(second)  # what is doubtful comes last
+    # Doubtful in both: counted in both.
+    (only,) = combine_parts([[doubted], [doubted]], models, changed)
+    assert only["parts"] == "2/2" and is_doubtful(only)
 
 
 def test_a_gap_about_the_change_is_kept_only_if_every_part_has_it():

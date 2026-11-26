@@ -7,7 +7,7 @@ options do and what the output means is in [README.md](README.md).
 
 ```
 uv sync                      # on a "hardlink" error: set UV_LINK_MODE=copy and retry
-python -m pytest tests       # 115 tests, no LLM
+python -m pytest tests       # 117 tests, no LLM
 ```
 
 ## 2. Try it without a GPU
@@ -88,14 +88,15 @@ python -m speccheck --change path/to/openspec/changes/<name> --base-url http://l
 | Option | What it does |
 |---|---|
 | `--whole-run` | a situation is a whole run, in which several things happen: two rules that react to two different calls can clash, and that conflict is not marked doubtful |
-| `--examples PATTERN` | a scenario whose text (its name and the lines below it) matches this regular expression is one concrete case, not a rule; a conflict in a situation that says more than the example does is marked doubtful |
+| `--examples PATTERN` | a scenario whose text (its name and the lines below it) matches this regular expression is one concrete case, not a rule; a conflict in a situation that says more than one of its examples does is marked doubtful |
 | `--against PATTERN` | check the change only against the spec files whose name matches, besides the files it touches |
 
 **A large project.** When the specs have more than 100 scenarios, the change
 is checked in parts, without an option: one document for each spec file that
 the change does not touch, holding that file and the files of the change. The
 parts are formalized at the same time and give one report, in which a finding
-among the rules of the change says in how many parts it was found. Not with
+among the rules of the change says in how many parts it was found, and what
+is not doubtful comes first. Not with
 `--incremental`, `--symbol-sets`, `--second-base-url` or `--review`.
 
 ## 6. What comes out

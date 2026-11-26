@@ -208,7 +208,7 @@ before; a "clean" change has a conflict about it in 0 runs, 6 before; a
 it did. The price: a change costs 87 requests to the LLM where it cost 55.
 Step 44 stays.
 
-### 2.2 The plan for step 45: every example of a conflict must describe its situation (not built yet)
+### 2.2 Step 45: every example of a conflict must describe its situation (built; `eval21/` not run yet)
 
 The tool itself was then run on the four changes of the project, each in
 32 or 33 parts. The contradiction between two rules that its authors name is
@@ -658,17 +658,21 @@ taken         a new translation only if it is accepted; an added symbol only if 
   - a scenario is an example when the pattern is found in its text, which is
     its name and the lines below it (`change.merge`); its rule then has
     `example: true` (`change.with_examples`)
-  - for a conflict with an example *e* among its rules, Z3 is asked whether
+  - for each example *e* among the rules of a conflict, Z3 is asked whether
     the case of *e* is the whole situation (`checks._mark_examples`):
     ```
     the case of e                 A_e and C_e and the assumed facts      satisfiable
     it makes the others apply     for every other rule r of the conflict:
                                   A_e and C_e and the facts and (not A_r)   unsatisfiable
     ```
-  - if that holds for no example of the conflict, it is marked
-    (`beyond_example`, with the examples among its rules): "doubtful: the
-    situation says more than the example does"
-  - it stays a plain conflict when an example itself makes the other rules
+  - if that fails for one of its examples, the conflict is marked
+    (`beyond_example`, with those examples): "doubtful: the situation says
+    more than the example does". In step 44 one example that passed was
+    enough; since step 45 every one must
+  - so an example and a variant of it ("WHEN the same request runs while the
+    book is reserved ...") are two cases: the variant makes the first one
+    apply, but the first does not say what the variant adds
+  - it stays a plain conflict when the example itself makes the other rules
     apply ("WHEN dana sends an express request THEN `ship_parcel` succeeds
     three times", against a rule about every successful `ship_parcel`), and
     for two examples with the same condition
@@ -1174,7 +1178,7 @@ With `--incremental`:
 | 1 split | our code | the specs with the change have more than 100 scenarios (`PART_LIMIT`, the longest document that one read was tested on). One document is written for each spec file that the change does not touch: that file, and the files the change touches. A scenario keeps the label it has in the document of the whole project, so a rule of the change is the same rule in every part |
 | 2 formalize | the LLM and Z3 | each part goes through `formalize.py` by itself, the parts at the same time, each in a process of its own. A part that fails twice is left out, and the report names it |
 | 3 check | Z3 | each part by itself |
-| 4 put together | our code | findings are matched by their rules. One among the rules of the change can show up in every part and says in how many ("found in 7 of 32 parts"); one with a rule of another file shows up in the part of that file. A gap about the change is kept only if every part has it: where a part has none, a rule of its other file covers the situation |
+| 4 put together | our code | findings are matched by their rules. One among the rules of the change can show up in every part. It is shown as the strongest part has it, and says in how many parts it was found so ("found in 7 of 32 parts"); one with a rule of another file shows up in the part of that file. What is not doubtful comes first. A gap about the change is kept only if every part has it: where a part has none, a rule of its other file covers the situation |
 | 5 as before | our code, the LLM | the selection, and the wording, each finding with the rules of its own part |
 
 - no option turns it on: the size of the project does. `--against PATTERN`
@@ -1267,7 +1271,7 @@ It is the only input of `checks.py`, so the solver stage can be re-run without a
   conflict without one is proven from the rules alone. It is doubtful when it
   has `simultaneous_events` (the events it needs at once), `doubted_by` (the
   facts that say its situation cannot happen) or `beyond_example` (the
-  examples among its rules, none of which describes the whole situation,
+  examples among its rules that do not describe the whole situation,
   5.2). A conflict between a rule and a
   special case of it has `special_case`, with the ids of the `general` and the
   `special` rule (5.2); that is a remark, not a doubt.
@@ -1277,8 +1281,8 @@ It is the only input of `checks.py`, so the solver stage can be re-run without a
 - With several symbol sets every finding also has `support` ("3/5": found with 3
   of 5 sets) and `model` (which formal model its witness is written in).
 - In a project that is checked in parts (5.10), `model` is the part, and a
-  finding whose rules are in several parts has `parts` ("7/32": found in 7 of
-  the 32 parts that hold all its rules).
+  finding whose rules are in several parts has `parts` ("7/32": found, as
+  it is shown, in 7 of the 32 parts that hold all its rules).
 - A conflict or gap with `depends_on_reading` (rule id → that rule's other
   reading, in words) is gone with the other reading of those ambiguous rules. An ambiguity with two
   readings has `other_reading`: `{"removes": [[rule ids]], "adds": [[rule ids]],

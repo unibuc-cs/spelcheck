@@ -94,7 +94,7 @@ from speccheck.probe import conditions, outcomes
 DEFAULT = {"sets": 1, "rule": "any", "facts": True, "max_group": 3,
            "questions": True, "link_checks": True, "doubtful": True, "settle": 0.5,
            "second": False, "repair": True, "outcomes": True, "conditions": True,
-           "whole_run": True, "examples": True, "renames": True}
+           "whole_run": True, "examples": True, "renames": True, "every_example": True}
 
 CONFIGURATIONS = [
     ("default (1 symbol set)",               {}),
@@ -117,6 +117,8 @@ CONFIGURATIONS = [
     ("a run read as one moment, doubtful set aside", {"whole_run": False, "doubtful": False}),
     ("examples read as rules, doubtful set aside", {"examples": False, "doubtful": False}),
     ("links that only rename not asked about, doubtful set aside", {"renames": False, "doubtful": False}),
+    # Step 45: the mark for examples as it was in step 44.
+    ("one example of a conflict is enough, doubtful set aside", {"every_example": False, "doubtful": False}),
     ("pairs of rules only",                  {"max_group": 2}),
     ("3 symbol sets, found with any",        {"sets": 3}),
     ("3 symbol sets, found with most",       {"sets": 3, "rule": "majority"}),
@@ -441,7 +443,8 @@ def findings_of(run: dict, config: dict) -> tuple[list[dict], list[dict]]:
     # readings=False: only the counts are needed here (see reading_effects).
     findings = combine([analyze(model, config["max_group"], questions=config["questions"],
                                 link_checks=config["link_checks"], settle=config["settle"],
-                                second=config["second"], readings=False)
+                                second=config["second"], readings=False,
+                                every_example=config["every_example"])
                         for model in models])
     return models, findings
 
@@ -572,7 +575,8 @@ CHANGE_CONFIGURATIONS = ("default (1 symbol set)", "doubtful conflicts set aside
 # Those of step 44, for the runs made since (their file says "whole_run").
 CHANGE_CONFIGURATIONS_44 = ("a run read as one moment, doubtful set aside",
                             "examples read as rules, doubtful set aside",
-                            "links that only rename not asked about, doubtful set aside")
+                            "links that only rename not asked about, doubtful set aside",
+                            "one example of a conflict is enough, doubtful set aside")
 
 
 def change_run(spec: dict, run: dict, config: dict) -> dict:
