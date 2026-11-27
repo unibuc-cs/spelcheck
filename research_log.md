@@ -5548,6 +5548,56 @@ before (E35, with check 6 in its frozen form).
 
 ---
 
+## E36 — Held-out `eval27/`: in a spec about runs, a symbol is a fact about the run (2026-11-27)
+
+**Question.** Does the paragraph of step 52 (T50) stop the descriptions of a
+moment on specs it was not built on, and are the chains of three rules then
+found?
+
+**The set** (`eval27/`, written and committed before the change). Four more
+projects in the form of `eval26/`: a shipyard, a fruit orchard, a ski
+school, a bookbinder. Each has the same four changes: a chain of three
+rules and an example that breaks a rule, which must be found; a rule about
+the other of two calls and a state from before the run, where no conflict
+may be reported.
+
+**The rule, set before the build** (plan.md 2.9). With doubtful conflicts set
+aside: a smaller share of the symbols is described as a moment; the planted
+conflicts are found in no fewer of the 24 runs that have one; the changes
+that should give no conflict have one in no more runs.
+
+**Result.** 16 changes, 3 runs each, with the code before
+(`E36_eval27_before`) and with the frozen code (`E36_eval27`): two runs of
+the whole pipeline, since the read step comes first.
+
+| 48 runs each | Code before | Step 52 |
+|---|---|---|
+| symbols described as a moment | 85 of 752 | 0 of 723 |
+| runs with such a symbol | 38 of 48 | 0 of 48 |
+| "chain" conflicts found | 3 of 12 | 12 of 12 |
+| "breaks" conflicts found, not doubtful | 12 of 12 | 12 of 12 |
+| changes that should give no conflict, with one | 0 of 24 | 0 of 24 |
+
+- **The rule is met on every point, and the gain is large**: 24 of 24
+  planted conflicts found, where 15.
+- **With the code before, 9 of the 12 "chain" runs miss the conflict, all
+  for one reason.** The statement of the step is described as "a call to
+  ask_grower is being made", and check 6 gives it 0 to 2 of 8 answers. The
+  three runs that find it have "a call to ask_master has been made in the
+  current run", with 7 or 8 of 8.
+- **With step 52 most chains need no question any more.** In 11 of the 12
+  runs the conflict is proven from the rules alone: with a symbol that says
+  "a call of ask_master was made in the run", the translation of "an earlier
+  call of `ask_master` in the run was approved" is `(and ask_master_called
+  ask_master_approved)`. In the twelfth run check 6 takes the step, with 8
+  of 8.
+- A change costs 68 requests, as before.
+
+**Decision.** Step 52 stays. All twenty-seven sets are development data
+now.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |
