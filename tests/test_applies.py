@@ -43,15 +43,15 @@ LATE = {"id": "R5", "trigger": "check_in_succeeds", "antecedent": "(and check_in
 class FakeLLM:
     """Stands in for llm.LLM: "yes" when the requirement is one of `linked` (rule texts), else "no"."""
 
-    def __init__(self, linked: tuple = ()):
-        self.linked, self.prompts = linked, []
+    def __init__(self, linked: tuple = (), by: str = "demand"):
+        self.linked, self.prompts, self.by = linked, [], by   # by: what the answers say makes B true
 
     def ask(self, system, user, schema, samples=1, temperature=0.0):
         assert system == probe._about(APPLIES_SYSTEM, {"situation": "run"}) and "ONE run of that system" in system
         self.prompts.append(user)
         requirement = user.split("\n\nStatement B:")[0]
         answer = "yes" if any(text in requirement for text in self.linked) else "no"
-        return [{"reason": "", "answer": answer,
+        return [{"reason": "", "answer": answer, "by": self.by if answer == "yes" else "none",
                  "fact": "An approved call is a call that was made." if answer == "yes" else ""}] * samples
 
 
@@ -78,7 +78,8 @@ def test_an_answer_that_the_requirement_says_so_is_a_fact_and_the_chain_is_found
     # The words of R1, and the part of R4's condition as one statement.
     assert llm.prompts[0] == f"Requirement:\n{GATE['text']}\n\nStatement B:\n- TRUE: manager_asked (about manager_asked)"
     assert model["apply_pairs"] == [
-        {"rules": ["R1", "R4"], "part": {"manager_asked": True}, "answers": {"yes": 8, "no": 0, "unclear": 0}},
+        {"rules": ["R1", "R4"], "part": {"manager_asked": True}, "answers": {"yes": 8, "no": 0, "unclear": 0},
+         "by": {"condition": 0, "demand": 8}},
         {"rules": ["R5", "R4"], "part": {"manager_asked": True}, "answers": {"yes": 0, "no": 8, "unclear": 0}}]
     assert model["background"] == [{
         "id": "F1", "between": ["R1", "R4"], "about": "applies", "support": "8/8",
@@ -94,6 +95,32 @@ def test_an_answer_that_it_does_not_adds_nothing():
     model = formal([GATE, NOBODY, LATE])
     applies(FakeLLM(), model, Vocabulary(model["symbols"]), temperature=0.7)
     assert model["background"] == [] and len(model["apply_pairs"]) == 2 and conflicts(model) == []
+
+
+def test_a_step_that_the_condition_alone_gives_is_a_fact_about_the_condition():
+    # "WHEN a call of ask_manager is refused THEN the answer says so": where this applies, a call was made,
+    # whatever is answered. In a late-arrival run R4 forbids that call by itself: no clash of the two rules.
+    refused = {"id": "R7", "trigger": "manager_refused", "antecedent": "manager_refused", "consequent": "answer_says_so",
+               "text": "WHEN a call of ask_manager is refused THEN the answer says so"}
+    names = [{"name": name, "sort": "Bool", "values": [], "description": f"about {name}", "event": True}
+             for name in ("manager_refused", "answer_says_so")]
+
+    def model() -> dict:
+        one = formal([refused, NOBODY, LATE])
+        return {**one, "symbols": one["symbols"] + names}
+
+    one = model()
+    assert ("R7", "R4", {"manager_asked": True}) in asked(one)
+    applies(FakeLLM(linked=(refused["text"],), by="condition"), one, Vocabulary(one["symbols"]), temperature=0.7)
+    (fact,) = one["background"]
+    assert fact["formula"] == "(=> manager_refused manager_asked)" and fact["text"].startswith("Where R7 applies, a part")
+    assert one["apply_pairs"][0]["by"] == {"condition": 8, "demand": 0}
+    assert conflicts(one) == []
+    # Had the answers said that it takes what R7 demands, the same situation would be a conflict of R4 and R7.
+    other = model()
+    applies(FakeLLM(linked=(refused["text"],), by="demand"), other, Vocabulary(other["symbols"]), temperature=0.7)
+    assert other["background"][0]["formula"] == "(=> (and manager_refused answer_says_so) manager_asked)"
+    assert [sorted(c["rules"]) for c in conflicts(other)] == [["R4", "R7"]]
 
 
 def test_pairs_that_are_not_asked_about():

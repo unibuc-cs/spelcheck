@@ -618,7 +618,7 @@ changes: a link that makes the same guess ("if the cellar is closed, the
 turning tool must have been called"), and one pair that most answers still
 call impossible (5 and 6 of 8, where 8).
 
-### 2.8 The plan for step 51: what "the requirement applies" means in the question of step 46 (not built yet)
+### 2.8 Step 51: which situations count in the question of step 46 (built; `eval26/` not run yet)
 
 The question whether what one rule demands makes another rule apply (check
 6) was asked a second time on the same runs, with the same words (T47). A
@@ -636,8 +636,24 @@ situations count: those in which the condition of the requirement is the
 case (what comes after WHEN, WHILE or IF; without such a part, every
 situation) and in which the system has done everything the requirement
 demands. A situation in which the condition is not the case does not count,
-although the requirement is not broken in it. Nothing else changes. One
-try.
+although the requirement is not broken in it.
+
+**What the trial added before the freeze** (T48). With those words the model
+also says yes, rightly, where the condition of a rule alone gives the
+statement: "WHEN a call returns a refusal THEN ...", and "a call is made".
+Check 6 wrote every yes as "where a applies and is obeyed, B". For such a
+step that form is wrong: the solver then needs the demand of a to get B,
+and a situation that b forbids by itself looks like a conflict of a and b
+(2 more conflicts on the real project). So a yes now also says what makes B
+true, "condition" or "demand", and if more of the yes answers say
+"condition" the fact is `A_a => B`, without the demand.
+
+On the saved runs of `eval22/` to `eval24/`, three askings each: planted
+conflicts found in 177 of 183 askings with the old words and in 182 with
+the frozen form; no change that should give no conflict has one, either
+way; 55 of 110 steps get the same vote in all three askings before, 92
+after. On the real project the four changes have 5, 2, 1 and 1 conflicts
+that are not doubtful, where 5, 2, 2 and 1.
 
 **How it is tested.** `eval26/` (make_eval.py): four more projects about an
 assistant that calls tools, each with the four changes of `eval22/` and

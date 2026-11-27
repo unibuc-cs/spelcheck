@@ -802,15 +802,19 @@ snapshot of that system. B is not given: it may be true or false, and you \
 have to say which. B is written as a fact marked TRUE or FALSE; B marked \
 FALSE says that the fact is not the case.
 
-Take any situation in which the requirement applies, and a system that does \
-everything the requirement demands, with its words read exactly as written. \
-Must B be true there? Answer:
+Only some situations count: those in which the condition of the requirement \
+is the case (what comes after WHEN, WHILE or IF; a requirement without such \
+a part has no condition, and every situation counts), and in which the \
+system has done everything the requirement demands, with its words read \
+exactly as written. A situation in which the condition is not the case does \
+not count, although the requirement is not broken in it. Must B be true in \
+every situation that counts? Answer:
 - yes: by the meaning of the requirement's words alone, B is true in every \
-such situation (if it demands that a letter was answered, a letter was \
-received; if it demands that every window is shut, the kitchen window is \
+situation that counts (if it demands that a letter was answered, a letter \
+was received; if it demands that every window is shut, the kitchen window is \
 shut).
-- no: there can be such a situation in which B is false. Look for one before \
-you answer. This is also the answer when B would usually come before what \
+- no: there can be a situation that counts in which B is false. Look for one \
+before you answer. This is also the answer when B would usually come before what \
 the requirement demands, or when a system would need B to bring it about. \
 Do not assume how the system works, or that anything succeeds (if it demands \
 that the gate is open, nobody need have opened it today; if it demands that \
@@ -819,7 +823,14 @@ the bell is rung once, the bell need not have been heard).
 
 First give the reason in one or two sentences, then the answer. If the answer \
 is yes, also write what connects the two as one plain sentence ("A letter \
-that was answered was received."); otherwise leave "fact" empty."""
+that was answered was received."); otherwise leave "fact" empty.
+
+If the answer is yes, say in "by" what makes B true. "condition": B is true \
+as soon as the condition of the requirement is the case, whatever the system \
+then does (the condition is that a letter is sent back, and B says that a \
+letter arrived). "demand": it takes what the requirement demands (it demands \
+that a letter was answered, and B says that a letter was received). If the \
+answer is not yes, write "none"."""
 
 APPLIES_SCHEMA = {
     "type": "object",
@@ -827,8 +838,9 @@ APPLIES_SCHEMA = {
         "reason": {"type": "string"},
         "answer": {"enum": ["yes", "no", "unclear"]},
         "fact": {"type": "string"},
+        "by": {"enum": ["condition", "demand", "none"]},
     },
-    "required": ["reason", "answer", "fact"],
+    "required": ["reason", "answer", "fact", "by"],
     "additionalProperties": False,
 }
 
@@ -840,8 +852,8 @@ def applies(llm: LLM, formal: dict, vocab: Vocabulary, temperature: float,
     Runs last, on all the facts that the other checks left or added. The
     model gets the words of rule a and one part of the condition of rule b,
     as a statement B, and says whether B must be true wherever a applies and
-    is obeyed. Four things in this were learned on saved runs
-    (research_log.md, T39, T42, T43):
+    is obeyed. Six things in this were learned on saved runs
+    (research_log.md, T39, T42, T43, T47, T48):
 
     - the words of the requirement are shown, not the symbols of what it
       demands. The description of a symbol can say less than the requirement
@@ -857,12 +869,27 @@ def applies(llm: LLM, formal: dict, vocab: Vocabulary, temperature: float,
     - B is a statement to judge, and the prompt says that it is not given.
       Shown as "Fact B", marked TRUE, the model took it as given where it is
       one of the cases in which a applies ("a call of X or Y is made", and B
-      about Y), found that a then applies, and said yes.
+      about Y), found that a then applies, and said yes;
+    - the prompt says which situations count: those in which the condition of
+      the requirement is the case and the system has done what it demands.
+      Told to "take any situation in which the requirement applies", some
+      answers took any run of a system that has the rule, also one in which
+      its condition is not met, and said no to a right step. Asked twice on
+      the same runs, such a step had 8 of 8 answers once and 3 of 8 the
+      second time (T47, T48);
+    - a "yes" also says what makes B true: what a demands, or the condition
+      of a alone ("WHEN a call returns a refusal ...", and B "a call is
+      made"). In the second case the fact is "condition of a => B". With the
+      demand of a in it, a situation that b forbids by itself ("WHEN a call
+      is made THEN the run is not an emergency run", in an emergency run in
+      which a call returns a refusal) was reported as a conflict of a and b.
 
     Adds to formal:
-        "apply_pairs"  every question asked, with the count of its answers:
+        "apply_pairs"  every question asked, with the count of its answers,
+                       and for a "yes" what the answers say makes B true:
                            {"rules": ["R1", "R4"], "part": {"ask_manager_called": true},
-                            "answers": {"yes": 8, "no": 0, "unclear": 0}}
+                            "answers": {"yes": 8, "no": 0, "unclear": 0},
+                            "by": {"condition": 0, "demand": 8}}
         "background"   one assumed fact for each question that most answers
                        say yes to:
                            {"id": "F9", "between": ["R1", "R4"], "about": "applies", "support": "8/8",
@@ -908,11 +935,19 @@ def applies(llm: LLM, formal: dict, vocab: Vocabulary, temperature: float,
             (name, value), = part.items()
             sentence = next((reply["fact"].strip() for reply in answers
                              if reply["answer"] == "yes" and reply["fact"].strip()), "")
+            # Does the condition of a alone give B, whatever a demands? Then the
+            # fact says so. With "(and condition demand) => B" in its place, a
+            # situation that b forbids by itself would look like a clash of a
+            # and b: the solver needs the demand of a to get B (checks._search).
+            by = Counter(reply.get("by") for reply in answers if reply["answer"] == "yes")
+            given = by["condition"] > by["demand"]
+            record["by"] = {"condition": by["condition"], "demand": by["demand"]}
+            when = a["antecedent"] if given else f"(and {a['antecedent']} {a['consequent']})"
             formal["background"].append({
                 "id": f"F{len(formal['background']) + 1}",
-                "text": (f"Where {a['id']} applies and is obeyed, a part of the condition of {b['id']} holds"
-                         + (f": {sentence}" if sentence else ".")),
-                "formula": f"(=> (and {a['antecedent']} {a['consequent']}) {name if value else f'(not {name})'})",
+                "text": (f"Where {a['id']} applies{'' if given else ' and is obeyed'}, "
+                         f"a part of the condition of {b['id']} holds" + (f": {sentence}" if sentence else ".")),
+                "formula": f"(=> {when} {name if value else f'(not {name})'})",
                 "support": f"{counts['yes']}/{len(answers)}",
                 "between": [a["id"], b["id"]],
                 "about": "applies",

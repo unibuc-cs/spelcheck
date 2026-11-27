@@ -5324,6 +5324,82 @@ step 48 does not give the same majority twice (T47).
 
 ---
 
+## T48 — Development: which situations count in the question of step 46, in two rounds (2026-11-27)
+
+**Question.** T47 showed that check 6 does not give the same majority twice,
+because some answers read "a situation in which the requirement applies" as
+any run of a system that has the rule. Does a prompt that says which
+situations count (plan.md 2.8) make the answers steady, and what else does
+it change? `eval26/` is not read.
+
+**How.** Check 6 alone was asked again on the saved runs of `eval22/`,
+`eval23/` and `eval24/`, three times with each form (`T48_<set>_old1` to
+`old3`, `new1` to `new3`, `final1` to `final3`), and once with each new form
+on the parts of the four changes of the real project. "Steps" below are the
+questions between the two rules of a planted conflict, 110 in the three
+sets.
+
+**Round 1: the wording.** "Only some situations count: those in which the
+condition of the requirement is the case (what comes after WHEN, WHILE or
+IF) and in which the system has done everything the requirement demands. A
+situation in which the condition is not the case does not count."
+
+| Over three askings, three sets | Old words | Round 1 | Round 2 |
+|---|---|---|---|
+| planted conflicts found, of 183 askings of a run that has one | 177 | 181 | 182 |
+| changes that should give no conflict, with one, of 108 | 0 | 1 | 0 |
+| steps with the same vote in all three askings, of 110 | 55 | 95 | 92 |
+| steps whose votes differ by 3 or more between askings | 12 | 2 | 1 |
+
+- **The answers are steady.** With the old words half of the steps got
+  another vote in another asking, and one went from 8 of 8 to 2. With the
+  new words 95 of 110 get the same vote three times.
+- **On the real project the model now also says yes where the condition of
+  a rule gives the statement.** "WHEN a call of the approval tool returns a
+  refusal THEN no step is delegated after it", and the statement "a call of
+  the approval tool is made": 0 of 8 with the old words, 8 of 8 now. The
+  new answer is the right one. With the old words the model said no for the
+  wrong reason: a run in which no call is refused.
+- **And the fact that came of it was wrong in its form.** Check 6 wrote
+  "where the rule applies and is obeyed, a call is made". The change has a
+  rule "WHEN a call of the approval tool is made THEN the run is not an
+  emergency run". An emergency run in which a call is refused is a
+  situation that this rule forbids by itself, and the search sets such
+  situations aside (5.2). But with the demand of the first rule in the fact,
+  the solver needs that rule to see it, and reported the two as a conflict:
+  2 more conflicts on the change that cannot be built (7, where 5).
+- One wrong yes on our sets, in 1 of 36 askings: the rule about two calls
+  and the statement that the second is called, 5 of 8. The model read "the
+  condition is the case" as "the second call is made".
+
+**Round 2: a yes says what makes the statement true.** The answer got one
+more field, "by": "condition" if the statement is true as soon as the
+condition of the requirement is the case, whatever the system then does;
+"demand" if it takes what the requirement demands. If more of the yes
+answers say "condition", the fact is "condition of a => B", without the
+demand of a.
+
+- **On the project the 2 conflicts are gone again**: 5, 2, 1 and 1
+  conflicts that are not doubtful for the four changes, where 5, 2, 2 and 1
+  before step 51. The two steps from a refusal and from a success of the
+  approval call are yes with 8 of 8, "condition" with 6 of 8. The step of
+  the missing approval is yes with 8 of 8, "demand" with 8 of 8.
+- **On our sets** (the last column above): 182 of 183, no change that should
+  give no conflict has one, and the votes are as steady as in round 1.
+- The wrong yes about a rule with two calls is still given now and then (2
+  of 300 askings on `eval23/`, and once on the project, 6 of 8). Each time
+  most answers call it "condition", so the fact is about the condition, and
+  the situation is one that the other rule forbids by itself: no conflict
+  comes of it. The fact is still wrong.
+
+**Decision.** The form of round 2 is frozen for the held-out test on
+`eval26/`. The plan said one try; the trial took two rounds, because the
+first made the model answer rightly a kind of question whose answer the
+code then put into the wrong form. Both rounds are before the freeze, on
+development data.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |
