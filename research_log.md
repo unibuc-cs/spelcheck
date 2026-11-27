@@ -5122,6 +5122,53 @@ back twice (T41).
 
 ---
 
+## T46 — Development: what the wrong answers about two outcomes say (2026-11-27)
+
+**Question.** In the reports of the real project every change has 1 to 6
+conflicts with a rule of another spec file that are artefacts (T41, T44),
+and most rest on the question about two outcomes (check 4). What do those
+answers say?
+
+**How.** No model was asked. The reports of T44 and the parts they were
+made from were read: for each conflict that is not doubtful, the assumed
+facts it rests on; and for the facts of check 4, the two statements that
+the model was shown and the sentence it gave.
+
+- **Half of the conflicts rest on check 4.** The four reports have 18
+  conflicts that are not doubtful. 9 of them rest on a fact of check 4, all
+  9 with a rule of another spec file; 6 are proven from the rules alone, 1
+  rests on the question of step 46 (the missing approval), 1 on a link and
+  1 on a voted fact.
+- Over the parts of the four changes check 4 was asked 5,052 times and
+  called 185 pairs impossible. (Its limit of 40 pairs for a document left
+  out 25,980 more.)
+- **The wrong answers have two shapes**, by the sentences the model gave:
+  1. *How a system works.* A hand-over that succeeds "implies a system
+     state change"; a request that is refused "generates an audit event, so
+     the audit log cannot be empty"; a tool "cannot be called if the module
+     containing it was not imported"; a page "cannot be published if the
+     write call to publish it has not succeeded". None of these is in the
+     words of the two statements. The second of them does not even need
+     the other statement: the model calls one statement impossible by
+     itself.
+  2. *Two things taken for one.* A limit of 40 tool calls and "no tool was
+     called": "a run cannot have zero tool calls if the maximum ... is 40".
+     "Every problem is reported for every live page" and "pages without a
+     date are left out of the batch". A count of versions after a rollback
+     and the list of what a page holds after a replacement. Two examples
+     about two pages.
+- The right ones are of the kind the check was built for: "a page cannot be
+  both republished and in a draft status", "a single call cannot be both
+  successful and refused", "never called, and a call that is refused".
+- The prompt says "judge only by what the facts mean" and that "possible"
+  holds "even if a system would rarely do both". It does not say, as the
+  prompts of checks 5 and 6 do, that how a system works is no reason.
+
+**Decision.** Step 50 (plan.md 2.7): the prompt of check 4 is told what does
+not count. `eval25/` first.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

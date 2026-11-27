@@ -1,6 +1,6 @@
-"""make_eval.py: writes the evaluation sets eval/ to eval24/, size/, size2/ and mixed/. No LLM, no GPU.
+"""make_eval.py: writes the evaluation sets eval/ to eval25/, size/, size2/ and mixed/. No LLM, no GPU.
 
-    python -m experiments.make_eval eval24     (only the sets named; all if none)
+    python -m experiments.make_eval eval25     (only the sets named; all if none)
 
 change_dev/ is development data for the change check: the OpenSpec-format
 specs of eval9/ and eval10/ as projects with a change (see as_projects).
@@ -371,6 +371,32 @@ names three. Three changes each:
     quiet   a rule that one of the three calls is never made in a kind of
             run, and a rule about the approving call in such a run. Nothing
             may be reported
+
+eval25/ (written 2026-11-27, after E33 and a look at the wrong answers to
+the question about two outcomes in the reports of a real project of an agent
+system; before that question is told what does not count) has four more
+projects of that kind. The wrong answers there had two shapes: the model
+said how a system works ("a refused request leaves a log entry", "a tool
+cannot be called if its module is not imported"), or it took two statements
+about two different things for statements about one ("the limit is 40" and
+"nothing was called"; "every live page" and "pages without a date"). Each
+project has three rules about three happenings, and three changes that each
+add one rule about a fourth:
+
+    words  what the new rule demands excludes what the first rule demands,
+           by the meaning of the words, said in other words ("the customer
+           was sent a confirmation" against "no message is sent to any
+           customer"). The two rules react to two happenings of one run. It
+           must be found
+    works  what the new rule demands would not go together with what the
+           second rule demands in a system that works as one expects, but
+           the words allow both ("the code that builds the price list does
+           not import the mail module" and "`send_mail` is called once").
+           No conflict may be reported
+    other  what the new rule demands is about another thing than what the
+           third rule demands ("every bed of the east house is watered" and
+           "no bed of the west house is watered"). No conflict may be
+           reported
 """
 
 import json
@@ -4537,9 +4563,137 @@ PROJECTS24 = {
          "quiet": ("add-exam-weeks", "In exam weeks every room is fixed.")}),
 }
 
+def _project25(rules: str, records: str, purposes: tuple, first: tuple, second: tuple, third: tuple, base: tuple,
+               recorded: tuple, words: tuple, works: tuple, other: tuple, names: dict) -> dict:
+    """One eval25 project: two spec files about the runs of an assistant, and three changes of one rule each.
+
+    rules, records  the names of the two spec files; purposes: their purpose
+    first, second, third   (requirement, sentence, scenario, text): three rules about three happenings
+    base            (scenario, text): an example
+    recorded        one more rule about a call, in the second file
+    words           (requirement, sentence, a rule whose demand excludes that of `first` by the meaning of the words)
+    works           (requirement, sentence, a rule whose demand a working system would not meet together with that
+                    of `second`, though the words allow both)
+    other           (requirement, sentence, a rule whose demand is about another thing than that of `third`)
+    names           for each change: (folder name, why)
+    """
+    requirement = lambda name, sentence, *scenarios: (name, sentence, list(scenarios))
+    return {
+        "specs": {
+            rules: (purposes[0], [requirement(first[0], first[1], (first[2], first[3])),
+                                  requirement(second[0], second[1], (second[2], second[3])),
+                                  requirement(third[0], third[1], (third[2], third[3])),
+                                  requirement("Requests", "The assistant SHALL handle the requests below as described.", base)]),
+            records: (purposes[1], [requirement(recorded[0], recorded[1], (recorded[2], recorded[3]))]),
+        },
+        "changes": {
+            "words": {"name": names["words"][0], "why": names["words"][1],
+                      "delta": {rules: {"ADDED": [requirement(words[0], words[1], words[2])]}},
+                      "expected": {"conflicts": [[f"{rules}/{first[0]}/{first[2]}", f"{rules}/{words[0]}/{words[2][0]}"]]}},
+            "works": {"name": names["works"][0], "why": names["works"][1],
+                      "delta": {rules: {"ADDED": [requirement(works[0], works[1], works[2])]}},
+                      "expected": {"nothing": True}},
+            "other": {"name": names["other"][0], "why": names["other"][1],
+                      "delta": {rules: {"ADDED": [requirement(other[0], other[1], other[2])]}},
+                      "expected": {"nothing": True}},
+        },
+    }
+
+
+PROJECTS25 = {
+    "nursery": _project25(
+        "plants", "plants-records",
+        ("A sales assistant handles the requests of a plant nursery and calls the tools of the stock system.",
+         "What the runs of the sales assistant leave behind."),
+        ("Confirmations", "A reservation SHALL be confirmed to the customer.",
+         "A reservation is confirmed", "WHEN a call of `reserve_plant` succeeds THEN the customer was sent a confirmation in the run"),
+        ("Price list code", "The price list SHALL be built without the mail module.",
+         "The price list does not use the mail module", "WHEN a price list is built in a run THEN the code that builds it does not import the mail module"),
+        ("Watering rounds", "A watering round SHALL cover the east house.",
+         "The east house is watered", "WHEN a watering round is handled in a run THEN every bed of the east house is watered in the run"),
+        ("Example: a plant is reserved", "WHEN ilse asks to reserve fern f2 THEN `reserve_plant` is called once AND the answer gives the pick-up day"),
+        ("Reservation records", "Every reservation SHALL be recorded.",
+         "Every reservation is recorded", "WHEN a call of `reserve_plant` succeeds THEN the run writes one reservation record that names the plant"),
+        ("Clearance sales", "A clearance sale SHALL NOT write to customers.",
+         ("A clearance run sends no message", "WHEN a clearance request is handled in a run THEN no message is sent to any customer in the run")),
+        ("Price mails", "A price list SHALL be mailed on request.",
+         ("A price request is mailed", "WHEN a price request is handled in a run THEN `send_mail` is called once in the run")),
+        ("Frost nights", "On a frost night the west house SHALL stay dry.",
+         ("A frost warning keeps the west house dry", "WHEN a frost warning is handled in a run THEN no bed of the west house is watered in the run")),
+        {"words": ("add-clearance-sales", "A clearance sale is announced in the shop only."),
+         "works": ("add-price-mails", "Customers ask for the price list by mail."),
+         "other": ("add-frost-nights", "Wet soil freezes in the unheated house.")}),
+    "dairy": _project25(
+        "batches", "batches-records",
+        ("A production assistant handles the requests of a cheese dairy and calls the tools of the cellar system.",
+         "What the runs of the production assistant leave behind."),
+        ("Prices", "A released batch SHALL be priced.",
+         "A release gives the price", "WHEN a call of `release_batch` succeeds THEN the answer gives the price per kilo"),
+        ("Closing the cellar", "The cellar SHALL be closed only with every batch turned.",
+         "A closed cellar has every batch turned", "WHEN a call of `close_cellar` succeeds THEN every batch in the cellar is listed as turned at the end of the run"),
+        ("Cellar size", "The setting `cellar.max_batches` MUST be 60.",
+         "The cellar size is configured", "WHEN the configuration is checked THEN `cellar.max_batches` is the integer 60"),
+        ("Example: a batch is released", "WHEN nils asks to release batch b4 THEN `release_batch` is called once AND the answer gives the price per kilo"),
+        ("Release records", "Every release SHALL be recorded.",
+         "Every release is recorded", "WHEN a call of `release_batch` succeeds THEN the run writes one release record that names the batch"),
+        ("Quality holds", "An answer about a batch on hold SHALL NOT talk about money.",
+         ("A quality hold names no money", "WHEN a quality hold is handled in a run THEN the answer names no amount of money")),
+        ("Night runs", "At night no batch SHALL be turned.",
+         ("A night run turns no batch", "WHEN a night request is handled in a run THEN `turn_batch` is never called in the run")),
+        ("Inventory", "An inventory SHALL move nothing.",
+         ("An inventory moves no batch", "WHEN an inventory request is handled in a run THEN no batch is moved in the run")),
+        {"words": ("add-quality-holds", "A batch on hold has no price yet."),
+         "works": ("add-night-runs", "The turning machine is loud."),
+         "other": ("add-inventory", "The yearly inventory counts what is there.")}),
+    "archive": _project25(
+        "folders", "folders-records",
+        ("A desk assistant handles the requests of a city archive and calls the tools of the catalogue system.",
+         "What the runs of the desk assistant leave behind."),
+        ("Receipts", "A reader SHALL get a receipt for a folder.",
+         "A loan gives a receipt", "WHEN a call of `lend_folder` succeeds THEN the reader is given a written receipt in the run"),
+        ("After hours", "After hours the vault SHALL stay shut.",
+         "After hours the vault is not opened", "WHEN an after-hours request is handled in a run THEN every call of `open_vault` in the run is refused"),
+        ("Versions", "A restored folder SHALL keep its history.",
+         "A restore adds one version", "WHEN a call of `restore_folder` succeeds THEN the folder has exactly one more version than before the call"),
+        ("Example: a folder is lent", "WHEN gerda asks to lend folder k9 THEN `lend_folder` is called once AND the answer gives the return date"),
+        ("Loan records", "Every loan SHALL be recorded.",
+         "Every loan is recorded", "WHEN a call of `lend_folder` succeeds THEN the run writes one loan record that names the folder"),
+        ("Phone requests", "A request by phone SHALL leave the reader with nothing in writing.",
+         ("A phone request gives nothing in writing", "WHEN a phone request is handled in a run THEN the reader gets nothing in writing in the run")),
+        ("Drills", "A drill SHALL leave no trace in the log.",
+         ("A drill writes no log entry", "WHEN a drill request is handled in a run THEN the run writes no log entry")),
+        ("New labels", "A relabelled folder SHALL carry only its new label.",
+         ("A relabel replaces the label", "WHEN a relabel request is handled in a run THEN the folder carries the new label and not the old one at the end of the run")),
+        {"words": ("add-phone-requests", "Readers also call the desk."),
+         "works": ("add-drills", "The fire drill is rehearsed twice a year."),
+         "other": ("add-new-labels", "Old labels fade.")}),
+    "radio": _project25(
+        "programmes", "programmes-records",
+        ("A planning assistant handles the requests of a local radio station and calls the tools of the schedule system.",
+         "What the runs of the planning assistant leave behind."),
+        ("Jingles", "The news SHALL be announced by a jingle.",
+         "The news has a jingle", "WHEN a call of `schedule_news` succeeds THEN a jingle is played before the news"),
+        ("Listener requests", "A listener request SHALL change no programme.",
+         "A listener request changes nothing", "WHEN a listener request is handled in a run THEN no programme is changed in the run"),
+        ("Weekly check", "The weekly check SHALL report every problem.",
+         "The weekly check reports everything", "WHEN a weekly check is handled in a run THEN every problem of every programme on air is reported in the answer"),
+        ("Example: the news is scheduled", "WHEN ada asks to schedule the news at noon THEN `schedule_news` is called once AND the answer gives the studio"),
+        ("Schedule records", "Every scheduled news slot SHALL be recorded.",
+         "Every news slot is recorded", "WHEN a call of `schedule_news` succeeds THEN the run writes one schedule record that names the hour"),
+        ("Days of mourning", "On a day of mourning the station SHALL play no sound signals.",
+         ("A mourning run plays no sound signal", "WHEN a mourning request is handled in a run THEN no sound signal of any kind is played")),
+        ("Night requests", "At night a request SHALL go to the music agent.",
+         ("A night request is handed over", "WHEN a night request is handled in a run THEN a hand-over to the music agent succeeds in the run")),
+        ("Repeats", "Only programmes with a slot SHALL be repeated.",
+         ("Repeats leave out programmes without a slot", "WHEN a repeat plan is requested in a run THEN programmes without a slot are left out of the plan")),
+        {"words": ("add-days-of-mourning", "The station follows the national days of mourning."),
+         "works": ("add-night-requests", "At night only the music desk is staffed."),
+         "other": ("add-repeats", "Repeats fill the empty hours.")}),
+}
+
 PROJECT_SETS = {"eval11": PROJECTS11, "eval13": PROJECTS13, "eval14": PROJECTS14, "eval15": PROJECTS15,
                 "mixed": PROJECTS_MIXED, "eval20": PROJECTS20, "eval21": PROJECTS21, "eval22": PROJECTS22,
-                "eval23": PROJECTS23, "eval24": PROJECTS24,
+                "eval23": PROJECTS23, "eval24": PROJECTS24, "eval25": PROJECTS25,
                 "change_dev": as_projects({**SPECS9, **SPECS10})}
 
 

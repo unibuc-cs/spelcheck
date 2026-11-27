@@ -526,6 +526,61 @@ a gap about them, with either code: their second rule is the only one about
 its call, and covers one kind of run. That is how the set was written, and
 "nothing may be reported" held for conflicts only.
 
+### 2.7 The plan for step 50: what does not count in the question about two outcomes (not built yet)
+
+In the reports of the real project, 9 of the 18 conflicts that are not
+doubtful rest on an answer to the question about two outcomes (check 4), all
+with a rule of another spec file, and those we read are artefacts (T46). The
+wrong answers have two shapes. The model says how a system works ("a request
+that is refused generates an audit event", "a tool cannot be called if its
+module was not imported"). Or it takes two statements about two different
+things for statements about one (a limit of 40 calls, and "no tool was
+called"). The prompts of checks 5 and 6 say that how a system works is no
+reason; the prompt of check 4 does not.
+
+**The change.** In the prompt of check 4 (`OUTCOMES_SYSTEM`), "possible" is
+also the answer:
+
+1. when one statement would usually cause, need or leave a trace of the
+   other, or of its opposite, in a system that works as one expects;
+2. when the two statements can be about two different things: two objects,
+   a setting and what happens in a run, a rule for all and a rule for some.
+
+And a statement is not impossible by itself because a system would not do
+it. The examples in the prompt are from no evaluation set. The pairs, the
+votes and the fact that an "impossible" gives stay as they are. The second
+question about a link that only renames (step 44) uses the same prompt, and
+changes with it. One try.
+
+**To compare on the same runs**, `experiments.evaluate --rescore FILE
+--outcomes-again-base-url URL` drops the facts of checks 4, 5 and 6 from
+saved runs and asks the three again, in that order: check 5 and check 6
+choose their pairs with the facts of check 4.
+
+**How it is tested.** `eval25/` (make_eval.py): four more projects about an
+assistant that calls tools, each with three rules about three happenings,
+and three changes that add one rule each. "words": its demand excludes that
+of the first rule by the meaning of the words, said in other words ("the
+customer was sent a confirmation" against "no message is sent to any
+customer"); it must be found. "works": a working system would not meet its
+demand together with that of the second rule, but the words allow both
+("the code that builds the price list does not import the mail module" and
+"`send_mail` is called once"). "other": its demand is about another thing
+than that of the third rule ("every bed of the east house is watered" and
+"no bed of the west house is watered"). For the last two no conflict may be
+reported.
+
+**The rule, set before the build.** The new prompt stays if on `eval25/`,
+with doubtful conflicts set aside and the same runs asked with the old
+prompt and with the new one, the "works" and "other" changes have a conflict
+about them less often, and the "words" conflicts are found no less often;
+and if, asked on the saved runs of `eval12/` and of `eval20/` to `eval24/`,
+it finds no fewer planted conflicts in any of these sets and gives a
+conflict to no more of their changes and clean specs that should have none.
+If the old prompt gives no conflict to a "works" or "other" change either,
+the set does not test the change, and that is said; what the new prompt does
+on the parts of the real project is then the evidence there is.
+
 Small things that are open:
 
 - **Long documents** (E14). A spec of 100 requirements works: its read answer
