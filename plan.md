@@ -472,7 +472,7 @@ that should have none. If the prompt of step 46 gives no conflict to a
 "several" change either, the set does not test the change, and that is
 said.
 
-### 2.6 The plan for step 49: a scenario that reacts to either of two happenings (not built yet)
+### 2.6 Step 49: a scenario that reacts to either of two happenings (built; `eval24/` not run yet)
 
 11 of the 36 runs of `eval23/` stopped before the checks (E32): the read
 step had returned the scenario "WHEN a call of `ask_vet` or `order_medicine`

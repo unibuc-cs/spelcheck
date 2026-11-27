@@ -555,10 +555,41 @@ def _read(llm: LLM, spec_text: str, first_temperature: float,
             Vocabulary(symbols)  # raises ValueError on what _usable does not repair
             rules = [{**rule, "trigger": renamed.get(rule["trigger"], rule["trigger"])}
                      for rule in answers[0]["rules"]]
-            return rules, symbols
+            return _once(rules), symbols
         except ValueError as problem:
             error = problem
     raise RuntimeError(f"could not get a usable symbol list: {error}")
+
+
+def _once(rules: list[dict]) -> list[dict]:
+    """The rules of a read answer, with a rule that came back twice kept once.
+
+    A rule has one trigger. A scenario that reacts to either of two events,
+
+        "WHEN a call of ask_chef or hire_waiters is made THEN the agent making it is the order agent"
+
+    comes back once for each event: the same id, the same words, and the
+    trigger ask_chef_called in one copy and hire_waiters_called in the other
+    (research_log.md, T45). That is one rule, and two rules with one id would
+    stop the check of a change, which tells the rules apart by their labels.
+
+    The first copy is kept. Its trigger is the one that the copies share; if
+    they name different events it is "": the rule reacts to no single event.
+    Its condition names them all, and the gap search and the questions of
+    step 6 take a rule's events from its condition as well. What "" costs:
+    where a situation is one moment, a conflict between this rule and a rule
+    about another event is not doubted as two events at once.
+
+    Two rules with one id and different words are left as they are.
+    """
+    kept: dict[tuple, dict] = {}
+    for rule in rules:
+        key = (rule["id"], " ".join(rule["text"].split()))
+        if key not in kept:
+            kept[key] = dict(rule)
+        elif kept[key]["trigger"] != rule["trigger"]:
+            kept[key]["trigger"] = ""
+    return list(kept.values())
 
 
 def _read_again(llm: LLM, rules: list[dict], symbols: list[dict], temperature: float) -> list[dict]:
