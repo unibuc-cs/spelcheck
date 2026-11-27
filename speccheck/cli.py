@@ -69,7 +69,12 @@ keeps one model of all the specs, which must fit one document.
     --symbol-sets K   formalize K times, each time with its own symbols. Every
                       finding then says with how many of the K sets it was
                       found. The extra models are saved as formal_2.json ...
-    --formal FILE...  no formalization: reuse saved formal model(s).
+    --formal FILE...  no formalization: reuse saved formal model(s). A name
+                      with * in it stands for every file it matches. With
+                      --change, each document takes the saved models that
+                      hold its rules, so the models of the parts of a large
+                      project can all be given, in any order, also when
+                      --against selects fewer spec files than were formalized.
     --second-base-url URL
                       a second model, of another family, translates every
                       rule again (formalize step 7); where its reading differs,
@@ -81,6 +86,7 @@ keeps one model of all the specs, which must fit one document.
 """
 
 import argparse
+import glob
 import hashlib
 import json
 import re
@@ -173,10 +179,28 @@ def main() -> None:
     # `models` is a list: one formal model per symbol set (usually one), or
     # one for each part of a large project.
     if args.formal:
-        models = [json.loads(path.read_text(encoding="utf-8")) for path in args.formal]
-        if pieces and len(models) != len(pieces):
-            parser.error(f"the change is checked in {len(pieces)} parts: --formal needs their {len(pieces)} "
-                         f"formal models, in order (parts/formal_*.json)")
+        # A pattern is expanded here, because not every shell does it.
+        files = [name for given in map(str, args.formal)
+                 for name in (sorted(glob.glob(given)) if any(mark in given for mark in "*?[") else [given])]
+        if not files:
+            parser.error(f"--formal: no file matches {' '.join(map(str, args.formal))}")
+        models = [json.loads(Path(name).read_text(encoding="utf-8")) for name in files]
+        if merged:
+            # Each document takes the saved models that hold its rules (a
+            # saved part that failed holds none). So the models of all the
+            # parts can be given, whatever --against selects this time.
+            saved = [(model, {rule["id"] for rule in model.get("rules", [])}) for model in models]
+
+            def of(document: Merged) -> list[dict]:
+                return [model for model, ids in saved if ids and ids.issuperset(document.scenarios)]
+
+            if pieces:
+                models = [(of(piece) or [{"error": "no saved formal model of this part was given"}])[0]
+                          for piece in pieces]
+            else:
+                models = of(merged)
+                if not models:
+                    parser.error("--formal: none of the saved formal models holds the rules of this document")
     elif llm and pieces:
         (out / "parts").mkdir(exist_ok=True)
         print(f"speccheck: {len(merged.scenarios)} scenarios, too many for one document; "

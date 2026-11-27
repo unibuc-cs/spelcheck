@@ -558,9 +558,10 @@ title.
 ### 3.18 The specs of an agent system: a whole run, examples, twin names, a project in parts (T36 to T38, E29, E30)
 
 The specs that the tool is meant for say what a run of an agent that calls
-tools may contain. A trial on such a project (33 spec files, 465 scenarios,
-four open changes, one of which its authors say cannot be built; T36) showed
-what stood in the way, and steps 44 and 45 are the answers:
+tools may contain. A trial on such a project, TestingTheAgents (33 spec
+files, 465 scenarios, four open changes, one of which its authors say cannot
+be built; T36), showed what stood in the way, and steps 44 and 45 are the
+answers:
 
 - **A situation can be a whole run** (`--whole-run`). "WHEN a call of
   `ship_parcel` succeeds in a run with a plan THEN an earlier call of

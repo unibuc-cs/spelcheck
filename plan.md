@@ -159,8 +159,9 @@ The specs that the tool is meant for are those of an agent system: an
 orchestrator and specialist agents that call tools, with rules about what a
 run may contain ("WHEN a call of `ship_parcel` succeeds in a run with a
 plan THEN an earlier `request_signoff` in the run was approved"). A first
-trial on such a project (33 spec files, 465 scenarios, four open changes, one
-of which its authors know to be impossible to implement) showed five things
+trial on such a project, TestingTheAgents (33 spec files, 465 scenarios, four
+open changes, one of which its authors know to be impossible to implement),
+showed five things
 that stand in the way. None is about that project's words; `eval20/` has
 specs of the same kind in other domains.
 

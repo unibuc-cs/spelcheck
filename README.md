@@ -83,19 +83,9 @@ Where the project stands:
   the conflicts between rules about two calls of one run are found in 12 of
   12 runs, where all 12 were doubtful before, and of 24 runs on changes that
   should give nothing, none has a conflict about the change, where 17 had
-  one. An example
-  that breaks a rule by its own words is found in 10 of 12 runs of a second
-  set, but 6 of the 10 are marked doubtful
+  one. An example that breaks a rule by its own words is found in 10 of 12
+  runs of a second set, but 6 of the 10 are marked doubtful
   ([Specs about the runs of an agent](#specs-about-the-runs-of-an-agent));
-- a project of that kind, kept outside this repository, has 33 spec files,
-  465 scenarios and four open changes, one of which its authors say cannot
-  be built, for four reasons. Each change is checked in 32 or 33 parts. The
-  first reason, a contradiction between two rules of the change, is in the
-  report, found in 16 of the 24 parts of the application's specs; no
-  conflict among the rules of the other three changes is found in more than
-  one part. The other three reasons are not found, and every report also
-  has 1 to 3 conflicts with a rule of another spec file that are artefacts
-  ([How reliable is it](#how-reliable-is-it));
 - all of that is on specs we wrote. On 69 changes of a real project it does
   worse. What we planted in 21 of them is found: 46 of 52 conflicts with a
   copied condition, 10 of 16 with a condition of their own. But one rule in
@@ -106,12 +96,22 @@ Where the project stands:
   conditions now marks one such conflict in six to nine as doubtful, and
   one in three to six says in its title that it is a rule against a special
   case of it; about half are still reported with no mark
-  ([How reliable is it](#how-reliable-is-it)).
+  ([How reliable is it](#how-reliable-is-it));
+- a second real project is of an agent system:
+  [TestingTheAgents](https://github.com/unibuc-cs/TestingTheAgents), with 33
+  spec files, 465 scenarios and four open changes, one of which its authors
+  say cannot be built, for four reasons. Each change is checked in 32 or 33
+  parts. The first reason, a contradiction between two rules of the change,
+  is in the report, found in 16 of the 24 parts of the application's specs;
+  no conflict among the rules of the other three changes is found in more
+  than one part. The other three reasons are not found, and every report
+  also has 1 to 3 conflicts with a rule of another spec file that are
+  artefacts ([A real project of that kind](#a-real-project-of-that-kind-testingtheagents)).
 
 | Read next | For |
 |---|---|
 | [GUIDE.md](GUIDE.md) | a guided tour for a first reading: every idea from an example, in small steps |
-| [commands.md](commands.md) | the commands on one page: set up, start the model, check a spec or a change, run an evaluation |
+| [commands.md](commands.md) | the commands on one page: set up, start the model, check a spec or a change, run an evaluation, run it on TestingTheAgents |
 | this file | a worked example with real output, the results, how to run it |
 | [plan.md](plan.md) | where we are, what is next, and the exact rule behind each decision |
 | [research.md](research.md) | what we found, with the numbers |
@@ -474,10 +474,10 @@ The title of each finding says how far to trust it. These are real titles:
 |---|---|---|
 | nothing more | proven from the rules alone | "Conflict: Backorder Requirement Conflict" (R2 against R3, order spec) |
 | "if the assumed facts hold" | proven only with an assumed fact | "Conflict (if the assumed facts hold): Conflict between correct password and locked account" |
-| "doubtful: ..." | proven, but probably an artefact of the formulas | the two cases below |
+| "doubtful: ..." | proven, but probably an artefact of the formulas | the cases below |
 | "depends on the reading of R4" | proven with the first reading of R4, which is ambiguous; gone with its other reading | "Gap (depends on the reading of R4): Unclear PIN lock trigger", the gap at the fourth wrong PIN in the top-up spec ([Ambiguities](#ambiguities)) |
 | "found with k of K symbol sets" | optional: the spec was translated K times, each time with other symbols, and k of them found it | "Conflict (found with 3 of 3 symbol sets): Conflict between removal and retention" |
-| "found in k of K parts" | only for a project that is checked in parts: K parts hold all the rules of this finding, and k of them found it as it is shown | "Conflict (found in 18 of 32 parts, R479 is a special case of R477)", for two contracts of one function, in a change to a project of 479 scenarios that is not in this repository |
+| "found in k of K parts" | only for a project that is checked in parts: K parts hold all the rules of this finding, and k of them found it as it is shown | "Conflict (found in 18 of 32 parts, R479 is a special case of R477)", for two contracts of one function, in a change to a real project of 479 scenarios ([below](#a-real-project-of-that-kind-testingtheagents)) |
 | "Not checked: ..." | not a finding about the spec: the requirement could not be written in logic, because no symbol stands for what it demands, and it took no part in the checks | "Not checked: Uncheckable Success Message Requirement", for a rule that demands a message with three prompts in it (a real project, below) |
 | "opened by removing X1" | only when a change is checked: a rule that the change removes used to cover this situation | "Gap (opened by removing X1): Missing rule for unauthorized check-in" ([Checking a change](#checking-a-change-against-existing-specs)) |
 | "R2 is a special case of R1" | only for a conflict between two rules: R2 applies only where R1 does, which the solver proves. Not a doubt. If R2 is meant as the exception, R1 does not say so | "Conflict (if the assumed facts hold, R2 is a special case of R1)", for "`createChange(...)` is called: create the directory" against "... and the directory already exists: throw an error" (a real project) |
@@ -807,6 +807,49 @@ as [several symbol sets](#several-symbol-sets) do. `--against PATTERN` checks
 the change only against the spec files whose name matches (`"billing-*"`).
 What this way cannot find is a conflict that needs rules of three spec
 files. A part that cannot be formalized is left out and named in the report.
+
+### A real project of that kind: TestingTheAgents
+
+[TestingTheAgents](https://github.com/unibuc-cs/TestingTheAgents) is a testbed for the
+tests of an agent system. Its folder `trace-eval/openspec` has 33 spec files
+with 465 scenarios: 24 about the application, an orchestrator and specialist
+agents that call tools (`fs-*`), and 9 about the test harness (`testbed-*`).
+Four open changes each add a workflow, and `openspec/changes/README.md` says
+which of them can be built: three can, and
+`add-instant-bulk-takedown-workflow` cannot, for four reasons. In these specs
+an example is a scenario whose clause says `use: scenario`.
+
+To run speccheck on it again (in bash; the numbers in this README are from
+its commit `f6cb12b`):
+
+```
+git clone https://github.com/unibuc-cs/TestingTheAgents ../TestingTheAgents
+T=../TestingTheAgents/trace-eval/openspec/changes
+
+# 1. every change against all 33 spec files, in parts: 30 to 55 minutes each on two GPUs
+for change in $T/add-*; do
+    python -m speccheck --change $change --whole-run --examples "^use: scenario$" \
+        --base-url http://localhost:18200/v1 --out out/agents_all/$(basename $change)
+done
+
+# 2. the same against the 24 spec files of the application, from the saved parts:
+#    the model is asked for the wording only (without --base-url, not at all)
+for change in $T/add-*; do
+    python -m speccheck --change $change --examples "^use: scenario$" --against "fs-*" \
+        --formal "out/agents_all/$(basename $change)/parts/formal_*.json" \
+        --base-url http://localhost:18200/v1 --out out/agents/$(basename $change)
+done
+
+# 3. one table for the four changes
+python -m experiments.agents.tally $T out/agents
+python -m experiments.agents.tally $T out/agents_all
+```
+
+Each `out/.../<change>` folder then holds `report.md`, `findings.json` and
+`merged.md`, and after step 1 also `parts/`, the document and the formal
+model of every part. Step 2 can be repeated with any `--against`, and after
+a change to the checks, without formalizing again. What the reports say is
+under [How reliable is it](#how-reliable-is-it).
 
 ## Run it
 
@@ -1151,15 +1194,16 @@ Some notes on these numbers:
     12 runs, and plain in 4 either way. In 6 it is marked doubtful: the
     example says "succeeds once", which became a count, and the rule is
     about "a call succeeds".
-- That project, with the final code, each change against the 24 spec files
-  of the application (T38):
+- That project, TestingTheAgents, with the final code, each change against
+  the 24 spec files of the application (T38; the commands are
+  [above](#a-real-project-of-that-kind-testingtheagents)):
 
   | Change | Conflicts, not doubtful | Among the rules of the change, with the parts that found each | With a rule of another spec file | Doubtful |
   |---|---|---|---|---|
-  | cannot be built | 6 | 3: in 16, 2 and 1 of 24 parts | 3 | 18 |
-  | can be built | 5 | 2: in 1 of 24 parts each | 3 | 33 |
-  | can be built | 3 | 1: in 1 of 23 parts | 2 | 43 |
-  | can be built | 1 | 0 | 1 | 16 |
+  | `add-instant-bulk-takedown-workflow`, cannot be built | 6 | 3: in 16, 2 and 1 of 24 parts | 3 | 18 |
+  | `add-licence-expiry-sweep-workflow`, can be built | 5 | 2: in 1 of 24 parts each | 3 | 33 |
+  | `add-page-retirement-workflow`, can be built | 3 | 1: in 1 of 23 parts | 2 | 43 |
+  | `add-scheduled-batch-republish-workflow`, can be built | 1 | 0 | 1 | 16 |
 
   The conflict found in 16 parts is the contradiction that the authors
   name. The number of conflicts does not tell the changes apart; the number
@@ -1195,7 +1239,7 @@ Some notes on these numbers:
 | The question about two conditions also doubts real conflicts | in the order example above, a run made today marks R1 against R5 as doubtful: "An order that has been canceled and refunded cannot currently be an active submitted order with available inventory." The Kiro blog reports that conflict. And it calls two flags of one command impossible ("--default" and "--no-default"), where what the tool does with both is a fair question. A doubtful conflict stays in the report, with the sentence it is doubted for |
 | The second read adds symbols that are about one rule | `openspec_dir_created` next to `openspec_dir_exists`. The rule can be written then, but it clashes with another rule only through the assumed facts. A rule with no usable translation at all is not read again |
 | A voted translation can say less than the rule | when the eight translations differ only in their symbols, the rule is kept with what more than half of them entail. "Display success message with archived name and list of updated specs" became "the success message is displayed". `formal.json` marks such a rule (`"voted": "7/7"`), the report does not. A split that the vote settles is no longer a question to the author: on `eval18/` that happened to 5 of 36 planted ambiguities, and 1 was still found |
-| With `--whole-run`, the question about two outcomes is asked of many more pairs, and errs more | it is asked of rules that react to two different happenings too. A wrong answer ("A run cannot have a maximum tool call count of 40 if no tools were called") gives a conflict between two unrelated rules. On a real project every change got 1 to 3 such conflicts against the application's specs, each in one part. In a document of 30 rules the limit of 40 pairs cuts off most of about 175 |
+| With `--whole-run`, the question about two outcomes is asked of many more pairs, and errs more | it is asked of rules that react to two different happenings too. A wrong answer ("A run cannot have a maximum tool call count of 40 if no tools were called") gives a conflict between two unrelated rules. On TestingTheAgents every change got 1 to 3 such conflicts against the application's specs, each in one part. In a document of 30 rules the limit of 40 pairs cuts off most of about 175 |
 | An example that breaks a rule is often marked doubtful | the mark needs the example's own case to make the rule apply, by the formulas. "`start_repair` succeeds once" became a count, and the rule is about "a call of `start_repair` succeeds": 6 of 10 such conflicts were found and marked (E30). The finding stays in the report, with the reason |
 | A contradiction that is a chain of three rules is not found | a new workflow takes a page down in a plan; an existing rule says that what goes down in a plan was approved; the change says that this workflow asks nobody. No two of the three clash by themselves. On the real project this was one of four reasons why a change cannot be built |
 | An attribute of one call becomes an attribute of the whole run | "the token the call was made with", "the agent that made it", "the file the function is in": two rules about two different calls then clash |
@@ -1224,11 +1268,12 @@ research.md, section 5.
 | `speccheck/refine.py` | optional LLM review, off by default |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the vLLM servers on the cluster: the main model, the second model |
 | `experiments/slurm/serve_direct.sh` | the same server for the main model, started directly on a machine with free GPUs, without the queue |
-| `tests/` | 117 tests of everything that needs no LLM |
+| `tests/` | 118 tests of everything that needs no LLM |
 | `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10`, `eval12`, `eval16` to `eval19`, `size` and `size2`; for the change check `eval11`, `eval13`, `eval14`, `eval15`, `eval20`, `eval21`, `mixed` and `change_dev`; and the script that writes them. `real1` to `real5` are not written by it (`experiments/real/`) |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs and scores the evaluation; re-scores saved runs without a GPU |
 | `experiments/real/` | the trial on a real OpenSpec project: each archived change next to the specs before it, from the git history; and the real changes with a conflict planted in them |
+| `experiments/agents/` | speccheck on a real project of an agent system, TestingTheAgents: how it is run, and the script that puts its reports into one table |
 | `experiments/stability.py`, `fact_threshold.py` | the earlier experiments |
 | `experiments/examples/` | saved runs referred to above and in research_log.md |
 | `docs/management/` | a paper and a slide deck about the project, with their LaTeX sources, the evidence files behind their numbers, two snapshots of the source they describe, and the packaged editions (`speccheck-management-*.zip`, about 60 MB each). Start with its own README |

@@ -7,7 +7,7 @@ options do and what the output means is in [README.md](README.md).
 
 ```
 uv sync                      # on a "hardlink" error: set UV_LINK_MODE=copy and retry
-python -m pytest tests       # 117 tests, no LLM
+python -m pytest tests       # 118 tests, no LLM
 ```
 
 ## 2. Try it without a GPU
@@ -163,7 +163,41 @@ python -m experiments.real.tally experiments/results/my_real_run.json           
 python -m experiments.real.translations experiments/results/my_real_run.json     # how many rules got an agreed translation, and why not
 ```
 
-## 9. When you are done
+## 9. A real project of an agent system (TestingTheAgents)
+
+[TestingTheAgents](https://github.com/unibuc-cs/TestingTheAgents) has 33 spec files
+and four open changes under `trace-eval/openspec`. In its specs an example is
+a scenario whose clause says `use: scenario`, and the specs of the
+application are named `fs-*`. In bash:
+
+```
+git clone https://github.com/unibuc-cs/TestingTheAgents ../TestingTheAgents
+T=../TestingTheAgents/trace-eval/openspec/changes
+
+# 1. every change against all 33 spec files, in parts: 30 to 55 minutes each on two GPUs
+for change in $T/add-*; do
+    python -m speccheck --change $change --whole-run --examples "^use: scenario$" \
+        --base-url http://localhost:18200/v1 --out out/agents_all/$(basename $change)
+done
+
+# 2. against the 24 spec files of the application, from the saved parts (the model only words the findings)
+for change in $T/add-*; do
+    python -m speccheck --change $change --examples "^use: scenario$" --against "fs-*" \
+        --formal "out/agents_all/$(basename $change)/parts/formal_*.json" \
+        --base-url http://localhost:18200/v1 --out out/agents/$(basename $change)
+done
+
+# 3. one table for the four changes
+python -m experiments.agents.tally $T out/agents
+python -m experiments.agents.tally $T out/agents_all
+```
+
+For one change, replace the loop by its name: `--change
+$T/add-instant-bulk-takedown-workflow`. Which of the four can be built is in
+`$T/README.md`; what speccheck finds is in README.md, under "How reliable is
+it".
+
+## 10. When you are done
 
 The server holds its GPUs until it is stopped.
 

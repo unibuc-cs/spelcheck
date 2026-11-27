@@ -1125,9 +1125,9 @@ nothing is reported.
 
 A change is read together with the specs, in one document, so that old and
 new rules get the same symbols. One document holds about 100 scenarios
-before the translations get worse. A project of an agent system that we
-checked has about 470, in 33 spec files. Such a change is checked in parts,
-and no option is needed:
+before the translations get worse. TestingTheAgents, a real project of an
+agent system (6.2), has about 470, in 33 spec files. Such a change is
+checked in parts, and no option is needed:
 
 1. **Our code splits.** One document is written for each spec file that the
    change does not touch. It holds that file and the files the change
@@ -1528,12 +1528,14 @@ once", the model wrote that as a count, and the rule is about "a call of
 `start_repair` succeeds". Nothing in the formulas says that the first means
 the second.
 
-**A real project of an agent system** (5.2). It has 33 spec files with 465
-scenarios, and four open changes that each add a workflow. Its authors say
-that three can be built and one cannot, for four reasons. It is kept outside
-this repository. Each change was checked in 32 or 33 parts, which took 31 to
-55 minutes on two GPUs. This is what the reports say, each change against
-the 24 spec files of the application:
+**A real project of an agent system** (5.2):
+[TestingTheAgents](https://github.com/unibuc-cs/TestingTheAgents). It has 33 spec
+files with 465 scenarios, and four open changes that each add a workflow.
+Its authors say that three can be built and one cannot, for four reasons. It
+is a repository of its own; the commands that run speccheck on it are in
+README.md and commands.md. Each change was checked in 32 or 33 parts, which
+took 31 to 55 minutes on two GPUs. This is what the reports say, each change
+against the 24 spec files of the application:
 
 | Change | Conflicts, not doubtful | Among the rules of the change, with the parts that found each | With a rule of another spec file | Doubtful |
 |---|---|---|---|---|
@@ -1768,7 +1770,7 @@ The folders:
 speccheck/          the tool (the 8 files above; refine.py is the review that is switched off)
 specs/              3 small specs the prompts were developed on, with their saved output,
                     and auth_change, the example of part 5
-tests/              117 tests that need no LLM
+tests/              118 tests that need no LLM
 experiments/
   sets/             the 11 evaluation sets, eval to eval10 and eval12 (297 spec versions), two long specs,
                     eval16 to eval18 (eighteen specs written like real ones), real1 to real3 (48 changes of a real project),

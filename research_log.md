@@ -4256,14 +4256,16 @@ setting, and the runs it was measured on were made before it existed.
 orchestrator and specialist agents that call tools. What does it report on
 such a project as it is?
 
-**The project.** 33 spec files in the OpenSpec format with 465 scenarios,
-and four open changes that each add a workflow. Its authors say which can be
+**The project.** TestingTheAgents (https://github.com/unibuc-cs/TestingTheAgents,
+folder `trace-eval/openspec`, commit f6cb12b): 33 spec files in the OpenSpec
+format with 465 scenarios, and four open changes that each add a workflow. Its authors say which can be
 built: three can, and one cannot, for four reasons that they list. One is a
 plain contradiction between two rules of the change (two contracts for one
 function). Two set the change against rules of other spec files (an approval
 that an existing rule demands, a hand-over that existing rules forbid). The
 fourth is arithmetic over a whole run (a batch of 60 against step budgets of
-12 and 40). The project and all runs on it are kept outside this repository.
+12 and 40). The project is a repository of its own, and the runs on it are
+not kept in this one; `experiments/agents/` says how to make them again.
 
 **How it was run.** The project is too large for one document, so each
 change was put next to one existing spec file at a time, and once alone: 79
@@ -4436,8 +4438,9 @@ development data now.
 What does `speccheck --change` report on the project's own folder?
 
 **How it was run.** `speccheck --change <the change> --whole-run --examples
-<the project's mark for an example>`, with the frozen code of step 44, once
-for each change. With a change applied the project has 474 to 479
+"^use: scenario$"` (the project's mark for an example), with the frozen code
+of step 44, once for each change; the commands are in README.md and in
+`experiments/agents/`. With a change applied the project has 474 to 479
 scenarios, so each was checked in 32 or 33 parts, formalized at the same
 time on two GPUs: 31 to 55 minutes for a change. 4 of the 131 parts could
 not be formalized: the read step returned the rules of the change alone,

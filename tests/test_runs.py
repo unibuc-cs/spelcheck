@@ -437,6 +437,32 @@ def test_a_gap_about_the_change_is_kept_only_if_every_part_has_it():
     assert combine_parts([[other], [gap]], models, changed) == []  # not about the change, and not in both
 
 
+def test_saved_models_of_the_parts_are_taken_by_their_rules(tmp_path, monkeypatch, capsys):
+    change = project(tmp_path / "project")
+    monkeypatch.setattr(change_module, "PART_LIMIT", 6)
+    for number, model in enumerate(part_models(), start=1):
+        (tmp_path / f"formal_{number:02}.json").write_text(json.dumps(model), encoding="utf-8")
+    pattern = str(tmp_path / "formal_*.json")  # expanded by the tool, in any shell
+
+    def run(*options) -> str:
+        monkeypatch.setattr(sys, "argv", ["speccheck", "--change", str(change), "--out", str(tmp_path / "out"),
+                                          "--examples", "^Example:", *options])
+        cli.main()
+        capsys.readouterr()
+        return (tmp_path / "out" / "report.md").read_text(encoding="utf-8")
+
+    # In any order: each part takes the model that holds its rules.
+    both = run("--formal", str(tmp_path / "formal_02.json"), str(tmp_path / "formal_01.json"))
+    assert "7 requirements analysed in 2 part(s): 2 conflict(s)" in both and "found in 2 of 2 parts" in both
+    assert run("--formal", pattern) == both
+    # Against one spec file only: one document, and of the two saved models the one of that file.
+    one = run("--formal", pattern, "--against", "ship*")
+    assert "5 requirements analysed: 2 conflict(s)" in one and "parts" not in one.split("## The rules")[0]
+    monkeypatch.setattr(sys, "argv", ["speccheck", "--change", str(change), "--formal", str(tmp_path / "none_*.json")])
+    with pytest.raises(SystemExit):
+        cli.main()
+
+
 def test_a_part_with_a_rule_that_has_no_label_is_left_out(tmp_path, monkeypatch):
     piece = merge(project(tmp_path), only={"gifts", "depot"})
     model = part_models()[0]
@@ -470,7 +496,8 @@ def test_the_command_line_checks_a_large_project_in_parts(tmp_path, monkeypatch,
     assert "| R7 | gifts | Gifts | Example: no gift without a postcode | **added** |" in report
     if broken:
         assert "requirements analysed in 1 part(s)" in report
-        assert "1 part(s) could not be formalized, so the change was not checked against: `depot` (no answer)." in report
+        assert ("1 part(s) could not be formalized, so the change was not checked against: `depot` "
+                "(no saved formal model of this part was given).") in report
         assert "parts" not in findings["R6", "R7"]
     else:
         assert "7 requirements analysed in 2 part(s): 2 conflict(s)" in report
