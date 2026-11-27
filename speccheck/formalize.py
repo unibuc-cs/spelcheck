@@ -65,7 +65,7 @@ import z3
 
 from .llm import LLM
 from .logic import Rule, Vocabulary
-from .probe import MAJORITY, conditions, outcomes, question
+from .probe import MAJORITY, applies, conditions, outcomes, question
 
 # Entropy thresholds for the cluster step (natural logarithm).
 # With 8 samples:  8/0 -> 0.00, 7/1 -> 0.38   accepted
@@ -439,6 +439,9 @@ def formalize(llm: LLM, spec_text: str, samples: int = 8, temperature: float = 0
     # Its fifth check adds assumed facts about the conditions of two rules that
     # clash ("between", with "about": "conditions").
     conditions(llm, formal, vocab, temperature, keep_samples, only=new, first=first)
+    # Its sixth check adds assumed facts that say where what one rule demands
+    # makes another rule apply ("between", with "about": "applies").
+    applies(llm, formal, vocab, temperature, keep_samples, only=new, first=first)
     # Step 7 (optional) adds "second" to the rules.
     if second is not None and not base:
         second_reading(second, formal, samples, temperature, keep_samples)

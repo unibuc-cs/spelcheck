@@ -64,9 +64,30 @@ Five checks. Each question is asked 8 times and the answers are counted.
                 report, marked doubtful; one that needs an assumed fact is
                 not found any more (checks.find_conflicts).
 
+    Check 6     for two rules a and b: does what a demands make b apply?
+                The other checks compare what two rules demand, or their two
+                conditions. A contradiction can also be a chain:
+
+                    R1  "WHEN a call of check_in_guest succeeds in a run with a plan
+                         THEN an earlier call of ask_manager in the run was approved"
+                    R4  "WHEN a call of ask_manager is made THEN the run is not a late-arrival run"
+                    R5  "WHEN a call of check_in_guest succeeds in a late-arrival run THEN ..."
+
+                In a late-arrival run with a plan in which a guest is checked
+                in, R1 demands an approved call, and R4 says that no such
+                call is made there. No two of the three clash by themselves:
+                nothing says that an approved call is a call that was made.
+                So the model is asked, with the words of R1: "Where this
+                requirement applies and is obeyed, is this the case: a call
+                of ask_manager is made?" If most answers say "yes", it is an
+                assumed fact, and Z3 finds the conflict of R1 and R4 with
+                it. Asked only where the answer can add a finding (see
+                `applies`).
+
 In formal.json the answers end up under "probes" (in a rule), "check" (in a
-link or a fact), "outcome_pairs" and "condition_pairs"; a fact of check 4 or
-5 has "between", and one of check 5 also "about": "conditions".
+link or a fact), "outcome_pairs", "condition_pairs" and "apply_pairs"; a fact
+of checks 4 to 6 has "between", one of check 5 also "about": "conditions",
+and one of check 6 "about": "applies".
 
 A spec about an agent that calls tools has rules about a whole run ("WHEN a
 call of ship_parcel succeeds in a run with a plan THEN an earlier
@@ -623,6 +644,7 @@ def _about(prompt: str, formal: dict) -> str:
         return prompt
     return (prompt
             .replace("ONE snapshot of a software system", "ONE run of a software system")
+            .replace("ONE snapshot of that system", "ONE run of that system")
             .replace("in the same snapshot?",
                      "in the same run? A run goes from a request to its end, and what the "
                      "statements say may happen at different times in it."))
@@ -756,6 +778,176 @@ def conditions(llm: LLM, formal: dict, vocab: Vocabulary, temperature: float,
                 "between": [first["id"], second["id"]],
                 "about": "conditions",
             })
+
+
+APPLIES_SYSTEM = """\
+You get ONE requirement of a software system, and a fact B about ONE \
+snapshot of that system. B is marked TRUE or FALSE; a fact marked FALSE is \
+not the case.
+
+Take a situation in which the requirement applies, and a system that does \
+everything the requirement demands, with its words read exactly as written. \
+Is B then the case? Answer:
+- yes: by the meaning of the requirement's words alone, B is the case \
+whenever the requirement applies and is obeyed (if it demands that a letter \
+was answered, a letter was received; if it demands that every window is \
+shut, the kitchen window is shut).
+- no: the requirement can be obeyed while B is not the case. This is also \
+the answer when B would usually come before what the requirement demands, \
+or when a system would need B to bring it about. Do not assume how the \
+system works, or that anything succeeds (if it demands that the gate is \
+open, nobody need have opened it today; if it demands that the bell is rung \
+once, the bell need not have been heard).
+- unclear: the words can reasonably be read both ways.
+
+First give the reason in one or two sentences, then the answer. If the answer \
+is yes, also write what connects the two as one plain sentence ("A letter \
+that was answered was received."); otherwise leave "fact" empty."""
+
+APPLIES_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "reason": {"type": "string"},
+        "answer": {"enum": ["yes", "no", "unclear"]},
+        "fact": {"type": "string"},
+    },
+    "required": ["reason", "answer", "fact"],
+    "additionalProperties": False,
+}
+
+
+def applies(llm: LLM, formal: dict, vocab: Vocabulary, temperature: float,
+            keep_answers: bool = False, only: set | None = None, first: set | None = None) -> None:
+    """Step 6, check 6: does what one rule demands make another rule apply?
+
+    Runs last, on all the facts that the other checks left or added. The
+    model gets the words of rule a and one part of the condition of rule b,
+    as a fact B, and says whether B is the case wherever a applies and is
+    obeyed. Three things in this were learned on saved runs (research_log.md,
+    T39):
+
+    - the words of the requirement are shown, not the symbols of what it
+      demands. The description of a symbol can say less than the requirement
+      ("an approval was granted", for a rule that an earlier request for
+      approval in the run was approved; a count of calls, for "succeeds once");
+    - the prompt is its own (APPLIES_SYSTEM) and says that what a system
+      would need is not what the words say. Asked with the prompt of check 4
+      or of check 2, the model also answered "impossible" for "to give the
+      return label it must have found the parcel";
+    - fact B is shown alone. Shown with the condition of a as a situation,
+      the model judged those facts too, and called situations impossible for
+      reasons that had nothing to do with B.
+
+    Adds to formal:
+        "apply_pairs"  every question asked, with the count of its answers:
+                           {"rules": ["R1", "R4"], "part": {"ask_manager_called": true},
+                            "answers": {"yes": 8, "no": 0, "unclear": 0}}
+        "background"   one assumed fact for each question that most answers
+                       say yes to:
+                           {"id": "F9", "between": ["R1", "R4"], "about": "applies", "support": "8/8",
+                            "formula": "(=> (and <condition of R1> <demand of R1>) ask_manager_called)", ...}
+
+    With such a fact Z3 knows that where a is obeyed, that part of b's
+    condition holds. checks.py then finds a conflict that needs the step from
+    a to b, and an example whose own demand makes a rule apply describes the
+    situation of their conflict (checks._mark_examples).
+
+    keep_answers, only: as in `outcomes`. At most MAX_PAIRS questions.
+    first  the rules of a change, when one is checked: only the pairs with
+           one of them are asked about. The conflict that an answer adds is
+           between the two rules of its pair, and a conflict among the rules
+           that existed before is not shown as the change's.
+    """
+    descriptions = {s["name"]: s["description"] for s in formal["symbols"]}
+    pairs = [pair for pair in _bridge_pairs(vocab, formal)
+             if (only is None or pair[0]["id"] in only or pair[1]["id"] in only)
+             and (not first or pair[0]["id"] in first or pair[1]["id"] in first)]
+    if len(pairs) > MAX_PAIRS:
+        formal["apply_pairs_skipped"] = len(pairs) - MAX_PAIRS
+        pairs = pairs[:MAX_PAIRS]
+    system = _about(APPLIES_SYSTEM, formal)
+
+    def ask(pair: tuple) -> list[dict]:
+        a, _, part = pair
+        prompt = f"Requirement:\n{a['text']}\n\nFact B:\n{describe(part, descriptions)}"
+        return llm.ask(system, prompt, APPLIES_SCHEMA, ANSWERS, temperature)
+
+    with ThreadPoolExecutor(max_workers=16) as pool:  # LLM calls only
+        replies = list(pool.map(ask, pairs))
+
+    formal["apply_pairs"] = [] if only is None else list(formal.get("apply_pairs", []))
+    for (a, b, part), answers in zip(pairs, replies):
+        counts = Counter({choice: 0 for choice in APPLIES_SCHEMA["properties"]["answer"]["enum"]})
+        counts.update(reply["answer"] for reply in answers)
+        record = {"rules": [a["id"], b["id"]], "part": part, "answers": dict(counts)}
+        if keep_answers:
+            record["replies"] = answers
+        formal["apply_pairs"].append(record)
+        if counts["yes"] > MAJORITY * len(answers):
+            (name, value), = part.items()
+            sentence = next((reply["fact"].strip() for reply in answers
+                             if reply["answer"] == "yes" and reply["fact"].strip()), "")
+            formal["background"].append({
+                "id": f"F{len(formal['background']) + 1}",
+                "text": (f"Where {a['id']} applies and is obeyed, a part of the condition of {b['id']} holds"
+                         + (f": {sentence}" if sentence else ".")),
+                "formula": f"(=> (and {a['antecedent']} {a['consequent']}) {name if value else f'(not {name})'})",
+                "support": f"{counts['yes']}/{len(answers)}",
+                "between": [a["id"], b["id"]],
+                "about": "applies",
+            })
+
+
+def _bridge_pairs(vocab: Vocabulary, formal: dict) -> list[tuple]:
+    """Check 6: the questions to ask, as (rule a, rule b, one part of the condition of b).
+
+    A pair (a, b) is asked about when the answer can add a finding or lift a
+    doubt, and only then:
+
+    - the condition of b is one definite state of its symbols, so that a part
+      of it can be shown as a fact;
+    - if b applied where a applies, the two could not both be obeyed. That
+      is: in some situation in which a applies, alone or with one more rule
+      c, the rules can all be obeyed (with the assumed facts); the condition
+      of b can hold there as well; and then a and b, these two alone, clash.
+      So if what a demands makes b apply, a and b are in conflict there;
+    - a part of the condition of b is a yes/no fact that a neither gives nor
+      excludes: it is not a symbol of what a demands, and Z3 with the facts
+      cannot tell. One question is asked for each such part.
+
+    A rejected rule takes no part, and an ambiguous one is taken with its
+    first reading, as in checks.py.
+    """
+    facts = [vocab.parse(fact["formula"]) for fact in formal["background"]
+             if fact.get("check", {}).get("verdict") != "rejected"]
+    rules = [(data, vocab.rule(data)) for data in formal["rules"] if data.get("status") != "rejected"]
+    # Solvers that are asked many times, with the conditions as assumptions.
+    obeyed, allowed = vocab.solver([rule.formula for _, rule in rules] + facts), vocab.solver(facts)
+
+    def possible(solver: z3.Solver, *conditions) -> bool:
+        return solver.check(*conditions) == z3.sat
+
+    pairs = []
+    for first, a in rules:
+        # The situations in which a applies and the rules can all be obeyed:
+        # a alone (c is a itself), or a with one more rule.
+        situations = [[a.antecedent, c.antecedent] for _, c in rules
+                      if possible(obeyed, a.antecedent, c.antecedent)]
+        case, demanded = [a.antecedent, a.consequent], vocab.symbols_in(a.consequent)
+        for second, b in rules:
+            condition = _as_facts(vocab, b.antecedent) if b is not a and situations else None
+            if not condition or not possible(allowed, *case, b.antecedent):
+                continue  # no definite condition, or b never applies where a is obeyed
+            parts = {name: value for name, value in condition.items()
+                     if isinstance(value, bool) and name not in demanded
+                     and possible(allowed, *case, z3.Not(vocab.assignment({name: value})[0]))}
+            if not parts:
+                continue  # nothing left to ask: Z3 knows already whether b applies
+            both = vocab.solver([a.formula, b.formula] + facts)
+            if any(possible(allowed, *situation, b.antecedent) and not possible(both, *situation, b.antecedent)
+                   for situation in situations):
+                pairs += [(first, second, {name: value}) for name, value in parts.items()]
+    return pairs
 
 
 def _clashing_pairs(vocab: Vocabulary, formal: dict) -> list[tuple]:

@@ -74,7 +74,7 @@ from speccheck.checks import analyze, combine, find_gaps, is_doubtful, settled
 from speccheck.formalize import formalize, formalize_sets, judge_second, second_reading
 from speccheck.llm import LLM
 from speccheck.logic import Vocabulary
-from speccheck.probe import conditions, outcomes
+from speccheck.probe import applies, conditions, outcomes
 
 # How the check is run by default. Each configuration below changes some of it:
 #   sets         symbol sets used (the first n formal models of a run)
@@ -94,7 +94,7 @@ from speccheck.probe import conditions, outcomes
 DEFAULT = {"sets": 1, "rule": "any", "facts": True, "max_group": 3,
            "questions": True, "link_checks": True, "doubtful": True, "settle": 0.5,
            "second": False, "repair": True, "outcomes": True, "conditions": True,
-           "whole_run": True, "examples": True, "renames": True, "every_example": True}
+           "whole_run": True, "examples": True, "renames": True, "every_example": True, "applies": True}
 
 CONFIGURATIONS = [
     ("default (1 symbol set)",               {}),
@@ -119,6 +119,9 @@ CONFIGURATIONS = [
     ("links that only rename not asked about, doubtful set aside", {"renames": False, "doubtful": False}),
     # Step 45: the mark for examples as it was in step 44.
     ("one example of a conflict is enough, doubtful set aside", {"every_example": False, "doubtful": False}),
+    # Step 46: without the facts of check 6 (in runs made with it, or to which it was added).
+    ("without the questions whether a rule applies", {"applies": False}),
+    ("without the questions whether a rule applies, doubtful set aside", {"applies": False, "doubtful": False}),
     ("pairs of rules only",                  {"max_group": 2}),
     ("3 symbol sets, found with any",        {"sets": 3}),
     ("3 symbol sets, found with most",       {"sets": 3, "rule": "majority"}),
@@ -257,6 +260,7 @@ def collect(base_url: str, specs_root: Path, runs: int, symbol_sets: int, temper
                     "fact": probe_module.FACT_SYSTEM,
                     "outcomes": probe_module.OUTCOMES_SYSTEM,
                     "conditions": probe_module.CONDITIONS_SYSTEM,
+                    "applies": probe_module.APPLIES_SYSTEM,
                     "read_more": formalize_module.READ_MORE},
         "specs": specs,
         "runs": [{"spec": name, **result} for name, result in zip(jobs, results)],
@@ -311,10 +315,11 @@ def add_second_readings(data: dict, base_url: str) -> None:
 def outcomes_one(job: tuple) -> dict:
     """Probe check 4 on one saved formal model. Runs in a worker process.
 
-    job = (base_url, formal model, temperature). Returns the model with its
-    "outcome_pairs" and the facts they gave, or {"error": ...}.
+    job = (base_url, formal model, temperature, the rules of the change or
+    None). Returns the model with its "outcome_pairs" and the facts they
+    gave, or {"error": ...}.
     """
-    base_url, model, temperature = job
+    base_url, model, temperature, _ = job
     try:
         outcomes(LLM(base_url), model, Vocabulary(model["symbols"]), temperature, keep_answers=True)
         return model
@@ -324,7 +329,7 @@ def outcomes_one(job: tuple) -> dict:
 
 def conditions_one(job: tuple) -> dict:
     """Probe check 5 on one saved formal model, as outcomes_one does check 4."""
-    base_url, model, temperature = job
+    base_url, model, temperature, _ = job
     try:
         conditions(LLM(base_url), model, Vocabulary(model["symbols"]), temperature, keep_answers=True)
         return model
@@ -332,33 +337,52 @@ def conditions_one(job: tuple) -> dict:
         return {"error": str(error)}
 
 
+def applies_one(job: tuple) -> dict:
+    """Probe check 6 on one saved formal model, as outcomes_one does check 4; job[3]: the rules of the change."""
+    base_url, model, temperature, first = job
+    try:
+        applies(LLM(base_url), model, Vocabulary(model["symbols"]), temperature, keep_answers=True, first=first)
+        return model
+    except Exception as error:
+        return {"error": str(error)}
+
+
 def add_outcomes(data: dict, base_url: str, what: str = "outcomes") -> None:
-    """Probe check 4 (or 5, with what="conditions") on every saved formal model, with the model at `base_url`.
+    """Probe check 4 (or 5 or 6, with what="conditions" or "applies") on every saved formal model, with the
+    model at `base_url`.
 
     The runs must have been made without the check: afterwards, every fact
-    with "between" (check 5: with "about": "conditions") counts as added by
-    this call (see additions).
+    with "between" (check 5: with "about": "conditions"; check 6: with
+    "about": "applies") counts as added by this call (see additions).
     """
-    models = [model for run in data["runs"] for model in run.get("models", [])]
+    def changed(run: dict) -> set | None:
+        """The rules that the change of this run added or modified (None for a plain spec)."""
+        change = data["specs"][run["spec"]].get("change")
+        return change and {label for label, scenario in change["scenarios"].items()
+                           if scenario["status"] in ("added", "modified")}
+
+    pairs = [(model, changed(run)) for run in data["runs"] for model in run.get("models", [])]
+    models = [model for model, _ in pairs]
     temperature = data.get("temperature", 0.7)
-    one = outcomes_one if what == "outcomes" else conditions_one
+    one = {"outcomes": outcomes_one, "conditions": conditions_one, "applies": applies_one}[what]
     with ProcessPoolExecutor(max_workers=32) as pool:
-        done = list(pool.map(one, [(base_url, model, temperature) for model in models]))
+        done = list(pool.map(one, [(base_url, model, temperature, first) for model, first in pairs]))
     failed = 0
     for model, result in zip(models, done):
         if "error" in result:
             failed += 1
         else:
             model.update(result)
-    data["prompts"][what] = probe_module.OUTCOMES_SYSTEM if what == "outcomes" else probe_module.CONDITIONS_SYSTEM
+    data["prompts"][what] = {"outcomes": probe_module.OUTCOMES_SYSTEM, "conditions": probe_module.CONDITIONS_SYSTEM,
+                             "applies": probe_module.APPLIES_SYSTEM}[what]
     data[f"{what}_added"] = datetime.now().isoformat(timespec="seconds")
     data[f"{what}_failed"] = failed
 
 
 def additions(data: dict, source: Path, what: str = "outcomes") -> dict:
     """What add_outcomes added to the runs saved in `source`, as a file of its own."""
-    pairs = "outcome_pairs" if what == "outcomes" else "condition_pairs"
-    added = (lambda fact: "between" in fact) if what == "outcomes" else (lambda fact: fact.get("about") == "conditions")
+    pairs = {"outcomes": "outcome_pairs", "conditions": "condition_pairs", "applies": "apply_pairs"}[what]
+    added = (lambda fact: "between" in fact) if what == "outcomes" else (lambda fact: fact.get("about") == what)
     return {
         "source": source.as_posix(),
         f"{what}_added": data[f"{what}_added"],
@@ -439,6 +463,9 @@ def findings_of(run: dict, config: dict) -> tuple[list[dict], list[dict]]:
                   for model in models]
     if not config["conditions"]:  # those of check 5 also have "about": "conditions"
         models = [{**model, "background": [fact for fact in model["background"] if fact.get("about") != "conditions"]}
+                  for model in models]
+    if not config["applies"]:  # those of check 6 have "about": "applies"
+        models = [{**model, "background": [fact for fact in model["background"] if fact.get("about") != "applies"]}
                   for model in models]
     # readings=False: only the counts are needed here (see reading_effects).
     findings = combine([analyze(model, config["max_group"], questions=config["questions"],
@@ -576,7 +603,9 @@ CHANGE_CONFIGURATIONS = ("default (1 symbol set)", "doubtful conflicts set aside
 CHANGE_CONFIGURATIONS_44 = ("a run read as one moment, doubtful set aside",
                             "examples read as rules, doubtful set aside",
                             "links that only rename not asked about, doubtful set aside",
-                            "one example of a conflict is enough, doubtful set aside")
+                            "one example of a conflict is enough, doubtful set aside",
+                            "without the questions whether a rule applies",
+                            "without the questions whether a rule applies, doubtful set aside")
 
 
 def change_run(spec: dict, run: dict, config: dict) -> dict:
@@ -925,6 +954,8 @@ def main() -> None:
                                                     "asked at this server, and save the runs under --name")
     parser.add_argument("--conditions-base-url", help="with --rescore: add the questions about the conditions of two "
                                                       "rules that clash, asked at this server, and save them under --name")
+    parser.add_argument("--applies-base-url", help="with --rescore: add the questions whether what one rule demands "
+                                                   "makes another rule apply, asked at this server, under --name")
     parser.add_argument("--incremental", action="store_true",
                         help="OpenSpec changes: formalize the specs of a project once, and each change on top")
     parser.add_argument("--whole-run", action="store_true",
@@ -940,7 +971,8 @@ def main() -> None:
         if args.second_base_url:
             add_second_readings(data, args.second_base_url)
             raw_file.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-        for what, base_url in (("outcomes", args.outcomes_base_url), ("conditions", args.conditions_base_url)):
+        for what, base_url in (("outcomes", args.outcomes_base_url), ("conditions", args.conditions_base_url),
+                               ("applies", args.applies_base_url)):
             if base_url:
                 add_outcomes(data, base_url, what)
                 raw_file = Path("experiments/results") / f"{args.name}.json"  # the old file stays as it is

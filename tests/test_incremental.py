@@ -10,7 +10,7 @@ from pathlib import Path
 from speccheck.change import after_model, base_document, changed_rules, merge
 from speccheck.checks import analyze
 from speccheck.formalize import (FACTS_SYSTEM, FORMALIZE_SYSTEM, READ_MORE, READ_SYSTEM, formalize)
-from speccheck.probe import CONDITIONS_SYSTEM, OUTCOMES_SYSTEM, READINGS_SYSTEM
+from speccheck.probe import APPLIES_SYSTEM, CONDITIONS_SYSTEM, OUTCOMES_SYSTEM, READINGS_SYSTEM
 from tests.test_change import project
 
 
@@ -58,6 +58,9 @@ class FakeLLM:
         if system == CONDITIONS_SYSTEM:  # check 5: can the conditions of two rules that clash both hold?
             self.calls.append(("conditions", user))
             return [{"reason": "", "answer": "possible", "fact": ""}] * samples
+        if system == APPLIES_SYSTEM:  # check 6: does what one rule demands make another rule apply?
+            self.calls.append(("applies", user))
+            return [{"reason": "", "answer": "no", "fact": ""}] * samples
         assert system == OUTCOMES_SYSTEM
         self.calls.append(("outcomes", user))
         return [{"reason": "", "answer": "impossible", "fact": "A payment cannot be taken and refused."}] * samples
@@ -103,6 +106,11 @@ def test_new_rules_are_added_to_a_model_with_its_symbols():
     # together ("a card is tapped", "the canteen is closed"). They can: nothing is added.
     assert len(llm.asked("conditions")) == 1
     assert model["condition_pairs"] == [{"rules": ["R1", "N1"], "answers": {"possible": 8, "impossible": 0, "unclear": 0}}]
+    # And whether what one of them demands makes the other apply ("the price is taken": is the
+    # canteen closed then?). It does not: nothing is added.
+    assert [(pair["rules"], pair["part"]) for pair in model["apply_pairs"]] == [
+        (["R1", "N1"], {"canteen_closed": True}), (["N1", "R1"], {"card_tapped": True})]
+    assert len(llm.asked("applies")) == 2
 
 
 def test_the_facts_are_asked_again_only_when_a_symbol_is_new():

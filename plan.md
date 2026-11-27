@@ -285,7 +285,7 @@ that this makes "a call succeeds" true. Two examples of one case with
 opposite outcomes are found in 5 of 12 runs, mark or no mark: "called once"
 and "never called" became two symbols that can hold together.
 
-### 2.3 The plan for step 46: does what one rule demands make another rule apply? (not built yet)
+### 2.3 Step 46: does what one rule demands make another rule apply? (built; `eval22/` not run yet)
 
 One of the four reasons why a change of TestingTheAgents cannot be built is
 a chain of three rules (research.md 4.9). A run of the new workflow takes a
@@ -300,22 +300,22 @@ condition of another.
 **Check 6 of step 6: would this rule apply too?**
 
 1. Our code and Z3 pick the pairs. A pair (*a*, *b*) is asked about when,
-   where *a* applies, *b* cannot apply as well without a clash:
+   where *a* applies, *b* cannot apply as well without a clash between the
+   two:
 
    ```
-   a applies, alone or with one more rule c    A_a and A_c and the rules and the facts            satisfiable
-   b cannot apply there                        A_a and A_c and A_b and the rules and the facts    unsatisfiable
-   though the conditions can hold together     A_a and A_c and A_b and the facts                  satisfiable
+   a applies, alone or with one more rule c    A_a and A_c and the rules and the facts         satisfiable
+   the conditions can hold together            A_a and A_c and A_b and the facts               satisfiable
+   but then a and b clash                      A_a and A_c and A_b and a and b and the facts   unsatisfiable
    ```
 
-   and when what *a* demands is one definite state, the condition of *b* is
-   one too, and a part of that condition is neither given nor excluded by
-   what *a* demands.
+   and when the condition of *b* is one definite state, and a part of it is
+   neither given nor excluded by *a*.
 2. For each such part *p* of the condition of *b*, a yes/no fact, the model
-   is asked the question of check 4, eight times: "Statement A: what *a*
-   demands. Statement B: *p* is not the case. Can A and B both hold?" It sees
-   no requirement.
-3. More than half "impossible" is an assumed fact, `C_a => p`, with
+   is asked eight times, with the words of *a* and that one fact: "Take a
+   situation in which the requirement applies, and a system that does
+   everything it demands. Is B then the case?" (`APPLIES_SYSTEM`).
+3. More than half "yes" is an assumed fact, `(A_a and C_a) => p`, with
    `between: [a, b]` and `about: applies`. It is used like the others. The
    second search of 5.2 then finds the conflict of the chain, "if the
    assumed facts hold". And an example whose demand makes a rule apply
@@ -323,7 +323,35 @@ condition of another.
    is not doubtful.
 
 It is asked only where the answer can add a finding or lift a doubt, at most
-40 times for a document, with the rules of a change first.
+40 times for a document. When a change is checked, only the pairs with one
+of its rules are asked about.
+
+**What the trial changed before the freeze** (T39, on the saved runs of
+`eval20/` and `eval21/` and the saved parts of the four changes of the
+project). The plan said "the question of check 4": what *a* demands as
+statement A, the opposite of *p* as statement B, can both hold? Four forms
+were tried:
+
+| Form of the question | `eval20/`: runs on changes that should give nothing, with a conflict | `eval21/`: examples that break a rule, found and not doubtful | The project: the step from "approved" to "requested" | The project: steps said yes to with a rule of the change, for its four changes |
+|---|---|---|---|---|
+| the question of check 4, on the symbols of what *a* demands | 1 of 24 | 4 of 12 | 6 of 8 answers | 3, 19, 24, 3 |
+| a prompt of its own that rules out what a system would merely need, on those symbols | 0 of 24 | 4 of 12 | 4 of 8: not taken | 0, 2, 5, 0 |
+| the question of check 2: the words of *a*, and a situation with the condition of *a* | 0 of 24 | 10 of 12 | 8 of 8 | 17, 21, 29, 1 |
+| the words of *a*, the prompt of its own, and fact B alone (frozen) | 0 of 24 | 10 of 12 | 8 of 8 | 2, 6, 15, 3 |
+
+- The symbols of a demand can say less than the requirement: "an approval
+  was granted" for a rule that an earlier request for approval in the run
+  was approved, a count of calls for "succeeds once". So the model is shown
+  the words.
+- With the prompt of check 4 or of check 2 the model also says that A needs
+  B when a system would merely need it ("to give the return label it must
+  have found the parcel"). So the prompt says that this is a "no".
+- Shown a situation with other facts, the model judges those too. So B is
+  shown alone.
+
+With the frozen form, the four changes of the project have 7, 5, 4 and 1
+conflicts that are not doubtful, against 6, 5, 3 and 1 without the check;
+the one more of the change that cannot be built is the missing approval.
 
 **How it is tested.** `eval22/` (make_eval.py): four more projects about an
 assistant that calls tools. Each has a rule that a call needs an earlier
@@ -335,12 +363,13 @@ must be found, and not be doubtful); and the form of the chain for the
 second rule, where "the card was verified at check-in" does not say that
 `verify_card` is called in this run (nothing may be reported).
 
-**The rule, set now.** Check 6 stays if on `eval22/`, with doubtful
-conflicts set aside and the same runs scored with and without its facts,
-the "chain" conflicts are found more often, the "breaks" conflicts no less
-often, and the "near" changes have a conflict about them no more often; and
-if, asked on the saved runs of `eval20/` and `eval21/`, it loses no planted
-conflict there and gives no conflict to a change that should have none.
+**The rule, set before the build.** Check 6 stays if on `eval22/`, with
+doubtful conflicts set aside and the same runs scored with and without its
+facts, the "chain" conflicts are found more often, the "breaks" conflicts no
+less often, and the "near" changes have a conflict about them no more often;
+and if, asked on the saved runs of `eval20/` and `eval21/`, it loses no
+planted conflict there and gives no conflict to a change that should have
+none. (The last part is met in the trial: the table above.)
 
 Small things that are open:
 
