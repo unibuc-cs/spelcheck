@@ -264,7 +264,16 @@ mean, as their descriptions say. Answer:
 - impossible: A and B exclude each other by their meaning (a lamp cannot be \
 lit and dark at once; if every drawer is shut, the top drawer is not open).
 - possible: both can hold together (a form can be signed and also dated), \
-even if a system would rarely do both.
+even if a system would rarely do both. This is also the answer when one of \
+them would usually cause, need or leave a trace of the other, or of its \
+opposite: do not assume how the system works, or that anything succeeds or is \
+written down (a letter can be sent back unopened with no note made of it; a \
+pot can be hot although nobody lit the stove today). And it is the answer \
+when A and B can be about two different things: two objects, a limit and \
+what happened, all of one kind and some of another (a jar can be made for 40 \
+marbles and hold none; every window upstairs can be shut while one downstairs \
+is open). If one statement alone looks like something no system would do, \
+that is no reason: judge only whether the two exclude each other.
 - unclear: the descriptions can reasonably be read both ways.
 
 First give the reason in one or two sentences, then the answer. If the answer \
@@ -665,6 +674,13 @@ def outcomes(llm: LLM, formal: dict, vocab: Vocabulary, temperature: float,
     The model sees only the two outcomes, as facts with their descriptions,
     not the requirements: like the facts question of step 4, it is asked what
     the symbols mean, not what the system should do.
+
+    The prompt says what does not make two outcomes impossible (step 50). On
+    a real project the wrong answers had two shapes (research_log.md, T46).
+    The model said how a system works: "a request that is refused generates
+    an audit event, so the audit log cannot be empty". Or it took statements
+    about two things for statements about one: "a run cannot have zero tool
+    calls if the maximum is 40".
 
     Adds to formal:
         "outcome_pairs"  every pair asked about, with the count of its answers

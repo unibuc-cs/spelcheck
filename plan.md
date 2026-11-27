@@ -14,6 +14,7 @@ projects have them (5.10).
 | [README.md](README.md) | the idea, a worked example with real output, how to run it |
 | `plan.md` (this file) | where we are, what is next, and how each part works |
 | [research.md](research.md) | what we found, with the numbers |
+| [research_issues.md](research_issues.md) | every problem we ran into, in plain words, each with a real example; kept up to date with every step |
 | [research_log.md](research_log.md) | the archive: every experiment and trial in detail. Not needed to understand the project |
 
 ---
@@ -526,7 +527,7 @@ a gap about them, with either code: their second rule is the only one about
 its call, and covers one kind of run. That is how the set was written, and
 "nothing may be reported" held for conflicts only.
 
-### 2.7 The plan for step 50: what does not count in the question about two outcomes (not built yet)
+### 2.7 Step 50: what does not count in the question about two outcomes (built; `eval25/` not run yet)
 
 In the reports of the real project, 9 of the 18 conflicts that are not
 doubtful rest on an answer to the question about two outcomes (check 4), all
@@ -580,6 +581,23 @@ conflict to no more of their changes and clean specs that should have none.
 If the old prompt gives no conflict to a "works" or "other" change either,
 the set does not test the change, and that is said; what the new prompt does
 on the parts of the real project is then the evidence there is.
+
+**The trial before the freeze** (T47, on saved runs). On the parts of the
+four real changes the conflicts that are not doubtful go from 9, 3, 3 and 3
+to 5, 2, 2 and 1: the 9 that rested on an answer of check 4 are all gone,
+and the two reasons of the authors that were found stay. On `eval20/` to
+`eval24/` no planted conflict that rests on check 4 is lost. On `eval12/`
+one is: 32 of 36 found, against 33 with the old prompt asked again. It is
+"delete the payslips" against "keep every payslip for ten years", written as
+a number: a limit we know, found before on a vote of 5 to 3. So the second
+half of the rule is not met as written. The prompt is frozen all the same:
+the gain is larger than the loss.
+
+The trial also showed that the question of step 48 does not give the same
+majority twice: asked again on the same runs, a right step had 3 of 8
+answers where it had 8. Two planted conflicts of `eval22/` and one of
+`eval23/` were not found for that, and one of `eval24/` was. That is the
+next thing to repair.
 
 Small things that are open:
 

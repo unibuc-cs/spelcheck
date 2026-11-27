@@ -5169,6 +5169,94 @@ not count. `eval25/` first.
 
 ---
 
+## T47 — Development: the question about two outcomes, told what does not count (2026-11-27)
+
+**Question.** Does the new prompt of check 4 (plan.md 2.7) stop the wrong
+answers of T46, and does it keep the right ones? `eval25/` is not read.
+
+**The prompt.** "possible" is also the answer when one statement would
+usually cause, need or leave a trace of the other, or of its opposite ("do
+not assume how the system works, or that anything succeeds or is written
+down"); and when the two can be about two different things ("two objects, a
+limit and what happened, all of one kind and some of another"). One
+statement that alone looks like something no system would do is no reason.
+
+**How.** Checks 4, 5 and 6 were asked again on saved runs with
+`--rescore ... --outcomes-again-base-url` (files `T47_*`), and on the parts
+of the four changes of the real project (T44). The three go together: check
+5 and check 6 choose their pairs with the facts of check 4. For `eval12/`,
+whose saved runs are older than check 6, the three were also asked again
+with the old prompt (`T47_eval12_old`).
+
+**The real project**, each change against the application's specs, the same
+parts:
+
+| Change | Conflicts, not doubtful: old prompt → new | With a rule of another spec file | Doubtful |
+|---|---|---|---|
+| cannot be built | 9 → 5 | 7 → 3 | 19 → 9 |
+| can be built | 3 → 2 | 1 → 0 | 32 → 21 |
+| can be built | 3 → 2 | 3 → 1 | 54 → 35 |
+| can be built | 3 → 1 | 3 → 1 | 19 → 7 |
+
+- **The 9 conflicts that rested on an answer of check 4 are all gone.**
+  Check 4 calls 98 pairs impossible, where it called 185 (of 5,052).
+- **The two reasons of the authors stay**: the two contracts on one function
+  (16 of 24 parts) and the missing approval (its step has 7 of 8 answers).
+- One of the 9 was close to the missing approval: an existing rule that a
+  takedown is guarded, against an example in which pages go down with no
+  request for approval. The model had called the two impossible because "a
+  tool that requires approval cannot execute without a call to the approval
+  mechanism", which is how a system works. It is not reported any more.
+- What is left with a rule of another spec file, 5 conflicts over the four
+  changes: the missing approval; two that are proven from the rules alone
+  and set a property of one call against a property of another; one through
+  a link; one that holds under one reading of an ambiguous rule.
+
+**Our sets**, the same runs:
+
+| Set | Planted conflicts found: before → new prompt | Changes or clean specs with a conflict that should have none |
+|---|---|---|
+| `eval12/` | 34 of 36 as saved, 33 with the old prompt asked again → 32 | 4 of 18 as saved, 3 asked again → 3; conflicts that nobody planted 25, 18 → 12 |
+| `eval20/` | 24 of 24 → 24 | 0 of 24 → 0 |
+| `eval21/` | 15 of 24 → 15 | 0 of 12 → 0 |
+| `eval22/` | 24 of 24 → 22 | 1 of 12 → 0 |
+| `eval23/` | 13 of 13 → 12 | 0 of 12 → 0 |
+| `eval24/` | 23 of 24 → 24 | 0 of 12 → 0 |
+
+- **What the new prompt loses is one case, the limit we know**: "deletes the
+  employee's payslips" against "keep every payslip for ten years", where
+  the second rule had become a number, `payslip_retention_years = 10`. The
+  old prompt called the two impossible with 5 of 8 answers in two runs (3
+  of 8 in one of them when asked again). The new one says "possible" with 8
+  and 7 of 8: a setting and what happened are two things. That is right for
+  the two statements as they are written, and the rule's own words are
+  lost in the translation.
+- **No planted conflict that rests on check 4 is lost in `eval20/` to
+  `eval24/`**: their facts have 8 of 8 answers before and after.
+- **The changes in `eval22/`, `eval23/` and `eval24/` come from check 6, not
+  from the new prompt.** None of those conflicts uses a fact of check 4.
+  The question of step 48, asked a second time on the same runs with the
+  same words, gave the step from "approved" to "called" 3 and 4 of 8
+  answers in two runs where it had 8 and 7, and gave another step 6 of 8
+  where it had 3. Its answers: some reason rightly ("for a call to be
+  approved, it must have been made") and then say "no"; some look for a
+  situation in which the requirement does not apply ("if the call does not
+  succeed, the requirement imposes no constraints"). So a majority of 8
+  answers of that question is not stable. This was not seen before because
+  the question had been asked once for each run.
+
+**Decision.** The second half of the rule of plan.md 2.7 is not met as it
+was written: on `eval12/` one planted conflict fewer is found (32 against
+33, the old prompt asked again), and on `eval22/` and `eval23/` fewer are
+found for a reason that is not the change. The prompt is frozen all the
+same, for the held-out test on `eval25/`: on the real project 9 conflicts
+that rest on wrong answers go and the two right reasons stay, against one
+planted conflict that was found on a vote of 5 to 3 from a translation that
+had lost the rule. The instability of the question of step 48 is a finding
+of its own, and the next thing to repair.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |
