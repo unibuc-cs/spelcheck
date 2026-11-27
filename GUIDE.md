@@ -63,7 +63,7 @@ is how OpenSpec projects work. That is part 5.
 
 To give an idea of the size: about 4,950 lines of Python now, half of them comments
 and prompts, one local model (Qwen3.8, 27B), and results measured on 297 versions
-of small specs and on 190 changes. The results are in part 6.
+of small specs and on 202 changes. The results are in part 6.
 
 ---
 
@@ -1193,6 +1193,25 @@ never called" breaks R1. But "succeeds once" became a count, and R1 is about
 its conflict was marked doubtful. Asked with the words of the example, the
 model says that it does, and the mark is not given.
 
+**A scenario that reacts to either of two calls** (no option). In an
+optician's project of ours (`experiments/sets/eval24/optician_direct`), R2 is
+"WHEN a call of `order_lenses` or `order_frame` is made THEN the run writes
+an audit entry".
+
+1. When the model reads the document, it names for each rule the event it
+   reacts to, its trigger (3.3). A rule has one.
+2. R2 reacts to either of two events. So the model lists R2 twice, with the
+   same words: once with the trigger `order_lenses_called`, once with
+   `order_frame_called`.
+3. The check of a change tells the rules of the change from the others by
+   their labels. With two rules labelled R2 it used to stop.
+4. Now our code keeps such copies, one label and the same words, as one
+   rule. Their triggers differ, so the rule has none.
+5. The translations never see the trigger. R2 becomes
+   `(or order_lenses_called order_frame_called) => audit_entry_written`, and
+   a change that says "no audit entry" for `order_frame` in a warranty run
+   gets its conflict with R2.
+
 ### 5.2 A project too large for one document
 
 A change is read together with the specs, in one document, so that old and
@@ -1635,7 +1654,24 @@ Only 25 of the 36 runs are in this table. The other 11 stopped before the
 checks, in both forms: 9 of the 12 runs with such an example and 2 with a
 chain. In each, the read step had returned the rule about two calls as two
 rules with one label, one for each call, and a run that does not keep its
-labels is stopped (6.4). No run of the three sets before stopped.
+labels is stopped. No run of the three sets before stopped.
+
+Such copies are one rule now (5.1). That was tested on four more projects
+(`eval24`), each with a rule about two calls and a rule about three, every
+change run three times with the code before and after:
+
+| | Before | Copies are one rule |
+|---|---|---|
+| runs that finish | 25 of 36 | 36 of 36 |
+| a rule that says the opposite of the rule about two calls, for one of them: found | 8 of 12 | 12 of 12 |
+| an example that breaks a rule: found, and not doubtful | 6 of 12 | 11 of 12 |
+| a change that should give no conflict: runs with one | 0 of 11 | 0 of 12 |
+
+Each change of the last row gets a gap about it, with either code. Its
+second rule, "WHEN a call of `ask_optician` is made in a complaint run THEN
+...", is the only rule about that call, so a call outside a complaint run is
+a gap by the definition of 2.4. That is how we wrote the set, not something
+the repair does.
 
 **A real project of an agent system** (5.2):
 [TestingTheAgents](https://github.com/unibuc-cs/TestingTheAgents). It has 33 spec
@@ -1692,7 +1728,7 @@ The project has five goals. This is where each one stands:
 | G1: a minimal working prototype of Kiro's formal analysis | done |
 | G2: it works on any spec, in any format | done for the prototype: 2 formats, 63 small specs, two long ones, and changes checked against existing specs, removals included (part 5). Specs about the runs of an agent have options of their own, and a project of 479 scenarios is checked in parts (5.1, 5.2) |
 | G3: code and documents a person can read | done for the current state |
-| G4: research for a paper, on the local model | well under way: 24 tests on specs the design had not seen, four of them on changes of a real project. Still one main model, one real OpenSpec project and one real project of an agent system |
+| G4: research for a paper, on the local model | well under way: 25 tests on specs the design had not seen, four of them on changes of a real project. Still one main model, one real OpenSpec project and one real project of an agent system |
 | G5: only the formal part | done: an LLM review of the text was built, measured, and switched off |
 
 ### 6.4 What does not work yet
@@ -1710,7 +1746,7 @@ The project has five goals. This is where each one stands:
 | with a whole run as the situation, the questions about two outcomes err more | they are asked of two rules about two unrelated happenings as well, and a wrong answer gives a conflict between the two: 1 to 6 for each change of the real project of 6.2, each found in one part, and mostly other ones in each run |
 | the question about a chain is asked at most 40 times for a document | enough on our sets. On the four changes of the real project, 2,008 of 5,004 questions were left out (6.2). And a chain is found only across the spec files of one part |
 | on real specs the question about a chain still takes wrong steps | 3 of the 30 it said yes to on the real project. Two take one refusal for another ("the job is refused", and the statement that the approver refused). One is about a statement marked FALSE: the model says that the fact is true, and then answers "yes". None of the three adds a conflict there |
-| a scenario whose condition names two things can stop a run | "WHEN a call of `ask_vet` or `order_medicine` is made THEN ...": the read step sometimes returns it as two rules with one label. A run that does not keep its labels is stopped: 11 of 36 runs on `eval23` (6.2) |
+| a rule that reacts to either of two events has no trigger | the model lists it once for each event, and the copies are kept as one rule (5.1). Where a situation is one moment, a conflict between it and a rule about another event is then not marked as two events at once (3.3). A label that comes back twice with two different texts still stops the run; that was not seen |
 | a right step can still give an artefact | "a call that is refused was made" is right. Its conflict on the real project has a call that succeeds in its situation, which the example excludes in words and the formulas do not: "refused" and "succeeds" are two symbols |
 | two examples of one case with opposite outcomes are missed in 7 of 12 runs | "called once" and "never called" became a count and "the call did not succeed", which can hold together (6.2) |
 | an attribute of one call becomes an attribute of the run | "the token the call was made with": two rules about two different calls then clash |
@@ -1803,9 +1839,8 @@ The full list is in research.md, section 5.
 ### 6.6 What is next
 
 1. **The specs of an agent system**: what the real project still shows.
-   First a scenario that the read step returns as two rules with one
-   label, which stops a run (6.4). Then the wrong answers to the question
-   about two outcomes between unrelated happenings. An attribute that belongs to one call. The limit of 40
+   The wrong answers to the question about two outcomes between unrelated
+   happenings. An attribute that belongs to one call. The limit of 40
    questions for a document, which a project in parts reaches in nearly
    every part. And the two reasons that are not found: a conflict that
    needs rules of three spec files, and arithmetic over the steps of a run.
@@ -1874,14 +1909,14 @@ The folders:
 speccheck/          the tool (the 8 files above; refine.py is the review that is switched off)
 specs/              3 small specs the prompts were developed on, with their saved output,
                     and auth_change, the example of part 5
-tests/              124 tests that need no LLM
+tests/              130 tests that need no LLM
 experiments/
   sets/             the 11 evaluation sets, eval to eval10 and eval12 (297 spec versions), two long specs,
                     eval16 to eval18 (eighteen specs written like real ones), real1 to real3 (48 changes of a real project),
                     real4 and real5 (21 more real changes, each also with a planted conflict),
                     eval19 (six specs with conditions that exclude each other),
                     and for the change check eval11, eval13, eval14, eval15, mixed (one larger project),
-                    eval20 to eval23 (sixteen projects about an assistant that calls tools)
+                    eval20 to eval24 (twenty projects about an assistant that calls tools)
                     and change_dev (old specs as projects)
   results/          every experiment: the raw data (.json) and its tables (.md)
   examples/         saved runs that the documents quote

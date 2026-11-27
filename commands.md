@@ -7,7 +7,7 @@ options do and what the output means is in [README.md](README.md).
 
 ```
 uv sync                      # on a "hardlink" error: set UV_LINK_MODE=copy and retry
-python -m pytest tests       # 124 tests, no LLM
+python -m pytest tests       # 130 tests, no LLM
 ```
 
 ## 2. Try it without a GPU

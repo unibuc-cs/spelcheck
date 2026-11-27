@@ -90,8 +90,9 @@ Where the project stands:
   an example that breaks a rule by its own words in 12 of 12, and in none.
   On a fourth set, with a rule that applies in several cases, that question
   gave a wrong conflict in 6 of 12 runs until it was put as a statement to
-  judge, and in none since; 11 of that set's 36 runs stopped before the
-  checks, at the read step
+  judge, and in none since. 11 of that set's 36 runs stopped before the
+  checks: the model had listed a rule about two calls twice. Such copies
+  are one rule now, and on a fifth set all 36 runs finish, where 25 did
   ([Specs about the runs of an agent](#specs-about-the-runs-of-an-agent));
 - all of that is on specs we wrote. On 69 changes of a real project it does
   worse. What we planted in 21 of them is found: 46 of 52 conflicts with a
@@ -867,6 +868,28 @@ marked doubtful. Asked with the example's words, the model says that it
 does. The question is asked at most 40 times for a document, and for a
 change only of pairs with one of its rules.
 
+**No option: a scenario that reacts to either of two calls.** In an
+optician's project of ours (`experiments/sets/eval24/optician_direct`):
+
+```
+R2   "WHEN a call of `order_lenses` or `order_frame` is made THEN the run writes an audit entry"
+
+the read step returns    R2, trigger order_lenses_called, with those words
+                         R2, trigger order_frame_called, with the same words
+```
+
+1. A rule has one trigger, the event it reacts to. This rule reacts to
+   either of two, so the model lists it once for each.
+2. The check of a change tells the rules of the change from the others by
+   their labels. Two rules with one label used to stop the run.
+3. Now copies with one label and the same words are one rule, with no
+   trigger of its own. The translations do not see the trigger; R2 becomes
+   `(or order_lenses_called order_frame_called) => audit_entry_written`.
+
+A change that adds "WHEN a call of `order_frame` is made in a warranty run
+THEN the run writes no audit entry" then gets its conflict with R2, proven
+from the rules alone.
+
 ### A project too large for one document
 
 A change is read together with the specs, in one document. That works up to
@@ -1014,6 +1037,7 @@ Nothing in the code or in the prompts is about orders.
 | `experiments/sets/eval20`, `eval21` | eight OpenSpec projects of our own about an assistant that calls tools: rules about whole runs, settings, and scenarios that are examples; four and three changes each | the tests of the options for specs about the runs of an agent |
 | `experiments/sets/eval22` | four more such projects, each with a rule that a call needs an earlier approved call, and three changes: a contradiction that is a chain of three rules, an example that breaks the rule, and a chain that only looks like one | the test of the question whether what one rule demands makes another rule apply |
 | `experiments/sets/eval23` | four more, each also with a rule whose condition names two calls, and three changes: a chain, an example that breaks a rule, and a rule about the second of the two calls, where nothing may be reported | the test of that question put as a statement to judge |
+| `experiments/sets/eval24` | four more, each with a rule whose condition names two calls and one whose condition names three, and three changes: a rule that says the opposite of the first of these for one call, an example that breaks a rule, and a rule that should give no conflict | the test of a scenario that the model lists once for each of its events |
 
 ## How reliable is it
 
@@ -1316,8 +1340,23 @@ Some notes on these numbers:
   - an example that breaks a rule: 3 of 3 both times;
   - 11 of the 36 runs stopped before the checks, the same in both forms: 9
     of the 12 runs with such an example, and 2 with a chain. The read step
-    had returned the rule about two calls as two rules with one label
-    ([Known limits](#known-limits)).
+    had returned the rule about two calls as two rules with one label.
+- What came back in those runs is the same scenario with the same words,
+  once for each of its two calls (T45). Such copies are one rule now
+  ([above](#specs-about-the-runs-of-an-agent)). Tested on four more
+  projects of ours, each with a rule about two calls and a rule about three
+  (`eval24/`), every change run three times with the code before and after
+  (E33):
+  - runs that finish: 25 of 36 before, 36 of 36 after;
+  - a rule that says the opposite of the rule about two calls, for its
+    second call: the conflict is found in 8 of 12 runs before, 12 of 12
+    after;
+  - an example that breaks a rule: found and not doubtful in 6 of 12 runs
+    before, 11 of 12 after;
+  - a change that should give no conflict: none, either way. Each of these
+    changes gets a gap about it, with either code: its second rule is the
+    only one about its call, and covers one kind of run. That is how we
+    wrote the set.
 - That project, TestingTheAgents, each change against the 24 spec files of
   the application: the run from scratch by the commands
   [above](#a-real-project-of-that-kind-testingtheagents), with the question
@@ -1379,7 +1418,7 @@ Some notes on these numbers:
 | With `--whole-run`, the question about two outcomes is asked of many more pairs, and errs more | it is asked of rules that react to two different happenings too. A wrong answer ("A run cannot have a maximum tool call count of 40 if no tools were called") gives a conflict between two unrelated rules. On TestingTheAgents every change got 1 to 6 such conflicts against the application's specs, each in one part, and mostly other ones in each run. In a document of 30 rules the limit of 40 pairs cuts off most of about 175 |
 | The question whether a rule applies is asked 40 times for a document at most | on our sets that is enough. In a project in parts it is not: on the four changes of TestingTheAgents, 2,008 of 5,004 questions were left out. A chain of three rules is found only if its pair is among those asked about, and only across the spec files of one part |
 | On real specs the question whether a rule applies still takes wrong steps | 3 of the 30 it said yes to on TestingTheAgents. Two take one refusal for another: "the job is refused", and the statement that the approver refused. One is about a statement marked FALSE: the model says that the fact is true, and then answers "yes". None of the three adds a conflict there. None on our own sets |
-| A scenario whose condition names two things can stop a run | "WHEN a call of `ask_vet` or `order_medicine` is made THEN ...": the read step sometimes returns it as two rules with one label, one for each call. A run in which a label is not kept is stopped with that message: 11 of 36 runs on `eval23/`, none on the three sets before it. In a project in parts such a part is left out and named in the report |
+| A rule that reacts to either of two events has no trigger | "WHEN a call of `order_lenses` or `order_frame` is made THEN ...": the model lists it once for each event, and the copies are kept as one rule without a trigger. Where a situation is one moment, a conflict between it and a rule about another event is then not marked as two events at once. A label that comes back twice with two different texts still stops the run; that was not seen in 3,191 saved runs |
 | A step from one rule to another can be right and its conflict still an artefact | "a call that is refused was made" is right. The conflict it gave on the real project has a call that succeeds in its situation, which the example excludes in words and the formulas do not: "refused" and "succeeds" are two symbols |
 | Two examples of one case with opposite outcomes are missed in 7 of 12 runs | "called once" and "never called" became a count and "the call did not succeed", which can hold together (E30) |
 | An attribute of one call becomes an attribute of the whole run | "the token the call was made with", "the agent that made it", "the file the function is in": two rules about two different calls then clash |
@@ -1408,8 +1447,8 @@ research.md, section 5.
 | `speccheck/refine.py` | optional LLM review, off by default |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the vLLM servers on the cluster: the main model, the second model |
 | `experiments/slurm/serve_direct.sh` | the same server for the main model, started directly on a machine with free GPUs, without the queue |
-| `tests/` | 124 tests of everything that needs no LLM |
-| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10`, `eval12`, `eval16` to `eval19`, `size` and `size2`; for the change check `eval11`, `eval13`, `eval14`, `eval15`, `eval20` to `eval23`, `mixed` and `change_dev`; and the script that writes them. `real1` to `real5` are not written by it (`experiments/real/`) |
+| `tests/` | 130 tests of everything that needs no LLM |
+| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10`, `eval12`, `eval16` to `eval19`, `size` and `size2`; for the change check `eval11`, `eval13`, `eval14`, `eval15`, `eval20` to `eval24`, `mixed` and `change_dev`; and the script that writes them. `real1` to `real5` are not written by it (`experiments/real/`) |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs and scores the evaluation; re-scores saved runs without a GPU |
 | `experiments/real/` | the trial on a real OpenSpec project: each archived change next to the specs before it, from the git history; and the real changes with a conflict planted in them |

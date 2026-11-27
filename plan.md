@@ -25,7 +25,7 @@ projects have them (5.10).
 | **G1** A minimal working prototype of Kiro's formal analysis: spec, formal check, answer in plain language | **Done.** Conflicts, gaps, ambiguities and scenarios, as in Kiro's formal part. Gaps are asked once for each event, and all 18 planted gaps of `eval8/` were found. Both Kiro blog examples found by the solver (`delete_property`: 3 of 3 in the last runs; a wrong voted fact can still hide it). Ambiguities: about half with one model; with the optional second reader 30 and 32 of 36 (held-out `eval4/`, `eval7/`), at up to one extra question per spec |
 | **G2** Data-driven: any spec, any format | **Done for the prototype.** 63 base specs in two formats (Kiro EARS, OpenSpec), no change to code or prompts; specs of 30 and of 100 requirements went as well as the small ones (E13, E14), and the read step has room for about 140. An OpenSpec *change* is checked against the specs that exist (`--change`, 5.10): on held-out `eval11/`, 36 of 36 planted conflicts and 36 of 36 planted gaps, and nothing else reported about a change (E17). A gap that a removal opens is reported as the change's, 18 of 18 on held-out `eval13/`, and a conflict the specs had before is never blamed on the change (E19). With `--incremental` a change is checked on a saved model of the specs, for a sixth to a seventh of the cost. It found 50 against 54 planted conflicts on held-out `eval14/` (E20) and, after one change to its read prompt, 72 against 72 on held-out `eval15/` (E21). The specs of an agent system, whose rules are about whole runs and stand next to examples, have two options (`--whole-run`, `--examples`), and a project too large for one document is checked in parts (steps 44 and 45; 5.2, 5.10): on held-out `eval20/` the conflicts between rules about two calls of one run went from 0 to 12 of 12, and the changes that should give nothing from 17 of 24 with a conflict to none (E29). On a real project of that kind, 33 spec files and 465 scenarios, the contradiction between two rules that makes one change impossible to build is found in 16 of 24 parts, and nothing else among the rules of its four changes in more than 2 (T38) |
 | **G3** Code and documents a person can read | **Done** for the current state. GUIDE.md and README.md were revised after a point-by-point review (2026-11-22): each mechanism is a short list of steps on one real example |
-| **G4** Research for a paper, on the local model | **Well under way.** 24 held-out tests (E5, E7 to E13, E15 to E21, E24 to E32). On the 10 before the questions about outcomes: 61 to 100% of planted conflicts found; with doubtful conflicts set aside, at most 1 false alarm in 18 clean runs, apart from a real conflict we wrote into an `eval9/` clean spec by mistake (2 runs, E15). With those questions (E18, conflicts said in other words): 34 of 36, and 3 of 18 clean runs with a conflict that was not planted. Planted gaps 18 of 18 in each of the three sets E13, E15, E16. On real specs (E23 to E28): what is planted is found in 46 of 52 runs with a copied condition and 10 of 16 with a condition of its own, but of 20 conflicts that nobody planted none is a contradiction (T32). On the specs of an agent system (E29, E30, T38): what the two options are for is found or set aside as planned. A contradiction that is a chain of three rules, and an example that breaks a rule, are found since step 46: 12 of 12 runs each on held-out `eval22/`, 2 and 0 without the new check (E31). The question behind both took a wrong step on real specs, where a rule applies in several cases; put as a statement to judge it does not: 6 of 12 runs with a wrong conflict before, none after, on held-out `eval23/` (E32). Of the four reasons why a change of the real project cannot be built, two are found (T40, T44). Still small: one main model, one real OpenSpec project, one real project of an agent system |
+| **G4** Research for a paper, on the local model | **Well under way.** 25 held-out tests (E5, E7 to E13, E15 to E21, E24 to E33). On the 10 before the questions about outcomes: 61 to 100% of planted conflicts found; with doubtful conflicts set aside, at most 1 false alarm in 18 clean runs, apart from a real conflict we wrote into an `eval9/` clean spec by mistake (2 runs, E15). With those questions (E18, conflicts said in other words): 34 of 36, and 3 of 18 clean runs with a conflict that was not planted. Planted gaps 18 of 18 in each of the three sets E13, E15, E16. On real specs (E23 to E28): what is planted is found in 46 of 52 runs with a copied condition and 10 of 16 with a condition of its own, but of 20 conflicts that nobody planted none is a contradiction (T32). On the specs of an agent system (E29, E30, T38): what the two options are for is found or set aside as planned. A contradiction that is a chain of three rules, and an example that breaks a rule, are found since step 46: 12 of 12 runs each on held-out `eval22/`, 2 and 0 without the new check (E31). The question behind both took a wrong step on real specs, where a rule applies in several cases; put as a statement to judge it does not: 6 of 12 runs with a wrong conflict before, none after, on held-out `eval23/` (E32). Of the four reasons why a change of the real project cannot be built, two are found (T40, T44). Still small: one main model, one real OpenSpec project, one real project of an agent system |
 | **G5** Only the formal part | **Done.** An LLM review of the text was built, measured, and switched off |
 
 In short: the pipeline works end to end, finds what Kiro's blog finds, and
@@ -71,9 +71,10 @@ this order. The first is new, from the real project of an agent system
      are gone, on `eval23/` (E32) and on the real project (T44). Left: two
      steps that take one refusal for another, and a statement marked FALSE;
    - **a scenario that the read step returns as two rules with one label**
-     stops a run: 11 of 36 runs on `eval23/`, for "WHEN a call of this tool
-     or of that tool is made" (E32). This is the next step, with `eval24/`
-     first;
+     stopped a run: 11 of 36 runs on `eval23/`, for "WHEN a call of this
+     tool or of that tool is made" (E32). Done in step 49 (2.6): the copies
+     have the same words and are one rule; on `eval24/` 36 of 36 runs
+     finish, where 25 did (E33);
    - **the wrong answers to the question about two outcomes**, which with a
      whole run as the situation is asked of two unrelated happenings too.
      Every change of the real project got 1 to 6 conflicts from them, and
@@ -125,8 +126,8 @@ this order. The first is new, from the real project of an agent system
 
    A larger invented project with a change that does everything at once is
    done (step 36).
-   All twenty-three sets, the three real batches, `real4/` and `real5/` have
-   been read (E32). A new design needs `eval24/`, written first, and a test
+   All twenty-four sets, the three real batches, `real4/` and `real5/` have
+   been read (E33). A new design needs `eval25/`, written first, and a test
    on real changes needs another project: the 8 changes of `real5/` were
    the last of this one that fit, and the four changes of the project of an
    agent system have been read too.
@@ -575,6 +576,16 @@ on 22 of 56 conflicts that nobody planted in `real5/`, on 26 of 148 in
 `real4/`, and on none of the conflicts of our own sets (T35). No new set was
 written for it: it has no setting, and the runs were made before it existed.
 
+Decided on 2026-11-27: **a rule that the read step returns once for each of
+its events is one rule** (step 49, 5.2). A rule has one trigger. A scenario
+that reacts to either of two calls came back twice, with one label and the
+same words, and a run that does not keep its labels was stopped: 11 of 36
+runs on `eval23/`. The copies are kept as one rule, with the trigger they
+share or none; no prompt changed. On held-out `eval24/` 36 of 36 runs
+finish, where 25 did; the planted conflicts are found in 23 of 24 runs,
+where they were found in 14; and no change that should give no conflict
+gets one (E33).
+
 Decided on 2026-11-27: **in that question the fact is a statement to judge,
 not a given** (step 48, 5.7). On the real project the question of step 46
 said yes where a rule applies in several cases and the fact is about one of
@@ -739,7 +750,7 @@ Every term used later is defined here.
 | **question** | A concrete situation, chosen by Z3, about which the LLM is asked what ONE requirement says. Used to test translations and links (step 6, 5.7). |
 | **second reader** | Optional: a second local model, of another family, that translates every rule again; where its reading differs from the translation, the rule is reported as ambiguous (step 7, 5.8). |
 | **event** | A yes/no symbol for something that happens at one moment (a request, a click, an arrival). The read step marks each symbol as an event or not. |
-| **trigger** | The event a rule reacts to, named by the read step: "WHEN a visitor signs up ..." reacts to `visitor_signed_up`. A rule that reacts to a state ("WHILE ...") has none. |
+| **trigger** | The event a rule reacts to, named by the read step: "WHEN a visitor signs up ..." reacts to `visitor_signed_up`. A rule that reacts to a state ("WHILE ...") has none, and neither has a rule that reacts to either of two events. |
 | **doubtful** | A mark on a proven conflict or gap that is likely an artefact of the model (5.2, 5.4). Doubtful findings are reported, marked, never removed. |
 | **finding** | One thing reported to the author. There are four types: |
 
@@ -815,7 +826,7 @@ The code, in the order to read it:
 |---|---|---|---|
 | `speccheck/llm.py` | 80 | One function: prompt + JSON schema in, N parsed answers out | the model server |
 | `speccheck/logic.py` | 260 | Symbols to Z3 variables; parses formulas; asks the solver, including the test "do these two rules mean the same?" | Z3 |
-| `speccheck/formalize.py` | 1,080 | Stage 1: text to `formal.json` (steps 1 to 5, then 6 and 7); `formalize_sets` for K symbol sets; with `base`, adds new rules to a formal model that exists | `llm`, `logic`, `probe` |
+| `speccheck/formalize.py` | 1,110 | Stage 1: text to `formal.json` (steps 1 to 5, then 6 and 7); `formalize_sets` for K symbol sets; with `base`, adds new rules to a formal model that exists | `llm`, `logic`, `probe` |
 | `speccheck/probe.py` | 1,060 | Stage 1, step 6: six checks by simple questions, three about one requirement and three about two (their outcomes, their conditions, and whether what one demands makes the other apply) | `llm`, `logic` |
 | `speccheck/checks.py` | 870 | Stage 2: `formal.json` to findings; which findings depend on a reading; scenarios; `combine` for K formal models | `logic` |
 | `speccheck/explain.py` | 420 | Stage 3: findings to plain words; the scenario judge; builds `report.md` | `llm` |
@@ -828,8 +839,8 @@ Around the package:
 
 | File | Job |
 |---|---|
-| `tests/` | 124 tests of everything that needs no LLM |
-| `experiments/make_eval.py` | writes the evaluation sets `eval` to `eval23`, `size`, `size2` and `mixed` into `experiments/sets/` (clean specs and planted defects) |
+| `tests/` | 130 tests of everything that needs no LLM |
+| `experiments/make_eval.py` | writes the evaluation sets `eval` to `eval24`, `size`, `size2` and `mixed` into `experiments/sets/` (clean specs and planted defects) |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs the pipeline on a set of specs and scores it against the planted defects; adds the second reader to saved runs; re-scores saved runs without a GPU |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the main model and the second model on the cluster (section 8) |
@@ -944,6 +955,13 @@ taken         a new translation only if it is accepted; an added symbol only if 
     doors fail to close for the third time" is often translated as the count
     alone, `(= door_close_failures 3)`, which looks like a state (E9)
   - a rule that reacts to a state ("WHILE ...") has no trigger
+  - a rule that reacts to either of two events ("WHEN a call of
+    `order_lenses` or `order_frame` is made THEN ...") comes back from the
+    read step once for each event, with one label and the same words. Our
+    code keeps the copies as one rule (`formalize._once`). Its trigger is
+    the one they share, or none (step 49, T45). So a conflict between such
+    a rule and a rule about another event is not marked; its condition
+    names both events, which is what the gap search and step 6 look at
   - formal models made before triggers were named: the events in the
     antecedents are used instead
 - **A situation the facts call impossible**
@@ -1888,6 +1906,13 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       and one change that adds, rewrites, removes and renames (no design
       change). E22: 9 of 9 planted conflicts and 9 of 9 planted gaps in 3
       runs, both ways, and nothing else about the change
+- [x] **Step 49 — a rule that the read step returns twice is one rule**:
+      `eval24/` first. The read step lists a scenario that reacts to either
+      of two calls once for each call, with one label and the same words
+      (T45). The copies are one rule, with the trigger they share or none.
+      Held-out `eval24/` (E33), the code before and after: runs that finish
+      25 → 36 of 36; planted conflicts found 14 → 23 of 24; changes that
+      should give no conflict, with one, 0 either way
 - [x] **Step 48 — the fact is a statement to judge, not a given**: the
       prompt of check 6 says that B is not given and asks whether B must be
       true. Tried on saved runs first (T43), then held out on `eval23/`

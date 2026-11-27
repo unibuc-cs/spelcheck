@@ -47,6 +47,7 @@ its entries. How each mechanism works is in [plan.md](plan.md), section 5.
   | `eval21/` | 12 changes on 4 more projects of that kind; every change adds examples (3.18) | 8 conflicts: 4 between two examples of one case, 4 between an example and a rule; 4 changes that should give nothing | E30 |
   | `eval22/` | 12 changes on 4 more projects of that kind, each with a rule that a call needs an earlier approved call (3.19) | 8 conflicts: 4 that are a chain of three rules, 4 between an example and a rule; 4 changes where the demand only looks like the condition | E31 |
   | `eval23/` | 12 changes on 4 more projects of that kind, each also with a rule whose condition names two calls (3.19) | 8 conflicts: 4 that are a chain of three rules, 4 between an example and a rule; 4 changes where the rule about two calls must not be taken for a rule about one | E32 |
+  | `eval24/` | 12 changes on 4 more projects of that kind, each with a rule whose condition names two calls and one whose condition names three (3.20) | 8 conflicts: 4 with the rule about two calls, 4 between an example and a rule; 4 changes that should give no conflict | E33 |
   | `size/` | 4 versions of one spec of 30 requirements | 2 conflicts, 1 gap | E13 |
   | `size2/` | 4 versions of one spec of 100 requirements | 2 conflicts, 1 gap | E14 (not held-out: no design was tuned on it) |
 
@@ -661,6 +662,33 @@ demands with the condition of another.
   conflicts over the four changes: the missing approval, and one that
   holds under one reading of an ambiguous rule (T44).
 
+### 3.20 A rule that comes back once for each of its events is one rule (T45, E33)
+
+11 of the 36 runs of `eval23/` stopped before the checks (E32): the read
+step had returned a scenario under its label twice. What came back (T45,
+156 reads of the documents of `eval20/` to `eval23/`): the same scenario
+with the same words, once for each of its two calls, and only the trigger
+differs. "WHEN a call of `ask_chef` or `hire_waiters` is made THEN ..." came
+back with the trigger `ask_chef_called` and again with
+`hire_waiters_called`, in 13 of the 36 reads of that set and in none of the
+120 of the three sets before. A rule has one trigger, and this rule reacts
+to either of two events. In 3,191 saved runs an id came back twice only in
+those 11.
+
+- **The repair** (step 49): rules that come back with one label and the
+  same words are one rule. Its trigger is the one they share, or none. No
+  prompt changed, and the translations never saw the trigger: the rule is
+  written as `(or order_lenses_called order_frame_called) => ...`.
+- **Held-out** (`eval24/`, E33), each change run three times with the code
+  before and after: 25 of 36 runs finish before, 36 of 36 after. A rule
+  that says the opposite of the rule about two calls, for one of them, is
+  found in 8 and in 12 of 12 runs, all proven from the rules alone; an
+  example that breaks a rule in 6 and in 11 of 12. No change that should
+  give no conflict gets one, either way.
+- The set's "quiet" changes each get a gap about them, with either code:
+  their second rule is the only one about its call and covers one kind of
+  run. The set was written so; it is not an effect of the repair.
+
 ---
 
 ## 4. What does not work yet
@@ -941,9 +969,9 @@ What the first two batches showed, before the vote:
 - **A gap is hard to read at this size**: it lists every other event as
   FALSE, 20 to 40 lines.
 
-### 4.9 What the specs of an agent system show (T36 to T44, E29 to E32)
+### 4.9 What the specs of an agent system show (T36 to T45, E29 to E33)
 
-One project of that kind, and four sets of our own.
+One project of that kind, and five sets of our own.
 
 - **Two of the four reasons why a change cannot be built are found**: the
   contradiction between two of its rules, and since step 46 the chain of
@@ -960,12 +988,12 @@ One project of that kind, and four sets of our own.
   that the fact is true, and then answers "yes"; such statements are 61 of
   2,768 questions. None of the three adds a conflict there. Before step 48
   it was 5 of 35, and 6 artefact conflicts (T41).
-- **A scenario whose condition names two things can stop a run** (E32).
-  "WHEN a call of `ask_vet` or `order_medicine` is made THEN ...": the read
-  step returned it as two rules with one label, one for each call, in 11 of
-  the 36 runs of `eval23/`, and a run that does not keep its labels is not
-  checked. 9 of the 11 are runs of the changes that add an example. No run
-  of the three sets before stopped.
+- **A rule that reacts to either of two events has no trigger** (3.20).
+  Where a situation is one moment, a conflict between it and a rule about
+  another event is not marked as two events at once. Not measured: the
+  sets that have such rules are about whole runs, where that mark is not
+  given. A label that comes back twice with two different texts still
+  stops the run; that was not seen.
 - **A right step can still give an artefact** (T40): "a call that is
   refused was made" is right, and the conflict it gave has a call that
   succeeds in its situation, which the example excludes in words and the
@@ -1052,6 +1080,7 @@ the prompts, so it can be scored again without a GPU.
 | E30 | `eval21/`, held-out: every example of a conflict must describe its situation (T38); each run scored both ways | 36 runs | changes that only add cases, with a conflict about them: 3 of 12 with one example being enough, 0 of 12 with every example; the planted conflicts 5 and 4 of 12 either way (3.18, 4.9) |
 | E31 | `eval22/`, held-out: the model is asked whether what one rule demands makes another rule apply (T39); each run scored with and without | 36 runs | with doubtful conflicts set aside: contradictions that are a chain of three rules 2 of 12 without, 12 of 12 with; examples that break a rule 0 of 12 and 12 of 12; changes where the demand only looks like the condition, with a conflict about them, 1 of 12 either way (3.19) |
 | E32 | `eval23/`, held-out: in that question the fact is a statement to judge, not a given (T42, T43); the same runs asked in both forms | 36 runs, 25 finished | with doubtful conflicts set aside: changes where a rule about two calls must not be taken for a rule about one, with a conflict about them, 6 of 12 before and 0 of 12 after; chains 9 and 10 of 10; examples that break a rule 3 of 3; 11 runs stopped at the read step in both (3.19, 4.9) |
+| E33 | `eval24/`, held-out: a rule that the read step returns once for each of its events is one rule (T45); the code before and after | 2 x 36 runs | runs that finish 25 of 36 before, 36 of 36 after; conflicts with a rule about two calls 8 and 12 of 12; examples that break a rule 6 and 11 of 12; changes that should give no conflict, with one, 0 either way (3.20) |
 
 The trials (T1 to T26) were run on development data between these
 experiments. Among the last: T17 compared temperatures 0.3, 0.5 and 0.7 (3.1);
@@ -1080,7 +1109,8 @@ another rule apply, on saved runs, and T40 asked the frozen one on the
 saved parts of that project (3.19). T41 ran the four changes from scratch
 with the code of step 46 (4.9). T42 and T43 asked two other forms of that
 question on saved runs, and T44 worded the reports of the four changes
-with the one that was kept (3.19).
+with the one that was kept (3.19). T45 looked at what the read step returns
+for a scenario about two calls (3.20).
 research_log.md
 has them in order, together with the bugs that
 changed results before they were fixed (L1 to L10) and the open threats to
