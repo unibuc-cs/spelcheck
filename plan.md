@@ -426,7 +426,7 @@ called, so the caller is the agent that the requirement names), finds that
 the requirement then applies, and says yes. The sentence is not kept,
 and `eval23/` was not run.
 
-### 2.5 Step 48: the fact is a statement to judge, not a given (built; `eval23/` not run yet)
+### 2.5 Step 48: the fact is a statement to judge, not a given (built; held-out result in E32)
 
 **The change.** The prompt of check 6 showed B as a fact "marked TRUE" and
 asked "Is B then the case?". It now says that B is a statement that is not
@@ -445,6 +445,16 @@ approval and one artefact. Two wrong steps of another kind stay (one
 refusal taken for another), and one new one came: a part marked FALSE,
 where the model says that the fact is true and then answers "yes". Such
 parts are 61 of 2,768 questions. It is a limit of this form.
+
+**The result** (E32, research_log.md). The rule is met, on the 25 of 36
+runs that finished. With the form of step 46 a "several" change has a
+conflict about it in 6 of 12 runs, with the new form in none; the "chain"
+conflicts are found in 9 and in 10 of 10, the "breaks" conflicts in 3 of 3
+both times. The other 11 runs, 9 of them "breaks" runs, stopped at the read
+step whatever the form: it returned the rule about two calls as two rules
+with one label. Step 48 stays. On the real project the question now adds 2
+conflicts over the four changes, the missing approval and one artefact
+(T44).
 
 **How it is tested, and the rule.** As for step 47: `eval23/`, the same
 runs asked with the prompt of step 46 and with the new one, doubtful

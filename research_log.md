@@ -4907,6 +4907,106 @@ the parts of the four changes of the real project from T41.
 
 ---
 
+## E32 — Held-out `eval23/`: the fact as a statement to judge (2026-11-27)
+
+**Question.** Does the form of step 48 (T43) stop the wrong step where a
+rule applies in several cases, on specs it was not built on, and keep the
+chains and the examples?
+
+**The set** (`eval23/`, written and committed before step 47 and not read
+until now). Four more projects about an assistant that calls tools: a
+veterinary practice, a moving company, a caterer, a credit union. Each has
+the rule that a call needs an earlier approved call ("WHEN a call of
+`admit_animal` succeeds in a run with a plan THEN an earlier call of
+`ask_vet` in the run was approved"), and a rule whose condition names two
+calls: "WHEN a call of `ask_vet` or `order_medicine` is made THEN the agent
+making it is the reception agent". Three changes each:
+
+| Change | What it adds | Expected |
+|---|---|---|
+| chain | as in `eval22/`: "WHEN a call of `ask_vet` is made THEN the run is not an emergency run", and a rule about an admission in such a run | the conflict between the first rule and the new one; and the rule about two calls must not be set against the new rule |
+| breaks | as in `eval22/`: an example that breaks the first rule by what it demands itself | that conflict, not doubtful |
+| several | "WHEN a call of `order_medicine` is made THEN the run is not a check-up run", and a rule about `ask_vet` in such a run. The rule about two calls applies when either is made, so it does not say that `order_medicine` is called | nothing |
+
+**The rule, set before the build** (plan.md 2.5). With doubtful conflicts set
+aside, the same runs asked with the form of step 46 and with the new one:
+the "several" changes have a conflict about them less often, and the "chain"
+and "breaks" conflicts are found no less often. And on the saved runs of
+`eval20/`, `eval21/` and `eval22/` no planted conflict is lost and no change
+that should give nothing gets a conflict (met in T43).
+
+**Result.** 12 changes, 3 runs each, with the code before step 48
+(`E32_eval23_before`); then check 6 asked again on the same runs with the
+new form (`E32_eval23`). 25 of the 36 runs finished. Doubtful conflicts are
+set aside.
+
+| | Form of step 46 | Form of step 48 |
+|---|---|---|
+| "several" changes with a conflict about them | 6 of 12 | 0 of 12 |
+| "chain" conflicts found | 9 of 10 | 10 of 10 |
+| "chain" runs that also set the rule about two calls against the new rule | 5 of 10 | 0 of 10 |
+| "breaks" conflicts found | 3 of 3 | 3 of 3 |
+
+- **The rule is met, on the runs that finished.** The set does test the
+  change: with the form of step 46 the wrong step is taken in half of the
+  runs.
+- **The wrong step**, "a call of `ask_vet` or `order_medicine` is made →
+  `order_medicine` is called": 2 to 7 of 8 "yes" with the form of step 46
+  in the 12 "several" runs, more than half in 6 of them; 0 of 8 with the
+  new form, in all 12. None of the 60 questions on those changes is
+  answered yes now.
+- **The right step stays**: "an earlier call of `ask_vet` was approved → a
+  call of `ask_vet` is made" has 4 to 8 of 8 before and 6 to 8 of 8 after,
+  in the 10 "chain" runs. The one chain that was missed before had 4 of 8.
+- **11 of the 36 runs stopped at the read step**, the same in both columns:
+  9 of the 12 "breaks" runs and 2 "chain" runs. In all of them the read
+  step returned the rule about two calls as two rules with one label, one
+  for each call, and a run whose labels are not kept is not scored
+  (`change.changed_rules`). So "breaks" is tested on 3 runs here; on the
+  saved runs of `eval21/` and `eval22/` it is 10 of 12 and 12 of 12, as
+  before (T43). This has nothing to do with step 48, and it is new: no run
+  of `eval20/` to `eval22/` stopped.
+
+**Decision.** Step 48 stays. All twenty-three sets are development data
+now. A scenario that the read step splits in two is the next thing to
+repair, with `eval24/` first.
+
+---
+
+## T44 — TestingTheAgents with the form of step 48 (2026-11-27)
+
+**Question.** What do the reports of the four changes say with the form
+that passed `eval23/`?
+
+**How.** Nothing was formalized again: check 6 was asked with the new form
+on the parts of the run from scratch (T41), and the reports were worded
+from them, against the application's specs (step 2 of the commands in
+README.md).
+
+| Change | Conflicts, not doubtful | The same without check 6 | With the form of step 46 (T41) | In the spec files of the change, with the parts that found each | With a rule of another spec file | Doubtful |
+|---|---|---|---|---|---|---|
+| `add-instant-bulk-takedown-workflow`, cannot be built | 9 | 8 | 11 | 2: in 16 and 1 of 24 parts | 7 | 19 |
+| `add-licence-expiry-sweep-workflow`, can be built | 3 | 3 | 6 | 2: in 2 and 1 of 24 parts | 1 | 32 |
+| `add-page-retirement-workflow`, can be built | 3 | 2 | 3 | 0 | 3 | 54 |
+| `add-scheduled-batch-republish-workflow`, can be built | 3 | 3 | 3 | 0 | 3 | 19 |
+
+- **The two reasons are in the first report**, as before: the two contracts
+  on one function in 16 of 24 parts, and the missing approval, "if the
+  assumed facts hold".
+- **The question now adds 2 conflicts over the four changes**: the missing
+  approval, and one on a change that can be built, which rests on a right
+  step and holds under one reading of a rule that is ambiguous; the report
+  says so. With the form of step 46 it added 7.
+- Still wrong, among the 30 steps said yes to: the two that take one
+  refusal for another, and one about a part marked FALSE (T43). None of
+  the three adds a conflict in these reports.
+- Still not found: the hand-over between two specialists and the batch size
+  against the budgets.
+
+**Decision.** The tables in README.md and GUIDE.md are brought up to date.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |
