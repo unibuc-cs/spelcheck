@@ -176,6 +176,24 @@ written in logic: something that each of them demands has no symbol in the \
 list. Go through what each requirement demands, fact by fact, and add a \
 symbol for every fact that no listed symbol stands for."""
 
+# Added to READ_SYSTEM when the rules are about whole runs (formalize with
+# whole_run). The prompt says that the symbols "describe one snapshot of the
+# system: what is the case or is happening", and the model then often
+# describes a symbol as a moment: "a call to ask_astronomer is being made".
+# The questions of step 6 are about a run. Asked whether a rule that demands
+# an earlier approved call makes that statement true, the model said no: "a
+# past approved call does not imply that a call is currently in progress"
+# (0 of 8 answers, and 8 of 8 where the description says "has been made in
+# the current run"; research_log.md, T49).
+READ_RUN = """
+
+This document is about whole runs of the system. One situation is one run, \
+from a request to its end, and several things happen in it one after the \
+other. So describe every symbol as a fact about the run as a whole, one that \
+stays true once it has happened: "a letter was sent in the run", not "a \
+letter is being sent"; "the lamp was switched on in the run", not "the lamp \
+is on now"."""
+
 READ_SCHEMA = {
     "type": "object",
     "properties": {
@@ -350,7 +368,7 @@ def formalize(llm: LLM, spec_text: str, samples: int = 8, temperature: float = 0
     """
     old_symbols = base["symbols"] if base else []
     old_rules = base["rules"] if base else []
-    rules, symbols = _read(llm, spec_text, read_temperature, old_symbols)
+    rules, symbols = _read(llm, spec_text, read_temperature, old_symbols, whole_run=whole_run)
     vocab = Vocabulary(symbols)
     shown = _symbol_list(symbols)
     # With a base whose symbols are enough, the facts are those of the base.
@@ -379,7 +397,7 @@ def formalize(llm: LLM, spec_text: str, samples: int = 8, temperature: float = 0
     # stays only if a translation that was taken uses it. So a second read
     # that helps no rule leaves the run exactly as it was.
     again = [index for index, rule in enumerate(formal_rules) if rule.get("demand_nothing")]
-    offered = _read_again(llm, [rules[index] for index in again], symbols, read_temperature)
+    offered = _read_again(llm, [rules[index] for index in again], symbols, read_temperature, whole_run)
     other_answers = {}  # index of a rule -> the eight answers that its translation does not come from
     added = []
     if offered:
@@ -523,7 +541,8 @@ def _symbol_list(symbols: list[dict], hidden: set = frozenset()) -> str:
 
 
 def _read(llm: LLM, spec_text: str, first_temperature: float,
-          existing: list[dict] = (), again: bool = False) -> tuple[list[dict], list[dict]]:
+          existing: list[dict] = (), again: bool = False,
+          whole_run: bool = False) -> tuple[list[dict], list[dict]]:
     """Step 1: extract the rules and the symbols, retrying if the symbols are unusable.
 
     existing  the symbols of a formal model that the document adds to. The
@@ -532,8 +551,11 @@ def _read(llm: LLM, spec_text: str, first_temperature: float,
               ones first, then those the model added.
     again     the document holds rules that were read before and lack a
               symbol (READ_AGAIN, see _read_again)
+    whole_run the rules are about whole runs: the symbols are to be described
+              as facts about a run, not about a moment (READ_RUN)
     """
-    system = READ_SYSTEM + (READ_MORE if existing else "") + (READ_AGAIN if again else "")
+    system = (READ_SYSTEM + (READ_RUN if whole_run else "") + (READ_MORE if existing else "")
+              + (READ_AGAIN if again else ""))
     user = (f"Symbols of the system so far:\n{_symbol_list(existing)}\n\nDocument:\n{spec_text}"
             if existing else spec_text)
     known = {symbol["name"] for symbol in existing}
@@ -592,7 +614,8 @@ def _once(rules: list[dict]) -> list[dict]:
     return list(kept.values())
 
 
-def _read_again(llm: LLM, rules: list[dict], symbols: list[dict], temperature: float) -> list[dict]:
+def _read_again(llm: LLM, rules: list[dict], symbols: list[dict], temperature: float,
+                whole_run: bool = False) -> list[dict]:
     """A second read, for the rules that lack a symbol for what they demand.
 
     The read step lists the symbols for a whole document in one answer, and
@@ -625,7 +648,7 @@ def _read_again(llm: LLM, rules: list[dict], symbols: list[dict], temperature: f
         return []
     document = "\n".join(f"{rule['id']}: {rule['text']}" for rule in rules)
     try:
-        _, longer = _read(llm, document, temperature, symbols, again=True)
+        _, longer = _read(llm, document, temperature, symbols, again=True, whole_run=whole_run)
     except RuntimeError:
         return []
     return longer[len(symbols):]

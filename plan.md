@@ -685,7 +685,7 @@ way; 39 of 46 steps get the same vote three times, where 22. Step 51 stays.
 step had described a symbol as a moment ("a call is being made") in a spec
 about runs, and in one a wrong voted fact excludes the situation.
 
-### 2.9 The plan for step 52: in a spec about runs, a symbol is a fact about the run (not built yet)
+### 2.9 Step 52: in a spec about runs, a symbol is a fact about the run (built; `eval27/` not run yet)
 
 With `--whole-run` a situation is a whole run, and the questions of step 6
 are told so (step 44). The read step is not: its prompt says that the
@@ -720,6 +720,12 @@ in no fewer of the 24 runs that have one; and the changes that should give
 no conflict have one in no more runs. We hope for more planted conflicts
 found; if the code before finds them all, the set shows only that nothing
 is lost, and that is said.
+
+**The trial before the freeze** (T50). `eval26/` run again from scratch with
+the new code, next to its run with the code before: 0 of 735 symbols are
+described as a moment, where 82 of 771; the "chain" conflicts are found in
+12 of 12 runs, where 8; the "breaks" conflicts in 12 of 12 both times; no
+change that should give no conflict has one, either way.
 
 Small things that are open:
 

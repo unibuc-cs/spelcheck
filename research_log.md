@@ -5510,6 +5510,44 @@ told that a situation is a run. `eval27/` first.
 
 ---
 
+## T50 — Development: the read step is told that a situation is a run (2026-11-27)
+
+**Question.** Does one more paragraph in the read prompt (plan.md 2.9) stop
+the descriptions of a moment, and does a chain of three rules then get
+found? `eval27/` is not read.
+
+**The paragraph** (`READ_RUN`, only with `--whole-run`): "This document is
+about whole runs of the system. One situation is one run, from a request to
+its end, and several things happen in it one after the other. So describe
+every symbol as a fact about the run as a whole, one that stays true once it
+has happened: 'a letter was sent in the run', not 'a letter is being
+sent'".
+
+**How.** The read step is the first step, so nothing can be asked again on
+saved runs. `eval26/`, which is development data, was run again from
+scratch with the new code (`T50_eval26`), next to its run with the code
+before (E35, with check 6 in its frozen form).
+
+| `eval26/`, 48 runs | Code before | With the paragraph |
+|---|---|---|
+| symbols described as a moment | 82 of 771 | 0 of 735 |
+| runs with such a symbol | 35 of 48 | 0 of 48 |
+| "chain" conflicts found | 8 of 12 | 12 of 12 |
+| "breaks" conflicts found, not doubtful | 12 of 12 | 12 of 12 |
+| changes that should give no conflict, with one | 0 of 24 | 0 of 24 |
+
+- The symbol that was "a call to ask_astronomer is being made" is now "a
+  call to ask_astronomer was made in the run", and the step that the chain
+  needs has 8 of 8 answers. The three runs of that project find the
+  conflict, and so does the run that a wrong voted fact had stopped: a new
+  formalization, another set of facts.
+- These are two formalizations, not the same runs asked twice: the
+  comparison holds what a run-to-run difference would also change.
+
+**Decision.** The paragraph is frozen for the held-out test on `eval27/`.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |
