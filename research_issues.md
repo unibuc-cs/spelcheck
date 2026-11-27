@@ -479,9 +479,50 @@ cannot be built, for four reasons.
   "This phrasing is ambiguous."
 - **How large it is.** In one round, a real contradiction was not found in
   2 of 12 runs for that reason (T47).
-- **What we did.** Nothing yet. This is the next step: say "where the WHEN
-  part of the rule is true" in the question.
+- **What we did.** The question now says which situations count: those in
+  which the WHEN part of the rule is true.
+- **The result.** On 16 new examples, each run asked three times: 39 of 46
+  right steps get the same vote all three times, where 22 did. Real
+  contradictions found in 60 of 72 askings, where 58; on three earlier
+  sets 182 of 183, where 177. No false one added (T48, E35).
 - **The lesson.** Ask a question twice before trusting its majority.
+
+### 32. A right answer, written down in the wrong form
+
+- **The problem.** The clearer question of entry 31 made the model answer
+  one kind of case rightly for the first time, and our code then drew a
+  wrong conclusion from the right answer.
+- **Example.** A rule begins "WHEN an approval request is refused ...".
+  Question: must a request have been made? The model, rightly: yes. Our
+  code wrote that down as "where this rule is *obeyed*, a request was
+  made". Another rule says "in an emergency run no approval request is
+  made". An emergency run in which a request is refused simply breaks that
+  second rule. But because of the word "obeyed", the logic part needed the
+  first rule to see it, and reported the two rules as contradicting each
+  other: 2 more false contradictions on the real project.
+- **What we did.** The model now also says whether the statement follows
+  from the rule's WHEN part alone or from what the rule demands, and the
+  fact is written accordingly.
+- **The result.** The 2 false contradictions are gone. The four reports of
+  the real project have 9 contradictions in all (5, 2, 1 and 1), with the
+  two real reasons among them (T48).
+- **The lesson.** A better answer from the model can break code that relied
+  on the worse one. Check the real project after every change to a
+  question, not only the test sets.
+
+### 33. In a spec about whole runs, a name is still described as a moment
+
+- **The problem.** When the model lists the names, it describes each as a
+  fact about one moment. For a spec about whole runs that is the wrong
+  tense.
+- **Example.** The name `ask_astronomer_made` got the description "a call
+  to ask_astronomer is being made". Question: if an earlier call was
+  approved, must this be true? The model: no, "a past approved call does
+  not imply that a call is currently in progress". So the chain of entry 27
+  is not found.
+- **How large it is.** 3 of 12 runs with such a chain in the last test
+  (E35).
+- **What we did.** Nothing yet. This is the next step.
 
 ---
 

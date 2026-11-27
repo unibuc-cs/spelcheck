@@ -5400,6 +5400,70 @@ development data.
 
 ---
 
+## E35 — Held-out `eval26/`: which situations count in the question of step 46 (2026-11-27)
+
+**Question.** Does the form of step 51 (T48) keep the answers of check 6
+steady on specs it was not built on, without taking a wrong step?
+
+**The set** (`eval26/`, written and committed before the change). Four more
+projects about an assistant that calls tools: a dentist, a dog kennel, a
+bike courier, a planetarium. Each has the four changes of `eval22/` and
+`eval23/` together:
+
+| Change | Expected |
+|---|---|
+| chain: a rule that the approving call is never made in a kind of run | the conflict with the rule that demands an approved call |
+| breaks: an example that breaks that rule by what it demands itself | that conflict, not doubtful |
+| several: a rule that the other call of a rule about two calls is never made in a kind of run | no conflict |
+| near: a rule about a call, where an existing rule demands a state from before the run | no conflict |
+
+**The rule, set before the build** (plan.md 2.8). Over three askings, with
+doubtful conflicts set aside: the planted conflicts are found in more of the
+72 askings of a run that has one than with the old words, and the changes
+that should give no conflict have one in no more of their 72.
+
+**Result.** 16 changes, 3 runs each, with the code before
+(`E35_eval26_before`). Check 6 was then asked again on those 48 runs, three
+times with the old words (`E35_eval26_old1` to `old3`) and three times with
+the frozen form (`new1` to `new3`).
+
+| Over three askings | Old words | Frozen form |
+|---|---|---|
+| planted conflicts found, of 72 | 58 (20, 19, 19) | 60 (20, 20, 20) |
+| of them "chain", of 36 | 22 (8, 7, 7) | 24 (8, 8, 8) |
+| of them "breaks", of 36 | 36 | 36 |
+| changes that should give no conflict, with one, of 72 | 0 | 0 |
+| steps with the same vote in all three askings, of 46 | 22 | 39 |
+
+- **The rule is met.** The gain on this set is 2 askings of 72: the old
+  words lose little here. What changes most is how steady the answers are.
+- **Where the right step is asked, it now has 8 of 8 answers**, all of them
+  "demand", in each of the 8 "chain" runs that find the conflict. With the
+  old words the same questions have 5 to 8.
+- **4 of the 12 "chain" runs find nothing with either form**, for two
+  reasons that are not this step's:
+  - in the three runs of one project, the read step described the symbol as
+    "a call to ask_astronomer is being made". The model answers that a call
+    that was approved earlier is not one that is being made now (0, 3 and 0
+    of 8). The description speaks of a moment, in a spec about runs;
+  - in one run a voted fact says that a run with a plan is not an emergency
+    run. The situation of the chain is then excluded, and the question is
+    not asked.
+- **A wrong yes is still given**: in 6 of 540 askings of the other
+  questions, none with the old words. Each time it is the rule about two
+  calls and the statement that one of them is made, with 5 or 6 of 8
+  answers. Each is called "condition", so the fact is about the condition,
+  and no conflict comes of it: no change that should give none has one, in
+  any asking.
+
+**Decision.** Step 51 stays. All twenty-six sets are development data now.
+On the real project the four changes have 5, 2, 1 and 1 conflicts that are
+not doubtful, where 5, 2, 2 and 1 (T48). Open after it: a symbol that is
+described as a moment in a spec about runs; and the wrong yes about a rule
+with two calls, which the form of the fact keeps from doing harm.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

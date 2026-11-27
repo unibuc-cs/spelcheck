@@ -49,6 +49,7 @@ its entries. How each mechanism works is in [plan.md](plan.md), section 5.
   | `eval23/` | 12 changes on 4 more projects of that kind, each also with a rule whose condition names two calls (3.19) | 8 conflicts: 4 that are a chain of three rules, 4 between an example and a rule; 4 changes where the rule about two calls must not be taken for a rule about one | E32 |
   | `eval24/` | 12 changes on 4 more projects of that kind, each with a rule whose condition names two calls and one whose condition names three (3.20) | 8 conflicts: 4 with the rule about two calls, 4 between an example and a rule; 4 changes that should give no conflict | E33 |
   | `eval25/` | 12 changes on 4 more projects of that kind, each of one rule about a fourth happening (3.21) | 4 conflicts between two demands said in other words; 8 changes that only a guess about the system, or a mix-up of two things, sets against a rule | E34 |
+  | `eval26/` | 16 changes on 4 more projects of that kind, with the changes of `eval22/` and `eval23/` together (3.19) | 8 conflicts: 4 that are a chain of three rules, 4 between an example and a rule; 8 changes that should give no conflict | E35 |
   | `size/` | 4 versions of one spec of 30 requirements | 2 conflicts, 1 gap | E13 |
   | `size2/` | 4 versions of one spec of 100 requirements | 2 conflicts, 1 gap | E14 (not held-out: no design was tuned on it) |
 
@@ -599,7 +600,7 @@ the contradiction between two rules that the authors name is found in 16 of
 built is found in more than one part. What it costs and what it misses is in
 4.9.
 
-### 3.19 A question whether what one rule demands makes another rule apply (T39 to T44, E31, E32)
+### 3.19 A question whether what one rule demands makes another rule apply (T39 to T48, E31, E32, E35)
 
 A contradiction can be a chain of three rules of which no two clash. "WHEN a
 call of `check_in_guest` succeeds in a run with a plan THEN an earlier call
@@ -662,6 +663,24 @@ demands with the condition of another.
   that break a rule in 3 of 3. On the project the question now adds 2
   conflicts over the four changes: the missing approval, and one that
   holds under one reading of an ambiguous rule (T44).
+
+- **Which situations count, and what makes the statement true** (step 51;
+  T47, T48, E35). Asked a second time on the same runs with the same
+  words, the step from "an earlier call was approved" to "the call was
+  made" had 3 and 4 of 8 answers in two of 12 runs where it had 8 and 7.
+  Some answers read "a situation in which the requirement applies" as any
+  run of a system that has the rule, also one in which its condition is
+  not met. The prompt now says that the condition is the case in the
+  situations that count. With that the model also says yes, rightly, where
+  the condition alone gives the statement ("WHEN a call returns a refusal",
+  and "a call is made"); such a yes is written as `A_a => p`, because with
+  the demand of the rule in the fact a situation that the other rule
+  forbids by itself was reported as a conflict (2 more on the project,
+  gone again). On three earlier sets, three askings each: planted
+  conflicts found in 177 of 183 askings before and 182 after; 55 and 92 of
+  110 steps with the same vote three times. Held-out (`eval26/`, E35): 58
+  and 60 of 72; 22 and 39 of 46; no change that should give no conflict
+  has one, either way.
 
 ### 3.20 A rule that comes back once for each of its events is one rule (T45, E33)
 
@@ -1002,9 +1021,9 @@ What the first two batches showed, before the vote:
 - **A gap is hard to read at this size**: it lists every other event as
   FALSE, 20 to 40 lines.
 
-### 4.9 What the specs of an agent system show (T36 to T47, E29 to E34)
+### 4.9 What the specs of an agent system show (T36 to T48, E29 to E35)
 
-One project of that kind, and six sets of our own.
+One project of that kind, and seven sets of our own.
 
 - **Two of the four reasons why a change cannot be built are found**: the
   contradiction between two of its rules, and since step 46 the chain of
@@ -1021,15 +1040,15 @@ One project of that kind, and six sets of our own.
   that the fact is true, and then answers "yes"; such statements are 61 of
   2,768 questions. None of the three adds a conflict there. Before step 48
   it was 5 of 35, and 6 artefact conflicts (T41).
-- **The question of 3.19 does not give the same majority twice** (T47).
-  Asked a second time on the same runs with the same words, the step from
-  "an earlier call was approved" to "the call was made" had 3 and 4 of 8
-  answers in two of 12 runs where it had 8 and 7, and a contradiction that
-  needs the step was not found there. The answers show why: some read "a
-  situation in which the requirement applies" as any run of a system that
-  has the rule, also one in which its condition is not met ("if the call
-  does not succeed, the requirement imposes no constraints"). Not seen
-  before, because the question had been asked once for each run.
+- **A symbol can be described as a moment in a spec about runs** (E35).
+  "A call to ask_astronomer is being made": the model then says that a
+  call that was approved earlier is not being made now, and the chain is
+  not found, in the 3 runs of one project of `eval26/`. The read step does
+  not know that a situation is a run.
+- **The question of 3.19 still says yes to a rule about two calls, now and
+  then** (T48, E35): 6 of 540 askings on `eval26/`, once on the project.
+  Each time most answers call it given by the condition, so the fact is
+  about the condition, and no conflict comes of it. The fact is wrong.
 - **The link step guesses how a system works** as the question about two
   outcomes did (E34): "every batch is listed as turned at the end of the
   run" became "if the cellar is closed, `turn_batch` must have been
@@ -1128,6 +1147,7 @@ the prompts, so it can be scored again without a GPU.
 | E32 | `eval23/`, held-out: in that question the fact is a statement to judge, not a given (T42, T43); the same runs asked in both forms | 36 runs, 25 finished | with doubtful conflicts set aside: changes where a rule about two calls must not be taken for a rule about one, with a conflict about them, 6 of 12 before and 0 of 12 after; chains 9 and 10 of 10; examples that break a rule 3 of 3; 11 runs stopped at the read step in both (3.19, 4.9) |
 | E33 | `eval24/`, held-out: a rule that the read step returns once for each of its events is one rule (T45); the code before and after | 2 x 36 runs | runs that finish 25 of 36 before, 36 of 36 after; conflicts with a rule about two calls 8 and 12 of 12; examples that break a rule 6 and 11 of 12; changes that should give no conflict, with one, 0 either way (3.20) |
 | E34 | `eval25/`, held-out: the question about two outcomes says what does not count (T46, T47); the same runs asked with both prompts, and a full run | 2 x 36 runs | with doubtful conflicts set aside: contradictions said in other words 12 of 12 both times; changes that should give no conflict, with one, 5 of 24 before and 3 after (3.21) |
+| E35 | `eval26/`, held-out: the question whether a rule applies says which situations count, and a yes says what makes the statement true (T47, T48); asked three times in each form on the same runs | 48 runs, 2 x 3 askings | planted conflicts found in 58 of 72 askings with the old words, 60 with the new form; changes that should give no conflict, with one, 0 of 72 either way; steps with the same vote in three askings 22 and 39 of 46 (3.19) |
 
 The trials (T1 to T26) were run on development data between these
 experiments. Among the last: T17 compared temperatures 0.3, 0.5 and 0.7 (3.1);
@@ -1159,7 +1179,8 @@ question on saved runs, and T44 worded the reports of the four changes
 with the one that was kept (3.19). T45 looked at what the read step returns
 for a scenario about two calls (3.20). T46 read the wrong answers about two
 outcomes in the reports of that project, and T47 asked the question again
-on saved runs with its new prompt (3.21).
+on saved runs with its new prompt (3.21). T48 asked the question of 3.19
+three times in each of three forms on saved runs (3.19).
 research_log.md
 has them in order, together with the bugs that
 changed results before they were fixed (L1 to L10) and the open threats to

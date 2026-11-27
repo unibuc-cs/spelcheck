@@ -63,7 +63,7 @@ is how OpenSpec projects work. That is part 5.
 
 To give an idea of the size: about 4,950 lines of Python now, half of them comments
 and prompts, one local model (Qwen3.8, 27B), and results measured on 297 versions
-of small specs and on 214 changes. The results are in part 6.
+of small specs and on 230 changes. The results are in part 6.
 
 ---
 
@@ -1158,8 +1158,9 @@ R5   "WHEN a call of `check_in_guest` succeeds in a late-arrival run THEN the an
    pair R1, R4 is asked about.
 4. The model gets the words of R1 and one statement B, "TRUE:
    `ask_manager_called` (A call to ask_manager is made in the current
-   run)". It is told that B is not given, and asked: must B be true
-   wherever the requirement applies and is obeyed? It is asked eight times.
+   run)". It is told that B is not given, and asked: must B be true in
+   every situation in which the condition of the requirement is the case
+   and the system has done what it demands? It is asked eight times.
 5. 8 of 8 answers say yes. That is an assumed fact (3.2): where R1 applies
    and is obeyed, `ask_manager_called` holds. For R2, R3, R5 and R6 the
    same question about that statement got 8 of 8 "no".
@@ -1173,7 +1174,7 @@ R5   "WHEN a call of `check_in_guest` succeeds in a late-arrival run THEN the an
 >   If an earlier call to ask_manager was approved, then a call to
 >   ask_manager was made in the run.
 
-Four things in this question were each learned from a form of it that
+Six things in this question were each learned from a form of it that
 failed (6.5):
 
 1. The model sees the words of the rule, not its symbols. A symbol can say
@@ -1190,6 +1191,18 @@ failed (6.5):
    the fact says that it is called, so the rule applies. But the rule
    applies when `ask_vet` is called, too. Asked "must B be true?", 8 of 8
    answers say no.
+5. Its prompt says which situations count: those in which the condition of
+   the rule is the case. It used to say "take any situation in which the
+   requirement applies". Some answers took that for any run of a system
+   that has the rule, also a run in which no check-in succeeds, where "the
+   requirement imposes no constraints". So the same question, asked twice
+   on the same run, got 8 of 8 "yes" once and 3 of 8 the second time.
+6. A yes says what makes B true: what the rule demands, or its condition
+   alone. "WHEN a call of `ask_manager` is refused THEN the answer says
+   so": a call was made, whatever is answered. Such a yes is kept as a fact
+   about the condition. Kept as a fact about the rule being obeyed, it made
+   a situation that R4 forbids by itself (a late-arrival run in which the
+   manager refuses) look like a conflict between that rule and R4.
 
 In the hotel project, a rule says that "the guest's card was verified at
 check-in", and a change adds a rule about calls of `verify_card`. "Verified
@@ -1705,6 +1718,24 @@ prompt found on a vote of 5 to 3. We had set the rule that nothing may be
 lost there; it was not met, and the new prompt was kept because it gains
 more than it loses.
 
+The question about a chain (5.1) was then asked a second time on the same
+runs, and gave another answer (points 5 and 6 in 5.1). With its new form it
+was tested on four more projects (`eval26`), each with two changes that
+need a step from one rule to another and two that must not get one. It was
+asked three times with the old words and three times with the new form, on
+the same 48 runs:
+
+| Over three askings | Old words | New form |
+|---|---|---|
+| planted conflicts found | 58 of 72 | 60 of 72 |
+| changes that should give no conflict, with one | 0 of 72 | 0 of 72 |
+| right steps with the same vote in all three askings | 22 of 46 | 39 of 46 |
+
+Where the right step is asked, it now has 8 of 8 answers. 4 of the 12 runs
+with a chain find nothing, with either form: in three the model had
+described a symbol as a moment, "a call is being made", in a spec about
+runs (6.4), and in one a wrong assumed fact excludes the situation.
+
 **A real project of an agent system** (5.2):
 [TestingTheAgents](https://github.com/unibuc-cs/TestingTheAgents). It has 33 spec
 files with 465 scenarios, and four open changes that each add a workflow.
@@ -1720,7 +1751,7 @@ the question about two outcomes was changed:
 |---|---|---|---|---|
 | cannot be built | 5 (9) | 2: in 16 and 1 of 24 parts | 3 (7) | 9 (19) |
 | can be built | 2 (3) | 2: in 2 and 1 of 24 parts | 0 (1) | 21 (32) |
-| can be built | 2 (3) | 1: in 1 of 23 parts | 1 (3) | 35 (54) |
+| can be built | 1 (3) | 0 | 1 (3) | 32 (54) |
 | can be built | 1 (3) | 0 | 1 (3) | 7 (19) |
 
 - The conflict found in 16 parts is the first of the authors' four reasons,
@@ -1743,7 +1774,7 @@ the question about two outcomes was changed:
   kind, which is what `--against` is for.
 - The other two reasons are not found. One needs rules of three spec files,
   and one is arithmetic over the steps of a run.
-- The doubtful conflicts, 7 to 35 for a change, are all marked for an
+- The doubtful conflicts, 7 to 32 for a change, are all marked for an
   example. They are in the report, after the others.
 
 ### 6.3 The goals
@@ -1755,7 +1786,7 @@ The project has five goals. This is where each one stands:
 | G1: a minimal working prototype of Kiro's formal analysis | done |
 | G2: it works on any spec, in any format | done for the prototype: 2 formats, 63 small specs, two long ones, and changes checked against existing specs, removals included (part 5). Specs about the runs of an agent have options of their own, and a project of 479 scenarios is checked in parts (5.1, 5.2) |
 | G3: code and documents a person can read | done for the current state |
-| G4: research for a paper, on the local model | well under way: 26 tests on specs the design had not seen, four of them on changes of a real project. Still one main model, one real OpenSpec project and one real project of an agent system |
+| G4: research for a paper, on the local model | well under way: 27 tests on specs the design had not seen, four of them on changes of a real project. Still one main model, one real OpenSpec project and one real project of an agent system |
 | G5: only the formal part | done: an LLM review of the text was built, measured, and switched off |
 
 ### 6.4 What does not work yet
@@ -1772,7 +1803,8 @@ The project has five goals. This is where each one stands:
 | on real specs, most conflicts that nobody planted are not contradictions | of 20 that we read, 8 are in a situation that cannot happen, 4 are other artefacts, and 7 set a general rule against its own exception (6.2). The question about two conditions marks one conflict in six to nine; the rest are reported as they are |
 | with a whole run as the situation, the question about two outcomes is asked of many more pairs | also of two rules about two unrelated happenings, and a wrong answer gives a conflict between the two. Since the question says what does not count, the 9 such conflicts on the real project are gone (6.2); on our own test 3 of 24 runs still have one |
 | the link step guesses how a system works too | "every batch is listed as turned" became the link "if the cellar is closed, `turn_batch` must have been called" (6.2) |
-| the question about a chain does not give the same majority twice | asked a second time on the same runs, a right step had 3 of 8 answers where it had 8. Some answers read "a situation in which the requirement applies" as any run of a system that has the rule, also one where its condition is not met |
+| a symbol can be described as a moment in a spec about runs | "a call to ask_astronomer is being made": asked whether an earlier approved call means that, the model says no, and a chain of three rules is not found (3 of 12 runs on `eval26`, 6.2) |
+| the question about a chain still says yes to a rule about two calls, now and then | 6 of 540 askings on `eval26`. The model calls it given by the condition, so no conflict comes of it (point 6 in 5.1); the fact is still wrong |
 | the question about a chain is asked at most 40 times for a document | enough on our sets. On the four changes of the real project, 2,008 of 5,004 questions were left out (6.2). And a chain is found only across the spec files of one part |
 | on real specs the question about a chain still takes wrong steps | 3 of the 30 it said yes to on the real project. Two take one refusal for another ("the job is refused", and the statement that the approver refused). One is about a statement marked FALSE: the model says that the fact is true, and then answers "yes". None of the three adds a conflict there |
 | a rule that reacts to either of two events has no trigger | the model lists it once for each event, and the copies are kept as one rule (5.1). Where a situation is one moment, a conflict between it and a rule about another event is then not marked as two events at once (3.3). A label that comes back twice with two different texts still stops the run; that was not seen |
@@ -1868,9 +1900,9 @@ The full list is in research.md, section 5.
 ### 6.6 What is next
 
 1. **The specs of an agent system**: what the real project still shows.
-   First the question about a chain: asked twice on the same runs, it
-   does not give the same majority (6.4). Then the link step, which still
-   guesses how a system works. An attribute that belongs to one call. The limit of 40
+   First the symbols: in a spec about runs they are still described as
+   moments ("a call is being made"), and a chain is then not found (6.4).
+   Then the link step, which still guesses how a system works. An attribute that belongs to one call. The limit of 40
    questions for a document, which a project in parts reaches in nearly
    every part. And the two reasons that are not found: a conflict that
    needs rules of three spec files, and arithmetic over the steps of a run.
@@ -1940,14 +1972,14 @@ The folders:
 speccheck/          the tool (the 8 files above; refine.py is the review that is switched off)
 specs/              3 small specs the prompts were developed on, with their saved output,
                     and auth_change, the example of part 5
-tests/              132 tests that need no LLM
+tests/              133 tests that need no LLM
 experiments/
   sets/             the 11 evaluation sets, eval to eval10 and eval12 (297 spec versions), two long specs,
                     eval16 to eval18 (eighteen specs written like real ones), real1 to real3 (48 changes of a real project),
                     real4 and real5 (21 more real changes, each also with a planted conflict),
                     eval19 (six specs with conditions that exclude each other),
                     and for the change check eval11, eval13, eval14, eval15, mixed (one larger project),
-                    eval20 to eval25 (twenty-four projects about an assistant that calls tools)
+                    eval20 to eval26 (twenty-eight projects about an assistant that calls tools)
                     and change_dev (old specs as projects)
   results/          every experiment: the raw data (.json) and its tables (.md)
   examples/         saved runs that the documents quote
