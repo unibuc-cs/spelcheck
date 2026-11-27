@@ -5007,6 +5007,44 @@ README.md).
 
 ---
 
+## T45 — Development: what the read step returns when a scenario names two calls (2026-11-27)
+
+**Question.** 11 of the 36 runs of E32 stopped: "the read step did not keep
+the scenario labels R2 (it returned the rules R1, R2, R2, R3, ...)". What are
+the two rules that come back under one label?
+
+**How.** The read step alone, on the documents of `eval20/` to `eval23/`,
+which are all development data, each at three temperatures (0, 0.5 and
+0.9): 156 reads. And every saved experiment was searched for a rule id that
+came back twice.
+
+- **`eval23/`: 13 of 36 reads have a label twice. `eval20/` to `eval22/`: 0
+  of 120.**
+- **In all 13 it is the same scenario, with the same words, once for each
+  of its two calls.** Only the trigger differs:
+
+  ```
+  R2  trigger ask_chef_called      "WHEN a call of ask_chef or hire_waiters is made THEN the agent making it is the order agent"
+  R2  trigger hire_waiters_called  "WHEN a call of ask_chef or hire_waiters is made THEN the agent making it is the order agent"
+  ```
+
+  So the model does not split the scenario. A rule has one field for the
+  event it reacts to, this rule reacts to either of two, and the model says
+  so in the only way the answer allows.
+- It happens at every temperature: 4, 6 and 3 of 12 documents.
+- In the 3,191 saved runs of all experiments an id came back twice only in
+  those 11 runs.
+- The trigger is used in two places. A conflict between two rules with two
+  different triggers is doubted as two events at one moment, when a
+  situation is a moment (not with `--whole-run`). And a gap is looked for
+  once for each event; there the events in a rule's condition count as
+  well. The translations are not shown it.
+
+**Decision.** Step 49 (plan.md 2.6): rules that come back with one label and
+the same words are one rule. `eval24/` first.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

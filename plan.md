@@ -472,6 +472,50 @@ that should have none. If the prompt of step 46 gives no conflict to a
 "several" change either, the set does not test the change, and that is
 said.
 
+### 2.6 The plan for step 49: a scenario that reacts to either of two happenings (not built yet)
+
+11 of the 36 runs of `eval23/` stopped before the checks (E32): the read
+step had returned the scenario "WHEN a call of `ask_vet` or `order_medicine`
+is made THEN ..." twice under its label. A look at what comes back (T45)
+showed that both copies have the same words, and differ only in the trigger:
+one names the first call, the other the second. A rule has one trigger, and
+this one reacts to either of two events.
+
+**The change**, in the read step (`formalize._read`), with no change to a
+prompt:
+
+1. Rules that come back with the same label and the same words are one
+   rule. The first copy is kept.
+2. Its trigger is the one that the copies share. If they name different
+   events it is empty: the rule reacts to no single event.
+3. Nothing else changes. The translations are not shown the trigger. The
+   gap search and the questions of step 6 take the events of a rule from
+   its condition as well, and the condition of this rule names both.
+
+A label that comes back twice with two different texts still stops the run;
+that was not seen. What the empty trigger costs: where a situation is one
+moment, a conflict between such a rule and a rule about another event is not
+doubted as two events at once. With `--whole-run` nothing depends on it.
+
+**How it is tested.** `eval24/` (make_eval.py): four more projects about an
+assistant that calls tools. Each has the rule that a call needs an earlier
+approved call, a rule whose condition names two calls ("WHEN a call of
+`order_lenses` or `order_frame` is made THEN the run writes an audit entry")
+and a rule whose condition names three. Three changes each: a rule that says
+the opposite of the rule about two calls, for its second call in a kind of
+run (it must be found, so the rule must be in the checks for both calls); an
+example that breaks the first rule (it must be found; 9 of the 12 such runs
+of `eval23/` stopped); and a rule about one of the three calls (nothing may
+be reported). Each change is run three times with the code before and three
+times with the new code.
+
+**The rule, set before the build.** Step 49 stays if on `eval24/` fewer runs
+stop than with the code before, the planted conflicts are found in more of
+the 24 runs that have one (a run that stops counts as not found), and the
+"quiet" changes have a conflict about them in no larger share of the runs
+that finish. If no run stops with the code before, the set does not test the
+change, and that is said.
+
 Small things that are open:
 
 - **Long documents** (E14). A spec of 100 requirements works: its read answer

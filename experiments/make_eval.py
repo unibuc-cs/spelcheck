@@ -1,6 +1,6 @@
-"""make_eval.py: writes the evaluation sets eval/ to eval23/, size/, size2/ and mixed/. No LLM, no GPU.
+"""make_eval.py: writes the evaluation sets eval/ to eval24/, size/, size2/ and mixed/. No LLM, no GPU.
 
-    python -m experiments.make_eval eval23     (only the sets named; all if none)
+    python -m experiments.make_eval eval24     (only the sets named; all if none)
 
 change_dev/ is development data for the change check: the OpenSpec-format
 specs of eval9/ and eval10/ as projects with a change (see as_projects).
@@ -351,6 +351,26 @@ Three changes each:
              in such a run. Nothing may be reported: the rule about two
              calls applies when either is made, so it does not say that
              `order_medicine` is called
+
+eval24/ (written 2026-11-27, after E32, in which 11 of 36 runs stopped
+because the read step returned a scenario about two calls twice, under one
+label; before that case is repaired) has four more projects of that kind.
+Each has the rule that a call needs an earlier approved call, a rule whose
+condition names two calls ("WHEN a call of `order_lenses` or `order_frame`
+is made THEN the run writes an audit entry"), and a rule whose condition
+names three. Three changes each:
+
+    direct  a rule that says the opposite of the rule about two calls, for
+            the second of them in a kind of run ("WHEN a call of
+            `order_frame` is made in a warranty run THEN the run writes no
+            audit entry"). It must be found: the rule about two calls must
+            be in the checks, and for both calls
+    breaks  as in eval22/ and eval23/: an example that breaks the first rule
+            by what it demands itself. It must be found (9 of the 12 such
+            runs of eval23/ stopped)
+    quiet   a rule that one of the three calls is never made in a kind of
+            run, and a rule about the approving call in such a run. Nothing
+            may be reported
 """
 
 import json
@@ -4378,9 +4398,148 @@ PROJECTS23 = {
          "several": ("add-renewal-runs", "A renewal uses the report of the first loan.")}),
 }
 
+def _project24(rules: str, records: str, purposes: tuple, gate: tuple, two: tuple, three: tuple, base: tuple,
+               recorded: tuple, direct: tuple, breaks: tuple, quiet: tuple, names: dict) -> dict:
+    """One eval24 project: two spec files about the runs of an assistant, and three changes.
+
+    rules, records  the names of the two spec files; purposes: their purpose
+    gate            (requirement, sentence, scenario, text): a call needs an earlier approved call in the same run
+    two             (requirement, sentence, scenario, text): a rule whose condition names two calls
+    three           (requirement, sentence, scenario, text): a rule whose condition names three calls
+    base            (scenario, text): an example
+    recorded        one more rule about a call, in the second file
+    direct          (requirement, sentence, a rule that says the opposite of `two` for its second call in a kind
+                    of run, one more rule about that call in such a run)
+    breaks          (requirement, sentence, an example that breaks `gate` by what it demands itself)
+    quiet           (requirement, sentence, the rule that the third call of `three` is never made in a kind of
+                    run, a rule about the approving call in such a run)
+    names           for each change: (folder name, why)
+    """
+    requirement = lambda name, sentence, *scenarios: (name, sentence, list(scenarios))
+    return {
+        "specs": {
+            rules: (purposes[0], [requirement(gate[0], gate[1], (gate[2], gate[3])),
+                                  requirement(two[0], two[1], (two[2], two[3])),
+                                  requirement(three[0], three[1], (three[2], three[3])),
+                                  requirement("Requests", "The assistant SHALL handle the requests below as described.", base)]),
+            records: (purposes[1], [requirement(recorded[0], recorded[1], (recorded[2], recorded[3]))]),
+        },
+        "changes": {
+            "direct": {"name": names["direct"][0], "why": names["direct"][1],
+                       "delta": {rules: {"ADDED": [requirement(direct[0], direct[1], direct[2], direct[3])]}},
+                       "expected": {"conflicts": [[f"{rules}/{two[0]}/{two[2]}", f"{rules}/{direct[0]}/{direct[2][0]}"]]}},
+            "breaks": {"name": names["breaks"][0], "why": names["breaks"][1],
+                       "delta": {rules: {"ADDED": [requirement(breaks[0], breaks[1], breaks[2])]}},
+                       "expected": {"conflicts": [[f"{rules}/{gate[0]}/{gate[2]}", f"{rules}/{breaks[0]}/{breaks[2][0]}"]]}},
+            "quiet": {"name": names["quiet"][0], "why": names["quiet"][1],
+                      "delta": {rules: {"ADDED": [requirement(quiet[0], quiet[1], quiet[2], quiet[3])]}},
+                      "expected": {"nothing": True}},
+        },
+    }
+
+
+PROJECTS24 = {
+    "optician": _project24(
+        "glasses", "glasses-records",
+        ("An order assistant handles the requests of an optician's shop and calls the tools of the workshop system.",
+         "What the runs of the order assistant leave behind."),
+        ("Optician before lenses", "Lenses SHALL NOT be ordered in a planned run without the optician.",
+         "No lenses in a plan without the optician", "WHEN a call of `order_lenses` succeeds in a run with a plan THEN an earlier call of `ask_optician` in the run was approved"),
+        ("Audit of orders", "Every order to a supplier SHALL be audited.",
+         "Orders to suppliers are audited", "WHEN a call of `order_lenses` or `order_frame` is made THEN the run writes an audit entry"),
+        ("Messages", "A customer SHALL get messages only with consent.",
+         "Messages need consent", "WHEN a call of `send_reminder`, `send_offer` or `send_survey` is made THEN the customer has agreed to messages"),
+        ("Example: lenses are ordered", "WHEN mira asks to order lenses for customer c8 THEN `order_lenses` is called once AND the answer gives the pick-up date"),
+        ("Order records", "Every lens order SHALL be recorded.",
+         "Every lens order is recorded", "WHEN a call of `order_lenses` succeeds THEN the run writes one order record that names the customer"),
+        ("Warranty frames", "A warranty frame SHALL be replaced without paperwork.",
+         ("A warranty run writes no audit entry for a frame", "WHEN a call of `order_frame` is made in a warranty run THEN the run writes no audit entry"),
+         ("A warranty frame names its case", "WHEN a call of `order_frame` succeeds in a warranty run THEN the answer gives the warranty number")),
+        ("Repeat prescriptions", "Lenses for an unchanged prescription SHALL be ordered at once.",
+         ("Example: an unchanged prescription", "WHEN mira sends a repeat request for customer c8 THEN the plan is written once AND `order_lenses` succeeds once AND `ask_optician` is never called")),
+        ("Complaint runs", "A complaint run SHALL NOT send surveys.",
+         ("A complaint run sends no survey", "WHEN a call of `send_survey` is made THEN the run is not a complaint run"),
+         ("A complaint run names the optician", "WHEN a call of `ask_optician` is made in a complaint run THEN the answer names the optician who was asked")),
+        {"direct": ("add-warranty-frames", "A frame under warranty is replaced by the maker."),
+         "breaks": ("add-repeat-prescriptions", "An unchanged prescription was checked before."),
+         "quiet": ("add-complaint-runs", "A customer who complains gets no survey.")}),
+    "zoo": _project24(
+        "animals", "animals-records",
+        ("A keeper's assistant handles the requests of a zoo and calls the tools of the animal register.",
+         "What the runs of the keeper's assistant leave behind."),
+        ("Curator before a move", "An animal SHALL NOT be moved in a planned run without the curator.",
+         "No move in a plan without the curator", "WHEN a call of `move_animal` succeeds in a run with a plan THEN an earlier call of `ask_curator` in the run was approved"),
+        ("Log of moves", "Every move and every release SHALL be logged.",
+         "Moves and releases are logged", "WHEN a call of `move_animal` or `release_animal` is made THEN the run writes a log entry"),
+        ("Enclosures", "An enclosure SHALL be changed only when it is empty.",
+         "Changes need an empty enclosure", "WHEN a call of `clean_enclosure`, `heat_enclosure` or `lock_enclosure` is made THEN the enclosure is empty"),
+        ("Example: an animal is moved", "WHEN hugo asks to move tapir t3 THEN `move_animal` is called once AND the answer gives the new enclosure"),
+        ("Move records", "Every move SHALL be recorded.",
+         "Every move is recorded", "WHEN a call of `move_animal` succeeds THEN the run writes one move record that names the animal"),
+        ("Rehearsals", "A rehearsal SHALL leave no trace in the log.",
+         ("A rehearsal run logs no release", "WHEN a call of `release_animal` is made in a rehearsal run THEN the run writes no log entry"),
+         ("A rehearsal names its scenario", "WHEN a call of `release_animal` succeeds in a rehearsal run THEN the answer gives the scenario number")),
+        ("Night moves", "A night move SHALL be made at once.",
+         ("Example: a night move", "WHEN hugo sends a night request for tapir t3 THEN the plan is written once AND `move_animal` succeeds once AND `ask_curator` is never called")),
+        ("Winter runs", "A winter run SHALL NOT lock enclosures.",
+         ("A winter run locks no enclosure", "WHEN a call of `lock_enclosure` is made THEN the run is not a winter run"),
+         ("A winter run names the curator", "WHEN a call of `ask_curator` is made in a winter run THEN the answer names the curator who was asked")),
+        {"direct": ("add-rehearsals", "The keepers rehearse an escape twice a year."),
+         "breaks": ("add-night-moves", "The curator is not there at night."),
+         "quiet": ("add-winter-runs", "In winter the enclosures stay open to the heated house.")}),
+    "storage": _project24(
+        "units", "units-records",
+        ("A front-office assistant handles the requests of a self-storage site and calls the tools of the unit system.",
+         "What the runs of the front-office assistant leave behind."),
+        ("Manager before a clearance", "A unit SHALL NOT be cleared in a planned run without the site manager.",
+         "No clearance in a plan without the manager", "WHEN a call of `clear_unit` succeeds in a run with a plan THEN an earlier call of `ask_site_manager` in the run was approved"),
+        ("Notices", "Every clearance and every lock change SHALL be announced.",
+         "Clearances and lock changes are announced", "WHEN a call of `clear_unit` or `change_lock` is made THEN the run sends a notice to the tenant"),
+        ("Access codes", "An access code SHALL be changed only for a unit that is paid up.",
+         "Code changes need a paid unit", "WHEN a call of `issue_code`, `reset_code` or `extend_code` is made THEN the rent of the unit is paid"),
+        ("Example: a unit is cleared", "WHEN petra asks to clear unit u5 THEN `clear_unit` is called once AND the answer gives the clearance date"),
+        ("Clearance records", "Every clearance SHALL be recorded.",
+         "Every clearance is recorded", "WHEN a call of `clear_unit` succeeds THEN the run writes one clearance record that names the unit"),
+        ("Empty units", "The lock of an empty unit SHALL be changed without a notice.",
+         ("An empty-unit run sends no notice for a lock", "WHEN a call of `change_lock` is made in an empty-unit run THEN the run sends no notice to the tenant"),
+         ("An empty unit gets a new key number", "WHEN a call of `change_lock` succeeds in an empty-unit run THEN the answer gives the new key number")),
+        ("Abandoned units", "An abandoned unit SHALL be cleared at once.",
+         ("Example: an abandoned unit", "WHEN petra sends an abandoned-unit request for unit u5 THEN the plan is written once AND `clear_unit` succeeds once AND `ask_site_manager` is never called")),
+        ("Audit runs", "An audit run SHALL NOT extend codes.",
+         ("An audit run extends no code", "WHEN a call of `extend_code` is made THEN the run is not an audit run"),
+         ("An audit run names the manager", "WHEN a call of `ask_site_manager` is made in an audit run THEN the answer names the manager who was asked")),
+        {"direct": ("add-empty-units", "An empty unit has no tenant to write to."),
+         "breaks": ("add-abandoned-units", "A unit that was given up needs no decision."),
+         "quiet": ("add-audit-runs", "The yearly audit only reads.")}),
+    "tutoring": _project24(
+        "lessons", "lessons-records",
+        ("A booking assistant handles the requests of a tutoring school and calls the tools of the timetable system.",
+         "What the runs of the booking assistant leave behind."),
+        ("Head teacher before a group change", "A pupil SHALL NOT change groups in a planned run without the head teacher.",
+         "No group change in a plan without the head teacher", "WHEN a call of `change_group` succeeds in a run with a plan THEN an earlier call of `ask_head_teacher` in the run was approved"),
+        ("Parents are told", "Parents SHALL be told about every group change and every cancelled lesson.",
+         "Group changes and cancellations reach the parents", "WHEN a call of `change_group` or `cancel_lesson` is made THEN the run sends a message to the parents"),
+        ("Rooms", "A room SHALL be booked, swapped or released only in term time.",
+         "Room changes need term time", "WHEN a call of `book_room`, `swap_room` or `release_room` is made THEN the date is in term time"),
+        ("Example: a group is changed", "WHEN lena asks to move pupil p6 to the Tuesday group THEN `change_group` is called once AND the answer gives the first lesson"),
+        ("Change records", "Every group change SHALL be recorded.",
+         "Every group change is recorded", "WHEN a call of `change_group` succeeds THEN the run writes one change record that names the pupil"),
+        ("Holiday courses", "A cancelled lesson of a holiday course SHALL NOT be announced.",
+         ("A holiday run sends no message for a cancelled lesson", "WHEN a call of `cancel_lesson` is made in a holiday run THEN the run sends no message to the parents"),
+         ("A holiday run names the next course", "WHEN a call of `cancel_lesson` succeeds in a holiday run THEN the answer gives the next course date")),
+        ("Sibling moves", "A pupil SHALL be moved to a sibling's group at once.",
+         ("Example: a sibling move", "WHEN lena sends a sibling request for pupil p6 THEN the plan is written once AND `change_group` succeeds once AND `ask_head_teacher` is never called")),
+        ("Exam weeks", "An exam-week run SHALL NOT swap rooms.",
+         ("An exam-week run swaps no room", "WHEN a call of `swap_room` is made THEN the run is not an exam-week run"),
+         ("An exam-week run names the head teacher", "WHEN a call of `ask_head_teacher` is made in an exam-week run THEN the answer names the head teacher who was asked")),
+        {"direct": ("add-holiday-courses", "Holiday courses are booked by the day."),
+         "breaks": ("add-sibling-moves", "Siblings come and go together."),
+         "quiet": ("add-exam-weeks", "In exam weeks every room is fixed.")}),
+}
+
 PROJECT_SETS = {"eval11": PROJECTS11, "eval13": PROJECTS13, "eval14": PROJECTS14, "eval15": PROJECTS15,
                 "mixed": PROJECTS_MIXED, "eval20": PROJECTS20, "eval21": PROJECTS21, "eval22": PROJECTS22,
-                "eval23": PROJECTS23,
+                "eval23": PROJECTS23, "eval24": PROJECTS24,
                 "change_dev": as_projects({**SPECS9, **SPECS10})}
 
 
