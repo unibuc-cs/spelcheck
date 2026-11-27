@@ -109,8 +109,8 @@ Where the project stands:
   specs, and an approval that an existing rule demands and the change
   forbids, a chain of three rules. In the spec files of the other three
   changes no conflict is found in more than 3 parts. The other two reasons
-  are not found, and every report also has 1 to 3 conflicts with a rule of
-  another spec file that are artefacts ([A real project of that kind](#a-real-project-of-that-kind-testingtheagents)).
+  are not found, and every report also has 1 to 6 conflicts with a rule of
+  another spec file that are artefacts, mostly other ones in each run ([A real project of that kind](#a-real-project-of-that-kind-testingtheagents)).
 
 | Read next | For |
 |---|---|
@@ -890,7 +890,7 @@ its commit `f6cb12b`):
 git clone https://github.com/unibuc-cs/TestingTheAgents ../TestingTheAgents
 T=../TestingTheAgents/trace-eval/openspec/changes
 
-# 1. every change against all 33 spec files, in parts: 30 to 55 minutes each on two GPUs
+# 1. every change against all 33 spec files, in parts: 30 to 60 minutes each on two GPUs
 for change in $T/add-*; do
     python -m speccheck --change $change --whole-run --examples "^use: scenario$" \
         --base-url http://localhost:18200/v1 --out out/agents_all/$(basename $change)
@@ -1278,35 +1278,42 @@ Some notes on these numbers:
     asked there was answered yes;
   - asked on the saved runs of `eval20/`, no change that should give
     nothing gets a conflict, and no planted conflict is lost.
-- That project, TestingTheAgents, with the final code, each change against
-  the 24 spec files of the application (T40; the commands are
-  [above](#a-real-project-of-that-kind-testingtheagents)):
+- That project, TestingTheAgents, run from scratch with the final code by
+  the commands [above](#a-real-project-of-that-kind-testingtheagents),
+  each change against the 24 spec files of the application (T41). In
+  brackets: the same run without the facts of the new question.
 
   | Change | Conflicts, not doubtful | In the spec files of the change, with the parts that found each | With a rule of another spec file | Doubtful |
   |---|---|---|---|---|
-  | `add-instant-bulk-takedown-workflow`, cannot be built | 7 | 3: in 16, 2 and 1 of 24 parts | 4 | 19 |
-  | `add-licence-expiry-sweep-workflow`, can be built | 5 | 2: in 1 of 24 parts each | 3 | 33 |
-  | `add-page-retirement-workflow`, can be built | 4 | 2: in 3 and 1 of 23 parts | 2 | 38 |
-  | `add-scheduled-batch-republish-workflow`, can be built | 1 | 0 | 1 | 16 |
+  | `add-instant-bulk-takedown-workflow`, cannot be built | 11 (8) | 3: in 16, 1 and 1 of 24 parts | 8 (6) | 19 |
+  | `add-licence-expiry-sweep-workflow`, can be built | 6 (3) | 2: in 2 and 1 of 24 parts | 4 (1) | 32 |
+  | `add-page-retirement-workflow`, can be built | 3 (2) | 0 | 3 (2) | 50 |
+  | `add-scheduled-batch-republish-workflow`, can be built | 3 (3) | 0 | 3 (3) | 19 |
 
-  Two of the authors' four reasons are in the first report. The conflict
-  found in 16 parts is the contradiction between two rules of the change.
-  One of the 4 with a rule of another spec file is the missing approval:
-  the existing rule that nothing goes live or down in a plan without an
-  approval, against the change's rule that such a run asks nobody, "if the
-  assumed facts hold", through the fact that an approved request is a
-  request that was made. Before the new question the table read 6, 5, 3
-  and 1 conflicts. The other one more, of the page retirement change in 1
-  of 23 parts, is an artefact: its situation has a call that succeeds where
-  an example says that the call is refused. The number of conflicts does
-  not tell the changes apart; the number of parts does. The other conflicts
-  with a rule of another spec file are artefacts, those we read: a wrong
-  assumed fact between two unrelated happenings of one run, or an attribute
-  of one call taken for an attribute of the run. Against all 33 spec files,
-  the 9 of the project's test harness add up to 9 more of them. The doubtful ones
-  are all marked for an example. The authors' other two reasons are not
-  found: one needs rules of three spec files, and one is arithmetic over
-  the steps of a run.
+  - Two of the authors' four reasons are in the first report. The conflict
+    found in 16 parts is the contradiction between two rules of the change.
+    One of the 8 with a rule of another spec file is the missing approval:
+    the existing rule that nothing goes live or down in a plan without an
+    approval, against the change's rule that such a run asks nobody, "if
+    the assumed facts hold", through the fact that an approved request is a
+    request that was made. The new question found it in two runs of two
+    (T40 asked it on the parts of an earlier run).
+  - The new question also costs. It adds 7 conflicts over the four changes,
+    and 6 of them are artefacts. Of the 35 steps it said yes to, 5 are
+    wrong by our reading. Three of the five have one shape: the rule applies
+    in several cases, and the fact is about one of them ("WHEN a call of
+    this tool or of that tool is made", and the fact that the second is
+    called). Our sets have no case of that shape.
+  - The number of conflicts does not tell the changes apart; the number of
+    parts does. The other conflicts with a rule of another spec file are
+    artefacts, those we read: a wrong assumed fact between two unrelated
+    happenings of one run, or an attribute of one call taken for an
+    attribute of the run. They are mostly other ones in each run: the
+    earlier run had 6, 5, 3 and 1 conflicts without the new question.
+    Against all 33 spec files, the 9 of the project's test harness add up
+    to 9 more. The doubtful ones are all marked for an example.
+  - The authors' other two reasons are not found: one needs rules of three
+    spec files, and one is arithmetic over the steps of a run.
 - The numbers are small: the specs were written by us, there is one main
   model, and the real changes are those of one project. The details are in
   [research.md](research.md).
@@ -1332,7 +1339,8 @@ Some notes on these numbers:
 | A voted translation can say less than the rule | when the eight translations differ only in their symbols, the rule is kept with what more than half of them entail. "Display success message with archived name and list of updated specs" became "the success message is displayed". `formal.json` marks such a rule (`"voted": "7/7"`), the report does not. A split that the vote settles is no longer a question to the author: on `eval18/` that happened to 5 of 36 planted ambiguities, and 1 was still found |
 | With `--whole-run`, the question about two outcomes is asked of many more pairs, and errs more | it is asked of rules that react to two different happenings too. A wrong answer ("A run cannot have a maximum tool call count of 40 if no tools were called") gives a conflict between two unrelated rules. On TestingTheAgents every change got 1 to 3 such conflicts against the application's specs, each in one part. In a document of 30 rules the limit of 40 pairs cuts off most of about 175 |
 | The question whether a rule applies is asked 40 times for a document at most | on our sets that is enough. In a project in parts it is not: on the four changes of TestingTheAgents, 2,008 of 5,004 questions were left out. A chain of three rules is found only if its pair is among those asked about, and only across the spec files of one part |
-| A step from one rule to another can be right and its conflict still an artefact | "a call that is refused was made" is right. The conflict it gave on the real project has a call that succeeds in its situation, which the example excludes in words and the formulas do not: "refused" and "succeeds" are two symbols (1 of 23 parts) |
+| On real specs the question whether a rule applies takes wrong steps | 5 of the 35 it said yes to in a run of TestingTheAgents. Three where the rule applies in several cases and the fact is about one of them: "WHEN a call of this tool or of that tool is made", and the fact that the second is called (7 of 8 "yes"). Two where one refusal is taken for another. They gave 5 of the 6 artefact conflicts that the question added over four changes. None on our own sets |
+| A step from one rule to another can be right and its conflict still an artefact | "a call that is refused was made" is right. The conflict it gave on the real project has a call that succeeds in its situation, which the example excludes in words and the formulas do not: "refused" and "succeeds" are two symbols |
 | Two examples of one case with opposite outcomes are missed in 7 of 12 runs | "called once" and "never called" became a count and "the call did not succeed", which can hold together (E30) |
 | An attribute of one call becomes an attribute of the whole run | "the token the call was made with", "the agent that made it", "the file the function is in": two rules about two different calls then clash |
 | A project in parts is checked against one other spec file at a time | a conflict that needs rules of three spec files is not found; scenarios are not looked for; a part that the model cannot read is left out (4 of 131 on the real project, all named in the reports) |

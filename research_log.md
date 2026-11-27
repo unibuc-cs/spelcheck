@@ -4756,6 +4756,64 @@ date.
 
 ---
 
+## T41 — TestingTheAgents from scratch, with the final code (2026-11-27)
+
+**Question.** T40 asked the new question on parts that were formalized
+before it existed. What does a run of the tool give today, by the commands
+of README.md?
+
+**How.** Step 1 of those commands for the four changes, with the code of
+step 46, on two machines with two GPUs each: 32, 44, 47 and 56 minutes for a
+change. Then step 2, against the 24 spec files of the application, and the
+same parts scored once more without the facts of check 6.
+
+| Change | Conflicts, not doubtful | The same without the facts of check 6 | In the spec files of the change, with the parts that found each | With a rule of another spec file | Doubtful |
+|---|---|---|---|---|---|
+| `add-instant-bulk-takedown-workflow`, cannot be built | 11 | 8 | 3: in 16, 1 and 1 of 24 parts | 8 | 19 |
+| `add-licence-expiry-sweep-workflow`, can be built | 6 | 3 | 2: in 2 and 1 of 24 parts | 4 | 32 |
+| `add-page-retirement-workflow`, can be built | 3 | 2 | 0 | 3 | 50 |
+| `add-scheduled-batch-republish-workflow`, can be built | 3 | 3 | 0 | 3 | 19 |
+
+- **The two reasons are found again.** The two contracts on one function,
+  in 16 of 24 parts as in the first run. And the missing approval, through
+  the same step, with 8 of 8 answers. A second conflict of that report is
+  close to it and comes from the question about two outcomes: the existing
+  rule that taking a page down is guarded, against the change's example in
+  which pages go down with no request for approval.
+- **The check costs more than T40 showed.** It adds 7 conflicts over the
+  four changes: the missing approval, and 6 artefacts (2, 3 and 1 on three
+  of the changes).
+- **Where it goes wrong.** It said yes to 35 steps (3, 10, 20 and 2), out
+  of 2,768 questions. We read them all: 5 are wrong, by our reading.
+  - Three have one shape: the rule applies in several cases, and the fact
+    is about one of them. A rule "WHEN a call of this tool or of that tool
+    is made", and the fact that a call of the second is made: 7 of 8
+    answers "yes". A rule about four calls, and a fact about two of them in
+    a kind of run. A rule "for any n from 1 to 60", and the fact that the
+    request is for 3.
+  - Two take one refusal for another: "the call is refused", "the job is
+    refused", and the fact that the approver refused.
+  - One wrong step gave 3 conflicts, all on one change that can be built.
+    And one right step gave an artefact, as in T40.
+- **`eval22/` has no case of that shape.** Its trap is a state from before
+  the run. So E31 could not see it.
+- **From run to run.** Without the facts of check 6 the four changes have
+  8, 3, 2 and 3 conflicts here and had 6, 5, 3 and 1 in the first
+  formalization (T38): the conflicts with a rule of another spec file are
+  mostly different ones each time. The same in both: the two contracts in 16 of 24
+  parts, nothing else in more than 3, and the missing approval.
+- 4 of 131 parts were not formalized, as before; the limit of 40 left out
+  1,755 of 4,523 questions.
+
+**Decision.** Check 6 stays: it met the rule that was set for it, and on
+the project it finds the reason it was built for, in two runs of two. Its
+wrong steps on real specs are a limit, with their numbers in README.md.
+What follows from them is the next step: the question has to be answered
+"no" where the requirement applies in several cases and the fact is about
+one of them. A new set first (`eval23/`).
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

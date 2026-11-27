@@ -61,9 +61,13 @@ this order. The first is new, from the real project of an agent system
    - **does what one rule demands make another rule apply?** Done in step
      46 (check 6, 5.7): a chain of three rules and an example that breaks a
      rule are found in 12 of 12 runs each on `eval22/` (E31), and on the
-     real project the missing approval is reported (T40). What is left of
-     its four reasons: a conflict that needs rules of three spec files, and
-     arithmetic over the steps of a run;
+     real project the missing approval is reported (T40, T41). What is left
+     of its four reasons: a conflict that needs rules of three spec files,
+     and arithmetic over the steps of a run;
+   - **the wrong steps of that question on real specs** (T41): 5 of 35,
+     three of them where the rule applies in several cases and the fact is
+     about one of them ("WHEN a call of this tool or of that tool is made").
+     This is the next step, with `eval23/` first;
    - **the wrong answers to the question about two outcomes**, which with a
      whole run as the situation is asked of two unrelated happenings too.
      Every change of the real project got 1 to 3 conflicts from them, and
@@ -443,7 +447,9 @@ demand, a prompt of its own, and the one fact alone. On held-out `eval22/`
 the chains are found in 12 of 12 runs with the check and in 2 without, the
 examples that break a rule in 12 and in 0, and a change where the demand
 only looks like the condition gets nothing more (E31). On the real project
-the missing approval is now reported (T40).
+the missing approval is now reported, in two runs of two (T40, T41). There
+the question also takes wrong steps, 5 of 35, which our sets do not have:
+6 more artefact conflicts over four changes (T41).
 
 Decided on 2026-11-26: **the model is asked whether the conditions of two
 rules that clash can both hold** (step 42, check 5 of step 6, 5.7). For two
@@ -1725,7 +1731,8 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       `eval22/` (E31): chains of three rules 2 → 12 of 12, examples that
       break a rule 0 → 12 of 12, changes where the demand only looks like
       the condition 1 of 12 either way. On the real project the missing
-      approval is reported (T40)
+      approval is reported in two runs of two, and the question adds 6
+      artefact conflicts over four changes in a run from scratch (T40, T41)
 - [x] **Step 45 — every example of a conflict must describe its situation**:
       `eval21/` first. A conflict with examples is doubtful unless every
       example in it makes the other rules apply by its own case (step 44:

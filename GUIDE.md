@@ -1610,16 +1610,17 @@ conflict, and no change that should give nothing gets one.
 files with 465 scenarios, and four open changes that each add a workflow.
 Its authors say that three can be built and one cannot, for four reasons. It
 is a repository of its own; the commands that run speccheck on it are in
-README.md and commands.md. Each change was checked in 32 or 33 parts, which
-took 31 to 55 minutes on two GPUs. This is what the reports say, each change
-against the 24 spec files of the application:
+README.md and commands.md. Each change is checked in 32 or 33 parts, which
+takes 30 to 60 minutes on two GPUs. This is what the reports of the last
+run say, each change against the 24 spec files of the application. In
+brackets is the same run without the question about a chain (5.1):
 
 | Change | Conflicts, not doubtful | Among the rules of the change, with the parts that found each | With a rule of another spec file | Doubtful |
 |---|---|---|---|---|
-| cannot be built | 7 | 3: in 16, 2 and 1 of 24 parts | 4 | 19 |
-| can be built | 5 | 2: in 1 of 24 parts each | 3 | 33 |
-| can be built | 4 | 2: in 3 and 1 of 23 parts | 2 | 38 |
-| can be built | 1 | 0 | 1 | 16 |
+| cannot be built | 11 (8) | 3: in 16, 1 and 1 of 24 parts | 8 (6) | 19 |
+| can be built | 6 (3) | 2: in 2 and 1 of 24 parts | 4 (1) | 32 |
+| can be built | 3 (2) | 0 | 3 (2) | 50 |
+| can be built | 3 (3) | 0 | 3 (3) | 19 |
 
 - The conflict found in 16 parts is the first of the authors' four reasons,
   two rules of the change that contradict each other. The report explains
@@ -1627,20 +1628,25 @@ against the 24 spec files of the application:
 - A second reason is in that report since the question about a chain
   (5.1). A run of the new workflow takes a page down in a plan; an existing
   rule says that what goes down in a plan was approved; the change says
-  that such a run asks nobody. It is one of the 4 conflicts with a rule of
+  that such a run asks nobody. It is one of the 8 conflicts with a rule of
   another spec file, "if the assumed facts hold", and the fact says that an
-  approved request is a request that was made. Before the question the
-  table read 6, 5, 3 and 1 conflicts.
+  approved request is a request that was made. It was found in two runs of
+  two.
+- That question also costs, on real specs. It adds 7 conflicts over the
+  four changes, and 6 of them are artefacts. Of the 35 steps it said yes
+  to, 5 are wrong by our reading, and three of the five have one shape: the
+  rule applies in several cases, and the fact is about one of them ("WHEN a
+  call of this tool or of that tool is made", and the fact that the second
+  is called). Our own sets have no case of that shape (6.4, 6.6).
 - The number of conflicts does not tell the four changes apart. The number
   of parts does: nothing else is found in more than 3.
 - The other conflicts with a rule of another spec file are artefacts, those
   we read. Most rest on one wrong answer to the question about two
   outcomes, between two rules about two unrelated happenings of one run.
-  The 9 spec files of the project's test harness add up to 9 more, which is
+  They are mostly other ones in each run: an earlier run had 6, 5, 3 and 1
+  conflicts where this one has 8, 3, 2 and 3 without the new question. The
+  9 spec files of the project's test harness add up to 9 more, which is
   what `--against` is for.
-- The question about a chain also gave one artefact, in 1 of 23 parts of a
-  change that can be built: its situation has a call that succeeds, where
-  an example says that the call is refused.
 - The other two reasons are not found. One needs rules of three spec files,
   and one is arithmetic over the steps of a run.
 - The doubtful conflicts, 16 to 43 for a change, are all marked for an
@@ -1672,6 +1678,7 @@ The project has five goals. This is where each one stands:
 | on real specs, most conflicts that nobody planted are not contradictions | of 20 that we read, 8 are in a situation that cannot happen, 4 are other artefacts, and 7 set a general rule against its own exception (6.2). The question about two conditions marks one conflict in six to nine; the rest are reported as they are |
 | with a whole run as the situation, the questions about two outcomes err more | they are asked of two rules about two unrelated happenings as well, and a wrong answer gives a conflict between the two: 1 to 3 for each change of the real project of 6.2, each found in one part |
 | the question about a chain is asked at most 40 times for a document | enough on our sets. On the four changes of the real project, 2,008 of 5,004 questions were left out (6.2). And a chain is found only across the spec files of one part |
+| on real specs the question about a chain takes wrong steps | 5 of the 35 it said yes to on the real project (6.2): three where the rule applies in several cases and the fact is about one of them, two where one refusal is taken for another. They gave 5 of the 6 artefacts that the question added. None on our own sets |
 | a right step can still give an artefact | "a call that is refused was made" is right. Its conflict on the real project has a call that succeeds in its situation, which the example excludes in words and the formulas do not: "refused" and "succeeds" are two symbols |
 | two examples of one case with opposite outcomes are missed in 7 of 12 runs | "called once" and "never called" became a count and "the call did not succeed", which can hold together (6.2) |
 | an attribute of one call becomes an attribute of the run | "the token the call was made with": two rules about two different calls then clash |
@@ -1763,8 +1770,10 @@ The full list is in research.md, section 5.
 ### 6.6 What is next
 
 1. **The specs of an agent system**: what the real project still shows.
-   The wrong answers to the question about two outcomes between unrelated
-   happenings. An attribute that belongs to one call. The limit of 40
+   First the wrong steps of the question about a chain: it has to answer
+   "no" where a rule applies in several cases and the fact is about one of
+   them. Then the wrong answers to the question about two outcomes between
+   unrelated happenings. An attribute that belongs to one call. The limit of 40
    questions for a document, which a project in parts reaches in nearly
    every part. And the two reasons that are not found: a conflict that
    needs rules of three spec files, and arithmetic over the steps of a run.

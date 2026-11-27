@@ -638,10 +638,11 @@ demands with the condition of another.
   was answered yes. On the saved runs of `eval21/` the examples that break
   a rule go from 4 to 10 of 12, and on those of `eval20/` nothing is lost
   and no change that should give nothing gets a conflict.
-- **On the project** (T40): the missing approval, the second of the
+- **On the project** (T40, T41): the missing approval, the second of the
   authors' four reasons, is in the report of the change that cannot be
-  built, "if the assumed facts hold". The four changes have 7, 5, 4 and 1
-  conflicts that are not doubtful, where they had 6, 5, 3 and 1.
+  built, "if the assumed facts hold", in two runs of two: once asked on the
+  saved parts of the first run, once in a run from scratch. What it costs
+  there is in 4.9.
 
 ---
 
@@ -935,11 +936,24 @@ One project of that kind, and three sets of our own.
   questions that the pairs of the four changes give, 2,008 were left out by
   the limit of 40 for a document. And a chain is found only across the spec
   files of one part.
+- **On real specs the question of 3.19 takes wrong steps** (T41). In a run
+  of the four changes from scratch it said yes to 35 steps, and 5 are wrong
+  by our reading. Three where the rule applies in several cases and the
+  fact is about one of them: "WHEN a call of this tool or of that tool is
+  made", and the fact that the second is called (7 of 8 "yes"); a rule "for
+  any n from 1 to 60", and the fact that the request is for 3. Two where
+  one refusal is taken for another. The question added 7 conflicts over the
+  four changes: the missing approval and 6 artefacts. On the saved parts of
+  the first run it added 2: the missing approval and 1 artefact (T40).
+  `eval22/` has no case of that shape, and no wrong step.
 - **A right step can still give an artefact** (T40): "a call that is
   refused was made" is right, and the conflict it gave has a call that
   succeeds in its situation, which the example excludes in words and the
-  formulas do not. One conflict, in 1 of 23 parts of a change that can be
-  built.
+  formulas do not.
+- **The conflicts with a rule of another spec file change from run to run**
+  (T38, T41): 3, 3, 2 and 1 in the first run, 6, 1, 2 and 3 in the second,
+  without the question of 3.19. What both runs have: the two contracts on
+  one function in 16 of 24 parts, and nothing else in more than 3.
 - **Two examples of one case with opposite outcomes are found in 5 of 12
   runs** (E30): "called once" and "never called" became a count and "the
   call did not succeed", which can hold together.
@@ -1041,7 +1055,8 @@ the specs of an agent system, before and with step 44, and T38 the tool's
 own runs on that project, each change in 32 or 33 parts (3.18, 4.9). T39
 tried four forms of the question whether what one rule demands makes
 another rule apply, on saved runs, and T40 asked the frozen one on the
-saved parts of that project (3.19).
+saved parts of that project (3.19). T41 ran the four changes from scratch
+with the final code (4.9).
 research_log.md
 has them in order, together with the bugs that
 changed results before they were fixed (L1 to L10) and the open threats to

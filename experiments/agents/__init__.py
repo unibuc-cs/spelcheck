@@ -9,7 +9,7 @@ be built. It is cloned next to this repository and only read:
     git clone https://github.com/unibuc-cs/TestingTheAgents ../TestingTheAgents
     T=../TestingTheAgents/trace-eval/openspec/changes
 
-    # each change against all 33 spec files, in parts (30 to 55 minutes on two GPUs)
+    # each change against all 33 spec files, in parts (30 to 60 minutes on two GPUs)
     python -m speccheck --change $T/<name> --whole-run --examples "^use: scenario$" \
         --base-url URL --out out/agents_all/<name>
     # the same against the application's specs only, from the saved parts
@@ -19,5 +19,5 @@ be built. It is cloned next to this repository and only read:
     python -m experiments.agents.tally $T out/agents
 
 In these specs an example is a scenario whose clause says `use: scenario`.
-What was found: research_log.md, T36 to T38 and T40.
+What was found: research_log.md, T36 to T38, T40 and T41.
 """

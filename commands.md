@@ -176,7 +176,7 @@ application are named `fs-*`. In bash:
 git clone https://github.com/unibuc-cs/TestingTheAgents ../TestingTheAgents
 T=../TestingTheAgents/trace-eval/openspec/changes
 
-# 1. every change against all 33 spec files, in parts: 30 to 55 minutes each on two GPUs
+# 1. every change against all 33 spec files, in parts: 30 to 60 minutes each on two GPUs
 for change in $T/add-*; do
     python -m speccheck --change $change --whole-run --examples "^use: scenario$" \
         --base-url http://localhost:18200/v1 --out out/agents_all/$(basename $change)
