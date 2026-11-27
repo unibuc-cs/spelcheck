@@ -618,6 +618,43 @@ changes: a link that makes the same guess ("if the cellar is closed, the
 turning tool must have been called"), and one pair that most answers still
 call impossible (5 and 6 of 8, where 8).
 
+### 2.8 The plan for step 51: what "the requirement applies" means in the question of step 46 (not built yet)
+
+The question whether what one rule demands makes another rule apply (check
+6) was asked a second time on the same runs, with the same words (T47). A
+right step, from "an earlier call was approved" to "the call was made", had
+8 of 8 answers the first time and 3 of 8 the second, and a contradiction
+that needs it was not found in 2 of 12 runs. The answers show why. The
+prompt says "take any situation in which the requirement applies". Some
+answers read that as any run of a system that has the rule, also one in
+which its condition is not met: "if the call does not succeed, the
+requirement imposes no constraints, so the other call might not have been
+made". One says: "This phrasing is ambiguous."
+
+**The change.** The prompt of check 6 (`APPLIES_SYSTEM`) says which
+situations count: those in which the condition of the requirement is the
+case (what comes after WHEN, WHILE or IF; without such a part, every
+situation) and in which the system has done everything the requirement
+demands. A situation in which the condition is not the case does not count,
+although the requirement is not broken in it. Nothing else changes. One
+try.
+
+**How it is tested.** `eval26/` (make_eval.py): four more projects about an
+assistant that calls tools, each with the four changes of `eval22/` and
+`eval23/` together. Two need the step (a chain of three rules; an example
+that breaks a rule) and two must not get one (a rule about the other of two
+calls; a state from before the run). Each change is run three times with
+the code before. Then check 6 is asked again on those runs three times with
+the old words and three times with the new ones, so that each wording is
+judged over 3 askings of 48 runs.
+
+**The rule, set before the build.** The new words stay if on `eval26/`,
+with doubtful conflicts set aside, over the three askings: the planted
+conflicts are found in more of the 72 askings of a run that has one than
+with the old words, and the changes that should give no conflict have one
+in no more of their 72. What the two wordings do on the saved runs of
+`eval22/` to `eval24/`, asked three times each, is reported with it.
+
 Small things that are open:
 
 - **Long documents** (E14). A spec of 100 requirements works: its read answer

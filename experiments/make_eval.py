@@ -1,6 +1,6 @@
-"""make_eval.py: writes the evaluation sets eval/ to eval25/, size/, size2/ and mixed/. No LLM, no GPU.
+"""make_eval.py: writes the evaluation sets eval/ to eval26/, size/, size2/ and mixed/. No LLM, no GPU.
 
-    python -m experiments.make_eval eval25     (only the sets named; all if none)
+    python -m experiments.make_eval eval26     (only the sets named; all if none)
 
 change_dev/ is development data for the change check: the OpenSpec-format
 specs of eval9/ and eval10/ as projects with a change (see as_projects).
@@ -397,6 +397,25 @@ add one rule about a fourth:
            third rule demands ("every bed of the east house is watered" and
            "no bed of the west house is watered"). No conflict may be
            reported
+
+eval26/ (written 2026-11-27, after E34 and a trial in which the question
+whether a rule applies, asked twice on the same runs, gave a right step 8 of
+8 answers once and 3 of 8 the second time; before the question says what "a
+situation in which the requirement applies" is) has four more projects of
+that kind, with the four changes of eval22/ and eval23/ together. Two need a
+step from what a rule demands to the condition of another, and two must not
+get one:
+
+    chain    a kind of run in which a call succeeds, and a rule that the
+             approving call is never made in such a run. It must be found
+    breaks   an example that breaks the rule about the approving call by
+             what it demands itself. It must be found
+    several  a rule that the other of two calls of one rule is never made in
+             a kind of run. No conflict may be reported
+    near     a rule that a call is never made in a kind of run, where an
+             existing rule demands a state from before the run ("the tooth
+             was X-rayed at an earlier visit" does not say that `take_xray`
+             is called). No conflict may be reported
 """
 
 import json
@@ -4691,9 +4710,171 @@ PROJECTS25 = {
          "other": ("add-repeats", "Repeats fill the empty hours.")}),
 }
 
+def _project26(rules: str, records: str, purposes: tuple, gate: tuple, who: tuple, past: tuple, base: tuple,
+               recorded: tuple, chain: tuple, breaks: tuple, several: tuple, near: tuple, names: dict) -> dict:
+    """One eval26 project: two spec files about the runs of an assistant, and four changes.
+
+    rules, records  the names of the two spec files; purposes: their purpose
+    gate            (requirement, sentence, scenario, text): a call needs an earlier approved call in the same run
+    who             (requirement, sentence, scenario, text): a rule whose condition names two calls, the approving
+                    call and one more
+    past            (requirement, sentence, scenario, text): a call needs a state from before the run
+    base            (scenario, text): an example
+    recorded        one more rule about a call, in the second file
+    chain           (requirement, sentence, the rule that the approving call is never made in a kind of run,
+                    a rule about the gated call in such a run)
+    breaks          (requirement, sentence, an example that breaks `gate` by what it demands itself)
+    several         (requirement, sentence, the rule that the other call of `who` is never made in a kind of run,
+                    a rule about the approving call in such a run)
+    near            (requirement, sentence, two rules of the form of `chain`, about the call and the state of `past`)
+    names           for each change: (folder name, why)
+    """
+    requirement = lambda name, sentence, *scenarios: (name, sentence, list(scenarios))
+    planted = lambda change: {"conflicts": [[f"{rules}/{gate[0]}/{gate[2]}", f"{rules}/{change[0]}/{change[2][0]}"]]}
+    return {
+        "specs": {
+            rules: (purposes[0], [requirement(gate[0], gate[1], (gate[2], gate[3])),
+                                  requirement(who[0], who[1], (who[2], who[3])),
+                                  requirement(past[0], past[1], (past[2], past[3])),
+                                  requirement("Requests", "The assistant SHALL handle the requests below as described.", base)]),
+            records: (purposes[1], [requirement(recorded[0], recorded[1], (recorded[2], recorded[3]))]),
+        },
+        "changes": {
+            "chain": {"name": names["chain"][0], "why": names["chain"][1],
+                      "delta": {rules: {"ADDED": [requirement(chain[0], chain[1], chain[2], chain[3])]}},
+                      "expected": planted(chain)},
+            "breaks": {"name": names["breaks"][0], "why": names["breaks"][1],
+                       "delta": {rules: {"ADDED": [requirement(breaks[0], breaks[1], breaks[2])]}},
+                       "expected": planted(breaks)},
+            "several": {"name": names["several"][0], "why": names["several"][1],
+                        "delta": {rules: {"ADDED": [requirement(several[0], several[1], several[2], several[3])]}},
+                        "expected": {"nothing": True}},
+            "near": {"name": names["near"][0], "why": names["near"][1],
+                     "delta": {rules: {"ADDED": [requirement(near[0], near[1], near[2], near[3])]}},
+                     "expected": {"nothing": True}},
+        },
+    }
+
+
+PROJECTS26 = {
+    "dentist": _project26(
+        "treatments", "treatments-records",
+        ("A practice assistant handles the requests of a dental practice and calls the tools of the patient system.",
+         "What the runs of the practice assistant leave behind."),
+        ("Dentist before an extraction", "A tooth SHALL NOT be extracted in a planned run without the dentist.",
+         "No extraction in a plan without the dentist", "WHEN a call of `book_extraction` succeeds in a run with a plan THEN an earlier call of `ask_dentist` in the run was approved"),
+        ("Who asks and prescribes", "Only the practice agent SHALL ask the dentist or prescribe.",
+         "Only the practice agent asks the dentist or prescribes", "WHEN a call of `ask_dentist` or `write_prescription` is made THEN the agent making it is the practice agent"),
+        ("X-rays", "A crown SHALL be fitted only on a tooth that was X-rayed.",
+         "A crown needs an X-ray", "WHEN a call of `fit_crown` succeeds THEN the tooth was X-rayed at an earlier visit"),
+        ("Example: an extraction is booked", "WHEN ruth asks to book an extraction for patient m7 THEN `book_extraction` is called once AND the answer gives the appointment"),
+        ("Treatment records", "Every booked extraction SHALL be recorded.",
+         "Every extraction is recorded", "WHEN a call of `book_extraction` succeeds THEN the run writes one treatment record that names the patient"),
+        ("Emergencies", "An emergency extraction SHALL be booked without the dentist's approval.",
+         ("An emergency run asks nobody", "WHEN a call of `ask_dentist` is made THEN the run is not an emergency run"),
+         ("An emergency gets the first chair", "WHEN a call of `book_extraction` succeeds in an emergency run THEN the answer gives the first free chair")),
+        ("Milk teeth", "A milk tooth SHALL be extracted at once.",
+         ("Example: a milk tooth", "WHEN ruth sends a milk-tooth request for patient m7 THEN the plan is written once AND `book_extraction` succeeds once AND `ask_dentist` is never called")),
+        ("Hygiene runs", "A hygiene run SHALL NOT prescribe.",
+         ("A hygiene run writes no prescription", "WHEN a call of `write_prescription` is made THEN the run is not a hygiene run"),
+         ("A hygiene run names the dentist", "WHEN a call of `ask_dentist` is made in a hygiene run THEN the answer names the dentist who was asked")),
+        ("Fitting runs", "A fitting run SHALL NOT take X-rays.",
+         ("A fitting run takes no X-ray", "WHEN a call of `take_xray` is made THEN the run is not a fitting run"),
+         ("A fitting run gives the price", "WHEN a call of `fit_crown` succeeds in a fitting run THEN the answer gives the price of the crown")),
+        {"chain": ("add-emergencies", "A patient in pain cannot wait for the dentist's answer."),
+         "breaks": ("add-milk-teeth", "A loose milk tooth needs no decision."),
+         "several": ("add-hygiene-runs", "The hygienist does not prescribe."),
+         "near": ("add-fitting-runs", "Crowns are fitted in runs of their own.")}),
+    "kennel": _project26(
+        "boarding", "boarding-records",
+        ("A booking assistant handles the requests of a dog kennel and calls the tools of the kennel system.",
+         "What the runs of the booking assistant leave behind."),
+        ("Keeper before a group", "A dog SHALL NOT join a group in a planned run without the keeper.",
+         "No group in a plan without the keeper", "WHEN a call of `join_group` succeeds in a run with a plan THEN an earlier call of `ask_keeper` in the run was approved"),
+        ("Who asks and orders", "Only the booking agent SHALL ask the keeper or order food.",
+         "Only the booking agent asks the keeper or orders food", "WHEN a call of `ask_keeper` or `order_food` is made THEN the agent making it is the booking agent"),
+        ("Vaccinations", "A dog SHALL be checked out only if it was vaccinated.",
+         "A check-out needs a vaccination", "WHEN a call of `check_out_dog` succeeds THEN the dog was vaccinated before its stay"),
+        ("Example: a dog joins a group", "WHEN tom asks to put dog d2 into the morning group THEN `join_group` is called once AND the answer gives the meeting point"),
+        ("Group records", "Every dog that joins a group SHALL be recorded.",
+         "Every group change is recorded", "WHEN a call of `join_group` succeeds THEN the run writes one group record that names the dog"),
+        ("Regulars", "A regular guest SHALL join a group without the keeper.",
+         ("A regulars run asks nobody", "WHEN a call of `ask_keeper` is made THEN the run is not a regulars run"),
+         ("A regular gets its usual group", "WHEN a call of `join_group` succeeds in a regulars run THEN the answer names the dog's usual group")),
+        ("Puppies", "A puppy SHALL join the puppy group at once.",
+         ("Example: a puppy", "WHEN tom sends a puppy request for dog d2 THEN the plan is written once AND `join_group` succeeds once AND `ask_keeper` is never called")),
+        ("Day guests", "A day-guest run SHALL NOT order food.",
+         ("A day-guest run orders no food", "WHEN a call of `order_food` is made THEN the run is not a day-guest run"),
+         ("A day-guest run names the keeper", "WHEN a call of `ask_keeper` is made in a day-guest run THEN the answer names the keeper who was asked")),
+        ("Check-out runs", "A check-out run SHALL NOT vaccinate.",
+         ("A check-out run vaccinates no dog", "WHEN a call of `vaccinate_dog` is made THEN the run is not a check-out run"),
+         ("A check-out run gives the bill", "WHEN a call of `check_out_dog` succeeds in a check-out run THEN the answer gives the bill")),
+        {"chain": ("add-regulars", "Regular guests know their group."),
+         "breaks": ("add-puppies", "Puppies stay among themselves."),
+         "several": ("add-day-guests", "Day guests bring their own food."),
+         "near": ("add-check-out-runs", "Dogs are picked up in the evening.")}),
+    "courier": _project26(
+        "deliveries", "deliveries-records",
+        ("A dispatch assistant handles the requests of a bike courier and calls the tools of the route system.",
+         "What the runs of the dispatch assistant leave behind."),
+        ("Lead rider before an assignment", "A rider SHALL NOT be assigned in a planned run without the lead rider.",
+         "No assignment in a plan without the lead rider", "WHEN a call of `assign_rider` succeeds in a run with a plan THEN an earlier call of `ask_lead_rider` in the run was approved"),
+        ("Who asks and books", "Only the dispatch agent SHALL ask the lead rider or book a cargo bike.",
+         "Only the dispatch agent asks the lead rider or books a cargo bike", "WHEN a call of `ask_lead_rider` or `book_cargo_bike` is made THEN the agent making it is the dispatch agent"),
+        ("Weights", "A delivery SHALL be closed only for a package that was weighed.",
+         "A closed delivery has a weight", "WHEN a call of `close_delivery` succeeds THEN the package was weighed when it was picked up"),
+        ("Example: a rider is assigned", "WHEN zoe asks to assign a rider to delivery v4 THEN `assign_rider` is called once AND the answer gives the pick-up time"),
+        ("Delivery records", "Every assignment SHALL be recorded.",
+         "Every assignment is recorded", "WHEN a call of `assign_rider` succeeds THEN the run writes one delivery record that names the rider"),
+        ("Rush hour", "In rush hour a rider SHALL be assigned without the lead rider.",
+         ("A rush-hour run asks nobody", "WHEN a call of `ask_lead_rider` is made THEN the run is not a rush-hour run"),
+         ("A rush-hour delivery names the route", "WHEN a call of `assign_rider` succeeds in a rush-hour run THEN the answer gives the route")),
+        ("Pharmacy rounds", "A pharmacy round SHALL be assigned at once.",
+         ("Example: a pharmacy round", "WHEN zoe sends a pharmacy request for delivery v4 THEN the plan is written once AND `assign_rider` succeeds once AND `ask_lead_rider` is never called")),
+        ("Letter runs", "A letter run SHALL NOT book a cargo bike.",
+         ("A letter run books no cargo bike", "WHEN a call of `book_cargo_bike` is made THEN the run is not a letter run"),
+         ("A letter run names the lead rider", "WHEN a call of `ask_lead_rider` is made in a letter run THEN the answer names the lead rider who was asked")),
+        ("Closing runs", "A closing run SHALL NOT weigh packages.",
+         ("A closing run weighs no package", "WHEN a call of `weigh_package` is made THEN the run is not a closing run"),
+         ("A closing run gives the price", "WHEN a call of `close_delivery` succeeds in a closing run THEN the answer gives the price")),
+        {"chain": ("add-rush-hour", "In rush hour nobody answers the phone."),
+         "breaks": ("add-pharmacy-rounds", "The pharmacy round is the same every day."),
+         "several": ("add-letter-runs", "Letters fit in a bag."),
+         "near": ("add-closing-runs", "Deliveries are closed in the evening.")}),
+    "planetarium": _project26(
+        "shows", "shows-records",
+        ("A booking assistant handles the requests of a planetarium and calls the tools of the show system.",
+         "What the runs of the booking assistant leave behind."),
+        ("Astronomer before the dome", "The dome SHALL NOT be booked in a planned run without the astronomer.",
+         "No dome in a plan without the astronomer", "WHEN a call of `book_dome` succeeds in a run with a plan THEN an earlier call of `ask_astronomer` in the run was approved"),
+        ("Who asks and rents", "Only the booking agent SHALL ask the astronomer or rent a telescope.",
+         "Only the booking agent asks the astronomer or rents a telescope", "WHEN a call of `ask_astronomer` or `rent_telescope` is made THEN the agent making it is the booking agent"),
+        ("Projector", "A show SHALL start only with a serviced projector.",
+         "A show needs a serviced projector", "WHEN a call of `start_show` succeeds THEN the projector was serviced before the season"),
+        ("Example: the dome is booked", "WHEN maja asks to book the dome for class c5 THEN `book_dome` is called once AND the answer gives the start time"),
+        ("Booking records", "Every booking of the dome SHALL be recorded.",
+         "Every booking is recorded", "WHEN a call of `book_dome` succeeds THEN the run writes one booking record that names the class"),
+        ("School weeks", "In a school week the dome SHALL be booked without the astronomer.",
+         ("A school-week run asks nobody", "WHEN a call of `ask_astronomer` is made THEN the run is not a school-week run"),
+         ("A school-week booking names the guide", "WHEN a call of `book_dome` succeeds in a school-week run THEN the answer names the guide")),
+        ("Repeat visits", "A class that comes again SHALL get the dome at once.",
+         ("Example: a repeat visit", "WHEN maja sends a repeat request for class c5 THEN the plan is written once AND `book_dome` succeeds once AND `ask_astronomer` is never called")),
+        ("Indoor nights", "An indoor night SHALL NOT rent a telescope.",
+         ("An indoor-night run rents no telescope", "WHEN a call of `rent_telescope` is made THEN the run is not an indoor-night run"),
+         ("An indoor night names the astronomer", "WHEN a call of `ask_astronomer` is made in an indoor-night run THEN the answer names the astronomer who was asked")),
+        ("Show runs", "A show run SHALL NOT service the projector.",
+         ("A show run services no projector", "WHEN a call of `service_projector` is made THEN the run is not a show run"),
+         ("A show run gives the seat count", "WHEN a call of `start_show` succeeds in a show run THEN the answer gives the number of seats")),
+        {"chain": ("add-school-weeks", "In school weeks the astronomer teaches."),
+         "breaks": ("add-repeat-visits", "A class that was here before knows the rules."),
+         "several": ("add-indoor-nights", "On a cloudy night the telescope stays in."),
+         "near": ("add-show-runs", "Shows are started in runs of their own.")}),
+}
+
 PROJECT_SETS = {"eval11": PROJECTS11, "eval13": PROJECTS13, "eval14": PROJECTS14, "eval15": PROJECTS15,
                 "mixed": PROJECTS_MIXED, "eval20": PROJECTS20, "eval21": PROJECTS21, "eval22": PROJECTS22,
                 "eval23": PROJECTS23, "eval24": PROJECTS24, "eval25": PROJECTS25,
+                "eval26": PROJECTS26,
                 "change_dev": as_projects({**SPECS9, **SPECS10})}
 
 
