@@ -5045,6 +5045,83 @@ the same words are one rule. `eval24/` first.
 
 ---
 
+## E33 — Held-out `eval24/`: a rule that the read step returns twice is one rule (2026-11-27)
+
+**Question.** Does step 49 (plan.md 2.6, T45) keep a run going when a
+scenario comes back once for each of its events, on specs it was not built
+on, and is that rule then in the checks?
+
+**The set** (`eval24/`, written and committed before the code). Four more
+projects about an assistant that calls tools: an optician, a zoo, a
+self-storage site, a tutoring school. Each has the rule that a call needs an
+earlier approved call, a rule whose condition names two calls ("WHEN a call
+of `order_lenses` or `order_frame` is made THEN the run writes an audit
+entry"), and one whose condition names three ("WHEN a call of
+`send_reminder`, `send_offer` or `send_survey` is made THEN the customer has
+agreed to messages"). Three changes each:
+
+| Change | What it adds | Expected |
+|---|---|---|
+| direct | "WHEN a call of `order_frame` is made in a warranty run THEN the run writes no audit entry": the opposite of the rule about two calls, for its second call | that conflict. The rule about two calls must be in the checks, and for both calls |
+| breaks | as in `eval22/` and `eval23/`: an example that breaks the first rule by what it demands itself | that conflict |
+| quiet | "WHEN a call of `send_survey` is made THEN the run is not a complaint run", and a rule about the approving call in such a run | no conflict |
+
+**The rule, set before the build** (plan.md 2.6). Fewer runs stop than with
+the code before; the planted conflicts are found in more of the 24 runs that
+have one, a run that stops counting as not found; and the "quiet" changes
+have a conflict about them in no larger share of the runs that finish.
+
+**Result.** 12 changes, 3 runs each, with the code before
+(`E33_eval24_before`) and with the code of step 49 (`E33_eval24`): two runs
+of the whole pipeline, since the read step comes first.
+
+| | Code before | Step 49 |
+|---|---|---|
+| runs that finished | 25 of 36 | 36 of 36 |
+| "direct" conflicts found | 8 of 12 | 12 of 12 |
+| "breaks" conflicts found, and not doubtful | 6 of 12 | 11 of 12 |
+| "quiet" changes with a conflict about them | 0 of 11 | 0 of 12 |
+| other conflicts about a change | 0 | 0 |
+
+- **The rule is met on every point.** With the code before, 11 runs stopped
+  (6 "breaks", 4 "direct", 1 "quiet"), each time for both labels: the rule
+  about two calls and the rule about three had come back more than once.
+  Every planted conflict of a run that finished was found, with either
+  code.
+- **The rule that came back twice is in the checks for both calls.** From a
+  run of the optician's "direct" change:
+
+  ```
+  R2  no trigger                   (or order_lenses_called order_frame_called) => audit_entry_written
+  R5  trigger order_frame_called   (and order_frame_called run_is_warranty) => (not audit_entry_written)
+  conflict R2, R5 in a warranty run in which order_frame is called, from the rules alone
+  ```
+
+  In 8 of the 36 new runs the saved model shows the repair: these two rules
+  have no single trigger. In the others each came back once, or its copies
+  named one event.
+- All 12 "direct" conflicts are proven from the rules alone.
+- The one "breaks" conflict that is doubtful: the example says "the plan is
+  written once", the rule is about "a run with a plan", and the question of
+  step 46 did not connect the two in that run (3 of 8 answers).
+- **The "quiet" changes are not quiet for gaps, and that is the set's
+  doing.** Their second rule, "WHEN a call of `ask_optician` is made in a
+  complaint run THEN the answer names the optician", is the only rule that
+  reacts to that call, so a call outside a complaint run is a gap by the
+  tool's definition: reported about the change in 11 of 11 and 12 of 12
+  runs. The "direct" changes get the same kind in every run, doubted by an
+  assumed fact in all but 2. `eval22/` and `eval23/` did not have this,
+  because there another rule covered the call. The set said "nothing may
+  be reported"; that held for conflicts only.
+- A change costs 61 requests on these projects.
+
+**Decision.** Step 49 stays. All twenty-four sets are development data now.
+On the real project it changes nothing: the 4 parts that could not be
+formalized there lost their labels altogether, not for a rule that came
+back twice (T41).
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

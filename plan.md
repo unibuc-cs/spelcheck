@@ -472,7 +472,7 @@ that should have none. If the prompt of step 46 gives no conflict to a
 "several" change either, the set does not test the change, and that is
 said.
 
-### 2.6 Step 49: a scenario that reacts to either of two happenings (built; `eval24/` not run yet)
+### 2.6 Step 49: a scenario that reacts to either of two happenings (built; held-out result in E33)
 
 11 of the 36 runs of `eval23/` stopped before the checks (E32): the read
 step had returned the scenario "WHEN a call of `ask_vet` or `order_medicine`
@@ -515,6 +515,15 @@ the 24 runs that have one (a run that stops counts as not found), and the
 "quiet" changes have a conflict about them in no larger share of the runs
 that finish. If no run stops with the code before, the set does not test the
 change, and that is said.
+
+**The result** (E33, research_log.md). The rule is met on every point. With
+the code before, 25 of 36 runs finish, with step 49 all 36. The conflict
+with the rule about two calls is found in 8 and in 12 of 12 runs, the
+example that breaks a rule in 6 and in 11 of 12, and no "quiet" change has a
+conflict about it, either way. Step 49 stays. The "quiet" changes each get
+a gap about them, with either code: their second rule is the only one about
+its call, and covers one kind of run. That is how the set was written, and
+"nothing may be reported" held for conflicts only.
 
 Small things that are open:
 
