@@ -857,11 +857,12 @@ of the question that failed:
 
 In the hotel project, "the guest's card was verified at check-in" does not
 say that `verify_card` is called in this run: no "yes" in 10 of 12 runs, at
-most 4 of 8 in the others, and nothing is reported. The same question lifts
-a doubt from an example. "... THEN the
-plan is written once AND `check_in_guest` succeeds once AND `ask_manager` is
-never called" breaks R1, but "succeeds once" became a count and R1 is about
-"a call succeeds", so the example did not make R1 apply and its conflict was
+most 4 of 8 in the others, and nothing is reported.
+
+The same question lifts a doubt from an example. "... THEN the plan is
+written once AND `check_in_guest` succeeds once AND `ask_manager` is never
+called" breaks R1, but "succeeds once" became a count and R1 is about "a
+call succeeds", so the example did not make R1 apply and its conflict was
 marked doubtful. Asked with the example's words, the model says that it
 does. The question is asked at most 40 times for a document, and for a
 change only of pairs with one of its rules.
@@ -1375,7 +1376,7 @@ Some notes on these numbers:
 | The question about two conditions also doubts real conflicts | in the order example above, a run made today marks R1 against R5 as doubtful: "An order that has been canceled and refunded cannot currently be an active submitted order with available inventory." The Kiro blog reports that conflict. And it calls two flags of one command impossible ("--default" and "--no-default"), where what the tool does with both is a fair question. A doubtful conflict stays in the report, with the sentence it is doubted for |
 | The second read adds symbols that are about one rule | `openspec_dir_created` next to `openspec_dir_exists`. The rule can be written then, but it clashes with another rule only through the assumed facts. A rule with no usable translation at all is not read again |
 | A voted translation can say less than the rule | when the eight translations differ only in their symbols, the rule is kept with what more than half of them entail. "Display success message with archived name and list of updated specs" became "the success message is displayed". `formal.json` marks such a rule (`"voted": "7/7"`), the report does not. A split that the vote settles is no longer a question to the author: on `eval18/` that happened to 5 of 36 planted ambiguities, and 1 was still found |
-| With `--whole-run`, the question about two outcomes is asked of many more pairs, and errs more | it is asked of rules that react to two different happenings too. A wrong answer ("A run cannot have a maximum tool call count of 40 if no tools were called") gives a conflict between two unrelated rules. On TestingTheAgents every change got 1 to 3 such conflicts against the application's specs, each in one part. In a document of 30 rules the limit of 40 pairs cuts off most of about 175 |
+| With `--whole-run`, the question about two outcomes is asked of many more pairs, and errs more | it is asked of rules that react to two different happenings too. A wrong answer ("A run cannot have a maximum tool call count of 40 if no tools were called") gives a conflict between two unrelated rules. On TestingTheAgents every change got 1 to 6 such conflicts against the application's specs, each in one part, and mostly other ones in each run. In a document of 30 rules the limit of 40 pairs cuts off most of about 175 |
 | The question whether a rule applies is asked 40 times for a document at most | on our sets that is enough. In a project in parts it is not: on the four changes of TestingTheAgents, 2,008 of 5,004 questions were left out. A chain of three rules is found only if its pair is among those asked about, and only across the spec files of one part |
 | On real specs the question whether a rule applies still takes wrong steps | 3 of the 30 it said yes to on TestingTheAgents. Two take one refusal for another: "the job is refused", and the statement that the approver refused. One is about a statement marked FALSE: the model says that the fact is true, and then answers "yes". None of the three adds a conflict there. None on our own sets |
 | A scenario whose condition names two things can stop a run | "WHEN a call of `ask_vet` or `order_medicine` is made THEN ...": the read step sometimes returns it as two rules with one label, one for each call. A run in which a label is not kept is stopped with that message: 11 of 36 runs on `eval23/`, none on the three sets before it. In a project in parts such a part is left out and named in the report |

@@ -76,7 +76,7 @@ this order. The first is new, from the real project of an agent system
      first;
    - **the wrong answers to the question about two outcomes**, which with a
      whole run as the situation is asked of two unrelated happenings too.
-     Every change of the real project got 1 to 3 conflicts from them, and
+     Every change of the real project got 1 to 6 conflicts from them, and
      up to 9 more next to the specs of its test harness;
    - **an attribute of one call** ("the token it was made with") becomes an
      attribute of the run, and two rules about two calls clash;
