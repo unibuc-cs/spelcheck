@@ -1,6 +1,6 @@
-"""make_eval.py: writes the evaluation sets eval/ to eval21/, size/, size2/ and mixed/. No LLM, no GPU.
+"""make_eval.py: writes the evaluation sets eval/ to eval22/, size/, size2/ and mixed/. No LLM, no GPU.
 
-    python -m experiments.make_eval eval21     (only the sets named; all if none)
+    python -m experiments.make_eval eval22     (only the sets named; all if none)
 
 change_dev/ is development data for the change check: the OpenSpec-format
 specs of eval9/ and eval10/ as projects with a change (see as_projects).
@@ -306,6 +306,30 @@ is lent: WHEN mira asks to borrow book b12 THEN `lend_book` is called once
     breaks   an example whose own outcome makes the rule about the call
              apply, and breaks it ("... THEN `lend_book` succeeds once AND
              `check_card` is never called"): that conflict must be found
+
+eval22/ (written 2026-11-27, after E30 and the tool's own runs on a real
+project of an agent system, before the question whether what one rule
+demands makes another rule apply) has four more projects of that kind. Each
+has two rules about calls: one demands that an earlier call in the run was
+approved ("WHEN a call of `check_in_guest` succeeds in a run with a plan THEN
+an earlier call of `ask_manager` in the run was approved"), the other a
+state from before the run ("WHEN a call of `refund_stay` succeeds THEN the
+guest's card was verified at check-in"). Three changes each:
+
+    chain   a kind of run in which the first call succeeds, and a rule that
+            the approving call is never made in such a run, said from the
+            side of the call ("WHEN a call of `ask_manager` is made THEN the
+            run is not a late-arrival run"). No two rules clash by
+            themselves: the conflict needs that an approved call is a call
+            that was made. It must be found
+    breaks  an example that breaks the first rule by what it demands itself
+            ("... THEN the plan is written once AND `check_in_guest` succeeds
+            once AND `ask_manager` is never called"). It must be found
+    near    the same form as "chain", for the second rule: a kind of run in
+            which that call succeeds, and a rule that the verifying call is
+            never made in such a run. Nothing may be reported: "the card was
+            verified at check-in" does not say that `verify_card` is called
+            in this run
 """
 
 import json
@@ -4075,8 +4099,136 @@ PROJECTS21 = {
          "breaks": ("add-frost-alarms", "Frost does not wait for a soil check.")}),
 }
 
+def _project22(rules: str, records: str, purposes: tuple, gate: tuple, past: tuple, base: tuple, recorded: tuple,
+               chain: tuple, breaks: tuple, near: tuple, names: dict) -> dict:
+    """One eval22 project: two spec files about the runs of an assistant, and three changes.
+
+    rules, records  the names of the two spec files; purposes: their purpose
+    gate            (requirement, sentence, scenario, text): a call needs an earlier approved call in the same run
+    past            (requirement, sentence, scenario, text): a call needs a state from before the run
+    base            (scenario, text): an example
+    recorded        one more rule about a call, in the second file
+    chain           (requirement, sentence, the rule that the approving call is never made in a kind of run,
+                    a rule about the gated call in such a run)
+    breaks          (requirement, sentence, an example that breaks `gate` by what it demands itself)
+    near            (requirement, sentence, two rules of the form of `chain`, about the call and the state of `past`)
+    names           for each change: (folder name, why)
+    """
+    requirement = lambda name, sentence, *scenarios: (name, sentence, list(scenarios))
+    return {
+        "specs": {
+            rules: (purposes[0], [requirement(gate[0], gate[1], (gate[2], gate[3])),
+                                  requirement(past[0], past[1], (past[2], past[3])),
+                                  requirement("Requests", "The assistant SHALL handle the requests below as described.", base)]),
+            records: (purposes[1], [requirement(recorded[0], recorded[1], (recorded[2], recorded[3]))]),
+        },
+        "changes": {
+            "chain": {"name": names["chain"][0], "why": names["chain"][1],
+                      "delta": {rules: {"ADDED": [requirement(chain[0], chain[1], chain[2], chain[3])]}},
+                      "expected": {"conflicts": [[f"{rules}/{gate[0]}/{gate[2]}", f"{rules}/{chain[0]}/{chain[2][0]}"]]}},
+            "breaks": {"name": names["breaks"][0], "why": names["breaks"][1],
+                       "delta": {rules: {"ADDED": [requirement(breaks[0], breaks[1], breaks[2])]}},
+                       "expected": {"conflicts": [[f"{rules}/{gate[0]}/{gate[2]}", f"{rules}/{breaks[0]}/{breaks[2][0]}"]]}},
+            "near": {"name": names["near"][0], "why": names["near"][1],
+                     "delta": {rules: {"ADDED": [requirement(near[0], near[1], near[2], near[3])]}},
+                     "expected": {"nothing": True}},
+        },
+    }
+
+
+PROJECTS22 = {
+    "hotel": _project22(
+        "stays", "stays-records",
+        ("A front-desk assistant handles the requests of a hotel and calls the tools of the booking system.",
+         "What the runs of the front-desk assistant leave behind."),
+        ("Manager before a check-in", "A guest SHALL NOT be checked in in a planned run without the manager.",
+         "No check-in in a plan without the manager", "WHEN a call of `check_in_guest` succeeds in a run with a plan THEN an earlier call of `ask_manager` in the run was approved"),
+        ("Refunds", "A stay SHALL be refunded only to a verified card.",
+         "A refund goes to a verified card", "WHEN a call of `refund_stay` succeeds THEN the guest's card was verified at check-in"),
+        ("Example: a guest is checked in", "WHEN lea asks to check in guest g5 THEN `check_in_guest` is called once AND the answer gives the room number"),
+        ("Stay records", "Every check-in SHALL be recorded.",
+         "Every check-in is recorded", "WHEN a call of `check_in_guest` succeeds THEN the run writes one stay record that names the guest"),
+        ("Late arrivals", "A late arrival SHALL be checked in without the manager.",
+         ("A late-arrival run asks nobody", "WHEN a call of `ask_manager` is made THEN the run is not a late-arrival run"),
+         ("A late arrival gets the night code", "WHEN a call of `check_in_guest` succeeds in a late-arrival run THEN the answer gives the night code")),
+        ("Walk-in guests", "A walk-in guest SHALL be checked in at once.",
+         ("Example: a walk-in guest", "WHEN lea sends a walk-in request for guest g5 THEN the plan is written once AND `check_in_guest` succeeds once AND `ask_manager` is never called")),
+        ("Refund runs", "A refund run SHALL NOT verify cards.",
+         ("A refund run verifies no card", "WHEN a call of `verify_card` is made THEN the run is not a refund run"),
+         ("A refund run gives the amount", "WHEN a call of `refund_stay` succeeds in a refund run THEN the answer gives the refunded amount")),
+        {"chain": ("add-late-arrivals", "Guests arrive after the manager has gone home."),
+         "breaks": ("add-walk-in-guests", "Walk-in guests should not wait."),
+         "near": ("add-refund-runs", "Refunds are made in runs of their own.")}),
+    "tickets": _project22(
+        "sales", "sales-records",
+        ("A box-office assistant handles the requests of a theatre and calls the tools of the ticket system.",
+         "What the runs of the box-office assistant leave behind."),
+        ("Box office before a ticket", "A ticket SHALL NOT be issued in a planned run without the box office.",
+         "No ticket in a plan without the box office", "WHEN a call of `issue_ticket` succeeds in a run with a plan THEN an earlier call of `ask_box_office` in the run was approved"),
+        ("Refunds", "A ticket SHALL be refunded only if it was paid by card.",
+         "A refund needs a card payment", "WHEN a call of `refund_ticket` succeeds THEN the ticket was paid by card at the time of sale"),
+        ("Example: a ticket is issued", "WHEN ravi asks for a ticket to show s8 THEN `issue_ticket` is called once AND the answer gives the seat"),
+        ("Sale records", "Every sale SHALL be recorded.",
+         "Every sale is recorded", "WHEN a call of `issue_ticket` succeeds THEN the run writes one sale record that names the show"),
+        ("Last-minute tickets", "A last-minute ticket SHALL be issued without the box office.",
+         ("A last-minute run asks nobody", "WHEN a call of `ask_box_office` is made THEN the run is not a last-minute run"),
+         ("A last-minute ticket names the gate", "WHEN a call of `issue_ticket` succeeds in a last-minute run THEN the answer gives the gate number")),
+        ("Standing room", "A standing-room ticket SHALL be issued at once.",
+         ("Example: a standing ticket", "WHEN ravi sends a standing-room request for show s8 THEN the plan is written once AND `issue_ticket` succeeds once AND `ask_box_office` is never called")),
+        ("Refund runs", "A refund run SHALL NOT charge cards.",
+         ("A refund run charges no card", "WHEN a call of `charge_card` is made THEN the run is not a refund run"),
+         ("A refund run gives the amount", "WHEN a call of `refund_ticket` succeeds in a refund run THEN the answer gives the refunded amount")),
+        {"chain": ("add-last-minute-tickets", "Seats are free ten minutes before the show."),
+         "breaks": ("add-standing-room", "Standing room is sold at the door."),
+         "near": ("add-refund-runs", "Refunds are made in runs of their own.")}),
+    "rental": _project22(
+        "rentals", "rentals-records",
+        ("A rental assistant handles the requests of a car rental and calls the tools of the fleet system.",
+         "What the runs of the rental assistant leave behind."),
+        ("Desk before a hand-over", "A car SHALL NOT be handed over in a planned run without the desk.",
+         "No hand-over in a plan without the desk", "WHEN a call of `hand_over_car` succeeds in a run with a plan THEN an earlier call of `ask_desk` in the run was approved"),
+        ("Closing a rental", "A rental SHALL be closed only for a car that was inspected.",
+         "A closed rental had an inspection", "WHEN a call of `close_rental` succeeds THEN the car was inspected when it was handed over"),
+        ("Example: a car is handed over", "WHEN sofia asks to pick up car v2 THEN `hand_over_car` is called once AND the answer gives the parking bay"),
+        ("Rental records", "Every hand-over SHALL be recorded.",
+         "Every hand-over is recorded", "WHEN a call of `hand_over_car` succeeds THEN the run writes one rental record that names the car"),
+        ("After hours", "A car SHALL be handed over after hours without the desk.",
+         ("An after-hours run asks nobody", "WHEN a call of `ask_desk` is made THEN the run is not an after-hours run"),
+         ("After hours the key box is used", "WHEN a call of `hand_over_car` succeeds in an after-hours run THEN the answer gives the key-box code")),
+        ("Company cars", "A company car SHALL be handed over at once.",
+         ("Example: a company car", "WHEN sofia sends a company-account request for car v2 THEN the plan is written once AND `hand_over_car` succeeds once AND `ask_desk` is never called")),
+        ("Drop-box returns", "A drop-box run SHALL NOT inspect cars.",
+         ("A drop-box run inspects no car", "WHEN a call of `inspect_car` is made THEN the run is not a drop-box run"),
+         ("A drop-box run gives the price", "WHEN a call of `close_rental` succeeds in a drop-box run THEN the answer gives the final price")),
+        {"chain": ("add-after-hours", "Customers pick up cars at night."),
+         "breaks": ("add-company-cars", "Company customers have a contract."),
+         "near": ("add-drop-box-returns", "Cars are returned when the office is closed.")}),
+    "clinic": _project22(
+        "appointments", "appointments-records",
+        ("A clinic assistant handles the requests of patients and calls the tools of the appointment system.",
+         "What the runs of the clinic assistant leave behind."),
+        ("Doctor before a surgery", "A surgery SHALL NOT be booked in a planned run without the doctor.",
+         "No surgery in a plan without the doctor", "WHEN a call of `book_surgery` succeeds in a run with a plan THEN an earlier call of `ask_doctor` in the run was approved"),
+        ("Invoices", "An invoice SHALL be sent only to a patient who consented.",
+         "An invoice needs a consent", "WHEN a call of `send_invoice` succeeds THEN the patient signed the consent form at the first visit"),
+        ("Example: a surgery is booked", "WHEN jonas asks to book surgery for patient q3 THEN `book_surgery` is called once AND the answer gives the date"),
+        ("Booking records", "Every booked surgery SHALL be recorded.",
+         "Every booked surgery is recorded", "WHEN a call of `book_surgery` succeeds THEN the run writes one booking record that names the patient"),
+        ("Urgent slots", "An urgent slot SHALL be booked without the doctor.",
+         ("An urgent-slot run asks nobody", "WHEN a call of `ask_doctor` is made THEN the run is not an urgent-slot run"),
+         ("An urgent slot names the theatre", "WHEN a call of `book_surgery` succeeds in an urgent-slot run THEN the answer gives the theatre number")),
+        ("Follow-up surgeries", "A follow-up surgery SHALL be booked at once.",
+         ("Example: a follow-up surgery", "WHEN jonas sends a follow-up request for patient q3 THEN the plan is written once AND `book_surgery` succeeds once AND `ask_doctor` is never called")),
+        ("Billing runs", "A billing run SHALL NOT ask for consent.",
+         ("A billing run asks for no consent", "WHEN a call of `request_consent` is made THEN the run is not a billing run"),
+         ("A billing run gives the invoice number", "WHEN a call of `send_invoice` succeeds in a billing run THEN the answer gives the invoice number")),
+        {"chain": ("add-urgent-slots", "Some surgeries cannot wait for the doctor's round."),
+         "breaks": ("add-follow-up-surgeries", "A follow-up was already agreed."),
+         "near": ("add-billing-runs", "Invoices are sent in runs of their own.")}),
+}
+
 PROJECT_SETS = {"eval11": PROJECTS11, "eval13": PROJECTS13, "eval14": PROJECTS14, "eval15": PROJECTS15,
-                "mixed": PROJECTS_MIXED, "eval20": PROJECTS20, "eval21": PROJECTS21,
+                "mixed": PROJECTS_MIXED, "eval20": PROJECTS20, "eval21": PROJECTS21, "eval22": PROJECTS22,
                 "change_dev": as_projects({**SPECS9, **SPECS10})}
 
 

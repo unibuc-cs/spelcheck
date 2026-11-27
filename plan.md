@@ -285,6 +285,63 @@ that this makes "a call succeeds" true. Two examples of one case with
 opposite outcomes are found in 5 of 12 runs, mark or no mark: "called once"
 and "never called" became two symbols that can hold together.
 
+### 2.3 The plan for step 46: does what one rule demands make another rule apply? (not built yet)
+
+One of the four reasons why a change of TestingTheAgents cannot be built is
+a chain of three rules (research.md 4.9). A run of the new workflow takes a
+page down in a plan. An existing rule then demands that an earlier request
+for approval was approved. And the change says that a request for approval
+is never made in such a run. No two of the three clash by themselves. What
+is missing is one step: an approved request is a request that was made. The
+link step (5.3) and the question about two outcomes (5.7, check 4) connect
+what two rules demand. Nothing connects what one rule demands with the
+condition of another.
+
+**Check 6 of step 6: would this rule apply too?**
+
+1. Our code and Z3 pick the pairs. A pair (*a*, *b*) is asked about when,
+   where *a* applies, *b* cannot apply as well without a clash:
+
+   ```
+   a applies, alone or with one more rule c    A_a and A_c and the rules and the facts            satisfiable
+   b cannot apply there                        A_a and A_c and A_b and the rules and the facts    unsatisfiable
+   though the conditions can hold together     A_a and A_c and A_b and the facts                  satisfiable
+   ```
+
+   and when what *a* demands is one definite state, the condition of *b* is
+   one too, and a part of that condition is neither given nor excluded by
+   what *a* demands.
+2. For each such part *p* of the condition of *b*, a yes/no fact, the model
+   is asked the question of check 4, eight times: "Statement A: what *a*
+   demands. Statement B: *p* is not the case. Can A and B both hold?" It sees
+   no requirement.
+3. More than half "impossible" is an assumed fact, `C_a => p`, with
+   `between: [a, b]` and `about: applies`. It is used like the others. The
+   second search of 5.2 then finds the conflict of the chain, "if the
+   assumed facts hold". And an example whose demand makes a rule apply
+   through such a fact describes the whole situation (5.2), so its conflict
+   is not doubtful.
+
+It is asked only where the answer can add a finding or lift a doubt, at most
+40 times for a document, with the rules of a change first.
+
+**How it is tested.** `eval22/` (make_eval.py): four more projects about an
+assistant that calls tools. Each has a rule that a call needs an earlier
+approved call in the same run, and a rule that another call needs a state
+from before the run. Three changes each: a chain as above, where the rule
+of the change is said from the side of the approving call (it must be
+found); an example that breaks the first rule by what it demands itself (it
+must be found, and not be doubtful); and the form of the chain for the
+second rule, where "the card was verified at check-in" does not say that
+`verify_card` is called in this run (nothing may be reported).
+
+**The rule, set now.** Check 6 stays if on `eval22/`, with doubtful
+conflicts set aside and the same runs scored with and without its facts,
+the "chain" conflicts are found more often, the "breaks" conflicts no less
+often, and the "near" changes have a conflict about them no more often; and
+if, asked on the saved runs of `eval20/` and `eval21/`, it loses no planted
+conflict there and gives no conflict to a change that should have none.
+
 Small things that are open:
 
 - **Long documents** (E14). A spec of 100 requirements works: its read answer
