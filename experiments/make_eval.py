@@ -1,6 +1,6 @@
-"""make_eval.py: writes the evaluation sets eval/ to eval22/, size/, size2/ and mixed/. No LLM, no GPU.
+"""make_eval.py: writes the evaluation sets eval/ to eval23/, size/, size2/ and mixed/. No LLM, no GPU.
 
-    python -m experiments.make_eval eval22     (only the sets named; all if none)
+    python -m experiments.make_eval eval23     (only the sets named; all if none)
 
 change_dev/ is development data for the change check: the OpenSpec-format
 specs of eval9/ and eval10/ as projects with a change (see as_projects).
@@ -330,6 +330,27 @@ guest's card was verified at check-in"). Three changes each:
             never made in such a run. Nothing may be reported: "the card was
             verified at check-in" does not say that `verify_card` is called
             in this run
+
+eval23/ (written 2026-11-27, after E31 and a run of the tool on the real
+project from scratch, before the question whether a rule applies is told
+about rules that apply in several cases) has four more projects of that
+kind. Each has the rule that a call needs an earlier approved call, and a
+rule whose condition names two calls ("WHEN a call of `ask_vet` or
+`order_medicine` is made THEN the agent making it is the reception agent").
+Three changes each:
+
+    chain    as in eval22/: a kind of run in which the first call succeeds,
+             and a rule that the approving call is never made in such a run.
+             It must be found, and the rule about two calls must not be set
+             against the new rule
+    breaks   as in eval22/: an example that breaks the first rule by what it
+             demands itself. It must be found
+    several  a rule that the OTHER of the two calls is never made in a kind
+             of run ("WHEN a call of `order_medicine` is made THEN the run
+             is not a check-up run"), and a rule about the approving call
+             in such a run. Nothing may be reported: the rule about two
+             calls applies when either is made, so it does not say that
+             `order_medicine` is called
 """
 
 import json
@@ -4227,8 +4248,139 @@ PROJECTS22 = {
          "near": ("add-billing-runs", "Invoices are sent in runs of their own.")}),
 }
 
+def _project23(rules: str, records: str, purposes: tuple, gate: tuple, who: tuple, base: tuple, recorded: tuple,
+               chain: tuple, breaks: tuple, several: tuple, names: dict) -> dict:
+    """One eval23 project: two spec files about the runs of an assistant, and three changes.
+
+    rules, records  the names of the two spec files; purposes: their purpose
+    gate            (requirement, sentence, scenario, text): a call needs an earlier approved call in the same run
+    who             (requirement, sentence, scenario, text): a rule whose condition names two calls, the approving
+                    call and one more
+    base            (scenario, text): an example
+    recorded        one more rule about a call, in the second file
+    chain           (requirement, sentence, the rule that the approving call is never made in a kind of run,
+                    a rule about the gated call in such a run)
+    breaks          (requirement, sentence, an example that breaks `gate` by what it demands itself)
+    several         (requirement, sentence, the rule that the other call of `who` is never made in a kind of run,
+                    a rule about the approving call in such a run)
+    names           for each change: (folder name, why)
+    """
+    requirement = lambda name, sentence, *scenarios: (name, sentence, list(scenarios))
+    return {
+        "specs": {
+            rules: (purposes[0], [requirement(gate[0], gate[1], (gate[2], gate[3])),
+                                  requirement(who[0], who[1], (who[2], who[3])),
+                                  requirement("Requests", "The assistant SHALL handle the requests below as described.", base)]),
+            records: (purposes[1], [requirement(recorded[0], recorded[1], (recorded[2], recorded[3]))]),
+        },
+        "changes": {
+            "chain": {"name": names["chain"][0], "why": names["chain"][1],
+                      "delta": {rules: {"ADDED": [requirement(chain[0], chain[1], chain[2], chain[3])]}},
+                      "expected": {"conflicts": [[f"{rules}/{gate[0]}/{gate[2]}", f"{rules}/{chain[0]}/{chain[2][0]}"]]}},
+            "breaks": {"name": names["breaks"][0], "why": names["breaks"][1],
+                       "delta": {rules: {"ADDED": [requirement(breaks[0], breaks[1], breaks[2])]}},
+                       "expected": {"conflicts": [[f"{rules}/{gate[0]}/{gate[2]}", f"{rules}/{breaks[0]}/{breaks[2][0]}"]]}},
+            "several": {"name": names["several"][0], "why": names["several"][1],
+                        "delta": {rules: {"ADDED": [requirement(several[0], several[1], several[2], several[3])]}},
+                        "expected": {"nothing": True}},
+        },
+    }
+
+
+PROJECTS23 = {
+    "vet": _project23(
+        "visits", "visits-records",
+        ("A reception assistant handles the requests of a veterinary practice and calls the tools of the practice system.",
+         "What the runs of the reception assistant leave behind."),
+        ("Vet before an admission", "An animal SHALL NOT be admitted in a planned run without the vet.",
+         "No admission in a plan without the vet", "WHEN a call of `admit_animal` succeeds in a run with a plan THEN an earlier call of `ask_vet` in the run was approved"),
+        ("Who asks and orders", "Only the reception agent SHALL ask the vet or order medicine.",
+         "Only reception asks the vet or orders medicine", "WHEN a call of `ask_vet` or `order_medicine` is made THEN the agent making it is the reception agent"),
+        ("Example: an animal is admitted", "WHEN noor asks to admit dog d4 THEN `admit_animal` is called once AND the answer gives the kennel number"),
+        ("Visit records", "Every admission SHALL be recorded.",
+         "Every admission is recorded", "WHEN a call of `admit_animal` succeeds THEN the run writes one visit record that names the animal"),
+        ("Emergencies", "An emergency SHALL be admitted without the vet's approval.",
+         ("An emergency run asks nobody", "WHEN a call of `ask_vet` is made THEN the run is not an emergency run"),
+         ("An emergency gets the treatment room", "WHEN a call of `admit_animal` succeeds in an emergency run THEN the answer gives the treatment room")),
+        ("Boarding", "A boarding animal SHALL be admitted at once.",
+         ("Example: a boarding animal", "WHEN noor sends a boarding request for dog d4 THEN the plan is written once AND `admit_animal` succeeds once AND `ask_vet` is never called")),
+        ("Check-up runs", "A check-up run SHALL NOT order medicine.",
+         ("A check-up run orders no medicine", "WHEN a call of `order_medicine` is made THEN the run is not a check-up run"),
+         ("A check-up names the vet", "WHEN a call of `ask_vet` is made in a check-up run THEN the answer names the vet who was asked")),
+        {"chain": ("add-emergencies", "An injured animal cannot wait for the vet's answer."),
+         "breaks": ("add-boarding", "Boarding animals are not patients."),
+         "several": ("add-check-up-runs", "A yearly check-up needs no medicine.")}),
+    "movers": _project23(
+        "jobs", "jobs-records",
+        ("A booking assistant handles the requests of a moving company and calls the tools of the dispatch system.",
+         "What the runs of the booking assistant leave behind."),
+        ("Dispatcher before a truck", "A truck SHALL NOT be sent in a planned run without the dispatcher.",
+         "No truck in a plan without the dispatcher", "WHEN a call of `send_truck` succeeds in a run with a plan THEN an earlier call of `ask_dispatcher` in the run was approved"),
+        ("Who asks and rents", "Only the booking agent SHALL ask the dispatcher or rent a lift.",
+         "Only booking asks the dispatcher or rents a lift", "WHEN a call of `ask_dispatcher` or `rent_lift` is made THEN the agent making it is the booking agent"),
+        ("Example: a truck is sent", "WHEN omar asks to move flat f6 THEN `send_truck` is called once AND the answer gives the arrival time"),
+        ("Job records", "Every truck that is sent SHALL be recorded.",
+         "Every truck is recorded", "WHEN a call of `send_truck` succeeds THEN the run writes one job record that names the address"),
+        ("Same-day moves", "A same-day move SHALL be started without the dispatcher.",
+         ("A same-day run asks nobody", "WHEN a call of `ask_dispatcher` is made THEN the run is not a same-day run"),
+         ("A same-day move names the crew", "WHEN a call of `send_truck` succeeds in a same-day run THEN the answer gives the crew's phone number")),
+        ("Office moves", "An office move SHALL be started at once.",
+         ("Example: an office move", "WHEN omar sends an office request for flat f6 THEN the plan is written once AND `send_truck` succeeds once AND `ask_dispatcher` is never called")),
+        ("Ground-floor runs", "A ground-floor run SHALL NOT rent a lift.",
+         ("A ground-floor run rents no lift", "WHEN a call of `rent_lift` is made THEN the run is not a ground-floor run"),
+         ("A ground-floor run names the dispatcher", "WHEN a call of `ask_dispatcher` is made in a ground-floor run THEN the answer names the dispatcher who was asked")),
+        {"chain": ("add-same-day-moves", "Some customers must leave their flat today."),
+         "breaks": ("add-office-moves", "Offices move on a contract."),
+         "several": ("add-ground-floor-runs", "A ground-floor flat needs no lift.")}),
+    "catering": _project23(
+        "orders", "orders-records",
+        ("An order assistant handles the requests of a caterer and calls the tools of the kitchen system.",
+         "What the runs of the order assistant leave behind."),
+        ("Chef before a confirmation", "An order SHALL NOT be confirmed in a planned run without the chef.",
+         "No confirmation in a plan without the chef", "WHEN a call of `confirm_order` succeeds in a run with a plan THEN an earlier call of `ask_chef` in the run was approved"),
+        ("Who asks and hires", "Only the order agent SHALL ask the chef or hire waiters.",
+         "Only orders asks the chef or hires waiters", "WHEN a call of `ask_chef` or `hire_waiters` is made THEN the agent making it is the order agent"),
+        ("Example: an order is confirmed", "WHEN ines asks to confirm order o9 THEN `confirm_order` is called once AND the answer gives the delivery time"),
+        ("Order records", "Every confirmed order SHALL be recorded.",
+         "Every confirmation is recorded", "WHEN a call of `confirm_order` succeeds THEN the run writes one order record that names the customer"),
+        ("Standard menus", "A standard menu SHALL be confirmed without the chef.",
+         ("A standard-menu run asks nobody", "WHEN a call of `ask_chef` is made THEN the run is not a standard-menu run"),
+         ("A standard menu names its number", "WHEN a call of `confirm_order` succeeds in a standard-menu run THEN the answer gives the menu number")),
+        ("Repeat orders", "A repeat order SHALL be confirmed at once.",
+         ("Example: a repeat order", "WHEN ines sends a repeat request for order o9 THEN the plan is written once AND `confirm_order` succeeds once AND `ask_chef` is never called")),
+        ("Pick-up runs", "A pick-up run SHALL NOT hire waiters.",
+         ("A pick-up run hires no waiters", "WHEN a call of `hire_waiters` is made THEN the run is not a pick-up run"),
+         ("A pick-up run names the chef", "WHEN a call of `ask_chef` is made in a pick-up run THEN the answer names the chef who was asked")),
+        {"chain": ("add-standard-menus", "The standard menus were approved once and for all."),
+         "breaks": ("add-repeat-orders", "A repeat order was approved the first time."),
+         "several": ("add-pick-up-runs", "Food that is picked up is not served.")}),
+    "loans": _project23(
+        "lending", "lending-records",
+        ("A lending assistant handles the requests of a credit union and calls the tools of the loan system.",
+         "What the runs of the lending assistant leave behind."),
+        ("Officer before a payout", "A loan SHALL NOT be paid out in a planned run without the credit officer.",
+         "No payout in a plan without the officer", "WHEN a call of `pay_out_loan` succeeds in a run with a plan THEN an earlier call of `ask_officer` in the run was approved"),
+        ("Who asks and checks", "Only the lending agent SHALL ask the officer or request a credit report.",
+         "Only lending asks the officer or requests a report", "WHEN a call of `ask_officer` or `request_report` is made THEN the agent making it is the lending agent"),
+        ("Example: a loan is paid out", "WHEN tomas asks to pay out loan l2 THEN `pay_out_loan` is called once AND the answer gives the payout date"),
+        ("Loan records", "Every payout SHALL be recorded.",
+         "Every payout is recorded", "WHEN a call of `pay_out_loan` succeeds THEN the run writes one loan record that names the member"),
+        ("Small loans", "A small loan SHALL be paid out without the credit officer.",
+         ("A small-loan run asks nobody", "WHEN a call of `ask_officer` is made THEN the run is not a small-loan run"),
+         ("A small loan names the instalment", "WHEN a call of `pay_out_loan` succeeds in a small-loan run THEN the answer gives the monthly instalment")),
+        ("Staff loans", "A staff loan SHALL be paid out at once.",
+         ("Example: a staff loan", "WHEN tomas sends a staff request for loan l2 THEN the plan is written once AND `pay_out_loan` succeeds once AND `ask_officer` is never called")),
+        ("Renewal runs", "A renewal run SHALL NOT request a credit report.",
+         ("A renewal run requests no report", "WHEN a call of `request_report` is made THEN the run is not a renewal run"),
+         ("A renewal names the officer", "WHEN a call of `ask_officer` is made in a renewal run THEN the answer names the officer who was asked")),
+        {"chain": ("add-small-loans", "Small loans follow a fixed table."),
+         "breaks": ("add-staff-loans", "Staff loans are part of the contract of employment."),
+         "several": ("add-renewal-runs", "A renewal uses the report of the first loan.")}),
+}
+
 PROJECT_SETS = {"eval11": PROJECTS11, "eval13": PROJECTS13, "eval14": PROJECTS14, "eval15": PROJECTS15,
                 "mixed": PROJECTS_MIXED, "eval20": PROJECTS20, "eval21": PROJECTS21, "eval22": PROJECTS22,
+                "eval23": PROJECTS23,
                 "change_dev": as_projects({**SPECS9, **SPECS10})}
 
 

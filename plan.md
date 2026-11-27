@@ -383,6 +383,41 @@ conflicts in 12, and in 0 without; a "near" change has a conflict about it
 in 1 run either way, and none of the 59 questions asked there was answered
 yes. Step 46 stays.
 
+### 2.4 The plan for step 47: a rule that applies in several cases (not built yet)
+
+A run of the tool on the real project from scratch (T41) showed where the
+question of step 46 goes wrong. Of the 35 steps it said yes to, 5 are wrong,
+and three of the five have one shape: the rule applies in several cases, and
+the fact is about one of them. A rule "WHEN a call of this tool or of that
+tool is made THEN the agent making it is ...", and the fact "a call of the
+second tool is made": 7 of 8 answers "yes". The rule applies when the first
+tool is called, too, so the answer is "no". One such step set an existing
+rule against a rule of the change, and another gave three conflicts.
+
+**The change.** One more sentence in the prompt of check 6
+(`APPLIES_SYSTEM`), in its "no": this is also the answer when the
+requirement applies in several cases and B is the case in only some of
+them. Nothing else changes. One try.
+
+**How it is tested.** `eval23/` (make_eval.py): four more projects about an
+assistant that calls tools. Each has the rule of `eval22/` that a call needs
+an earlier approved call, and a rule whose condition names two calls ("WHEN
+a call of `ask_vet` or `order_medicine` is made THEN the agent making it is
+the reception agent"). Three changes each: the chain of `eval22/` (it must
+be found, and the rule about two calls must not be set against the new
+rule); an example that breaks the first rule (it must be found); and a rule
+that the other of the two calls is never made in a kind of run (nothing may
+be reported).
+
+**The rule, set before the build.** The sentence stays if on `eval23/`, with
+doubtful conflicts set aside and the same runs asked with the prompt of step
+46 and with the new one, the "several" changes have a conflict about them
+less often, and the "chain" and "breaks" conflicts are found no less often;
+and if, asked on the saved runs of `eval20/`, `eval21/` and `eval22/`, it
+loses no planted conflict there and gives no conflict to a change that
+should have none. If the prompt of step 46 gives no conflict to a "several"
+change either, the set does not test the sentence, and that is said.
+
 Small things that are open:
 
 - **Long documents** (E14). A spec of 100 requirements works: its read answer
