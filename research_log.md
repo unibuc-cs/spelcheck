@@ -4574,6 +4574,134 @@ is the open point: it is found, and marked doubtful more often than not.
 
 ---
 
+## T39 — Development: does what one rule demands make another rule apply? Four forms of one question (2026-11-27)
+
+**Question.** One reason why a change of TestingTheAgents cannot be built is
+a chain of three rules (T38): a run of the new workflow takes a page down in
+a plan; an existing rule then demands that an earlier request for approval
+was approved; the change says that no such request is made in such a run. No
+two of them clash by themselves. The checks connect what two rules demand
+(links, the question about two outcomes) or their two conditions, never what
+one demands with the condition of another. Step 46 asks that (plan.md 2.3).
+In which form?
+
+**How it was tried.** The pairs are chosen by Z3: a pair (a, b) is asked
+about when, where a applies, b cannot apply as well without a clash between
+the two. For each part of the condition of b that a does not settle, the
+model is asked 8 times. The check was added to saved runs, so that only the
+form of the question differs: the runs of `eval20/` (E29) and `eval21/`
+(E30) with `--rescore ... --applies-base-url` (files `T39`, `T39b`, `T39c`,
+`T39d`), and the saved parts of the four changes of the project (T38).
+
+| Form of the question | `eval20/`: runs on changes that should give nothing, with a conflict | `eval21/`: examples that break a rule, found and not doubtful | The project: the step from "approved" to "requested" | The project: steps said yes to with a rule of the change, for its four changes |
+|---|---|---|---|---|
+| 1. the question of check 4 on the symbols: "A: what a demands. B: the part is not the case. Can both hold?" | 1 of 24 | 4 of 12 | 6 of 8 answers | 3, 19, 24, 3 |
+| 2. a prompt of its own on the symbols: "Does A say that B is the case?", and what a system would merely need is a "no" | 0 of 24 | 4 of 12 | 4 of 8: not taken | 0, 2, 5, 0 |
+| 3. the question of check 2: the words of a, and a situation with the condition of a and the part not the case | 0 of 24 | 10 of 12 | 8 of 8 | 17, 21, 29, 1 |
+| 4. the words of a, the prompt of its own, and the part alone as fact B | 0 of 24 | 10 of 12 | 8 of 8 | 2, 6, 15, 3 |
+
+- **Form 1 takes what a system needs for what the words say.** "(the answer
+  gives the return label) → `find_parcel` succeeded", 8 of 8: "For the
+  system to provide a specific return label in the answer, it must have
+  successfully identified the parcel". On `eval20/` it gave a conflict to a
+  change that should have none, and 8 conflicts among the existing rules.
+- **Form 2 is clean and gains nothing.** The symbols of a demand can say
+  less than the requirement. "`start_repair` succeeds once" had become a
+  count of calls, and the model is right that a call can be made and fail.
+  On the project, the demand that an earlier request for approval in the
+  run was approved had become a symbol about an approval that was granted,
+  and half of the answers said that an approval can come from an earlier
+  request or in another way.
+- **Form 3 reads the requirement, and then judges too much.** With the
+  words, the examples of `eval21/` are found: "The requirement explicitly
+  states that 'start_repair succeeds once'" (8 of 8, in 6 runs). But shown
+  the condition of a as a situation, the model also called situations
+  impossible for those facts (a list that is empty in the situation, where
+  the requirement names what the list must hold). On the project it said
+  yes to 17, 21 and 29 steps for three of the changes.
+- **Form 4 keeps what each round taught**: the words of the requirement, the
+  prompt that says what does not count, and the one fact alone. On
+  `eval20/` and `eval21/` every step it says yes to is right (4 and 6, all
+  8 of 8), and no change that should give nothing gets a conflict.
+- **On the project**, with form 4, the four changes have 7, 5, 4 and 1
+  conflicts that are not doubtful, against 6, 5, 3 and 1 without the check.
+  The one more of the change that cannot be built is the missing approval,
+  between the rule of another spec file and the rule of the change. The one
+  more of a change that can be built sets a rule of the change against an
+  example of it.
+- **The limit of 40 questions is reached often on the project.** With only
+  the pairs that have a rule of the change, 2,008 of 5,004 questions were
+  left out.
+
+**Decision.** Form 4 is frozen for the held-out test (`eval22/`). When a
+change is checked, only the pairs with one of its rules are asked about.
+
+---
+
+## E31 — Held-out `eval22/`: does what one rule demands make another rule apply? (2026-11-27)
+
+**Question.** Does check 6, in the form that T39 froze, find a contradiction
+that is a chain of three rules, on specs it was not built on, without saying
+yes where the words do not?
+
+**The set** (`eval22/`, written and committed before the check). Four more
+projects about an assistant that calls tools: a hotel's front desk, a box
+office, a car rental, a clinic. Each has two rules about calls. One demands
+an earlier approved call in the same run ("WHEN a call of `check_in_guest`
+succeeds in a run with a plan THEN an earlier call of `ask_manager` in the
+run was approved"), the other a state from before the run ("WHEN a call of
+`refund_stay` succeeds THEN the guest's card was verified at check-in").
+Three changes each:
+
+| Change | What it adds | Expected |
+|---|---|---|
+| chain | "WHEN a call of `ask_manager` is made THEN the run is not a late-arrival run", and a rule about a check-in in such a run. In a late-arrival run with a plan in which a guest is checked in, the first rule demands an approved call and this one forbids the call. No two rules clash by themselves | the conflict between the existing rule and the first rule of the change |
+| breaks | an example that breaks the existing rule by what it demands itself: "... THEN the plan is written once AND `check_in_guest` succeeds once AND `ask_manager` is never called" | that conflict, not doubtful |
+| near | the form of the chain for the second rule: "WHEN a call of `verify_card` is made THEN the run is not a refund run". The card "was verified at check-in", which does not say that `verify_card` is called in this run | nothing |
+
+**The rule, set before the build** (plan.md 2.3). With doubtful conflicts set
+aside and the same runs scored with and without the facts of check 6: the
+"chain" conflicts are found more often, the "breaks" conflicts no less
+often, the "near" changes have a conflict about them no more often. And
+asked on the saved runs of `eval20/` and `eval21/`, it loses no planted
+conflict and gives no conflict to a change that should have none.
+
+**Result.** 12 changes, 3 runs each, `--whole-run --examples "^Example:"`
+(`E31_eval22`). Doubtful conflicts are set aside.
+
+| | With check 6 | Without its facts |
+|---|---|---|
+| "chain" conflicts found | 12/12 | 2/12 |
+| "breaks" conflicts found | 12/12 | 0/12 |
+| "near" changes with a conflict about them | 1/12 | 1/12 |
+| other conflicts about a change with a planted one | 0 | 0 |
+
+- **The rule is met on every point.** On `eval20/` and `eval21/` it is met
+  by the last round of T39: 24 of 24 and 15 of 24 planted conflicts (9 of 24
+  without the check), and no change that should give nothing has a conflict.
+- **The chain**, in one run of the hotel: the model was asked five times
+  whether a rule makes "a call of `ask_manager` is made" true. For the
+  existing rule 8 of 8 answers said yes ("An ask_manager call that was
+  approved was made."), for the four others 8 of 8 said no. With that fact
+  Z3 reports the existing rule against "a late-arrival run asks nobody", in
+  a late-arrival run with a plan in which a check-in succeeds. The 2 chains
+  that are found without the check have the same step as a link of step 5.
+- **The examples.** Without the check all 12 conflicts are found and all 12
+  are marked: the example's "succeeds once" and "the plan is written once"
+  are counts, and the rule is about "a call succeeds" in "a run with a
+  plan". The check asks both parts with the words of the example, and 17 of
+  the 29 questions on these changes are answered yes.
+- **The trap holds.** 59 questions on the "near" changes, none answered yes
+  by most; "the card was verified at check-in → a call of `verify_card` is
+  made" got 1 or 2 of 8. The one conflict on a "near" change is there
+  without the check too: an older step took the same wrong step once.
+- A change costs 54 requests on these projects.
+
+**Decision.** Step 46 stays as it was frozen. All twenty-two sets are
+development data now.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

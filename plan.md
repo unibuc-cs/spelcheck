@@ -285,7 +285,7 @@ that this makes "a call succeeds" true. Two examples of one case with
 opposite outcomes are found in 5 of 12 runs, mark or no mark: "called once"
 and "never called" became two symbols that can hold together.
 
-### 2.3 Step 46: does what one rule demands make another rule apply? (built; `eval22/` not run yet)
+### 2.3 Step 46: does what one rule demands make another rule apply? (built; held-out result in E31)
 
 One of the four reasons why a change of TestingTheAgents cannot be built is
 a chain of three rules (research.md 4.9). A run of the new workflow takes a
@@ -370,6 +370,13 @@ less often, and the "near" changes have a conflict about them no more often;
 and if, asked on the saved runs of `eval20/` and `eval21/`, it loses no
 planted conflict there and gives no conflict to a change that should have
 none. (The last part is met in the trial: the table above.)
+
+**The result** (E31, research_log.md). The rule is met on every point. With
+doubtful conflicts set aside, on 12 runs of each kind: the "chain" conflicts
+are found in 12, and in 2 without the facts of the check; the "breaks"
+conflicts in 12, and in 0 without; a "near" change has a conflict about it
+in 1 run either way, and none of the 59 questions asked there was answered
+yes. Step 46 stays.
 
 Small things that are open:
 
