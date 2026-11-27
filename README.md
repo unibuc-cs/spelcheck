@@ -87,7 +87,11 @@ Where the project stands:
   one. Since then the model is also asked whether what one rule demands
   makes another rule apply. On a third set a contradiction that is a chain
   of three rules is found in 12 of 12 runs, and in 2 without that question;
-  an example that breaks a rule by its own words in 12 of 12, and in none
+  an example that breaks a rule by its own words in 12 of 12, and in none.
+  On a fourth set, with a rule that applies in several cases, that question
+  gave a wrong conflict in 6 of 12 runs until it was put as a statement to
+  judge, and in none since; 11 of that set's 36 runs stopped before the
+  checks, at the read step
   ([Specs about the runs of an agent](#specs-about-the-runs-of-an-agent));
 - all of that is on specs we wrote. On 69 changes of a real project it does
   worse. What we planted in 21 of them is found: 46 of 52 conflicts with a
@@ -810,13 +814,14 @@ called, and nothing says that an approved call is a call that was made. So:
    check-in succeeds, R1 and R5 apply, and R4 cannot apply as well: it
    forbids the call there. So the question is whether what R1 demands makes
    R4 apply.
-2. The model gets the words of R1 and one fact, and is asked eight times:
-   where the requirement applies and is obeyed, is the fact the case?
+2. The model gets the words of R1 and one statement B, and is asked eight
+   times: B is not given; must it be true wherever the requirement applies
+   and is obeyed?
 
    ```
    Requirement:   WHEN a call of `check_in_guest` succeeds in a run with a plan THEN an earlier call of `ask_manager` in the run was approved
-   Fact B:        TRUE: ask_manager_called (A call to ask_manager is made in the current run)
-   answers:       8 of 8 "yes".  For R2, R3, R5 and R6, asked the same about that fact: 8 of 8 "no"
+   Statement B:   TRUE: ask_manager_called (A call to ask_manager is made in the current run)
+   answers:       8 of 8 "yes".  For R2, R3, R5 and R6, asked the same about that statement: 8 of 8 "no"
    ```
 
 3. More than half "yes" is an assumed fact: where R1 applies and is obeyed,
@@ -826,21 +831,34 @@ called, and nothing says that an approved call is a call that was made. So:
 >
 > - **A) Keep as-is:** Keeping the requirements as written means that a
 >   successful check-in in a planned, late-arrival run is impossible because
->   it would require a manager approval that is forbidden in late-arrival
->   runs.
+>   it would require both an approved manager request and the absence of
+>   any manager request.
 >
 > *Proven:* Requirements R1, R4 cannot all be obeyed in this situation: ...
 > This depends on assumptions that are not stated in the requirements:
 > - F1: Where R1 applies and is obeyed, a part of the condition of R4 holds:
->   If an earlier call of ask_manager was approved, then a call to
->   ask_manager was made.
+>   If an earlier call to ask_manager was approved, then a call to
+>   ask_manager was made in the run.
 
-The model is shown the words of the rule, not its symbols, and the one fact
-alone; and its prompt says that what a system would merely need does not
-count ("to give the return label it must have found the parcel" is a "no").
-In the same project, "the guest's card was verified at check-in" does not
-say that `verify_card` is called in this run: at most 2 "yes" of 8, and nothing
-is reported. The same question lifts a doubt from an example. "... THEN the
+The model is shown the words of the rule, not its symbols, and the one
+statement alone. Its prompt says two more things, each learned from a form
+of the question that failed:
+
+- What a system would merely need does not count: "to give the return label
+  it must have found the parcel" is a "no".
+- B is not given. Shown B as a fact marked TRUE, the model took it as given
+  wherever B is one of the cases in which the rule applies. In another
+  project of ours, R2 is "WHEN a call of `ask_vet` or `order_medicine` is
+  made THEN the agent making it is the reception agent". Asked whether
+  `order_medicine` is then called, up to 7 answers of 8 said yes: the fact
+  says that it is called, so the rule applies. The rule applies when
+  `ask_vet` is called too, so the answer is no. Asked "must B be true?", 8
+  of 8 say no, in all 12 runs.
+
+In the hotel project, "the guest's card was verified at check-in" does not
+say that `verify_card` is called in this run: no "yes" in 10 of 12 runs, at
+most 4 of 8 in the others, and nothing is reported. The same question lifts
+a doubt from an example. "... THEN the
 plan is written once AND `check_in_guest` succeeds once AND `ask_manager` is
 never called" breaks R1, but "succeeds once" became a count and R1 is about
 "a call succeeds", so the example did not make R1 apply and its conflict was
@@ -994,6 +1012,7 @@ Nothing in the code or in the prompts is about orders.
 | `experiments/sets/eval19`, `real5` | six specs of our own whose clean versions hold two scenarios with conditions that exclude each other by their meaning; and the last 8 unused changes of the real project, each also with a conflict planted under a condition of its own | the test of the question whether the conditions of two rules that clash can hold together |
 | `experiments/sets/eval20`, `eval21` | eight OpenSpec projects of our own about an assistant that calls tools: rules about whole runs, settings, and scenarios that are examples; four and three changes each | the tests of the options for specs about the runs of an agent |
 | `experiments/sets/eval22` | four more such projects, each with a rule that a call needs an earlier approved call, and three changes: a contradiction that is a chain of three rules, an example that breaks the rule, and a chain that only looks like one | the test of the question whether what one rule demands makes another rule apply |
+| `experiments/sets/eval23` | four more, each also with a rule whose condition names two calls, and three changes: a chain, an example that breaks a rule, and a rule about the second of the two calls, where nothing may be reported | the test of that question put as a statement to judge |
 
 ## How reliable is it
 
@@ -1278,32 +1297,51 @@ Some notes on these numbers:
     asked there was answered yes;
   - asked on the saved runs of `eval20/`, no change that should give
     nothing gets a conflict, and no planted conflict is lost.
-- That project, TestingTheAgents, run from scratch with the final code by
-  the commands [above](#a-real-project-of-that-kind-testingtheagents),
-  each change against the 24 spec files of the application (T41). In
-  brackets: the same run without the facts of the new question.
+- A run of the real project from scratch then showed a wrong step that
+  none of those sets has (T41): a rule that applies in several cases ("WHEN
+  a call of this tool or of that tool is made"), and the fact that the
+  second is called. Of the 7 conflicts that the question added over four
+  changes, 6 were artefacts. One sentence about such rules in the prompt
+  changed nothing (T42). The model's reasons showed why: it took the fact
+  as given and found that the rule then applies. Since then the fact is
+  shown as a statement to judge. Tested on four more projects of ours that
+  have such a rule (`eval23/`), the same runs asked in both forms,
+  doubtful conflicts set aside (E32):
+  - a change where the rule about two calls must not be taken for a rule
+    about one: a conflict about it in 6 of 12 runs before, 0 of 12 after;
+  - a contradiction that is a chain of three rules: found in 9 of 10 runs
+    before, 10 of 10 after. In 5 of the 10 the rule about two calls was
+    also set against the new rule before, in none after;
+  - an example that breaks a rule: 3 of 3 both times;
+  - 11 of the 36 runs stopped before the checks, the same in both forms: 9
+    of the 12 runs with such an example, and 2 with a chain. The read step
+    had returned the rule about two calls as two rules with one label
+    ([Known limits](#known-limits)).
+- That project, TestingTheAgents, each change against the 24 spec files of
+  the application: the run from scratch by the commands
+  [above](#a-real-project-of-that-kind-testingtheagents), with the question
+  asked in its final form (T44). In brackets: the same run without the
+  facts of that question.
 
   | Change | Conflicts, not doubtful | In the spec files of the change, with the parts that found each | With a rule of another spec file | Doubtful |
   |---|---|---|---|---|
-  | `add-instant-bulk-takedown-workflow`, cannot be built | 11 (8) | 3: in 16, 1 and 1 of 24 parts | 8 (6) | 19 |
-  | `add-licence-expiry-sweep-workflow`, can be built | 6 (3) | 2: in 2 and 1 of 24 parts | 4 (1) | 32 |
-  | `add-page-retirement-workflow`, can be built | 3 (2) | 0 | 3 (2) | 50 |
+  | `add-instant-bulk-takedown-workflow`, cannot be built | 9 (8) | 2: in 16 and 1 of 24 parts | 7 (6) | 19 |
+  | `add-licence-expiry-sweep-workflow`, can be built | 3 (3) | 2: in 2 and 1 of 24 parts | 1 (1) | 32 |
+  | `add-page-retirement-workflow`, can be built | 3 (2) | 0 | 3 (2) | 54 |
   | `add-scheduled-batch-republish-workflow`, can be built | 3 (3) | 0 | 3 (3) | 19 |
 
   - Two of the authors' four reasons are in the first report. The conflict
     found in 16 parts is the contradiction between two rules of the change.
-    One of the 8 with a rule of another spec file is the missing approval:
+    One of the 7 with a rule of another spec file is the missing approval:
     the existing rule that nothing goes live or down in a plan without an
     approval, against the change's rule that such a run asks nobody, "if
     the assumed facts hold", through the fact that an approved request is a
-    request that was made. The new question found it in two runs of two
-    (T40 asked it on the parts of an earlier run).
-  - The new question also costs. It adds 7 conflicts over the four changes,
-    and 6 of them are artefacts. Of the 35 steps it said yes to, 5 are
-    wrong by our reading. Three of the five have one shape: the rule applies
-    in several cases, and the fact is about one of them ("WHEN a call of
-    this tool or of that tool is made", and the fact that the second is
-    called). Our sets have no case of that shape.
+    request that was made. The question found it in two formalizations of
+    two.
+  - The question adds 2 conflicts over the four changes: the missing
+    approval, and one on a change that can be built, which holds under one
+    reading of an ambiguous rule; the report says so. Before it was put as
+    a statement to judge it added 7.
   - The number of conflicts does not tell the changes apart; the number of
     parts does. The other conflicts with a rule of another spec file are
     artefacts, those we read: a wrong assumed fact between two unrelated
@@ -1339,7 +1377,8 @@ Some notes on these numbers:
 | A voted translation can say less than the rule | when the eight translations differ only in their symbols, the rule is kept with what more than half of them entail. "Display success message with archived name and list of updated specs" became "the success message is displayed". `formal.json` marks such a rule (`"voted": "7/7"`), the report does not. A split that the vote settles is no longer a question to the author: on `eval18/` that happened to 5 of 36 planted ambiguities, and 1 was still found |
 | With `--whole-run`, the question about two outcomes is asked of many more pairs, and errs more | it is asked of rules that react to two different happenings too. A wrong answer ("A run cannot have a maximum tool call count of 40 if no tools were called") gives a conflict between two unrelated rules. On TestingTheAgents every change got 1 to 3 such conflicts against the application's specs, each in one part. In a document of 30 rules the limit of 40 pairs cuts off most of about 175 |
 | The question whether a rule applies is asked 40 times for a document at most | on our sets that is enough. In a project in parts it is not: on the four changes of TestingTheAgents, 2,008 of 5,004 questions were left out. A chain of three rules is found only if its pair is among those asked about, and only across the spec files of one part |
-| On real specs the question whether a rule applies takes wrong steps | 5 of the 35 it said yes to in a run of TestingTheAgents. Three where the rule applies in several cases and the fact is about one of them: "WHEN a call of this tool or of that tool is made", and the fact that the second is called (7 of 8 "yes"). Two where one refusal is taken for another. They gave 5 of the 6 artefact conflicts that the question added over four changes. None on our own sets |
+| On real specs the question whether a rule applies still takes wrong steps | 3 of the 30 it said yes to on TestingTheAgents. Two take one refusal for another: "the job is refused", and the statement that the approver refused. One is about a statement marked FALSE: the model says that the fact is true, and then answers "yes". None of the three adds a conflict there. None on our own sets |
+| A scenario whose condition names two things can stop a run | "WHEN a call of `ask_vet` or `order_medicine` is made THEN ...": the read step sometimes returns it as two rules with one label, one for each call. A run in which a label is not kept is stopped with that message: 11 of 36 runs on `eval23/`, none on the three sets before it. In a project in parts such a part is left out and named in the report |
 | A step from one rule to another can be right and its conflict still an artefact | "a call that is refused was made" is right. The conflict it gave on the real project has a call that succeeds in its situation, which the example excludes in words and the formulas do not: "refused" and "succeeds" are two symbols |
 | Two examples of one case with opposite outcomes are missed in 7 of 12 runs | "called once" and "never called" became a count and "the call did not succeed", which can hold together (E30) |
 | An attribute of one call becomes an attribute of the whole run | "the token the call was made with", "the agent that made it", "the file the function is in": two rules about two different calls then clash |
@@ -1369,7 +1408,7 @@ research.md, section 5.
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the vLLM servers on the cluster: the main model, the second model |
 | `experiments/slurm/serve_direct.sh` | the same server for the main model, started directly on a machine with free GPUs, without the queue |
 | `tests/` | 124 tests of everything that needs no LLM |
-| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10`, `eval12`, `eval16` to `eval19`, `size` and `size2`; for the change check `eval11`, `eval13`, `eval14`, `eval15`, `eval20`, `eval21`, `eval22`, `mixed` and `change_dev`; and the script that writes them. `real1` to `real5` are not written by it (`experiments/real/`) |
+| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10`, `eval12`, `eval16` to `eval19`, `size` and `size2`; for the change check `eval11`, `eval13`, `eval14`, `eval15`, `eval20` to `eval23`, `mixed` and `change_dev`; and the script that writes them. `real1` to `real5` are not written by it (`experiments/real/`) |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs and scores the evaluation; re-scores saved runs without a GPU |
 | `experiments/real/` | the trial on a real OpenSpec project: each archived change next to the specs before it, from the git history; and the real changes with a conflict planted in them |

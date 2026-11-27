@@ -46,6 +46,7 @@ its entries. How each mechanism works is in [plan.md](plan.md), section 5.
   | `eval20/` | 16 changes on 4 OpenSpec projects about an assistant that calls tools: rules about whole runs, settings, and scenarios that are examples (3.18) | 8 conflicts: 4 between rules that react to two calls of one run, 4 direct; 8 changes that should give nothing | E29 |
   | `eval21/` | 12 changes on 4 more projects of that kind; every change adds examples (3.18) | 8 conflicts: 4 between two examples of one case, 4 between an example and a rule; 4 changes that should give nothing | E30 |
   | `eval22/` | 12 changes on 4 more projects of that kind, each with a rule that a call needs an earlier approved call (3.19) | 8 conflicts: 4 that are a chain of three rules, 4 between an example and a rule; 4 changes where the demand only looks like the condition | E31 |
+  | `eval23/` | 12 changes on 4 more projects of that kind, each also with a rule whose condition names two calls (3.19) | 8 conflicts: 4 that are a chain of three rules, 4 between an example and a rule; 4 changes where the rule about two calls must not be taken for a rule about one | E32 |
   | `size/` | 4 versions of one spec of 30 requirements | 2 conflicts, 1 gap | E13 |
   | `size2/` | 4 versions of one spec of 100 requirements | 2 conflicts, 1 gap | E14 (not held-out: no design was tuned on it) |
 
@@ -596,7 +597,7 @@ the contradiction between two rules that the authors name is found in 16 of
 built is found in more than one part. What it costs and what it misses is in
 4.9.
 
-### 3.19 A question whether what one rule demands makes another rule apply (T39, E31, T40)
+### 3.19 A question whether what one rule demands makes another rule apply (T39 to T44, E31, E32)
 
 A contradiction can be a chain of three rules of which no two clash. "WHEN a
 call of `check_in_guest` succeeds in a run with a plan THEN an earlier call
@@ -641,8 +642,24 @@ demands with the condition of another.
 - **On the project** (T40, T41): the missing approval, the second of the
   authors' four reasons, is in the report of the change that cannot be
   built, "if the assumed facts hold", in two runs of two: once asked on the
-  saved parts of the first run, once in a run from scratch. What it costs
-  there is in 4.9.
+  saved parts of the first run, once in a run from scratch.
+- **The fact is a statement to judge, not a given** (step 48; T41 to T43,
+  E32). The run from scratch showed a wrong step that our sets did not
+  have: a rule that applies in several cases ("WHEN a call of this tool or
+  of that tool is made"), and the fact that the second is called. 5 of the
+  35 steps said yes to were wrong, and 6 of the 7 conflicts that the
+  question added were artefacts. One sentence about such rules changed
+  nothing (7 of 8 "yes" before and after, T42). The model's reasons showed
+  the defect: shown B as a fact marked TRUE, it took B as given and found
+  that the rule then applies. The prompt now says that B is not given, and
+  asks whether B must be true. Held-out (`eval23/`, the same runs asked in
+  both forms): a change where the rule about two calls must not be taken
+  for a rule about one has a conflict in 6 of 12 runs before and in 0
+  after; the wrong step has 2 to 7 of 8 "yes" before and 0 of 8 after in
+  all 12; the chains are found in 9 and in 10 of 10 runs, the examples
+  that break a rule in 3 of 3. On the project the question now adds 2
+  conflicts over the four changes: the missing approval, and one that
+  holds under one reading of an ambiguous rule (T44).
 
 ---
 
@@ -924,9 +941,9 @@ What the first two batches showed, before the vote:
 - **A gap is hard to read at this size**: it lists every other event as
   FALSE, 20 to 40 lines.
 
-### 4.9 What the specs of an agent system show (T36 to T40, E29 to E31)
+### 4.9 What the specs of an agent system show (T36 to T44, E29 to E32)
 
-One project of that kind, and three sets of our own.
+One project of that kind, and four sets of our own.
 
 - **Two of the four reasons why a change cannot be built are found**: the
   contradiction between two of its rules, and since step 46 the chain of
@@ -936,16 +953,19 @@ One project of that kind, and three sets of our own.
   questions that the pairs of the four changes give, 2,008 were left out by
   the limit of 40 for a document. And a chain is found only across the spec
   files of one part.
-- **On real specs the question of 3.19 takes wrong steps** (T41). In a run
-  of the four changes from scratch it said yes to 35 steps, and 5 are wrong
-  by our reading. Three where the rule applies in several cases and the
-  fact is about one of them: "WHEN a call of this tool or of that tool is
-  made", and the fact that the second is called (7 of 8 "yes"); a rule "for
-  any n from 1 to 60", and the fact that the request is for 3. Two where
-  one refusal is taken for another. The question added 7 conflicts over the
-  four changes: the missing approval and 6 artefacts. On the saved parts of
-  the first run it added 2: the missing approval and 1 artefact (T40).
-  `eval22/` has no case of that shape, and no wrong step.
+- **On real specs the question of 3.19 still takes wrong steps** (T43,
+  T44): 3 of the 30 it says yes to on the four changes. Two take one
+  refusal for another ("the job is refused", and the statement that the
+  approver refused). One is about a statement marked FALSE: the model says
+  that the fact is true, and then answers "yes"; such statements are 61 of
+  2,768 questions. None of the three adds a conflict there. Before step 48
+  it was 5 of 35, and 6 artefact conflicts (T41).
+- **A scenario whose condition names two things can stop a run** (E32).
+  "WHEN a call of `ask_vet` or `order_medicine` is made THEN ...": the read
+  step returned it as two rules with one label, one for each call, in 11 of
+  the 36 runs of `eval23/`, and a run that does not keep its labels is not
+  checked. 9 of the 11 are runs of the changes that add an example. No run
+  of the three sets before stopped.
 - **A right step can still give an artefact** (T40): "a call that is
   refused was made" is right, and the conflict it gave has a call that
   succeeds in its situation, which the example excludes in words and the
@@ -988,6 +1008,7 @@ One project of that kind, and three sets of our own.
 | Setting aside wrong facts in other ways | at most 1 of 7 runs recovered, with 9 to 12 more unexpected conflicts on `eval3/` | T10 |
 | Reading a long document in pieces, each with the symbols so far | the real rules got their symbols, but no more of them got an agreed translation than between two runs without it; more runs stopped, and our own long documents got conflicts that nobody planted | T28, E24 |
 | Three other forms of the question whether a rule applies | the question about two outcomes: a conflict on a change that should give nothing; a stricter prompt on the symbols of the demand: nothing gained; the words of the rule with a whole situation: 17 to 29 steps said yes to on three real changes, 2 to 15 with the final form | T39 |
+| One more sentence in that question: "no" when the requirement applies in several cases and the fact is the case in only some | the wrong steps stayed: 7 of 8 "yes" before and after. The model took the fact as given, which the sentence does not touch | T42 |
 | An LLM review of the text (Kiro's "refinement") | finds `delete_property` in 40 of 40 runs, misses two conflicts the solver finds. Built, then switched off by decision: the project is about the formal check | T4, E3, D1 |
 
 ---
@@ -1030,6 +1051,7 @@ the prompts, so it can be scored again without a GPU.
 | E29 | `eval20/`, held-out: specs about the runs of an agent: a whole run as the situation, the mark for examples, a second question about links that only rename (T36, T37); before and after, and `eval12/` again | 2 x 48 and 108 runs | with doubtful conflicts set aside: conflicts between rules about two calls of one run 0 of 12 before, 12 of 12 after; changes that should give nothing, with a conflict about them, 17 of 24 before and 0 of 24 after; a change costs 87 requests against 55 (3.18) |
 | E30 | `eval21/`, held-out: every example of a conflict must describe its situation (T38); each run scored both ways | 36 runs | changes that only add cases, with a conflict about them: 3 of 12 with one example being enough, 0 of 12 with every example; the planted conflicts 5 and 4 of 12 either way (3.18, 4.9) |
 | E31 | `eval22/`, held-out: the model is asked whether what one rule demands makes another rule apply (T39); each run scored with and without | 36 runs | with doubtful conflicts set aside: contradictions that are a chain of three rules 2 of 12 without, 12 of 12 with; examples that break a rule 0 of 12 and 12 of 12; changes where the demand only looks like the condition, with a conflict about them, 1 of 12 either way (3.19) |
+| E32 | `eval23/`, held-out: in that question the fact is a statement to judge, not a given (T42, T43); the same runs asked in both forms | 36 runs, 25 finished | with doubtful conflicts set aside: changes where a rule about two calls must not be taken for a rule about one, with a conflict about them, 6 of 12 before and 0 of 12 after; chains 9 and 10 of 10; examples that break a rule 3 of 3; 11 runs stopped at the read step in both (3.19, 4.9) |
 
 The trials (T1 to T26) were run on development data between these
 experiments. Among the last: T17 compared temperatures 0.3, 0.5 and 0.7 (3.1);
@@ -1056,7 +1078,9 @@ own runs on that project, each change in 32 or 33 parts (3.18, 4.9). T39
 tried four forms of the question whether what one rule demands makes
 another rule apply, on saved runs, and T40 asked the frozen one on the
 saved parts of that project (3.19). T41 ran the four changes from scratch
-with the final code (4.9).
+with the code of step 46 (4.9). T42 and T43 asked two other forms of that
+question on saved runs, and T44 worded the reports of the four changes
+with the one that was kept (3.19).
 research_log.md
 has them in order, together with the bugs that
 changed results before they were fixed (L1 to L10) and the open threats to

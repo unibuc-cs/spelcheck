@@ -16,9 +16,9 @@
     "about_change": true,
     "situation": "A call to check_in_guest has succeeded in the current run, the current run is a planned run, and the current run is a late-arrival run.",
     "title": "Conflict between manager approval and late-arrival rules",
-    "explanation": "The requirements cannot all be obeyed in this situation. This problem appears when a check-in succeeds in a run that is both planned and a late-arrival. This finding depends on the assumption that if an earlier call to ask_manager was approved, then a call to ask_manager was made.",
-    "option_a": "Keeping the requirements as written means that a successful check-in in a planned, late-arrival run is impossible because it would require a manager approval that is forbidden in late-arrival runs.",
-    "option_b": "Change R1 to state that a successful check_in_guest in a planned run requires an earlier approved ask_manager only if the run is not a late-arrival run."
+    "explanation": "The requirements cannot all be obeyed in this situation because R1 requires that an earlier call to ask_manager was approved, while R4 forbids any call to ask_manager in a late-arrival run. This problem appears in the situation where a check-in succeeds in a run that is both planned and a late-arrival. This finding depends on the assumption that if an earlier call to ask_manager was approved, then a call to ask_manager was made in the run.",
+    "option_a": "Keeping the requirements as written means that a successful check-in in a planned, late-arrival run is impossible because it would require both an approved manager request and the absence of any manager request.",
+    "option_b": "Change R4 to allow calls to ask_manager in late-arrival runs, or change R1 to not require an approved manager request when the run is a late-arrival run."
   },
   {
     "type": "gap",

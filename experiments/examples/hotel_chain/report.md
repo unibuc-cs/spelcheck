@@ -8,17 +8,17 @@ Shown are the findings that involve an added or modified rule (R4, R5). 1 other 
 
 ## 1. Conflict (if the assumed facts hold): Conflict between manager approval and late-arrival rules
 
-The requirements cannot all be obeyed in this situation. This problem appears when a check-in succeeds in a run that is both planned and a late-arrival. This finding depends on the assumption that if an earlier call to ask_manager was approved, then a call to ask_manager was made.
+The requirements cannot all be obeyed in this situation because R1 requires that an earlier call to ask_manager was approved, while R4 forbids any call to ask_manager in a late-arrival run. This problem appears in the situation where a check-in succeeds in a run that is both planned and a late-arrival. This finding depends on the assumption that if an earlier call to ask_manager was approved, then a call to ask_manager was made in the run.
 
-- **A) Keep as-is:** Keeping the requirements as written means that a successful check-in in a planned, late-arrival run is impossible because it would require a manager approval that is forbidden in late-arrival runs.
-- **B) Change:** Change R1 to state that a successful check_in_guest in a planned run requires an earlier approved ask_manager only if the run is not a late-arrival run.
+- **A) Keep as-is:** Keeping the requirements as written means that a successful check-in in a planned, late-arrival run is impossible because it would require both an approved manager request and the absence of any manager request.
+- **B) Change:** Change R4 to allow calls to ask_manager in late-arrival runs, or change R1 to not require an approved manager request when the run is a late-arrival run.
 
 *Proven:* Requirements R1, R4 cannot all be obeyed in this situation:
 - TRUE: check_in_guest_succeeded (A call to check_in_guest has succeeded in the current run)
 - TRUE: run_has_plan (The current run is a planned run)
 - TRUE: run_is_late_arrival (The current run is a late-arrival run)
 This depends on assumptions that are not stated in the requirements:
-- F1: Where R1 applies and is obeyed, a part of the condition of R4 holds: If an earlier call of ask_manager was approved, then a call to ask_manager was made.
+- F1: Where R1 applies and is obeyed, a part of the condition of R4 holds: If an earlier call to ask_manager was approved, then a call to ask_manager was made in the run.
 
 ## The rules, by label
 

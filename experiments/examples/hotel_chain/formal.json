@@ -96,7 +96,7 @@
   "background": [
     {
       "id": "F1",
-      "text": "Where R1 applies and is obeyed, a part of the condition of R4 holds: If an earlier call of ask_manager was approved, then a call to ask_manager was made.",
+      "text": "Where R1 applies and is obeyed, a part of the condition of R4 holds: If an earlier call to ask_manager was approved, then a call to ask_manager was made in the run.",
       "formula": "(=> (and (and check_in_guest_succeeded run_has_plan) ask_manager_approved) ask_manager_called)",
       "support": "8/8",
       "between": [
