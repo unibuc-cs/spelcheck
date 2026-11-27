@@ -354,6 +354,8 @@ def add_outcomes(data: dict, base_url: str, what: str = "outcomes") -> None:
     The runs must have been made without the check: afterwards, every fact
     with "between" (check 5: with "about": "conditions"; check 6: with
     "about": "applies") counts as added by this call (see additions).
+    Check 6 can also be asked again, on runs that have it: it is the last
+    step, so its earlier answers are dropped first and nothing else changes.
     """
     def changed(run: dict) -> set | None:
         """The rules that the change of this run added or modified (None for a plain spec)."""
@@ -363,6 +365,9 @@ def add_outcomes(data: dict, base_url: str, what: str = "outcomes") -> None:
 
     pairs = [(model, changed(run)) for run in data["runs"] for model in run.get("models", [])]
     models = [model for model, _ in pairs]
+    if what == "applies":
+        for model in models:
+            _without_applies(model)
     temperature = data.get("temperature", 0.7)
     one = {"outcomes": outcomes_one, "conditions": conditions_one, "applies": applies_one}[what]
     with ProcessPoolExecutor(max_workers=32) as pool:
@@ -377,6 +382,13 @@ def add_outcomes(data: dict, base_url: str, what: str = "outcomes") -> None:
                              "applies": probe_module.APPLIES_SYSTEM}[what]
     data[f"{what}_added"] = datetime.now().isoformat(timespec="seconds")
     data[f"{what}_failed"] = failed
+
+
+def _without_applies(model: dict) -> None:
+    """Take the questions of check 6 and their facts out of a formal model, in place."""
+    model["background"] = [fact for fact in model["background"] if fact.get("about") != "applies"]
+    model.pop("apply_pairs", None)
+    model.pop("apply_pairs_skipped", None)
 
 
 def additions(data: dict, source: Path, what: str = "outcomes") -> dict:
@@ -403,6 +415,8 @@ def load(raw_file: Path) -> dict:
     runs = load(Path(data["source"]))  # the source may be such a file too
     for run, models in zip(runs["runs"], data["added"]):
         for model, added in zip(run.get("models", []), models):
+            if "apply_pairs" in added:  # check 6, perhaps asked again: these answers stand for the earlier ones
+                _without_applies(model)
             model["background"] = model["background"] + added["facts"]
             model.update({key: value for key, value in added.items() if key != "facts"})
     runs["prompts"].update(data["prompts"])

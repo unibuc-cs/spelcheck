@@ -4814,6 +4814,45 @@ one of them. A new set first (`eval23/`).
 
 ---
 
+## T42 — Development: a sentence about rules that apply in several cases (2026-11-27)
+
+**Question.** T41 showed three wrong steps of one shape: the rule applies in
+several cases, and the fact is about one of them. Does one sentence in the
+prompt of check 6 stop them? The sentence, in its "no": "This is also the
+answer when the requirement applies in several cases and B is the case in
+only some of them (if it applies when it rains or when it snows, it need not
+be snowing)". `eval23/` was written and committed first and is not read.
+
+**How.** Check 6 was asked again with the sentence on saved runs: the runs
+of `eval20/`, `eval21/` and `eval22/` (`T42_eval20`, `T42_eval21`,
+`T42_eval22`), and the parts of the four changes of the real project from
+T41. To ask it again, `--rescore ... --applies-base-url` now drops the
+earlier answers of the check first.
+
+- **On our sets nothing changes**: 24 of 24, 15 of 24 and 24 of 24 planted
+  conflicts, and the same changes with a conflict as with the prompt of
+  step 46.
+- **On the project the wrong steps stay.** The rule about two calls and the
+  fact about the second: 7 of 8 "yes" before, 7 of 8 with the sentence. The
+  rule about four calls: 8 of 8 both times. Of the five wrong steps two
+  went, both from 5 of 8 to 4 of 8. And the step that the check was built
+  for, from "approved" to "requested", went from 8 of 8 to 6 of 8.
+- **Why: the model reads the question backwards.** Its reasons for the
+  rule about two calls all go one way: fact B says that the second tool is
+  called; so, where the requirement is obeyed, the caller is the agent that
+  the requirement names. It takes B as given, finds that the requirement
+  then applies, and says yes. The prompt shows B as a fact
+  marked TRUE, and asks "Is B then the case?". Where B is one of the cases
+  in which the requirement applies, that reading gives a "yes". A sentence
+  about several cases does not touch it.
+
+**Decision.** The sentence is not kept: one try, as planned (plan.md 2.4).
+What the reasons show is a different defect, with a different remedy: B
+must be shown as a statement to judge, not as a given. That is step 48
+(plan.md 2.5), and `eval23/`, still unread, is its test.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

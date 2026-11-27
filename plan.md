@@ -383,7 +383,7 @@ conflicts in 12, and in 0 without; a "near" change has a conflict about it
 in 1 run either way, and none of the 59 questions asked there was answered
 yes. Step 46 stays.
 
-### 2.4 The plan for step 47: a rule that applies in several cases (not built yet)
+### 2.4 Step 47: a rule that applies in several cases (tried on saved runs, not kept)
 
 A run of the tool on the real project from scratch (T41) showed where the
 question of step 46 goes wrong. Of the 35 steps it said yes to, 5 are wrong,
@@ -417,6 +417,34 @@ and if, asked on the saved runs of `eval20/`, `eval21/` and `eval22/`, it
 loses no planted conflict there and gives no conflict to a change that
 should have none. If the prompt of step 46 gives no conflict to a "several"
 change either, the set does not test the sentence, and that is said.
+
+**What happened** (T42). Asked again with the sentence on saved runs, the
+wrong steps of the real project stay: the rule about two calls and the fact
+about the second got 7 of 8 "yes" before and after. The model's reasons
+show another defect: it takes B as given (B says that the second tool is
+called, so the caller is the agent that the requirement names), finds that
+the requirement then applies, and says yes. The sentence is not kept,
+and `eval23/` was not run.
+
+### 2.5 The plan for step 48: the fact is a statement to judge, not a given (not built yet)
+
+**The change.** The prompt of check 6 shows B as a fact "marked TRUE" and
+asks "Is B then the case?". It will say that B is a statement that is not
+given, ask whether B must be true wherever the requirement applies and is
+obeyed, and define "no" by the counterexample: there can be such a
+situation in which B is false. The user message says "Statement B" where it
+said "Fact B". The pairs, the votes and the fact that a "yes" gives stay as
+they are. One try.
+
+**How it is tested, and the rule.** As for step 47: `eval23/`, the same
+runs asked with the prompt of step 46 and with the new one, doubtful
+conflicts set aside. It stays if the "several" changes have a conflict
+about them less often and the "chain" and "breaks" conflicts are found no
+less often; and if, asked on the saved runs of `eval20/`, `eval21/` and
+`eval22/`, it loses no planted conflict and gives no conflict to a change
+that should have none. If the prompt of step 46 gives no conflict to a
+"several" change either, the set does not test the change, and that is
+said.
 
 Small things that are open:
 
