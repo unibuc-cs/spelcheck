@@ -337,6 +337,25 @@ def conditions_one(job: tuple) -> dict:
         return {"error": str(error)}
 
 
+def again_one(job: tuple) -> dict:
+    """Ask checks 4, 5 and 6 again on one saved formal model that has them, in the order of formalize.
+
+    Check 5 and check 6 choose their pairs with the facts of check 4, so the
+    three go together: their facts and pairs are dropped first (_without_pairs).
+    job = (base_url, formal model, temperature, the rules of the change or None).
+    """
+    base_url, model, temperature, first = job
+    try:
+        llm, vocab = LLM(base_url), Vocabulary(model["symbols"])
+        _without_pairs(model)
+        outcomes(llm, model, vocab, temperature, keep_answers=True, first=first)
+        conditions(llm, model, vocab, temperature, keep_answers=True, first=first)
+        applies(llm, model, vocab, temperature, keep_answers=True, first=first)
+        return model
+    except Exception as error:
+        return {"error": str(error)}
+
+
 def applies_one(job: tuple) -> dict:
     """Probe check 6 on one saved formal model, as outcomes_one does check 4; job[3]: the rules of the change."""
     base_url, model, temperature, first = job
@@ -356,6 +375,8 @@ def add_outcomes(data: dict, base_url: str, what: str = "outcomes") -> None:
     "about": "applies") counts as added by this call (see additions).
     Check 6 can also be asked again, on runs that have it: it is the last
     step, so its earlier answers are dropped first and nothing else changes.
+    With what="again" the three checks are asked again on runs that have
+    them (again_one): to compare two prompts of check 4 on the same runs.
     """
     def changed(run: dict) -> set | None:
         """The rules that the change of this run added or modified (None for a plain spec)."""
@@ -365,11 +386,13 @@ def add_outcomes(data: dict, base_url: str, what: str = "outcomes") -> None:
 
     pairs = [(model, changed(run)) for run in data["runs"] for model in run.get("models", [])]
     models = [model for model, _ in pairs]
-    if what == "applies":
-        for model in models:
+    for model in models:
+        if what == "applies":
             _without_applies(model)
+        elif what == "again":
+            _without_pairs(model)
     temperature = data.get("temperature", 0.7)
-    one = {"outcomes": outcomes_one, "conditions": conditions_one, "applies": applies_one}[what]
+    one = {"outcomes": outcomes_one, "conditions": conditions_one, "applies": applies_one, "again": again_one}[what]
     with ProcessPoolExecutor(max_workers=32) as pool:
         done = list(pool.map(one, [(base_url, model, temperature, first) for model, first in pairs]))
     failed = 0
@@ -378,10 +401,22 @@ def add_outcomes(data: dict, base_url: str, what: str = "outcomes") -> None:
             failed += 1
         else:
             model.update(result)
-    data["prompts"][what] = {"outcomes": probe_module.OUTCOMES_SYSTEM, "conditions": probe_module.CONDITIONS_SYSTEM,
-                             "applies": probe_module.APPLIES_SYSTEM}[what]
+    asked = {"outcomes": probe_module.OUTCOMES_SYSTEM, "conditions": probe_module.CONDITIONS_SYSTEM,
+             "applies": probe_module.APPLIES_SYSTEM}
+    data["prompts"].update(asked if what == "again" else {what: asked[what]})
     data[f"{what}_added"] = datetime.now().isoformat(timespec="seconds")
     data[f"{what}_failed"] = failed
+
+
+PAIR_LISTS = ("outcome_pairs", "condition_pairs", "apply_pairs")
+
+
+def _without_pairs(model: dict) -> None:
+    """Take the questions of checks 4, 5 and 6 and their facts out of a formal model, in place."""
+    model["background"] = [fact for fact in model["background"] if "between" not in fact]
+    for name in PAIR_LISTS:
+        model.pop(name, None)
+        model.pop(f"{name}_skipped", None)
 
 
 def _without_applies(model: dict) -> None:
@@ -393,16 +428,22 @@ def _without_applies(model: dict) -> None:
 
 def additions(data: dict, source: Path, what: str = "outcomes") -> dict:
     """What add_outcomes added to the runs saved in `source`, as a file of its own."""
-    pairs = {"outcomes": "outcome_pairs", "conditions": "condition_pairs", "applies": "apply_pairs"}[what]
-    added = (lambda fact: "between" in fact) if what == "outcomes" else (lambda fact: fact.get("about") == what)
+    lists = PAIR_LISTS if what == "again" else (
+        {"outcomes": "outcome_pairs", "conditions": "condition_pairs", "applies": "apply_pairs"}[what],)
+    added = ((lambda fact: "between" in fact) if what in ("outcomes", "again")
+             else (lambda fact: fact.get("about") == what))
+    prompts = ("outcomes", "conditions", "applies") if what == "again" else (what,)
     return {
         "source": source.as_posix(),
         f"{what}_added": data[f"{what}_added"],
         f"{what}_failed": data[f"{what}_failed"],
-        "prompts": {what: data["prompts"][what]},
+        "prompts": {name: data["prompts"][name] for name in prompts},
         # For each run, for each of its formal models: the pairs asked about
-        # (with every answer) and the assumed facts they gave.
-        "added": [[{pairs: model.get(pairs, []), "facts": [fact for fact in model["background"] if added(fact)]}
+        # (with every answer) and the assumed facts they gave. With "again",
+        # these stand for the pairs and facts of the three checks in the source.
+        "added": [[{**{name: model[name] for name in lists + tuple(f"{n}_skipped" for n in lists) if name in model},
+                    **({name: [] for name in lists[:1] if name not in model}),
+                    "facts": [fact for fact in model["background"] if added(fact)]}
                    for model in run.get("models", [])] for run in data["runs"]],
     }
 
@@ -415,7 +456,9 @@ def load(raw_file: Path) -> dict:
     runs = load(Path(data["source"]))  # the source may be such a file too
     for run, models in zip(runs["runs"], data["added"]):
         for model, added in zip(run.get("models", []), models):
-            if "apply_pairs" in added:  # check 6, perhaps asked again: these answers stand for the earlier ones
+            if "again_added" in data:   # checks 4 to 6 asked again: these stand for the earlier ones
+                _without_pairs(model)
+            elif "apply_pairs" in added:  # check 6, perhaps asked again: these answers stand for the earlier ones
                 _without_applies(model)
             model["background"] = model["background"] + added["facts"]
             model.update({key: value for key, value in added.items() if key != "facts"})
@@ -970,6 +1013,9 @@ def main() -> None:
                                                       "rules that clash, asked at this server, and save them under --name")
     parser.add_argument("--applies-base-url", help="with --rescore: add the questions whether what one rule demands "
                                                    "makes another rule apply, asked at this server, under --name")
+    parser.add_argument("--outcomes-again-base-url",
+                        help="with --rescore: on runs that have them, ask the questions about two outcomes again, and "
+                             "after them those about two conditions and whether a rule applies; save them under --name")
     parser.add_argument("--incremental", action="store_true",
                         help="OpenSpec changes: formalize the specs of a project once, and each change on top")
     parser.add_argument("--whole-run", action="store_true",
@@ -986,7 +1032,7 @@ def main() -> None:
             add_second_readings(data, args.second_base_url)
             raw_file.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
         for what, base_url in (("outcomes", args.outcomes_base_url), ("conditions", args.conditions_base_url),
-                               ("applies", args.applies_base_url)):
+                               ("applies", args.applies_base_url), ("again", args.outcomes_again_base_url)):
             if base_url:
                 add_outcomes(data, base_url, what)
                 raw_file = Path("experiments/results") / f"{args.name}.json"  # the old file stays as it is
