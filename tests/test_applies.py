@@ -49,7 +49,7 @@ class FakeLLM:
     def ask(self, system, user, schema, samples=1, temperature=0.0):
         assert system == probe._about(APPLIES_SYSTEM, {"situation": "run"}) and "ONE run of that system" in system
         self.prompts.append(user)
-        requirement = user.split("\n\nFact B:")[0]
+        requirement = user.split("\n\nStatement B:")[0]
         answer = "yes" if any(text in requirement for text in self.linked) else "no"
         return [{"reason": "", "answer": answer,
                  "fact": "An approved call is a call that was made." if answer == "yes" else ""}] * samples
@@ -75,8 +75,8 @@ def test_a_chain_of_three_rules_is_asked_about_where_one_demand_could_make_anoth
 def test_an_answer_that_the_requirement_says_so_is_a_fact_and_the_chain_is_found():
     model, llm = formal([GATE, NOBODY, LATE]), FakeLLM(linked=(GATE["text"],))
     applies(llm, model, Vocabulary(model["symbols"]), temperature=0.7)
-    # The words of R1, and the part of R4's condition as one fact.
-    assert llm.prompts[0] == f"Requirement:\n{GATE['text']}\n\nFact B:\n- TRUE: manager_asked (about manager_asked)"
+    # The words of R1, and the part of R4's condition as one statement.
+    assert llm.prompts[0] == f"Requirement:\n{GATE['text']}\n\nStatement B:\n- TRUE: manager_asked (about manager_asked)"
     assert model["apply_pairs"] == [
         {"rules": ["R1", "R4"], "part": {"manager_asked": True}, "answers": {"yes": 8, "no": 0, "unclear": 0}},
         {"rules": ["R5", "R4"], "part": {"manager_asked": True}, "answers": {"yes": 0, "no": 8, "unclear": 0}}]

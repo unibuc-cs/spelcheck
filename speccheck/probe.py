@@ -781,23 +781,24 @@ def conditions(llm: LLM, formal: dict, vocab: Vocabulary, temperature: float,
 
 
 APPLIES_SYSTEM = """\
-You get ONE requirement of a software system, and a fact B about ONE \
-snapshot of that system. B is marked TRUE or FALSE; a fact marked FALSE is \
-not the case.
+You get ONE requirement of a software system, and a statement B about ONE \
+snapshot of that system. B is not given: it may be true or false, and you \
+have to say which. B is written as a fact marked TRUE or FALSE; B marked \
+FALSE says that the fact is not the case.
 
-Take a situation in which the requirement applies, and a system that does \
+Take any situation in which the requirement applies, and a system that does \
 everything the requirement demands, with its words read exactly as written. \
-Is B then the case? Answer:
-- yes: by the meaning of the requirement's words alone, B is the case \
-whenever the requirement applies and is obeyed (if it demands that a letter \
-was answered, a letter was received; if it demands that every window is \
-shut, the kitchen window is shut).
-- no: the requirement can be obeyed while B is not the case. This is also \
-the answer when B would usually come before what the requirement demands, \
-or when a system would need B to bring it about. Do not assume how the \
-system works, or that anything succeeds (if it demands that the gate is \
-open, nobody need have opened it today; if it demands that the bell is rung \
-once, the bell need not have been heard).
+Must B be true there? Answer:
+- yes: by the meaning of the requirement's words alone, B is true in every \
+such situation (if it demands that a letter was answered, a letter was \
+received; if it demands that every window is shut, the kitchen window is \
+shut).
+- no: there can be such a situation in which B is false. Look for one before \
+you answer. This is also the answer when B would usually come before what \
+the requirement demands, or when a system would need B to bring it about. \
+Do not assume how the system works, or that anything succeeds (if it demands \
+that the gate is open, nobody need have opened it today; if it demands that \
+the bell is rung once, the bell need not have been heard).
 - unclear: the words can reasonably be read both ways.
 
 First give the reason in one or two sentences, then the answer. If the answer \
@@ -822,9 +823,9 @@ def applies(llm: LLM, formal: dict, vocab: Vocabulary, temperature: float,
 
     Runs last, on all the facts that the other checks left or added. The
     model gets the words of rule a and one part of the condition of rule b,
-    as a fact B, and says whether B is the case wherever a applies and is
-    obeyed. Three things in this were learned on saved runs (research_log.md,
-    T39):
+    as a statement B, and says whether B must be true wherever a applies and
+    is obeyed. Four things in this were learned on saved runs
+    (research_log.md, T39, T42, T43):
 
     - the words of the requirement are shown, not the symbols of what it
       demands. The description of a symbol can say less than the requirement
@@ -834,9 +835,13 @@ def applies(llm: LLM, formal: dict, vocab: Vocabulary, temperature: float,
       would need is not what the words say. Asked with the prompt of check 4
       or of check 2, the model also answered "impossible" for "to give the
       return label it must have found the parcel";
-    - fact B is shown alone. Shown with the condition of a as a situation,
-      the model judged those facts too, and called situations impossible for
-      reasons that had nothing to do with B.
+    - B is shown alone. Shown with the condition of a as a situation, the
+      model judged those facts too, and called situations impossible for
+      reasons that had nothing to do with B;
+    - B is a statement to judge, and the prompt says that it is not given.
+      Shown as "Fact B", marked TRUE, the model took it as given where it is
+      one of the cases in which a applies ("a call of X or Y is made", and B
+      about Y), found that a then applies, and said yes.
 
     Adds to formal:
         "apply_pairs"  every question asked, with the count of its answers:
@@ -869,7 +874,7 @@ def applies(llm: LLM, formal: dict, vocab: Vocabulary, temperature: float,
 
     def ask(pair: tuple) -> list[dict]:
         a, _, part = pair
-        prompt = f"Requirement:\n{a['text']}\n\nFact B:\n{describe(part, descriptions)}"
+        prompt = f"Requirement:\n{a['text']}\n\nStatement B:\n{describe(part, descriptions)}"
         return llm.ask(system, prompt, APPLIES_SCHEMA, ANSWERS, temperature)
 
     with ThreadPoolExecutor(max_workers=16) as pool:  # LLM calls only

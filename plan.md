@@ -426,15 +426,25 @@ called, so the caller is the agent that the requirement names), finds that
 the requirement then applies, and says yes. The sentence is not kept,
 and `eval23/` was not run.
 
-### 2.5 The plan for step 48: the fact is a statement to judge, not a given (not built yet)
+### 2.5 Step 48: the fact is a statement to judge, not a given (built; `eval23/` not run yet)
 
-**The change.** The prompt of check 6 shows B as a fact "marked TRUE" and
-asks "Is B then the case?". It will say that B is a statement that is not
-given, ask whether B must be true wherever the requirement applies and is
-obeyed, and define "no" by the counterexample: there can be such a
+**The change.** The prompt of check 6 showed B as a fact "marked TRUE" and
+asked "Is B then the case?". It now says that B is a statement that is not
+given, asks whether B must be true wherever the requirement applies and is
+obeyed, and defines "no" by the counterexample: there can be such a
 situation in which B is false. The user message says "Statement B" where it
 said "Fact B". The pairs, the votes and the fact that a "yes" gives stay as
 they are. One try.
+
+**The trial before the freeze** (T43, on saved runs). On `eval20/` to
+`eval22/` nothing changes. On the parts of the four real changes the three
+wrong steps of that shape go from 7, 8 and 5 of 8 answers to 0 of 8, and
+the step from "approved" to "requested" stays at 8 of 8. The question now
+adds 2 conflicts over the four changes, where it added 7: the missing
+approval and one artefact. Two wrong steps of another kind stay (one
+refusal taken for another), and one new one came: a part marked FALSE,
+where the model says that the fact is true and then answers "yes". Such
+parts are 61 of 2,768 questions. It is a limit of this form.
 
 **How it is tested, and the rule.** As for step 47: `eval23/`, the same
 runs asked with the prompt of step 46 and with the new one, doubtful

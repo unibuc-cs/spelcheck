@@ -4853,6 +4853,60 @@ must be shown as a statement to judge, not as a given. That is step 48
 
 ---
 
+## T43 — Development: the fact as a statement to judge, not a given (2026-11-27)
+
+**Question.** T42 showed that the model reads the question of check 6
+backwards: it takes fact B as given and finds that the requirement then
+applies. Step 48 (plan.md 2.5) says in the prompt that B is a statement
+that is not given, asks "Must B be true there?", and defines "no" by a
+counterexample: there can be such a situation in which B is false. Does that
+stop the wrong steps, and keep the right ones? `eval23/` is not read.
+
+**How.** As in T42: check 6 asked again on the saved runs of `eval20/`,
+`eval21/` and `eval22/` (`T43_eval20`, `T43_eval21`, `T43_eval22`), and on
+the parts of the four changes of the real project from T41.
+
+- **On our sets nothing changes**: 24 of 24, 15 of 24 and 24 of 24 planted
+  conflicts, and the same changes with a conflict as before.
+- **On the project the three wrong steps of one shape are gone**, with no
+  vote left:
+
+  | The step | Form of step 46 | New form |
+  |---|---|---|
+  | a rule about two calls, and the fact that the second is called | 7 of 8 | 0 of 8 |
+  | a rule about four calls, and a fact about two of them in a kind of run | 8 of 8 | 0 of 8 |
+  | a rule "for any n from 1 to 60", and the fact that the request is for 3 | 5 of 8 | 0 of 8 |
+  | from "approved" to "requested", the step the check was built for | 8 of 8 | 8 of 8 |
+
+- **The conflicts that are not doubtful**, on the same parts, against the
+  application's specs:
+
+  | Change | Without check 6 | Form of step 46 | New form |
+  |---|---|---|---|
+  | cannot be built | 8 | 11 | 9 |
+  | can be built | 3 | 6 | 3 |
+  | can be built | 2 | 3 | 3 |
+  | can be built | 3 | 3 | 3 |
+
+  The question now adds 2 conflicts over the four changes, where it added
+  7: the missing approval, and one artefact that rests on a right step.
+- **What stays wrong.** The two steps that take one refusal for another (5
+  and 6 of 8). And one new wrong step, of a kind of its own: a part marked
+  FALSE. The requirement says that the plan was written; B is "FALSE: the
+  run has a plan". The reasons say that the run has a plan, "making the
+  assertion that it is FALSE incorrect", and the answer is "yes": 3 of 8
+  before, 7 of 8 now. Parts marked FALSE are rare, 61 of the 2,768
+  questions; 2 of them are answered yes, one rightly ("the approver
+  refuses", and "FALSE: the approval was granted"). The wrong one adds no
+  conflict here: its two rules already clash through a link.
+- The steps said yes to: 30, where they were 35 (2, 8, 18 and 2 for the
+  four changes).
+
+**Decision.** The form is frozen as planned, for the held-out test on
+`eval23/`. The part marked FALSE is written down as a limit: one try.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |
