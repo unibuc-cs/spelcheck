@@ -685,6 +685,42 @@ way; 39 of 46 steps get the same vote three times, where 22. Step 51 stays.
 step had described a symbol as a moment ("a call is being made") in a spec
 about runs, and in one a wrong voted fact excludes the situation.
 
+### 2.9 The plan for step 52: in a spec about runs, a symbol is a fact about the run (not built yet)
+
+With `--whole-run` a situation is a whole run, and the questions of step 6
+are told so (step 44). The read step is not: its prompt says that the
+symbols "describe one snapshot of the system: what is the case or is
+happening". So it often describes a symbol as a moment, "a call to
+ask_astronomer is being made": 82 of 771 symbols in the runs of `eval26/`,
+in 35 of 48 runs (T49). Check 6 then answers by that description: an
+earlier call that was approved "does not imply that a call is currently in
+progress". A right step got 0, 3 and 0 of 8 answers with that description,
+and 8 of 8 in every run where the description says "has been made in the
+current run".
+
+**The change.** With `--whole-run`, the read prompt gets one more paragraph
+(`READ_RUN`): the document is about whole runs, one situation is one run
+from a request to its end, and every symbol is described as a fact about
+the run as a whole, which stays true once it has happened ("a letter was
+sent in the run", not "a letter is being sent"). The same paragraph goes
+with the second read (5.1). Nothing changes for a spec that is not about
+runs. One try.
+
+**How it is tested.** `eval27/` (make_eval.py): four more projects in the
+form of `eval26/`, with its four changes. The read step is the first step,
+so the two versions cannot be asked on the same runs: each change is run
+three times with the code before and three times with the new code. The
+same is done once more on `eval26/`, which is development data now, and the
+four changes of the real project are run from scratch with the new code.
+
+**The rule, set before the build.** Step 52 stays if on `eval27/`, with
+doubtful conflicts set aside: a smaller share of the symbols is described
+as a moment (counted by the words of T49); the planted conflicts are found
+in no fewer of the 24 runs that have one; and the changes that should give
+no conflict have one in no more runs. We hope for more planted conflicts
+found; if the code before finds them all, the set shows only that nothing
+is lost, and that is said.
+
 Small things that are open:
 
 - **Long documents** (E14). A spec of 100 requirements works: its read answer

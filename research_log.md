@@ -5464,6 +5464,52 @@ with two calls, which the form of the fact keeps from doing harm.
 
 ---
 
+## T49 — Development: symbols described as a moment in specs about runs (2026-11-27)
+
+**Question.** In E35 a chain of three rules was not found in the three runs
+of one project: the symbol of the step was described as "a call to
+ask_astronomer is being made". How often does the read step describe a
+symbol as a moment in a spec about runs, and what does it do to check 6?
+
+**How.** No model was asked. The descriptions of all symbols in the saved
+runs of `eval20/` to `eval26/` were searched for the words of a moment ("is
+being", "currently", "at the moment", "in progress" and the like). And for
+the step that a chain needs, the description of its statement was put next
+to the votes it got.
+
+| Set | Symbols described as a moment | Runs with such a symbol |
+|---|---|---|
+| `eval20/` | 69 of 1,097 | 43 of 48 |
+| `eval21/` | 10 of 431 | 8 of 36 |
+| `eval22/`, `eval23/`, `eval24/` | 0 of 1,435 | 0 of 97 |
+| `eval25/` | 56 of 458 | 27 of 36 |
+| `eval26/` | 82 of 771 | 35 of 48 |
+
+- **It is common, and it comes in whole sets or not at all.** Nearly all are
+  "is being" ("a call to book_cargo_bike is being made") and "currently".
+- **The tense of the description decides the answer of check 6**, in the
+  runs of E35 and T48:
+
+  | Description of the statement | Votes for the right step |
+  |---|---|
+  | "A call to ask_keeper has been made in the current run" | 8 of 8, in 3 runs |
+  | "A call to ask_doctor is made in the current run" | 8 of 8, in 3 runs |
+  | "The ask_lead_rider tool call was initiated" | 8 of 8, in 3 runs |
+  | "A call to ask_astronomer is being made" | 0, 3 and 0 of 8 |
+
+  The reasons for the "no": "a past approved call does not imply that a
+  call is currently in progress". That is right for the statement as it is
+  described.
+- **Why.** The read prompt says that the symbols "describe one snapshot of
+  the system: what is the case or is happening". With `--whole-run` the
+  questions of step 6 are told that a situation is a run (step 44). The
+  read step is not.
+
+**Decision.** Step 52 (plan.md 2.9): with `--whole-run` the read step is
+told that a situation is a run. `eval27/` first.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

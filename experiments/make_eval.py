@@ -1,6 +1,6 @@
-"""make_eval.py: writes the evaluation sets eval/ to eval26/, size/, size2/ and mixed/. No LLM, no GPU.
+"""make_eval.py: writes the evaluation sets eval/ to eval27/, size/, size2/ and mixed/. No LLM, no GPU.
 
-    python -m experiments.make_eval eval26     (only the sets named; all if none)
+    python -m experiments.make_eval eval27     (only the sets named; all if none)
 
 change_dev/ is development data for the change check: the OpenSpec-format
 specs of eval9/ and eval10/ as projects with a change (see as_projects).
@@ -416,6 +416,12 @@ get one:
              existing rule demands a state from before the run ("the tooth
              was X-rayed at an earlier visit" does not say that `take_xray`
              is called). No conflict may be reported
+
+eval27/ (written 2026-11-27, after E35, in which the read step had described
+symbols as a moment, "a call to ask_astronomer is being made", in specs that
+are about whole runs, and a chain of three rules was then not found; before
+the read step is told that a situation is a run) has four more projects in
+the form of eval26/, with the same four changes.
 """
 
 import json
@@ -4871,10 +4877,125 @@ PROJECTS26 = {
          "near": ("add-show-runs", "Shows are started in runs of their own.")}),
 }
 
+PROJECTS27 = {
+    "shipyard": _project26(
+        "repairs", "repairs-records",
+        ("A yard assistant handles the requests of a small shipyard and calls the tools of the yard system.",
+         "What the runs of the yard assistant leave behind."),
+        ("Foreman before a launch", "A boat SHALL NOT be launched in a planned run without the foreman.",
+         "No launch in a plan without the foreman", "WHEN a call of `launch_boat` succeeds in a run with a plan THEN an earlier call of `ask_foreman` in the run was approved"),
+        ("Who asks and orders", "Only the yard agent SHALL ask the foreman or order paint.",
+         "Only the yard agent asks the foreman or orders paint", "WHEN a call of `ask_foreman` or `order_paint` is made THEN the agent making it is the yard agent"),
+        ("Hull checks", "A boat SHALL be handed over only if its hull was checked.",
+         "A hand-over needs a hull check", "WHEN a call of `hand_over_boat` succeeds THEN the hull was checked when the boat came in"),
+        ("Example: a boat is launched", "WHEN kai asks to launch boat b3 THEN `launch_boat` is called once AND the answer gives the tide time"),
+        ("Launch records", "Every launch SHALL be recorded.",
+         "Every launch is recorded", "WHEN a call of `launch_boat` succeeds THEN the run writes one launch record that names the boat"),
+        ("Regatta days", "On a regatta day a boat SHALL be launched without the foreman.",
+         ("A regatta run asks nobody", "WHEN a call of `ask_foreman` is made THEN the run is not a regatta run"),
+         ("A regatta launch names the slipway", "WHEN a call of `launch_boat` succeeds in a regatta run THEN the answer gives the slipway")),
+        ("Dinghies", "A dinghy SHALL be launched at once.",
+         ("Example: a dinghy", "WHEN kai sends a dinghy request for boat b3 THEN the plan is written once AND `launch_boat` succeeds once AND `ask_foreman` is never called")),
+        ("Inspection runs", "An inspection run SHALL NOT order paint.",
+         ("An inspection run orders no paint", "WHEN a call of `order_paint` is made THEN the run is not an inspection run"),
+         ("An inspection run names the foreman", "WHEN a call of `ask_foreman` is made in an inspection run THEN the answer names the foreman who was asked")),
+        ("Hand-over runs", "A hand-over run SHALL NOT check hulls.",
+         ("A hand-over run checks no hull", "WHEN a call of `check_hull` is made THEN the run is not a hand-over run"),
+         ("A hand-over run gives the invoice", "WHEN a call of `hand_over_boat` succeeds in a hand-over run THEN the answer gives the invoice number")),
+        {"chain": ("add-regatta-days", "On a regatta day the foreman is on the water."),
+         "breaks": ("add-dinghies", "A dinghy is carried to the water."),
+         "several": ("add-inspection-runs", "An inspection changes nothing on a boat."),
+         "near": ("add-hand-over-runs", "Boats are handed over in runs of their own.")}),
+    "orchard": _project26(
+        "harvest", "harvest-records",
+        ("A picking assistant handles the requests of a fruit orchard and calls the tools of the harvest system.",
+         "What the runs of the picking assistant leave behind."),
+        ("Grower before a crew", "A crew SHALL NOT be sent in a planned run without the grower.",
+         "No crew in a plan without the grower", "WHEN a call of `send_crew` succeeds in a run with a plan THEN an earlier call of `ask_grower` in the run was approved"),
+        ("Who asks and rents", "Only the picking agent SHALL ask the grower or rent a tractor.",
+         "Only the picking agent asks the grower or rents a tractor", "WHEN a call of `ask_grower` or `rent_tractor` is made THEN the agent making it is the picking agent"),
+        ("Grading", "Crates SHALL be shipped only with graded fruit.",
+         "Shipped fruit was graded", "WHEN a call of `ship_crates` succeeds THEN the fruit was graded on the day it was picked"),
+        ("Example: a crew is sent", "WHEN bea asks to send a crew to row r6 THEN `send_crew` is called once AND the answer gives the start time"),
+        ("Harvest records", "Every crew that is sent SHALL be recorded.",
+         "Every crew is recorded", "WHEN a call of `send_crew` succeeds THEN the run writes one harvest record that names the row"),
+        ("Ripe weeks", "In a ripe week a crew SHALL be sent without the grower.",
+         ("A ripe-week run asks nobody", "WHEN a call of `ask_grower` is made THEN the run is not a ripe-week run"),
+         ("A ripe-week crew gets its row plan", "WHEN a call of `send_crew` succeeds in a ripe-week run THEN the answer gives the row plan")),
+        ("Windfall", "Windfall SHALL be gathered at once.",
+         ("Example: windfall", "WHEN bea sends a windfall request for row r6 THEN the plan is written once AND `send_crew` succeeds once AND `ask_grower` is never called")),
+        ("Hand-picking runs", "A hand-picking run SHALL NOT rent a tractor.",
+         ("A hand-picking run rents no tractor", "WHEN a call of `rent_tractor` is made THEN the run is not a hand-picking run"),
+         ("A hand-picking run names the grower", "WHEN a call of `ask_grower` is made in a hand-picking run THEN the answer names the grower who was asked")),
+        ("Shipping runs", "A shipping run SHALL NOT grade fruit.",
+         ("A shipping run grades no fruit", "WHEN a call of `grade_fruit` is made THEN the run is not a shipping run"),
+         ("A shipping run gives the weight", "WHEN a call of `ship_crates` succeeds in a shipping run THEN the answer gives the total weight")),
+        {"chain": ("add-ripe-weeks", "Ripe fruit does not wait."),
+         "breaks": ("add-windfall", "Windfall spoils in a day."),
+         "several": ("add-hand-picking-runs", "The old rows are too narrow for a tractor."),
+         "near": ("add-shipping-runs", "Crates are shipped in the evening.")}),
+    "skischool": _project26(
+        "courses", "courses-records",
+        ("A desk assistant handles the requests of a ski school and calls the tools of the course system.",
+         "What the runs of the desk assistant leave behind."),
+        ("Head instructor before a move", "A pupil SHALL NOT be moved in a planned run without the head instructor.",
+         "No move in a plan without the head instructor", "WHEN a call of `move_pupil` succeeds in a run with a plan THEN an earlier call of `ask_head_instructor` in the run was approved"),
+        ("Who asks and books", "Only the desk agent SHALL ask the head instructor or book a lift pass.",
+         "Only the desk agent asks the head instructor or books a lift pass", "WHEN a call of `ask_head_instructor` or `book_lift_pass` is made THEN the agent making it is the desk agent"),
+        ("Tests", "A certificate SHALL be issued only to a pupil who passed the test.",
+         "A certificate needs a passed test", "WHEN a call of `issue_certificate` succeeds THEN the pupil passed the test at the end of the course"),
+        ("Example: a pupil is moved", "WHEN jon asks to move pupil s9 to the blue group THEN `move_pupil` is called once AND the answer gives the meeting point"),
+        ("Course records", "Every move SHALL be recorded.",
+         "Every move is recorded", "WHEN a call of `move_pupil` succeeds THEN the run writes one course record that names the pupil"),
+        ("Snow days", "On a snow day a pupil SHALL be moved without the head instructor.",
+         ("A snow-day run asks nobody", "WHEN a call of `ask_head_instructor` is made THEN the run is not a snow-day run"),
+         ("A snow-day move names the slope", "WHEN a call of `move_pupil` succeeds in a snow-day run THEN the answer names the slope")),
+        ("Returning pupils", "A returning pupil SHALL be moved at once.",
+         ("Example: a returning pupil", "WHEN jon sends a returning-pupil request for pupil s9 THEN the plan is written once AND `move_pupil` succeeds once AND `ask_head_instructor` is never called")),
+        ("Nursery slope", "A nursery-slope run SHALL NOT book lift passes.",
+         ("A nursery-slope run books no lift pass", "WHEN a call of `book_lift_pass` is made THEN the run is not a nursery-slope run"),
+         ("A nursery-slope run names the head instructor", "WHEN a call of `ask_head_instructor` is made in a nursery-slope run THEN the answer names the head instructor who was asked")),
+        ("Certificate runs", "A certificate run SHALL NOT hold tests.",
+         ("A certificate run holds no test", "WHEN a call of `hold_test` is made THEN the run is not a certificate run"),
+         ("A certificate run gives the level", "WHEN a call of `issue_certificate` succeeds in a certificate run THEN the answer gives the level")),
+        {"chain": ("add-snow-days", "On a snow day the head instructor is on the mountain."),
+         "breaks": ("add-returning-pupils", "A returning pupil knows the group."),
+         "several": ("add-nursery-slope", "The nursery slope has a rope tow."),
+         "near": ("add-certificate-runs", "Certificates are issued on the last day.")}),
+    "bookbinder": _project26(
+        "bindings", "bindings-records",
+        ("A workshop assistant handles the requests of a bookbinder and calls the tools of the job system.",
+         "What the runs of the workshop assistant leave behind."),
+        ("Master before a binding", "A binding SHALL NOT be started in a planned run without the master.",
+         "No binding in a plan without the master", "WHEN a call of `start_binding` succeeds in a run with a plan THEN an earlier call of `ask_master` in the run was approved"),
+        ("Who asks and orders", "Only the workshop agent SHALL ask the master or order leather.",
+         "Only the workshop agent asks the master or orders leather", "WHEN a call of `ask_master` or `order_leather` is made THEN the agent making it is the workshop agent"),
+        ("Photographs", "A volume SHALL be returned only if it was photographed.",
+         "A returned volume was photographed", "WHEN a call of `return_volume` succeeds THEN the volume was photographed when it came in"),
+        ("Example: a volume is bound", "WHEN eva asks to bind volume w2 THEN `start_binding` is called once AND the answer gives the finishing date"),
+        ("Job records", "Every binding SHALL be recorded.",
+         "Every binding is recorded", "WHEN a call of `start_binding` succeeds THEN the run writes one job record that names the volume"),
+        ("Thesis weeks", "In a thesis week a binding SHALL be started without the master.",
+         ("A thesis-week run asks nobody", "WHEN a call of `ask_master` is made THEN the run is not a thesis-week run"),
+         ("A thesis binding names the cover", "WHEN a call of `start_binding` succeeds in a thesis-week run THEN the answer names the cover colour")),
+        ("Reprints", "A reprint SHALL be bound at once.",
+         ("Example: a reprint", "WHEN eva sends a reprint request for volume w2 THEN the plan is written once AND `start_binding` succeeds once AND `ask_master` is never called")),
+        ("Paper covers", "A paper-cover run SHALL NOT order leather.",
+         ("A paper-cover run orders no leather", "WHEN a call of `order_leather` is made THEN the run is not a paper-cover run"),
+         ("A paper-cover run names the master", "WHEN a call of `ask_master` is made in a paper-cover run THEN the answer names the master who was asked")),
+        ("Return runs", "A return run SHALL NOT take photographs.",
+         ("A return run takes no photograph", "WHEN a call of `photograph_volume` is made THEN the run is not a return run"),
+         ("A return run gives the price", "WHEN a call of `return_volume` succeeds in a return run THEN the answer gives the price")),
+        {"chain": ("add-thesis-weeks", "In the weeks before the deadline the master binds too."),
+         "breaks": ("add-reprints", "A reprint is bound like the first copy."),
+         "several": ("add-paper-covers", "A paper cover needs no leather."),
+         "near": ("add-return-runs", "Volumes are returned in runs of their own.")}),
+}
+
 PROJECT_SETS = {"eval11": PROJECTS11, "eval13": PROJECTS13, "eval14": PROJECTS14, "eval15": PROJECTS15,
                 "mixed": PROJECTS_MIXED, "eval20": PROJECTS20, "eval21": PROJECTS21, "eval22": PROJECTS22,
                 "eval23": PROJECTS23, "eval24": PROJECTS24, "eval25": PROJECTS25,
-                "eval26": PROJECTS26,
+                "eval26": PROJECTS26, "eval27": PROJECTS27,
                 "change_dev": as_projects({**SPECS9, **SPECS10})}
 
 
