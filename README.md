@@ -66,7 +66,8 @@ Where the project stands:
 - on an eleventh set, where every planted conflict says the opposite outcome
   in other words, it found 34 of 36. That is with a newer step, the questions
   about two outcomes, which also reports more conflicts that nobody planted
-  (3 of 18 clean runs);
+  (3 of 18 clean runs). Since that question says what does not count, it
+  finds 32 of 36 there, and half as many conflicts that nobody planted;
 - it found 71 of the 72 planted gaps on the four sets that have them, and
   reported a gap that is not one in 0 to 5 of 18 clean runs;
 - it finds about half of the planted ambiguities, and 30 to 32 of 36 with a
@@ -114,8 +115,11 @@ Where the project stands:
   specs, and an approval that an existing rule demands and the change
   forbids, a chain of three rules. In the spec files of the other three
   changes no conflict is found in more than 3 parts. The other two reasons
-  are not found, and every report also has 1 to 6 conflicts with a rule of
-  another spec file that are artefacts, mostly other ones in each run ([A real project of that kind](#a-real-project-of-that-kind-testingtheagents)).
+  are not found. The four reports had 9, 3, 3 and 3 conflicts that are not
+  doubtful, half of them from wrong answers of the model about what can be
+  true together; since that question says what does not count they have 5,
+  2, 2 and 1
+  ([A real project of that kind](#a-real-project-of-that-kind-testingtheagents)).
 
 | Read next | For |
 |---|---|
@@ -124,6 +128,7 @@ Where the project stands:
 | this file | a worked example with real output, the results, how to run it |
 | [plan.md](plan.md) | where we are, what is next, and the exact rule behind each decision |
 | [research.md](research.md) | what we found, with the numbers |
+| [research_issues.md](research_issues.md) | every problem we ran into, in plain words: the problem, a real example, what we did, the result. For a paper or a talk |
 | [research_log.md](research_log.md) | the archive: every experiment in detail. Not needed to understand the project |
 
 Everything quoted below is real output, produced with Qwen3.8-27B-FP8 on vLLM.
@@ -452,6 +457,18 @@ New fact:      (not (and payment_taken payment_refused))
 
 With this fact Z3 proves the conflict. The steps of all three are in
 [GUIDE.md, section 3.2](GUIDE.md#32-telling-the-solver-what-the-words-mean).
+
+The question also says what does not make two outcomes impossible. On a
+real project the wrong answers had two shapes, and the prompt names both:
+
+- *How a system works.* A request is refused, and nothing is written to the
+  audit log: "impossible", the model said, because "a refused request
+  generates an audit event". The words do not say that. The prompt: do not
+  assume how the system works, or that anything succeeds or is written
+  down.
+- *Two things taken for one.* A limit of 40 tool calls, and "no tool was
+  called": "a run cannot have zero tool calls if the maximum is 40". The
+  prompt: the two statements can be about two different things.
 
 Facts and links are the LLM's guesses, so they are handled with care:
 
@@ -1038,6 +1055,7 @@ Nothing in the code or in the prompts is about orders.
 | `experiments/sets/eval22` | four more such projects, each with a rule that a call needs an earlier approved call, and three changes: a contradiction that is a chain of three rules, an example that breaks the rule, and a chain that only looks like one | the test of the question whether what one rule demands makes another rule apply |
 | `experiments/sets/eval23` | four more, each also with a rule whose condition names two calls, and three changes: a chain, an example that breaks a rule, and a rule about the second of the two calls, where nothing may be reported | the test of that question put as a statement to judge |
 | `experiments/sets/eval24` | four more, each with a rule whose condition names two calls and one whose condition names three, and three changes: a rule that says the opposite of the first of these for one call, an example that breaks a rule, and a rule that should give no conflict | the test of a scenario that the model lists once for each of its events |
+| `experiments/sets/eval25` | four more, each with three rules about three happenings, and three changes of one rule: one that contradicts a rule in other words, one that only a guess about the system sets against a rule, and one about another thing | the test of the question about two outcomes, told what does not count |
 
 ## How reliable is it
 
@@ -1357,39 +1375,62 @@ Some notes on these numbers:
     changes gets a gap about it, with either code: its second rule is the
     only one about its call, and covers one kind of run. That is how we
     wrote the set.
+- Half of the conflicts in the reports of that project rested on a wrong
+  answer to the question about two outcomes: 9 of 18 (T46). The question
+  now says what does not count
+  ([Assumed facts and links](#assumed-facts-and-links)). Tested on four more
+  projects of ours (`eval25/`), the same runs asked with the old prompt and
+  with the new one, doubtful conflicts set aside (E34):
+  - a contradiction said in other words ("the customer was sent a
+    confirmation" against "no message is sent to any customer"): found in
+    12 of 12 runs, both times;
+  - a change that only a guess about the system sets against an existing
+    rule ("every batch is listed as turned" and "`turn_batch` is never
+    called"), or that is about another thing: a conflict in 5 of 24 runs
+    before, 3 after. One of the 3 comes from a link that makes the same
+    guess, and two from a pair that most answers still call impossible (5
+    and 6 of 8, where 8);
+  - asked on the saved runs of the sets before: nothing is lost on
+    `eval20/` to `eval24/` that rests on this question. On `eval12/`, the
+    set it was built on, 32 of 36 planted conflicts are found where 33
+    were, and 12 conflicts that nobody planted where 18 were. The one that
+    is lost is "delete the payslips" against "keep every payslip for ten
+    years", written as a number; it was found on a vote of 5 to 3. So the
+    rule we had set for those runs was not met as written, and the new
+    prompt was kept because it gains more than it loses (T47).
 - That project, TestingTheAgents, each change against the 24 spec files of
-  the application: the run from scratch by the commands
-  [above](#a-real-project-of-that-kind-testingtheagents), with the question
-  asked in its final form (T44). In brackets: the same run without the
-  facts of that question.
+  the application: the parts of the run from scratch by the commands
+  [above](#a-real-project-of-that-kind-testingtheagents), with the three
+  questions about pairs of rules asked again in their final form (T47). In
+  brackets: the same parts before the question about two outcomes was
+  changed.
 
   | Change | Conflicts, not doubtful | In the spec files of the change, with the parts that found each | With a rule of another spec file | Doubtful |
   |---|---|---|---|---|
-  | `add-instant-bulk-takedown-workflow`, cannot be built | 9 (8) | 2: in 16 and 1 of 24 parts | 7 (6) | 19 |
-  | `add-licence-expiry-sweep-workflow`, can be built | 3 (3) | 2: in 2 and 1 of 24 parts | 1 (1) | 32 |
-  | `add-page-retirement-workflow`, can be built | 3 (2) | 0 | 3 (2) | 54 |
-  | `add-scheduled-batch-republish-workflow`, can be built | 3 (3) | 0 | 3 (3) | 19 |
+  | `add-instant-bulk-takedown-workflow`, cannot be built | 5 (9) | 2: in 16 and 1 of 24 parts | 3 (7) | 9 (19) |
+  | `add-licence-expiry-sweep-workflow`, can be built | 2 (3) | 2: in 2 and 1 of 24 parts | 0 (1) | 21 (32) |
+  | `add-page-retirement-workflow`, can be built | 2 (3) | 1: in 1 of 23 parts | 1 (3) | 35 (54) |
+  | `add-scheduled-batch-republish-workflow`, can be built | 1 (3) | 0 | 1 (3) | 7 (19) |
 
   - Two of the authors' four reasons are in the first report. The conflict
     found in 16 parts is the contradiction between two rules of the change.
-    One of the 7 with a rule of another spec file is the missing approval:
+    One of the 3 with a rule of another spec file is the missing approval:
     the existing rule that nothing goes live or down in a plan without an
     approval, against the change's rule that such a run asks nobody, "if
     the assumed facts hold", through the fact that an approved request is a
-    request that was made. The question found it in two formalizations of
-    two.
-  - The question adds 2 conflicts over the four changes: the missing
-    approval, and one on a change that can be built, which holds under one
-    reading of an ambiguous rule; the report says so. Before it was put as
-    a statement to judge it added 7.
+    request that was made.
+  - The 9 conflicts that rested on a wrong answer about two outcomes are
+    gone. One of them was close to the missing approval: a rule that a
+    takedown is guarded, against an example in which pages go down with no
+    request for approval. The model had excluded the two by how a system
+    works, and that is not reported any more.
+  - What is left with a rule of another spec file, 5 conflicts over the four
+    changes: the missing approval; two that set a property of one call
+    against a property of another call; one through a link; one that holds
+    under one reading of an ambiguous rule, which the report says.
   - The number of conflicts does not tell the changes apart; the number of
-    parts does. The other conflicts with a rule of another spec file are
-    artefacts, those we read: a wrong assumed fact between two unrelated
-    happenings of one run, or an attribute of one call taken for an
-    attribute of the run. They are mostly other ones in each run: the
-    earlier run had 6, 5, 3 and 1 conflicts without the new question.
-    Against all 33 spec files, the 9 of the project's test harness add up
-    to 9 more. The doubtful ones are all marked for an example.
+    parts does. Against all 33 spec files, the 9 of the project's test
+    harness add more. The doubtful ones are all marked for an example.
   - The authors' other two reasons are not found: one needs rules of three
     spec files, and one is arithmetic over the steps of a run.
 - The numbers are small: the specs were written by us, there is one main
@@ -1405,7 +1446,7 @@ Some notes on these numbers:
 | An assumed fact or link can be wrong, even with a majority | the report quotes every one a conflict depends on, so you can judge |
 | Some proven conflicts are artefacts of the model | two events at the same moment ("a visitor signs up" while "a subscriber changes the address"); "at least 24 hours" and "less than 24 hours" as two symbols, both true. These are marked *doubtful* |
 | The *doubtful* mark needs the LLM to name the event each rule reacts to | a state taken for an event ("WHEN a member is suspended") marks a real conflict too |
-| "Remove" against "keep" is still missed when "keep for N years" becomes only a number | "delete the listing" becomes a yes/no symbol, `listing_deleted`, and "keep every listing for seven years" becomes a number of years. For Z3 nothing connects the two, and the question about the two outcomes is answered "possible" as often as not (GUIDE.md, section 6.4) |
+| "Remove" against "keep" is still missed when "keep for N years" becomes only a number | "delete the listing" becomes a yes/no symbol, `listing_deleted`, and "keep every listing for seven years" becomes a number of years. For Z3 nothing connects the two, and the question about the two outcomes is answered "possible" as often as not (GUIDE.md, section 6.4). Since the question about two outcomes says that a setting and what happened are two things, it answers "possible" here more firmly: on `eval12/` this case was found on a vote of 5 to 3, and is not found now |
 | The questions about two outcomes also report conflicts that nobody planted | "release the coat when the guest shows the token" against "list a coat as unclaimed after 30 days": in one snapshot a coat collected late falls under both. No mark catches this kind yet. On a long spec only the first 40 pairs of rules are asked about |
 | Gaps depend on the symbols, and on the events the LLM marks | "free" and "taken" as two symbols give a false gap, and it is rarely marked doubtful. The gap in which no event happens, which almost every spec has, is marked as such and is rarely something to fix |
 | One snapshot, no time | "then", "after" and "until" are not modelled |
@@ -1415,7 +1456,9 @@ Some notes on these numbers:
 | The question about two conditions also doubts real conflicts | in the order example above, a run made today marks R1 against R5 as doubtful: "An order that has been canceled and refunded cannot currently be an active submitted order with available inventory." The Kiro blog reports that conflict. And it calls two flags of one command impossible ("--default" and "--no-default"), where what the tool does with both is a fair question. A doubtful conflict stays in the report, with the sentence it is doubted for |
 | The second read adds symbols that are about one rule | `openspec_dir_created` next to `openspec_dir_exists`. The rule can be written then, but it clashes with another rule only through the assumed facts. A rule with no usable translation at all is not read again |
 | A voted translation can say less than the rule | when the eight translations differ only in their symbols, the rule is kept with what more than half of them entail. "Display success message with archived name and list of updated specs" became "the success message is displayed". `formal.json` marks such a rule (`"voted": "7/7"`), the report does not. A split that the vote settles is no longer a question to the author: on `eval18/` that happened to 5 of 36 planted ambiguities, and 1 was still found |
-| With `--whole-run`, the question about two outcomes is asked of many more pairs, and errs more | it is asked of rules that react to two different happenings too. A wrong answer ("A run cannot have a maximum tool call count of 40 if no tools were called") gives a conflict between two unrelated rules. On TestingTheAgents every change got 1 to 6 such conflicts against the application's specs, each in one part, and mostly other ones in each run. In a document of 30 rules the limit of 40 pairs cuts off most of about 175 |
+| With `--whole-run`, the question about two outcomes is asked of many more pairs | it is asked of rules that react to two different happenings too, and a wrong answer gives a conflict between two unrelated rules. Since the question says what does not count, the 9 such conflicts in the four reports of TestingTheAgents are gone; on our own test 3 of 24 runs still have one. In a document of 30 rules the limit of 40 pairs cuts off most of about 175 |
+| The link step guesses how a system works too | "every batch is listed as turned at the end of the run" became the link "if the cellar is closed, `turn_batch` must have been called", and a rule that the tool is never called then contradicts it. The question about two outcomes no longer makes that guess; the link step still does (1 of 24 runs on `eval25/`) |
+| The question whether a rule applies does not give the same majority twice | asked a second time on the same runs with the same words, a right step ("an approved call was made") had 3 of 8 answers where it had 8. Some answers read "a situation in which the requirement applies" as any run of a system that has the rule, also one in which its condition is not met. A contradiction that needs that step was not found in 2 of 12 runs of that asking |
 | The question whether a rule applies is asked 40 times for a document at most | on our sets that is enough. In a project in parts it is not: on the four changes of TestingTheAgents, 2,008 of 5,004 questions were left out. A chain of three rules is found only if its pair is among those asked about, and only across the spec files of one part |
 | On real specs the question whether a rule applies still takes wrong steps | 3 of the 30 it said yes to on TestingTheAgents. Two take one refusal for another: "the job is refused", and the statement that the approver refused. One is about a statement marked FALSE: the model says that the fact is true, and then answers "yes". None of the three adds a conflict there. None on our own sets |
 | A rule that reacts to either of two events has no trigger | "WHEN a call of `order_lenses` or `order_frame` is made THEN ...": the model lists it once for each event, and the copies are kept as one rule without a trigger. Where a situation is one moment, a conflict between it and a rule about another event is then not marked as two events at once. A label that comes back twice with two different texts still stops the run; that was not seen in 3,191 saved runs |
@@ -1447,8 +1490,8 @@ research.md, section 5.
 | `speccheck/refine.py` | optional LLM review, off by default |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the vLLM servers on the cluster: the main model, the second model |
 | `experiments/slurm/serve_direct.sh` | the same server for the main model, started directly on a machine with free GPUs, without the queue |
-| `tests/` | 130 tests of everything that needs no LLM |
-| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10`, `eval12`, `eval16` to `eval19`, `size` and `size2`; for the change check `eval11`, `eval13`, `eval14`, `eval15`, `eval20` to `eval24`, `mixed` and `change_dev`; and the script that writes them. `real1` to `real5` are not written by it (`experiments/real/`) |
+| `tests/` | 132 tests of everything that needs no LLM |
+| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10`, `eval12`, `eval16` to `eval19`, `size` and `size2`; for the change check `eval11`, `eval13`, `eval14`, `eval15`, `eval20` to `eval25`, `mixed` and `change_dev`; and the script that writes them. `real1` to `real5` are not written by it (`experiments/real/`) |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs and scores the evaluation; re-scores saved runs without a GPU |
 | `experiments/real/` | the trial on a real OpenSpec project: each archived change next to the specs before it, from the git history; and the real changes with a conflict planted in them |

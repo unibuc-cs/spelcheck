@@ -26,7 +26,7 @@ projects have them (5.10).
 | **G1** A minimal working prototype of Kiro's formal analysis: spec, formal check, answer in plain language | **Done.** Conflicts, gaps, ambiguities and scenarios, as in Kiro's formal part. Gaps are asked once for each event, and all 18 planted gaps of `eval8/` were found. Both Kiro blog examples found by the solver (`delete_property`: 3 of 3 in the last runs; a wrong voted fact can still hide it). Ambiguities: about half with one model; with the optional second reader 30 and 32 of 36 (held-out `eval4/`, `eval7/`), at up to one extra question per spec |
 | **G2** Data-driven: any spec, any format | **Done for the prototype.** 63 base specs in two formats (Kiro EARS, OpenSpec), no change to code or prompts; specs of 30 and of 100 requirements went as well as the small ones (E13, E14), and the read step has room for about 140. An OpenSpec *change* is checked against the specs that exist (`--change`, 5.10): on held-out `eval11/`, 36 of 36 planted conflicts and 36 of 36 planted gaps, and nothing else reported about a change (E17). A gap that a removal opens is reported as the change's, 18 of 18 on held-out `eval13/`, and a conflict the specs had before is never blamed on the change (E19). With `--incremental` a change is checked on a saved model of the specs, for a sixth to a seventh of the cost. It found 50 against 54 planted conflicts on held-out `eval14/` (E20) and, after one change to its read prompt, 72 against 72 on held-out `eval15/` (E21). The specs of an agent system, whose rules are about whole runs and stand next to examples, have two options (`--whole-run`, `--examples`), and a project too large for one document is checked in parts (steps 44 and 45; 5.2, 5.10): on held-out `eval20/` the conflicts between rules about two calls of one run went from 0 to 12 of 12, and the changes that should give nothing from 17 of 24 with a conflict to none (E29). On a real project of that kind, 33 spec files and 465 scenarios, the contradiction between two rules that makes one change impossible to build is found in 16 of 24 parts, and nothing else among the rules of its four changes in more than 2 (T38) |
 | **G3** Code and documents a person can read | **Done** for the current state. GUIDE.md and README.md were revised after a point-by-point review (2026-11-22): each mechanism is a short list of steps on one real example |
-| **G4** Research for a paper, on the local model | **Well under way.** 25 held-out tests (E5, E7 to E13, E15 to E21, E24 to E33). On the 10 before the questions about outcomes: 61 to 100% of planted conflicts found; with doubtful conflicts set aside, at most 1 false alarm in 18 clean runs, apart from a real conflict we wrote into an `eval9/` clean spec by mistake (2 runs, E15). With those questions (E18, conflicts said in other words): 34 of 36, and 3 of 18 clean runs with a conflict that was not planted. Planted gaps 18 of 18 in each of the three sets E13, E15, E16. On real specs (E23 to E28): what is planted is found in 46 of 52 runs with a copied condition and 10 of 16 with a condition of its own, but of 20 conflicts that nobody planted none is a contradiction (T32). On the specs of an agent system (E29, E30, T38): what the two options are for is found or set aside as planned. A contradiction that is a chain of three rules, and an example that breaks a rule, are found since step 46: 12 of 12 runs each on held-out `eval22/`, 2 and 0 without the new check (E31). The question behind both took a wrong step on real specs, where a rule applies in several cases; put as a statement to judge it does not: 6 of 12 runs with a wrong conflict before, none after, on held-out `eval23/` (E32). Of the four reasons why a change of the real project cannot be built, two are found (T40, T44). Still small: one main model, one real OpenSpec project, one real project of an agent system |
+| **G4** Research for a paper, on the local model | **Well under way.** 26 held-out tests (E5, E7 to E13, E15 to E21, E24 to E34). On the 10 before the questions about outcomes: 61 to 100% of planted conflicts found; with doubtful conflicts set aside, at most 1 false alarm in 18 clean runs, apart from a real conflict we wrote into an `eval9/` clean spec by mistake (2 runs, E15). With those questions (E18, conflicts said in other words): 34 of 36, and 3 of 18 clean runs with a conflict that was not planted. Planted gaps 18 of 18 in each of the three sets E13, E15, E16. On real specs (E23 to E28): what is planted is found in 46 of 52 runs with a copied condition and 10 of 16 with a condition of its own, but of 20 conflicts that nobody planted none is a contradiction (T32). On the specs of an agent system (E29, E30, T38): what the two options are for is found or set aside as planned. A contradiction that is a chain of three rules, and an example that breaks a rule, are found since step 46: 12 of 12 runs each on held-out `eval22/`, 2 and 0 without the new check (E31). The question behind both took a wrong step on real specs, where a rule applies in several cases; put as a statement to judge it does not: 6 of 12 runs with a wrong conflict before, none after, on held-out `eval23/` (E32). Of the four reasons why a change of the real project cannot be built, two are found (T40, T44). Still small: one main model, one real OpenSpec project, one real project of an agent system |
 | **G5** Only the formal part | **Done.** An LLM review of the text was built, measured, and switched off |
 
 In short: the pipeline works end to end, finds what Kiro's blog finds, and
@@ -78,8 +78,18 @@ this order. The first is new, from the real project of an agent system
      finish, where 25 did (E33);
    - **the wrong answers to the question about two outcomes**, which with a
      whole run as the situation is asked of two unrelated happenings too.
-     Every change of the real project got 1 to 6 conflicts from them, and
-     up to 9 more next to the specs of its test harness;
+     Every change of the real project got 1 to 6 conflicts from them. Done
+     in step 50 (2.7): the prompt says what does not count. The 9 such
+     conflicts of the four reports are gone, and on `eval25/` the changes
+     that should give none have one in 3 of 24 runs, where 5 (E34);
+   - **the question of step 46 does not give the same majority twice**
+     (T47): asked again on the same runs, a right step had 3 of 8 answers
+     where it had 8. Some answers read "a situation in which the
+     requirement applies" as any run of a system that has the rule. This
+     is the next step, with `eval26/` first;
+   - **the link step guesses how a system works** as check 4 did ("if the
+     cellar is closed, the turning tool must have been called"): 1 of 24
+     runs on `eval25/` (E34);
    - **an attribute of one call** ("the token it was made with") becomes an
      attribute of the run, and two rules about two calls clash;
    - **the limit of 40 pairs** is reached in nearly every document of a
@@ -127,8 +137,8 @@ this order. The first is new, from the real project of an agent system
 
    A larger invented project with a change that does everything at once is
    done (step 36).
-   All twenty-four sets, the three real batches, `real4/` and `real5/` have
-   been read (E33). A new design needs `eval25/`, written first, and a test
+   All twenty-five sets, the three real batches, `real4/` and `real5/` have
+   been read (E34). A new design needs `eval26/`, written first, and a test
    on real changes needs another project: the 8 changes of `real5/` were
    the last of this one that fit, and the four changes of the project of an
    agent system have been read too.
@@ -658,6 +668,20 @@ on 22 of 56 conflicts that nobody planted in `real5/`, on 26 of 148 in
 `real4/`, and on none of the conflicts of our own sets (T35). No new set was
 written for it: it has no setting, and the runs were made before it existed.
 
+Decided on 2026-11-27: **the question about two outcomes says what does not
+count** (step 50, 5.7). In the reports of the real project 9 of 18 conflicts
+rested on a wrong answer of check 4: the model said how a system works, or
+took two statements about two things for statements about one (T46). The
+prompt now names both as no reason. On held-out `eval25/`, the same runs
+asked with both prompts: a contradiction said in other words is found in 12
+of 12 runs both times, and a change that should give no conflict has one in
+5 of 24 runs before and in 3 after (E34). On the real project the 9 are
+gone, and the two reasons that were found stay (T47). The rule had a second
+half, that nothing planted may be lost on the saved runs of earlier sets;
+it is not met as written: on `eval12/` 32 of 36 are found where 33 were,
+"delete" against "keep for ten years" written as a number. Kept all the
+same, because the gain is larger.
+
 Decided on 2026-11-27: **a rule that the read step returns once for each of
 its events is one rule** (step 49, 5.2). A rule has one trigger. A scenario
 that reacts to either of two calls came back twice, with one label and the
@@ -921,8 +945,8 @@ Around the package:
 
 | File | Job |
 |---|---|
-| `tests/` | 130 tests of everything that needs no LLM |
-| `experiments/make_eval.py` | writes the evaluation sets `eval` to `eval24`, `size`, `size2` and `mixed` into `experiments/sets/` (clean specs and planted defects) |
+| `tests/` | 132 tests of everything that needs no LLM |
+| `experiments/make_eval.py` | writes the evaluation sets `eval` to `eval25`, `size`, `size2` and `mixed` into `experiments/sets/` (clean specs and planted defects) |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs the pipeline on a set of specs and scores it against the planted defects; adds the second reader to saved runs; re-scores saved runs without a GPU |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the main model and the second model on the cluster (section 8) |
@@ -1420,6 +1444,28 @@ two definite states       A_a and A_b each fix one value for each of their symbo
   fact in `doubted_by` and is doubtful; a conflict that needs an assumed
   fact is not found in a situation that the facts rule out
 - the same condition, or a rule and a special case of it: not asked about
+
+**What check 4 is told does not count** (step 50). On a real project the
+wrong answers of check 4 had two shapes (T46), and the prompt names both:
+
+- how a system works: "a request that is refused generates an audit event,
+  so the audit log cannot be empty". The prompt: "possible" is also the
+  answer when one statement would usually cause, need or leave a trace of
+  the other, or of its opposite; do not assume how the system works, or
+  that anything succeeds or is written down
+- two things taken for one: "a run cannot have zero tool calls if the
+  maximum is 40". The prompt: "possible" is also the answer when the two
+  can be about two different things: two objects, a limit and what
+  happened, all of one kind and some of another
+- one statement that alone looks like something no system would do is no
+  reason either
+- what it costs: "delete the payslips" against "keep every payslip for ten
+  years", where the second had become a number, was called impossible by 5
+  of 8 answers and is called possible now. The two statements as written
+  can both hold; the rule's own words were lost in the translation (E34,
+  T47)
+- the second question about a link that only renames (5.3) uses the same
+  prompt
 
 **Check 6: does what one rule demands make another rule apply?** (step 46)
 
@@ -1988,6 +2034,15 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       and one change that adds, rewrites, removes and renames (no design
       change). E22: 9 of 9 planted conflicts and 9 of 9 planted gaps in 3
       runs, both ways, and nothing else about the change
+- [x] **Step 50 — what does not count in the question about two
+      outcomes**: `eval25/` first. The prompt of check 4 says that how a
+      system works is no reason, and that two statements can be about two
+      things (T46). Tried on saved runs (T47), then held out on `eval25/`
+      (E34), the same runs asked with both prompts: contradictions said in
+      other words 12 of 12 both times; changes that should give no
+      conflict, with one, 5 → 3 of 24. On the real project 9 conflicts
+      that rested on such answers are gone. One planted conflict of
+      `eval12/` is lost; the second half of the rule was not met as written
 - [x] **Step 49 — a rule that the read step returns twice is one rule**:
       `eval24/` first. The read step lists a scenario that reacts to either
       of two calls once for each call, with one label and the same words

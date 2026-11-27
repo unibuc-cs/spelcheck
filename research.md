@@ -48,6 +48,7 @@ its entries. How each mechanism works is in [plan.md](plan.md), section 5.
   | `eval22/` | 12 changes on 4 more projects of that kind, each with a rule that a call needs an earlier approved call (3.19) | 8 conflicts: 4 that are a chain of three rules, 4 between an example and a rule; 4 changes where the demand only looks like the condition | E31 |
   | `eval23/` | 12 changes on 4 more projects of that kind, each also with a rule whose condition names two calls (3.19) | 8 conflicts: 4 that are a chain of three rules, 4 between an example and a rule; 4 changes where the rule about two calls must not be taken for a rule about one | E32 |
   | `eval24/` | 12 changes on 4 more projects of that kind, each with a rule whose condition names two calls and one whose condition names three (3.20) | 8 conflicts: 4 with the rule about two calls, 4 between an example and a rule; 4 changes that should give no conflict | E33 |
+  | `eval25/` | 12 changes on 4 more projects of that kind, each of one rule about a fourth happening (3.21) | 4 conflicts between two demands said in other words; 8 changes that only a guess about the system, or a mix-up of two things, sets against a rule | E34 |
   | `size/` | 4 versions of one spec of 30 requirements | 2 conflicts, 1 gap | E13 |
   | `size2/` | 4 versions of one spec of 100 requirements | 2 conflicts, 1 gap | E14 (not held-out: no design was tuned on it) |
 
@@ -689,6 +690,38 @@ those 11.
   their second rule is the only one about its call and covers one kind of
   run. The set was written so; it is not an effect of the repair.
 
+### 3.21 The question about two outcomes says what does not count (T46, T47, E34)
+
+The question of 3.13 is asked of many more pairs when a situation is a run
+(3.18), and on the real project it was the largest source of conflicts that
+are not real: 9 of the 18 conflicts that are not doubtful in the four
+reports rested on one of its answers, all with a rule of another spec file
+(T46). Check 4 called 185 of 5,052 pairs impossible there.
+
+- **The wrong answers have two shapes**, by the sentences the model gave.
+  How a system works: "a request that is refused generates an audit event,
+  so the audit log cannot be empty"; "a tool cannot be called if the module
+  containing it was not imported". And two things taken for one: "a run
+  cannot have zero tool calls if the maximum is 40".
+- **The prompt names both as no reason** (step 50): do not assume how the
+  system works, or that anything succeeds or is written down; and the two
+  statements can be about two different things.
+- **On the project** (T47, the same parts asked again): the 9 conflicts are
+  gone; the reports have 5, 2, 2 and 1 conflicts that are not doubtful,
+  where 9, 3, 3 and 3. Check 4 calls 98 pairs impossible. The two reasons
+  of the authors that were found stay.
+- **Held-out** (`eval25/`, E34), the same runs asked with both prompts:
+  a contradiction said in other words is found in 12 of 12 runs both
+  times; a change that should give no conflict has one in 5 of 24 runs
+  before and in 3 after.
+- **What it costs** (T47, saved runs of `eval12/`, asked again with both
+  prompts): 32 of 36 planted conflicts found, where 33; and 12 conflicts
+  that nobody planted, where 18. The one that is lost is "delete the
+  payslips" against "keep every payslip for ten years", written as a
+  number (4.2): possible by the two statements as written. The rule we had
+  set, that nothing planted is lost on saved runs, was not met; the prompt
+  was kept because it gains more than it loses.
+
 ---
 
 ## 4. What does not work yet
@@ -969,9 +1002,9 @@ What the first two batches showed, before the vote:
 - **A gap is hard to read at this size**: it lists every other event as
   FALSE, 20 to 40 lines.
 
-### 4.9 What the specs of an agent system show (T36 to T45, E29 to E33)
+### 4.9 What the specs of an agent system show (T36 to T47, E29 to E34)
 
-One project of that kind, and five sets of our own.
+One project of that kind, and six sets of our own.
 
 - **Two of the four reasons why a change cannot be built are found**: the
   contradiction between two of its rules, and since step 46 the chain of
@@ -988,6 +1021,19 @@ One project of that kind, and five sets of our own.
   that the fact is true, and then answers "yes"; such statements are 61 of
   2,768 questions. None of the three adds a conflict there. Before step 48
   it was 5 of 35, and 6 artefact conflicts (T41).
+- **The question of 3.19 does not give the same majority twice** (T47).
+  Asked a second time on the same runs with the same words, the step from
+  "an earlier call was approved" to "the call was made" had 3 and 4 of 8
+  answers in two of 12 runs where it had 8 and 7, and a contradiction that
+  needs the step was not found there. The answers show why: some read "a
+  situation in which the requirement applies" as any run of a system that
+  has the rule, also one in which its condition is not met ("if the call
+  does not succeed, the requirement imposes no constraints"). Not seen
+  before, because the question had been asked once for each run.
+- **The link step guesses how a system works** as the question about two
+  outcomes did (E34): "every batch is listed as turned at the end of the
+  run" became "if the cellar is closed, `turn_batch` must have been
+  called". 1 of 24 runs on `eval25/`.
 - **A rule that reacts to either of two events has no trigger** (3.20).
   Where a situation is one moment, a conflict between it and a rule about
   another event is not marked as two events at once. Not measured: the
@@ -1081,6 +1127,7 @@ the prompts, so it can be scored again without a GPU.
 | E31 | `eval22/`, held-out: the model is asked whether what one rule demands makes another rule apply (T39); each run scored with and without | 36 runs | with doubtful conflicts set aside: contradictions that are a chain of three rules 2 of 12 without, 12 of 12 with; examples that break a rule 0 of 12 and 12 of 12; changes where the demand only looks like the condition, with a conflict about them, 1 of 12 either way (3.19) |
 | E32 | `eval23/`, held-out: in that question the fact is a statement to judge, not a given (T42, T43); the same runs asked in both forms | 36 runs, 25 finished | with doubtful conflicts set aside: changes where a rule about two calls must not be taken for a rule about one, with a conflict about them, 6 of 12 before and 0 of 12 after; chains 9 and 10 of 10; examples that break a rule 3 of 3; 11 runs stopped at the read step in both (3.19, 4.9) |
 | E33 | `eval24/`, held-out: a rule that the read step returns once for each of its events is one rule (T45); the code before and after | 2 x 36 runs | runs that finish 25 of 36 before, 36 of 36 after; conflicts with a rule about two calls 8 and 12 of 12; examples that break a rule 6 and 11 of 12; changes that should give no conflict, with one, 0 either way (3.20) |
+| E34 | `eval25/`, held-out: the question about two outcomes says what does not count (T46, T47); the same runs asked with both prompts, and a full run | 2 x 36 runs | with doubtful conflicts set aside: contradictions said in other words 12 of 12 both times; changes that should give no conflict, with one, 5 of 24 before and 3 after (3.21) |
 
 The trials (T1 to T26) were run on development data between these
 experiments. Among the last: T17 compared temperatures 0.3, 0.5 and 0.7 (3.1);
@@ -1110,7 +1157,9 @@ saved parts of that project (3.19). T41 ran the four changes from scratch
 with the code of step 46 (4.9). T42 and T43 asked two other forms of that
 question on saved runs, and T44 worded the reports of the four changes
 with the one that was kept (3.19). T45 looked at what the read step returns
-for a scenario about two calls (3.20).
+for a scenario about two calls (3.20). T46 read the wrong answers about two
+outcomes in the reports of that project, and T47 asked the question again
+on saved runs with its new prompt (3.21).
 research_log.md
 has them in order, together with the bugs that
 changed results before they were fixed (L1 to L10) and the open threats to

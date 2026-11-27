@@ -7,7 +7,7 @@ options do and what the output means is in [README.md](README.md).
 
 ```
 uv sync                      # on a "hardlink" error: set UV_LINK_MODE=copy and retry
-python -m pytest tests       # 130 tests, no LLM
+python -m pytest tests       # 132 tests, no LLM
 ```
 
 ## 2. Try it without a GPU
@@ -154,6 +154,7 @@ python -m experiments.evaluate --rescore experiments/results/my_run.json        
 python -m experiments.evaluate --rescore experiments/results/my_run.json --second-base-url http://localhost:18201/v1    # add the second model to saved runs
 python -m experiments.evaluate --rescore experiments/results/my_run.json --conditions-base-url http://localhost:18200/v1 --name my_run_conditions    # ask the question about two conditions on saved runs that were made without it
 python -m experiments.evaluate --rescore experiments/results/my_run.json --applies-base-url http://localhost:18200/v1 --name my_run_applies    # the same for the question whether what one rule demands makes another rule apply
+python -m experiments.evaluate --rescore experiments/results/my_run.json --outcomes-again-base-url http://localhost:18200/v1 --name my_run_again    # ask the three questions about pairs of rules again on runs that have them (to compare two prompts on the same runs)
 ```
 
 The changes of the real project (`experiments/sets/real1` to `real5`) are run

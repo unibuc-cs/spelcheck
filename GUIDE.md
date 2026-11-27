@@ -63,7 +63,7 @@ is how OpenSpec projects work. That is part 5.
 
 To give an idea of the size: about 4,950 lines of Python now, half of them comments
 and prompts, one local model (Qwen3.8, 27B), and results measured on 297 versions
-of small specs and on 202 changes. The results are in part 6.
+of small specs and on 214 changes. The results are in part 6.
 
 ---
 
@@ -678,6 +678,16 @@ Of the other three pairs, two were called possible ("send a reminder" and
 planted that conflict, and it is a fair one. This is the price of the step: it
 finds conflicts said in other words, and it also reports more conflicts than
 we planted (6.2).
+
+**What the question says does not count.** On a real project the model often
+answered "impossible" for two reasons that are not in the words (6.2). The
+prompt names both:
+
+1. How a system works. "The request is refused" and "nothing is written to
+   the audit log" can both be true, although a system would usually log a
+   refusal.
+2. Two things taken for one. "The limit is 40 tool calls" and "no tool was
+   called" are about a setting and about a run.
 
 ### 3.3 Marking the findings that are probably not real
 
@@ -1673,6 +1683,28 @@ second rule, "WHEN a call of `ask_optician` is made in a complaint run THEN
 a gap by the definition of 2.4. That is how we wrote the set, not something
 the repair does.
 
+The question about two outcomes (3.2) is asked of many more pairs when a
+situation is a run, and on the real project below half of the reported
+conflicts rested on a wrong answer to it: 9 of 18. The model said how a
+system works ("a request that is refused generates an audit event, so the
+audit log cannot be empty"), or took two things for one ("a run cannot have
+zero tool calls if the maximum is 40"). The prompt of that question now
+names both as no reason. That was tested on four more projects (`eval25`),
+the same runs asked with the old prompt and with the new one:
+
+| | Old prompt | New prompt |
+|---|---|---|
+| a contradiction said in other words ("the customer was sent a confirmation", "no message is sent to any customer"): found | 12 of 12 | 12 of 12 |
+| a change that only a guess about the system, or a mix-up of two things, sets against a rule: runs with a conflict | 5 of 24 | 3 of 24 |
+
+Of the 3 that are left, one comes from a link that makes the same guess,
+and two from a pair that most answers still call impossible. On the saved
+runs of the earlier sets, one planted conflict is lost: "delete the
+payslips" against "keep every payslip for ten years" (6.4), which the old
+prompt found on a vote of 5 to 3. We had set the rule that nothing may be
+lost there; it was not met, and the new prompt was kept because it gains
+more than it loses.
+
 **A real project of an agent system** (5.2):
 [TestingTheAgents](https://github.com/unibuc-cs/TestingTheAgents). It has 33 spec
 files with 465 scenarios, and four open changes that each add a workflow.
@@ -1681,15 +1713,15 @@ is a repository of its own; the commands that run speccheck on it are in
 README.md and commands.md. Each change is checked in 32 or 33 parts, which
 takes 30 to 60 minutes on two GPUs. This is what the reports of the last
 run say, each change against the 24 spec files of the application, with
-the question about a chain in its final form (5.1). In brackets is the same
-run without that question:
+every question in its final form. In brackets are the same parts before
+the question about two outcomes was changed:
 
 | Change | Conflicts, not doubtful | Among the rules of the change, with the parts that found each | With a rule of another spec file | Doubtful |
 |---|---|---|---|---|
-| cannot be built | 9 (8) | 2: in 16 and 1 of 24 parts | 7 (6) | 19 |
-| can be built | 3 (3) | 2: in 2 and 1 of 24 parts | 1 (1) | 32 |
-| can be built | 3 (2) | 0 | 3 (2) | 54 |
-| can be built | 3 (3) | 0 | 3 (3) | 19 |
+| cannot be built | 5 (9) | 2: in 16 and 1 of 24 parts | 3 (7) | 9 (19) |
+| can be built | 2 (3) | 2: in 2 and 1 of 24 parts | 0 (1) | 21 (32) |
+| can be built | 2 (3) | 1: in 1 of 23 parts | 1 (3) | 35 (54) |
+| can be built | 1 (3) | 0 | 1 (3) | 7 (19) |
 
 - The conflict found in 16 parts is the first of the authors' four reasons,
   two rules of the change that contradict each other. The report explains
@@ -1697,26 +1729,21 @@ run without that question:
 - A second reason is in that report since the question about a chain
   (5.1). A run of the new workflow takes a page down in a plan; an existing
   rule says that what goes down in a plan was approved; the change says
-  that such a run asks nobody. It is one of the 7 conflicts with a rule of
+  that such a run asks nobody. It is one of the 3 conflicts with a rule of
   another spec file, "if the assumed facts hold", and the fact says that an
-  approved request is a request that was made. It was found in two
-  formalizations of two.
-- That question adds 2 conflicts over the four changes: the missing
-  approval, and one on a change that can be built, which holds under one
-  reading of an ambiguous rule; the report says so. With B as a fact marked
-  TRUE it added 7, and 6 of them were artefacts.
+  approved request is a request that was made.
+- The 9 conflicts that rested on a wrong answer about two outcomes are
+  gone. What is left with a rule of another spec file, 5 over the four
+  changes: the missing approval; two that set a property of one call
+  against a property of another; one through a link; one that holds under
+  one reading of an ambiguous rule, which the report says.
 - The number of conflicts does not tell the four changes apart. The number
   of parts does: nothing else is found in more than 3.
-- The other conflicts with a rule of another spec file are artefacts, those
-  we read. Most rest on one wrong answer to the question about two
-  outcomes, between two rules about two unrelated happenings of one run.
-  They are mostly other ones in each run: an earlier run had 6, 5, 3 and 1
-  conflicts where this one has 8, 3, 2 and 3 without the new question. The
-  9 spec files of the project's test harness add up to 9 more, which is
-  what `--against` is for.
+- The 9 spec files of the project's test harness add more conflicts of that
+  kind, which is what `--against` is for.
 - The other two reasons are not found. One needs rules of three spec files,
   and one is arithmetic over the steps of a run.
-- The doubtful conflicts, 19 to 54 for a change, are all marked for an
+- The doubtful conflicts, 7 to 35 for a change, are all marked for an
   example. They are in the report, after the others.
 
 ### 6.3 The goals
@@ -1728,7 +1755,7 @@ The project has five goals. This is where each one stands:
 | G1: a minimal working prototype of Kiro's formal analysis | done |
 | G2: it works on any spec, in any format | done for the prototype: 2 formats, 63 small specs, two long ones, and changes checked against existing specs, removals included (part 5). Specs about the runs of an agent have options of their own, and a project of 479 scenarios is checked in parts (5.1, 5.2) |
 | G3: code and documents a person can read | done for the current state |
-| G4: research for a paper, on the local model | well under way: 25 tests on specs the design had not seen, four of them on changes of a real project. Still one main model, one real OpenSpec project and one real project of an agent system |
+| G4: research for a paper, on the local model | well under way: 26 tests on specs the design had not seen, four of them on changes of a real project. Still one main model, one real OpenSpec project and one real project of an agent system |
 | G5: only the formal part | done: an LLM review of the text was built, measured, and switched off |
 
 ### 6.4 What does not work yet
@@ -1743,7 +1770,9 @@ The project has five goals. This is where each one stands:
 | there is no time | "then", "after" and "until" are not modelled: the logic is one snapshot |
 | real specs are harder than the ones we wrote | their rules demand two or three things each, and the symbols that the read step lists do not fit them: one rule in six to one in four gets no agreed translation or one that demands nothing, the more the longer the document. A whole project is too large to check at once (6.2) |
 | on real specs, most conflicts that nobody planted are not contradictions | of 20 that we read, 8 are in a situation that cannot happen, 4 are other artefacts, and 7 set a general rule against its own exception (6.2). The question about two conditions marks one conflict in six to nine; the rest are reported as they are |
-| with a whole run as the situation, the questions about two outcomes err more | they are asked of two rules about two unrelated happenings as well, and a wrong answer gives a conflict between the two: 1 to 6 for each change of the real project of 6.2, each found in one part, and mostly other ones in each run |
+| with a whole run as the situation, the question about two outcomes is asked of many more pairs | also of two rules about two unrelated happenings, and a wrong answer gives a conflict between the two. Since the question says what does not count, the 9 such conflicts on the real project are gone (6.2); on our own test 3 of 24 runs still have one |
+| the link step guesses how a system works too | "every batch is listed as turned" became the link "if the cellar is closed, `turn_batch` must have been called" (6.2) |
+| the question about a chain does not give the same majority twice | asked a second time on the same runs, a right step had 3 of 8 answers where it had 8. Some answers read "a situation in which the requirement applies" as any run of a system that has the rule, also one where its condition is not met |
 | the question about a chain is asked at most 40 times for a document | enough on our sets. On the four changes of the real project, 2,008 of 5,004 questions were left out (6.2). And a chain is found only across the spec files of one part |
 | on real specs the question about a chain still takes wrong steps | 3 of the 30 it said yes to on the real project. Two take one refusal for another ("the job is refused", and the statement that the approver refused). One is about a statement marked FALSE: the model says that the fact is true, and then answers "yes". None of the three adds a conflict there |
 | a rule that reacts to either of two events has no trigger | the model lists it once for each event, and the copies are kept as one rule (5.1). Where a situation is one moment, a conflict between it and a rule about another event is then not marked as two events at once (3.3). A label that comes back twice with two different texts still stops the run; that was not seen |
@@ -1839,8 +1868,9 @@ The full list is in research.md, section 5.
 ### 6.6 What is next
 
 1. **The specs of an agent system**: what the real project still shows.
-   The wrong answers to the question about two outcomes between unrelated
-   happenings. An attribute that belongs to one call. The limit of 40
+   First the question about a chain: asked twice on the same runs, it
+   does not give the same majority (6.4). Then the link step, which still
+   guesses how a system works. An attribute that belongs to one call. The limit of 40
    questions for a document, which a project in parts reaches in nearly
    every part. And the two reasons that are not found: a conflict that
    needs rules of three spec files, and arithmetic over the steps of a run.
@@ -1884,6 +1914,7 @@ Then the documents:
 | [commands.md](commands.md) | the commands on one page | when you run it |
 | [plan.md](plan.md) | section 5 has the exact rule behind each decision, section 6 every JSON field | while you read the code |
 | [research.md](research.md) | every result, with its numbers | when you want to know what was measured |
+| [research_issues.md](research_issues.md) | every problem we ran into, in plain words, each with a real example and its result | when you prepare a talk or a paper |
 | [research_log.md](research_log.md) | the archive: every experiment in the order it happened | only for writing the paper |
 
 Then the code. plan.md lists the files in pipeline order. For a first reading
@@ -1909,14 +1940,14 @@ The folders:
 speccheck/          the tool (the 8 files above; refine.py is the review that is switched off)
 specs/              3 small specs the prompts were developed on, with their saved output,
                     and auth_change, the example of part 5
-tests/              130 tests that need no LLM
+tests/              132 tests that need no LLM
 experiments/
   sets/             the 11 evaluation sets, eval to eval10 and eval12 (297 spec versions), two long specs,
                     eval16 to eval18 (eighteen specs written like real ones), real1 to real3 (48 changes of a real project),
                     real4 and real5 (21 more real changes, each also with a planted conflict),
                     eval19 (six specs with conditions that exclude each other),
                     and for the change check eval11, eval13, eval14, eval15, mixed (one larger project),
-                    eval20 to eval24 (twenty projects about an assistant that calls tools)
+                    eval20 to eval25 (twenty-four projects about an assistant that calls tools)
                     and change_dev (old specs as projects)
   results/          every experiment: the raw data (.json) and its tables (.md)
   examples/         saved runs that the documents quote
