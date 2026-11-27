@@ -5257,6 +5257,73 @@ of its own, and the next thing to repair.
 
 ---
 
+## E34 — Held-out `eval25/`: what does not count in the question about two outcomes (2026-11-27)
+
+**Question.** Does the prompt of step 50 (T47) stop the wrong answers of
+check 4 on specs it was not built on, and still find a contradiction that is
+said in other words?
+
+**The set** (`eval25/`, written and committed before the prompt). Four more
+projects about an assistant that calls tools: a plant nursery, a cheese
+dairy, a city archive, a radio station. Each has three rules about three
+happenings, and three changes that add one rule each:
+
+| Change | The existing rule demands | The new rule demands | Expected |
+|---|---|---|---|
+| words | "the customer was sent a confirmation in the run" | "no message is sent to any customer in the run" | the conflict: the two exclude each other by the meaning of the words |
+| works | "every batch in the cellar is listed as turned at the end of the run" | "`turn_batch` is never called in the run" | no conflict: a working system would not do both, but the words allow it (the batches can have been turned before) |
+| other | "every bed of the east house is watered in the run" | "no bed of the west house is watered in the run" | no conflict: two different things |
+
+**The rule, set before the build** (plan.md 2.7). With doubtful conflicts set
+aside, the same runs asked with the old prompt and with the new one: the
+"works" and "other" changes have a conflict about them less often, and the
+"words" conflicts are found no less often. And on the saved runs of
+`eval12/` and `eval20/` to `eval24/` no fewer planted conflicts are found
+and no more changes or clean specs get a conflict (T47: not met as written,
+one planted conflict fewer on `eval12/`).
+
+**Result.** 12 changes, 3 runs each, with the old prompt
+(`E34_eval25_before`); checks 4 to 6 asked again on the same runs with the
+new one (`E34_eval25`); and a run of the whole pipeline with the new code
+(`E34_eval25_full`). Doubtful conflicts are set aside.
+
+| | Old prompt | The same runs, new prompt | A full run, new code |
+|---|---|---|---|
+| "words" conflicts found | 12 of 12 | 12 of 12 | 12 of 12 |
+| "works" changes with a conflict | 3 of 12 | 1 of 12 | 2 of 12 |
+| "other" changes with a conflict | 2 of 12 | 2 of 12 | 1 of 12 |
+| pairs of a "works" or "other" change that check 4 calls impossible | 7 | 2 | 2 |
+
+- **The first half of the rule is met**: the changes that should give no
+  conflict have one in 5 of 24 runs with the old prompt and in 3 with the
+  new one, and all 12 planted conflicts are found. The set does test the
+  change: the old prompt gives the wrong answers that it was written for.
+- **What goes.** "Every batch is listed as turned" and "`turn_batch` is
+  never called": impossible with 8 of 8 answers before ("batches cannot be
+  marked as turned if the function responsible for turning them is never
+  called"), possible now, in 2 runs of 2.
+- **What stays.** In the third run of that change the conflict comes from
+  a link, not from check 4: "if `close_cellar` succeeds, `turn_batch` must
+  have been invoked". The link step makes the same guess, and its prompt
+  is not the one that changed. And "no batch is moved in the run" against
+  "the run writes one release record that names the batch": 8 of 8 before,
+  6 and 5 of 8 now, so still a fact. The model holds that a batch that is
+  released was moved.
+- **The planted pairs keep their votes**: 8 of 8 in the runs where check 4
+  was asked about them, once 7 of 7, and once 7 of 8 in the full run. The
+  other runs find the conflict through a shared name or a link.
+- In the full run one more guess of the link step shows: "if a price list
+  is built, `send_mail` must not have been invoked", from "the code that
+  builds it does not import the mail module" (5 of 8).
+
+**Decision.** Step 50 stays. Its rule is met on `eval25/` and not met as
+written on the saved runs (T47); the gain is larger than the loss, and both
+are in the documents. All twenty-five sets are development data now. Open
+after it: the link step guesses how a system works too, and the question of
+step 48 does not give the same majority twice (T47).
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

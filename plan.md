@@ -527,7 +527,7 @@ a gap about them, with either code: their second rule is the only one about
 its call, and covers one kind of run. That is how the set was written, and
 "nothing may be reported" held for conflicts only.
 
-### 2.7 Step 50: what does not count in the question about two outcomes (built; `eval25/` not run yet)
+### 2.7 Step 50: what does not count in the question about two outcomes (built; held-out result in E34)
 
 In the reports of the real project, 9 of the 18 conflicts that are not
 doubtful rest on an answer to the question about two outcomes (check 4), all
@@ -598,6 +598,15 @@ majority twice: asked again on the same runs, a right step had 3 of 8
 answers where it had 8. Two planted conflicts of `eval22/` and one of
 `eval23/` were not found for that, and one of `eval24/` was. That is the
 next thing to repair.
+
+**The result** (E34, research_log.md). On `eval25/`, the same runs asked
+with both prompts, doubtful conflicts set aside: the "words" conflicts are
+found in 12 of 12 runs both times, and the "works" and "other" changes have
+a conflict about them in 5 of 24 runs with the old prompt and in 3 with the
+new one. That half of the rule is met. Step 50 stays. What is left on those
+changes: a link that makes the same guess ("if the cellar is closed, the
+turning tool must have been called"), and one pair that most answers still
+call impossible (5 and 6 of 8, where 8).
 
 Small things that are open:
 
