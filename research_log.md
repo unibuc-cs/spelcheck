@@ -4684,8 +4684,9 @@ conflict and gives no conflict to a change that should have none.
   existing rule 8 of 8 answers said yes ("An ask_manager call that was
   approved was made."), for the four others 8 of 8 said no. With that fact
   Z3 reports the existing rule against "a late-arrival run asks nobody", in
-  a late-arrival run with a plan in which a check-in succeeds. The 2 chains
-  that are found without the check have the same step as a link of step 5.
+  a late-arrival run with a plan in which a check-in succeeds. In the 2
+  runs that find the chain without the check, the model had written "an
+  approved call" and "a call is made" with one symbol.
 - **The examples.** Without the check all 12 conflicts are found and all 12
   are marked: the example's "succeeds once" and "the plan is written once"
   are counts, and the rule is about "a call succeeds" in "a run with a
@@ -4694,11 +4695,64 @@ conflict and gives no conflict to a change that should have none.
 - **The trap holds.** 59 questions on the "near" changes, none answered yes
   by most; "the card was verified at check-in → a call of `verify_card` is
   made" got 1 or 2 of 8. The one conflict on a "near" change is there
-  without the check too: an older step took the same wrong step once.
+  without the check too: it rests on a wrong answer to the question about
+  two outcomes (check 4).
 - A change costs 54 requests on these projects.
 
 **Decision.** Step 46 stays as it was frozen. All twenty-two sets are
 development data now.
+
+---
+
+## T40 — TestingTheAgents with the question whether a rule applies (2026-11-27)
+
+**Question.** With check 6 as it passed `eval22/` (E31): what do the reports
+of the four changes say now, and is the missing approval in the report of
+the change that cannot be built?
+
+**How.** Nothing was formalized again. Check 6 was asked on the 131 saved
+parts of T38 (`formal_*.json`), and the reports were made from them with
+`--formal ... --against "fs-*"`, as in step 2 of the commands in README.md.
+A run of the tool today asks the check while it formalizes.
+
+| Change | Conflicts, not doubtful: before → now | Among the rules of the change, with the parts that found each | With a rule of another spec file | Doubtful |
+|---|---|---|---|---|
+| `add-instant-bulk-takedown-workflow`, cannot be built | 6 → 7 | 3: in 16, 2 and 1 of 24 parts, as before | 3 → 4 | 18 → 19 |
+| `add-licence-expiry-sweep-workflow`, can be built | 5 → 5 | 2: in 1 of 24 parts each, as before | 3 | 33 |
+| `add-page-retirement-workflow`, can be built | 3 → 4 | 1 in 1 of 23 parts → 2: in 3 and 1 of 23 | 2 | 43 → 38 |
+| `add-scheduled-batch-republish-workflow`, can be built | 1 → 1 | 0 | 1 | 16 |
+
+- **The missing approval is reported.** It is the one more conflict of the
+  first change, "if the assumed facts hold": the existing rule that nothing
+  goes live or down in a plan without an approval, against the change's
+  rule that a run of the new workflow asks nobody, in such a run with a
+  plan in which a page is taken down. The fact it rests on says that a
+  request that was approved is a request that was made (8 of 8 answers).
+  The report explains it so, and its second option is to exempt the new
+  workflow from the existing rule. It is found in the part that holds the
+  spec file of that rule. So two of the authors' four reasons are in the
+  report now, this one and the two contracts on one function (16 of 24
+  parts).
+- **One artefact more, on a change that can be built.** Page retirement, in
+  1 of 23 parts: its rule that no takedown succeeds for a page that a live
+  page links to, against its example in which such a takedown is refused.
+  The step that the check took is right (a call that is refused was made).
+  The situation is not: it has a takedown call that succeeds, which the
+  example excludes in words and the formulas do not ("refused" and
+  "succeeds" are two symbols).
+- **A doubt lifted in two parts.** An existing rule about which pages are
+  taken down, against an example of that change in which a page is taken
+  down: a rule against a special case of it. It was not doubtful in 1 of 23
+  parts and is in 3 now, because what the example demands makes the rule
+  about a call that succeeds apply.
+- The steps the check took: 2, 6, 15 and 3 for the four changes, out of
+  2,996 questions asked. 8 of the 15 are between two examples.
+- Still not found: the hand-over between two specialists, which needs rules
+  of three spec files, and the batch size against the budgets, which is
+  arithmetic over the steps of a run.
+
+**Decision.** Nothing to change. The table in README.md is brought up to
+date.
 
 ---
 

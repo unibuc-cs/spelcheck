@@ -19,5 +19,5 @@ be built. It is cloned next to this repository and only read:
     python -m experiments.agents.tally $T out/agents
 
 In these specs an example is a scenario whose clause says `use: scenario`.
-What was found: research_log.md, T36 to T38.
+What was found: research_log.md, T36 to T38 and T40.
 """

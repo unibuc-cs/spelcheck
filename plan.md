@@ -25,7 +25,7 @@ projects have them (5.10).
 | **G1** A minimal working prototype of Kiro's formal analysis: spec, formal check, answer in plain language | **Done.** Conflicts, gaps, ambiguities and scenarios, as in Kiro's formal part. Gaps are asked once for each event, and all 18 planted gaps of `eval8/` were found. Both Kiro blog examples found by the solver (`delete_property`: 3 of 3 in the last runs; a wrong voted fact can still hide it). Ambiguities: about half with one model; with the optional second reader 30 and 32 of 36 (held-out `eval4/`, `eval7/`), at up to one extra question per spec |
 | **G2** Data-driven: any spec, any format | **Done for the prototype.** 63 base specs in two formats (Kiro EARS, OpenSpec), no change to code or prompts; specs of 30 and of 100 requirements went as well as the small ones (E13, E14), and the read step has room for about 140. An OpenSpec *change* is checked against the specs that exist (`--change`, 5.10): on held-out `eval11/`, 36 of 36 planted conflicts and 36 of 36 planted gaps, and nothing else reported about a change (E17). A gap that a removal opens is reported as the change's, 18 of 18 on held-out `eval13/`, and a conflict the specs had before is never blamed on the change (E19). With `--incremental` a change is checked on a saved model of the specs, for a sixth to a seventh of the cost. It found 50 against 54 planted conflicts on held-out `eval14/` (E20) and, after one change to its read prompt, 72 against 72 on held-out `eval15/` (E21). The specs of an agent system, whose rules are about whole runs and stand next to examples, have two options (`--whole-run`, `--examples`), and a project too large for one document is checked in parts (steps 44 and 45; 5.2, 5.10): on held-out `eval20/` the conflicts between rules about two calls of one run went from 0 to 12 of 12, and the changes that should give nothing from 17 of 24 with a conflict to none (E29). On a real project of that kind, 33 spec files and 465 scenarios, the contradiction between two rules that makes one change impossible to build is found in 16 of 24 parts, and nothing else among the rules of its four changes in more than 2 (T38) |
 | **G3** Code and documents a person can read | **Done** for the current state. GUIDE.md and README.md were revised after a point-by-point review (2026-11-22): each mechanism is a short list of steps on one real example |
-| **G4** Research for a paper, on the local model | **Well under way.** 22 held-out tests (E5, E7 to E13, E15 to E21, E24 to E30). On the 10 before the questions about outcomes: 61 to 100% of planted conflicts found; with doubtful conflicts set aside, at most 1 false alarm in 18 clean runs, apart from a real conflict we wrote into an `eval9/` clean spec by mistake (2 runs, E15). With those questions (E18, conflicts said in other words): 34 of 36, and 3 of 18 clean runs with a conflict that was not planted. Planted gaps 18 of 18 in each of the three sets E13, E15, E16. On real specs (E23 to E28): what is planted is found in 46 of 52 runs with a copied condition and 10 of 16 with a condition of its own, but of 20 conflicts that nobody planted none is a contradiction (T32). On the specs of an agent system (E29, E30, T38): what the two options are for is found or set aside as planned, but an example that breaks a rule is marked doubtful in 6 of 10 runs, and of the four reasons why a change of the real project cannot be built, one is found. Still small: one main model, one real OpenSpec project, one real project of an agent system |
+| **G4** Research for a paper, on the local model | **Well under way.** 23 held-out tests (E5, E7 to E13, E15 to E21, E24 to E31). On the 10 before the questions about outcomes: 61 to 100% of planted conflicts found; with doubtful conflicts set aside, at most 1 false alarm in 18 clean runs, apart from a real conflict we wrote into an `eval9/` clean spec by mistake (2 runs, E15). With those questions (E18, conflicts said in other words): 34 of 36, and 3 of 18 clean runs with a conflict that was not planted. Planted gaps 18 of 18 in each of the three sets E13, E15, E16. On real specs (E23 to E28): what is planted is found in 46 of 52 runs with a copied condition and 10 of 16 with a condition of its own, but of 20 conflicts that nobody planted none is a contradiction (T32). On the specs of an agent system (E29, E30, T38): what the two options are for is found or set aside as planned. A contradiction that is a chain of three rules, and an example that breaks a rule, are found since step 46: 12 of 12 runs each on held-out `eval22/`, 2 and 0 without the new check (E31). Of the four reasons why a change of the real project cannot be built, two are found (T40). Still small: one main model, one real OpenSpec project, one real project of an agent system |
 | **G5** Only the formal part | **Done.** An LLM review of the text was built, measured, and switched off |
 
 In short: the pipeline works end to end, finds what Kiro's blog finds, and
@@ -58,12 +58,12 @@ this order. The first is new, from the real project of an agent system
 (T38, research.md 4.9):
 
 0. **The specs of an agent system** (G2, G4). What steps 44 and 45 left:
-   - **does what one rule demands make another rule apply?** Nothing asks
-     that. A chain of three rules needs it ("an approved request" means
-     that a request was made), and so does an example that breaks a rule
-     ("succeeds once" means that a call succeeds): such an example is found
-     in 10 of 12 runs and marked doubtful in 6 (E30). Not tried: the
-     question of check 4, asked of a demand and the opposite of a condition;
+   - **does what one rule demands make another rule apply?** Done in step
+     46 (check 6, 5.7): a chain of three rules and an example that breaks a
+     rule are found in 12 of 12 runs each on `eval22/` (E31), and on the
+     real project the missing approval is reported (T40). What is left of
+     its four reasons: a conflict that needs rules of three spec files, and
+     arithmetic over the steps of a run;
    - **the wrong answers to the question about two outcomes**, which with a
      whole run as the situation is asked of two unrelated happenings too.
      Every change of the real project got 1 to 3 conflicts from them, and
@@ -71,7 +71,8 @@ this order. The first is new, from the real project of an agent system
    - **an attribute of one call** ("the token it was made with") becomes an
      attribute of the run, and two rules about two calls clash;
    - **the limit of 40 pairs** is reached in nearly every document of a
-     project in parts, of about 175 pairs each;
+     project in parts, of about 175 pairs each; and the limit of 40
+     questions of check 6 left out 2,008 of 5,004 there;
    - **a project in parts** finds no conflict that needs rules of three spec
      files, and checks its parts one after the other in the solver stage,
      1 to 10 minutes for a change.
@@ -114,8 +115,8 @@ this order. The first is new, from the real project of an agent system
 
    A larger invented project with a change that does everything at once is
    done (step 36).
-   All twenty-one sets, the three real batches, `real4/` and `real5/` have
-   been read (E30). A new design needs `eval22/`, written first, and a test
+   All twenty-two sets, the three real batches, `real4/` and `real5/` have
+   been read (E31). A new design needs `eval23/`, written first, and a test
    on real changes needs another project: the 8 changes of `real5/` were
    the last of this one that fit, and the four changes of the project of an
    agent system have been read too.
@@ -428,6 +429,22 @@ on 22 of 56 conflicts that nobody planted in `real5/`, on 26 of 148 in
 `real4/`, and on none of the conflicts of our own sets (T35). No new set was
 written for it: it has no setting, and the runs were made before it existed.
 
+Decided on 2026-11-27: **the model is asked whether what one rule demands
+makes another rule apply** (step 46, check 6 of step 6, 5.7). A
+contradiction can be a chain of three rules that no pair shows: a rule
+demands that an earlier call was approved, another says that this call is
+never made in a kind of run, and nothing says that an approved call is a
+call that was made. For a pair of rules where the second cannot apply as
+well without a clash where the first applies, the model gets the words of
+the first and one part of the condition of the second; more than half "yes"
+is an assumed fact. The form of the question was chosen on saved runs, in
+four rounds (T39): the words of the requirement and not the symbols of its
+demand, a prompt of its own, and the one fact alone. On held-out `eval22/`
+the chains are found in 12 of 12 runs with the check and in 2 without, the
+examples that break a rule in 12 and in 0, and a change where the demand
+only looks like the condition gets nothing more (E31). On the real project
+the missing approval is now reported (T40).
+
 Decided on 2026-11-26: **the model is asked whether the conditions of two
 rules that clash can both hold** (step 42, check 5 of step 6, 5.7). For two
 rules that would be reported as a conflict that is not doubtful, with two
@@ -637,13 +654,13 @@ The code, in the order to read it:
 | File | Lines | Job | Uses |
 |---|---|---|---|
 | `speccheck/llm.py` | 80 | One function: prompt + JSON schema in, N parsed answers out | the model server |
-| `speccheck/logic.py` | 250 | Symbols to Z3 variables; parses formulas; asks the solver, including the test "do these two rules mean the same?" | Z3 |
-| `speccheck/formalize.py` | 890 | Stage 1: text to `formal.json` (steps 1 to 5, then 6 and 7); `formalize_sets` for K symbol sets; with `base`, adds new rules to a formal model that exists | `llm`, `logic`, `probe` |
-| `speccheck/probe.py` | 600 | Stage 1, step 6: four checks by simple questions, three about one requirement and one about the outcomes of two | `llm`, `logic` |
-| `speccheck/checks.py` | 750 | Stage 2: `formal.json` to findings; which findings depend on a reading; scenarios; `combine` for K formal models | `logic` |
-| `speccheck/explain.py` | 400 | Stage 3: findings to plain words; the scenario judge; builds `report.md` | `llm` |
-| `speccheck/cli.py` | 200 | Runs the three stages, writes the files; with `--change`, on the specs of an OpenSpec project with a change applied | all |
-| `speccheck/change.py` | 460 | For `--change`: applies an OpenSpec change to the specs that exist, labels the scenarios, and says which findings involve the change (5.10) | `logic` |
+| `speccheck/logic.py` | 260 | Symbols to Z3 variables; parses formulas; asks the solver, including the test "do these two rules mean the same?" | Z3 |
+| `speccheck/formalize.py` | 1,080 | Stage 1: text to `formal.json` (steps 1 to 5, then 6 and 7); `formalize_sets` for K symbol sets; with `base`, adds new rules to a formal model that exists | `llm`, `logic`, `probe` |
+| `speccheck/probe.py` | 1,060 | Stage 1, step 6: six checks by simple questions, three about one requirement and three about two (their outcomes, their conditions, and whether what one demands makes the other apply) | `llm`, `logic` |
+| `speccheck/checks.py` | 870 | Stage 2: `formal.json` to findings; which findings depend on a reading; scenarios; `combine` for K formal models | `logic` |
+| `speccheck/explain.py` | 420 | Stage 3: findings to plain words; the scenario judge; builds `report.md` | `llm` |
+| `speccheck/cli.py` | 370 | Runs the three stages, writes the files; with `--change`, on the specs of an OpenSpec project with a change applied | all |
+| `speccheck/change.py` | 600 | For `--change`: applies an OpenSpec change to the specs that exist, labels the scenarios, and says which findings involve the change (5.10) | `logic` |
 
 About half of each file is comments, docstrings and prompts.
 
@@ -651,8 +668,8 @@ Around the package:
 
 | File | Job |
 |---|---|
-| `tests/` | 42 tests of everything that needs no LLM |
-| `experiments/make_eval.py` | writes the evaluation sets `eval` to `eval11`, `size` and `size2` into `experiments/sets/` (clean specs and planted defects) |
+| `tests/` | 124 tests of everything that needs no LLM |
+| `experiments/make_eval.py` | writes the evaluation sets `eval` to `eval22`, `size`, `size2` and `mixed` into `experiments/sets/` (clean specs and planted defects) |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs the pipeline on a set of specs and scores it against the planted defects; adds the second reader to saved runs; re-scores saved runs without a GPU |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the main model and the second model on the cluster (section 8) |
@@ -1004,7 +1021,7 @@ formal model K ─► findings ─┘
 - gaps cannot be matched (a gap is a situation over one model's own symbols):
   the gaps of the first model are kept
 
-### 5.7 Five checks by questions (`probe.py`, step 6)
+### 5.7 Six checks by questions (`probe.py`, step 6)
 
 - all 8 samples can agree and still be wrong: one model tends to make the same
   choice every time
@@ -1143,6 +1160,60 @@ two definite states       A_a and A_b each fix one value for each of their symbo
   fact in `doubted_by` and is doubtful; a conflict that needs an assumed
   fact is not found in a situation that the facts rule out
 - the same condition, or a rule and a special case of it: not asked about
+
+**Check 6: does what one rule demands make another rule apply?** (step 46)
+
+The other checks compare what two rules demand, or their two conditions. A
+contradiction can also be a chain. From `experiments/examples/hotel_chain`,
+where the change adds R4 and R5:
+
+```
+R1   "WHEN a call of `check_in_guest` succeeds in a run with a plan
+      THEN an earlier call of `ask_manager` in the run was approved"
+     (and check_in_guest_succeeded run_has_plan) => ask_manager_approved
+R4   "WHEN a call of `ask_manager` is made THEN the run is not a late-arrival run"
+     ask_manager_called => (not run_is_late_arrival)
+R5   "WHEN a call of `check_in_guest` succeeds in a late-arrival run THEN the answer gives the night code"
+
+pair        in a late-arrival run with a plan in which a check-in succeeds (R1 and R5 apply),
+            R4 cannot apply: it forbids the call there. Does what R1 demands make it apply?
+question    Requirement: the words of R1.   Fact B: TRUE: ask_manager_called
+            Where the requirement applies and is obeyed, is B the case?  yes / no / unclear
+answers     8 of 8 "yes"; for R2, R3, R5 and R6 with the same fact, 8 of 8 "no"
+fact        (=> (and (and check_in_guest_succeeded run_has_plan) ask_manager_approved) ask_manager_called)
+            "If an earlier call of ask_manager was approved, then a call to ask_manager was made."
+conflict    R1 and R4, "if the assumed facts hold"                    (5.3, run 2)
+```
+
+- our code and Z3 pick the pairs (a, b), by three questions to Z3:
+
+```
+a applies, alone or with one more rule c    A_a and A_c and the rules and the facts         satisfiable
+the conditions can hold together            A_a and A_c and A_b and the facts               satisfiable
+but then a and b clash                      A_a and A_c and A_b and a and b and the facts   unsatisfiable
+```
+
+- and the condition of b is one definite state of which a part, a yes/no
+  fact, is neither given nor excluded by a. One question for each such part
+- the model sees the words of a, and that one fact. The words and not the
+  symbols of what a demands: a symbol can say less ("an approval was
+  granted", for a rule that an earlier request for approval in the run was
+  approved; a count of calls, for "succeeds once"). The fact alone and not a situation:
+  shown other facts, the model judges those too. The prompt
+  (`APPLIES_SYSTEM`) says that what a system would merely need is a "no"
+  ("to give the return label it must have found the parcel"). All three
+  were learned on saved runs (T39)
+- more than half "yes" → an assumed fact, `(A_a and C_a) => p`, with
+  `between: [a, b]` and `about: applies`; used like the others
+- it also lifts a doubt: an example whose own demand makes a rule apply
+  through such a fact describes the whole situation of their conflict
+  (5.2). "... THEN the plan is written once AND `check_in_guest` succeeds
+  once AND `ask_manager` is never called" against R1: found and not
+  doubtful in 12 of 12 runs, and in none without the check (E31)
+- at most 40 questions for a document; when a change is checked, only the
+  pairs with one of its rules. On a project in parts the limit is reached
+  often: 2,008 of 5,004 questions were left out on the four changes of the
+  real project (T39)
 
 ### 5.8 A second reader (`formalize.py`, step 7, optional)
 
@@ -1371,6 +1442,7 @@ With `--incremental`:
 | `rules[].voted` | only when the rule was accepted by the vote of 5.1: how many of the usable translations entail the chosen one, e.g. `"7/8"` |
 | `rules[].demand_nothing` | only for a rule that is not accepted: how many of its translations demand nothing. Such a rule is read again (5.1) |
 | `condition_pairs` | step 6, check 5: each pair of rules asked about, and the count of its answers. A fact that came from one has `between`, the ids of the two rules, and `about: conditions` |
+| `apply_pairs` | step 6, check 6: each question asked, with its two rules, the part of the second rule's condition that it was about, and the count of its answers. A fact that came from one has `between` and `about: applies` |
 | `reread`, `rules[].reread` | only when there was a second read: `reread` names the rules that were read again and the symbols that stayed; a rule has `reread: true` when its translation comes from the second round |
 | `situation` | `run` when the rules are about whole runs (`--whole-run`, 5.2); absent otherwise |
 | `background[].check.renames` | only for a link that moves the rule's demand to another symbol: the two statements shown in the second question of check 2 (`own`, `other`) and the count of its answers (5.7) |
@@ -1644,6 +1716,16 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       and one change that adds, rewrites, removes and renames (no design
       change). E22: 9 of 9 planted conflicts and 9 of 9 planted gaps in 3
       runs, both ways, and nothing else about the change
+- [x] **Step 46 — does what one rule demands make another rule apply?**:
+      `eval22/` first. Check 6 of step 6: for two rules where the second
+      cannot apply as well without a clash where the first applies, the
+      model gets the words of the first and one part of the second's
+      condition; more than half "yes" is an assumed fact. The form of the
+      question was chosen in four rounds on saved runs (T39). Held-out
+      `eval22/` (E31): chains of three rules 2 → 12 of 12, examples that
+      break a rule 0 → 12 of 12, changes where the demand only looks like
+      the condition 1 of 12 either way. On the real project the missing
+      approval is reported (T40)
 - [x] **Step 45 — every example of a conflict must describe its situation**:
       `eval21/` first. A conflict with examples is doubtful unless every
       example in it makes the other rules apply by its own case (step 44:

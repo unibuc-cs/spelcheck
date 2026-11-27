@@ -7,7 +7,7 @@ options do and what the output means is in [README.md](README.md).
 
 ```
 uv sync                      # on a "hardlink" error: set UV_LINK_MODE=copy and retry
-python -m pytest tests       # 118 tests, no LLM
+python -m pytest tests       # 124 tests, no LLM
 ```
 
 ## 2. Try it without a GPU
@@ -19,6 +19,7 @@ report has the proven findings, without wording and without scenarios.
 python -m speccheck specs/order/requirements.md --formal specs/order/formal.json --out out
 python -m speccheck --change specs/auth_change/openspec/changes/admin-never-locked --formal specs/auth_change/formal.json --out out
 python -m speccheck --change experiments/sets/eval20/parcels_cross/openspec/changes/add-express-shipping --examples "^Example:" --formal experiments/examples/parcels_cross/formal.json --out out     # a spec about the runs of an agent, with examples
+python -m speccheck --change experiments/sets/eval22/hotel_chain/openspec/changes/add-late-arrivals --examples "^Example:" --formal experiments/examples/hotel_chain/formal.json --out out     # a contradiction that is a chain of three rules
 ```
 
 ## 3. Start the model
@@ -152,6 +153,7 @@ python -m experiments.evaluate --base-url http://localhost:18200/v1 --specs expe
 python -m experiments.evaluate --rescore experiments/results/my_run.json          # score saved runs again, no LLM
 python -m experiments.evaluate --rescore experiments/results/my_run.json --second-base-url http://localhost:18201/v1    # add the second model to saved runs
 python -m experiments.evaluate --rescore experiments/results/my_run.json --conditions-base-url http://localhost:18200/v1 --name my_run_conditions    # ask the question about two conditions on saved runs that were made without it
+python -m experiments.evaluate --rescore experiments/results/my_run.json --applies-base-url http://localhost:18200/v1 --name my_run_applies    # the same for the question whether what one rule demands makes another rule apply
 ```
 
 The changes of the real project (`experiments/sets/real1` to `real5`) are run

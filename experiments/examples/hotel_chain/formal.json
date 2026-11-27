@@ -1,0 +1,594 @@
+{
+  "situation": "run",
+  "symbols": [
+    {
+      "name": "check_in_guest_succeeded",
+      "sort": "Bool",
+      "values": [],
+      "description": "A call to check_in_guest has succeeded in the current run",
+      "event": true
+    },
+    {
+      "name": "run_has_plan",
+      "sort": "Bool",
+      "values": [],
+      "description": "The current run is a planned run",
+      "event": false
+    },
+    {
+      "name": "ask_manager_approved",
+      "sort": "Bool",
+      "values": [],
+      "description": "An earlier call to ask_manager in the current run was approved",
+      "event": false
+    },
+    {
+      "name": "refund_stay_succeeded",
+      "sort": "Bool",
+      "values": [],
+      "description": "A call to refund_stay has succeeded",
+      "event": true
+    },
+    {
+      "name": "card_verified_at_check_in",
+      "sort": "Bool",
+      "values": [],
+      "description": "The guest's card was verified at check-in",
+      "event": false
+    },
+    {
+      "name": "lea_asks_check_in_g5",
+      "sort": "Bool",
+      "values": [],
+      "description": "Lea asks to check in guest g5",
+      "event": true
+    },
+    {
+      "name": "check_in_guest_called_once",
+      "sort": "Bool",
+      "values": [],
+      "description": "The check_in_guest function is called exactly once in response to the request",
+      "event": false
+    },
+    {
+      "name": "answer_gives_room_number",
+      "sort": "Bool",
+      "values": [],
+      "description": "The answer to the check-in request includes the room number",
+      "event": false
+    },
+    {
+      "name": "ask_manager_called",
+      "sort": "Bool",
+      "values": [],
+      "description": "A call to ask_manager is made in the current run",
+      "event": true
+    },
+    {
+      "name": "run_is_late_arrival",
+      "sort": "Bool",
+      "values": [],
+      "description": "The current run is a late-arrival run",
+      "event": false
+    },
+    {
+      "name": "answer_gives_night_code",
+      "sort": "Bool",
+      "values": [],
+      "description": "The answer to the check-in request includes the night code",
+      "event": false
+    },
+    {
+      "name": "stay_record_written",
+      "sort": "Bool",
+      "values": [],
+      "description": "The run writes a stay record",
+      "event": false
+    },
+    {
+      "name": "stay_record_names_guest",
+      "sort": "Bool",
+      "values": [],
+      "description": "The written stay record names the guest",
+      "event": false
+    }
+  ],
+  "background": [
+    {
+      "id": "F1",
+      "text": "Where R1 applies and is obeyed, a part of the condition of R4 holds: If an earlier call of ask_manager was approved, then a call to ask_manager was made.",
+      "formula": "(=> (and (and check_in_guest_succeeded run_has_plan) ask_manager_approved) ask_manager_called)",
+      "support": "8/8",
+      "between": [
+        "R1",
+        "R4"
+      ],
+      "about": "applies"
+    }
+  ],
+  "rules": [
+    {
+      "id": "R1",
+      "text": "WHEN a call of check_in_guest succeeds in a run with a plan THEN an earlier call of ask_manager in the run was approved",
+      "trigger": "check_in_guest_succeeded",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If the check-in process succeeds during a planned run, it must be the case that a manager approval was obtained earlier in that same run.",
+      "antecedent": "(and check_in_guest_succeeded run_has_plan)",
+      "consequent": "ask_manager_approved",
+      "probes": [
+        {
+          "reading": "The manager approval is required only if the check-in succeeds, regardless of whether the run is planned.",
+          "antecedent": "check_in_guest_succeeded",
+          "consequent": "ask_manager_approved",
+          "situations": [
+            {
+              "when": {
+                "ask_manager_approved": false,
+                "check_in_guest_succeeded": true,
+                "run_has_plan": false
+              },
+              "translation_says": "obeyed"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        },
+        {
+          "reading": "The manager approval is required only if the run is planned, regardless of whether the check-in succeeds.",
+          "antecedent": "run_has_plan",
+          "consequent": "ask_manager_approved",
+          "situations": [
+            {
+              "when": {
+                "ask_manager_approved": false,
+                "check_in_guest_succeeded": false,
+                "run_has_plan": true
+              },
+              "translation_says": "obeyed"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R2",
+      "text": "WHEN a call of refund_stay succeeds THEN the guest's card was verified at check-in",
+      "trigger": "refund_stay_succeeded",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a refund for a stay is successfully processed, it must be the case that the guest's card was verified during the check-in process.",
+      "antecedent": "refund_stay_succeeded",
+      "consequent": "card_verified_at_check_in",
+      "probes": [
+        {
+          "reading": "If the card was verified at check-in, then the refund for the stay will succeed.",
+          "antecedent": "card_verified_at_check_in",
+          "consequent": "refund_stay_succeeded",
+          "situations": [
+            {
+              "when": {
+                "card_verified_at_check_in": true,
+                "refund_stay_succeeded": false
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "card_verified_at_check_in": false,
+                "refund_stay_succeeded": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        },
+        {
+          "reading": "The refund succeeds if and only if the card was verified at check-in.",
+          "antecedent": "(and refund_stay_succeeded card_verified_at_check_in)",
+          "consequent": "(or (not refund_stay_succeeded) (not card_verified_at_check_in))",
+          "situations": [
+            {
+              "when": {
+                "card_verified_at_check_in": true,
+                "refund_stay_succeeded": true
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "card_verified_at_check_in": false,
+                "refund_stay_succeeded": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R3",
+      "text": "WHEN lea asks to check in guest g5 THEN check_in_guest is called once AND the answer gives the room number",
+      "trigger": "lea_asks_check_in_g5",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If Lea asks to check in guest g5, the check_in_guest function must be called exactly once and the response must include the room number.",
+      "antecedent": "lea_asks_check_in_g5",
+      "consequent": "(and check_in_guest_called_once answer_gives_room_number)",
+      "probes": []
+    },
+    {
+      "id": "R4",
+      "text": "WHEN a call of ask_manager is made THEN the run is not a late-arrival run",
+      "trigger": "ask_manager_called",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "If a call to ask_manager is made, the current run must not be a late-arrival run.",
+      "antecedent": "ask_manager_called",
+      "consequent": "(not run_is_late_arrival)",
+      "probes": [
+        {
+          "reading": "The run is a late-arrival run only if a call to ask_manager is made.",
+          "antecedent": "run_is_late_arrival",
+          "consequent": "ask_manager_called",
+          "situations": [
+            {
+              "when": {
+                "ask_manager_called": false,
+                "run_is_late_arrival": true
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "ask_manager_called": true,
+                "run_is_late_arrival": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        },
+        {
+          "reading": "If the run is not a late-arrival run, then a call to ask_manager is made.",
+          "antecedent": "(not run_is_late_arrival)",
+          "consequent": "ask_manager_called",
+          "situations": [
+            {
+              "when": {
+                "ask_manager_called": false,
+                "run_is_late_arrival": false
+              },
+              "translation_says": "obeyed"
+            },
+            {
+              "when": {
+                "ask_manager_called": true,
+                "run_is_late_arrival": true
+              },
+              "translation_says": "broken"
+            }
+          ],
+          "answers": {
+            "translation": 8,
+            "other": 0,
+            "either": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "R5",
+      "text": "WHEN a call of check_in_guest succeeds in a late-arrival run THEN the answer gives the night code",
+      "trigger": "check_in_guest_succeeded",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "In any late-arrival run where the check_in_guest function call succeeds, the response to the check-in request must include the night code.",
+      "antecedent": "(and check_in_guest_succeeded run_is_late_arrival)",
+      "consequent": "answer_gives_night_code",
+      "probes": []
+    },
+    {
+      "id": "R6",
+      "text": "WHEN a call of check_in_guest succeeds THEN the run writes one stay record that names the guest",
+      "trigger": "check_in_guest_succeeded",
+      "status": "accepted",
+      "clusters": [
+        8
+      ],
+      "entropy": 0.0,
+      "reading": "Whenever a guest check-in call succeeds, the system must create a stay record that includes the guest's name.",
+      "antecedent": "check_in_guest_succeeded",
+      "consequent": "(and stay_record_written stay_record_names_guest)",
+      "probes": []
+    }
+  ],
+  "outcome_pairs": [
+    {
+      "rules": [
+        "R1",
+        "R4"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R1",
+        "R5"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R2",
+        "R4"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R2",
+        "R5"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R3",
+        "R4"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R3",
+        "R5"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R4",
+        "R5"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R4",
+        "R6"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R5",
+        "R6"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R1",
+        "R2"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R1",
+        "R3"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R1",
+        "R6"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R2",
+        "R3"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R2",
+        "R6"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R3",
+        "R6"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    }
+  ],
+  "condition_pairs": [
+    {
+      "rules": [
+        "R4",
+        "R5"
+      ],
+      "answers": {
+        "possible": 8,
+        "impossible": 0,
+        "unclear": 0
+      }
+    }
+  ],
+  "apply_pairs": [
+    {
+      "rules": [
+        "R1",
+        "R4"
+      ],
+      "part": {
+        "ask_manager_called": true
+      },
+      "answers": {
+        "yes": 8,
+        "no": 0,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R2",
+        "R4"
+      ],
+      "part": {
+        "ask_manager_called": true
+      },
+      "answers": {
+        "yes": 0,
+        "no": 8,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R3",
+        "R4"
+      ],
+      "part": {
+        "ask_manager_called": true
+      },
+      "answers": {
+        "yes": 0,
+        "no": 8,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R5",
+        "R4"
+      ],
+      "part": {
+        "ask_manager_called": true
+      },
+      "answers": {
+        "yes": 0,
+        "no": 8,
+        "unclear": 0
+      }
+    },
+    {
+      "rules": [
+        "R6",
+        "R4"
+      ],
+      "part": {
+        "ask_manager_called": true
+      },
+      "answers": {
+        "yes": 0,
+        "no": 8,
+        "unclear": 0
+      }
+    }
+  ]
+}
