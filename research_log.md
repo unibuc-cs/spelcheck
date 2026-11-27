@@ -5598,6 +5598,64 @@ now.
 
 ---
 
+## T51 — TestingTheAgents from scratch with step 52, and three formalizations side by side (2026-11-28)
+
+**Question.** Step 52 changes the first step of the pipeline. What do the
+reports of the four changes say when they are run from scratch with it, and
+how much of a difference is the difference between two runs?
+
+**How.** The four changes were run from scratch with the frozen code, by
+the commands of README.md (32 to 63 minutes for a change on two GPUs), and
+scored against the application's specs. For a fair comparison the two
+earlier formalizations, of T38 and of T41, were brought to today's questions
+first: checks 4 to 6 asked again on their parts. So the three columns
+differ in the formalization, and the last one also in the read prompt.
+
+| Conflicts that are not doubtful | First run (T38) | Second run (T41) | From scratch with step 52 |
+|---|---|---|---|
+| `add-instant-bulk-takedown-workflow`, cannot be built | 6 | 5 | 5 |
+| `add-licence-expiry-sweep-workflow`, can be built | 4 | 2 | 2 |
+| `add-page-retirement-workflow`, can be built | 3 | 1 | 6 |
+| `add-scheduled-batch-republish-workflow`, can be built | 1 | 1 | 1 |
+| all four | 14 | 9 | 14 |
+| the two contracts on one function, of 24 parts | 16 | 16 | 14 |
+| the missing approval | found | found | found |
+
+- **Nothing is lost.** The two reasons of the authors that the tool finds
+  are in all three. Nothing else among the rules of a change is found in
+  more than 2 parts, in any of the three.
+- **The total is inside what two runs differ by**: 14 and 9 with the old
+  read step, 14 with the new one. Only the first change has findings that
+  come back in every run.
+- **Symbols described as a moment**: 15 of 8,346 in the new run, where 238
+  of 8,623 in the run of T41.
+- **The page retirement change has 6 conflicts in the new run**, each found
+  in 1 of its 23 parts, each between an example and a rule of the spec file
+  that the change touches (in one case another example). In five of them
+  the rule is "no protected page is ever taken down" or "only live pages are
+  taken down", and the example is one in which a page is taken down. Check
+  6 says, rightly, that a page that is taken down was unpublished; the rule
+  then applies in the example's own case, and the mark for examples is not
+  given (5.2). But the rule's real condition, that the page is protected,
+  sits in what it demands ("it never succeeds for a protected page"), and
+  the example does not say that its page is protected. With symbols that
+  are facts about the run, check 6 says yes more often (51 steps, where 35
+  to 38), and more such conflicts lose their doubt.
+- A stricter test for examples was tried offline on these parts: a conflict
+  with an example counts only if the example's own case, with the other
+  rules obeyed, cannot be. It sets 2 of the 6 aside, and changes no planted
+  conflict in the saved runs of seven sets, `eval20/` to `eval27/` without
+  `eval25/`. Not built.
+- 7 of the 131 parts could not be read, where 4: all are spec files of the
+  project's test harness, which `--against "fs-*"` leaves out.
+- The first formalization's parts took two calls to bring to today's
+  questions: the first server stopped at its time limit after 74 parts.
+
+**Decision.** Step 52 stays (E36). The reports of README.md are those of the
+new run. Next: the test for examples above, with `eval28/` first.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

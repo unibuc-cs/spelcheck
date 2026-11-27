@@ -50,6 +50,7 @@ its entries. How each mechanism works is in [plan.md](plan.md), section 5.
   | `eval24/` | 12 changes on 4 more projects of that kind, each with a rule whose condition names two calls and one whose condition names three (3.20) | 8 conflicts: 4 with the rule about two calls, 4 between an example and a rule; 4 changes that should give no conflict | E33 |
   | `eval25/` | 12 changes on 4 more projects of that kind, each of one rule about a fourth happening (3.21) | 4 conflicts between two demands said in other words; 8 changes that only a guess about the system, or a mix-up of two things, sets against a rule | E34 |
   | `eval26/` | 16 changes on 4 more projects of that kind, with the changes of `eval22/` and `eval23/` together (3.19) | 8 conflicts: 4 that are a chain of three rules, 4 between an example and a rule; 8 changes that should give no conflict | E35 |
+  | `eval27/` | 16 changes on 4 more projects in the form of `eval26/` (3.18) | 8 conflicts: 4 that are a chain of three rules, 4 between an example and a rule; 8 changes that should give no conflict | E36 |
   | `size/` | 4 versions of one spec of 30 requirements | 2 conflicts, 1 gap | E13 |
   | `size2/` | 4 versions of one spec of 100 requirements | 2 conflicts, 1 gap | E14 (not held-out: no design was tuned on it) |
 
@@ -560,7 +561,7 @@ conflicts in our own sets has it. A rule that always applies is left out,
 so "never backorder" against "backorder when stock is missing" keeps its
 title.
 
-### 3.18 The specs of an agent system: a whole run, examples, twin names, a project in parts (T36 to T38, E29, E30)
+### 3.18 The specs of an agent system: a whole run, examples, twin names, a project in parts (T36 to T38, T49, T50, E29, E30, E36)
 
 The specs that the tool is meant for say what a run of an agent that calls
 tools may contain. A trial on such a project, TestingTheAgents (33 spec
@@ -575,6 +576,20 @@ answers:
   run. Read as moments their conflict is doubtful: on held-out `eval20/` all
   12 planted ones were found and all 12 marked. With the option, 12 of 12
   are reported as they are (E29).
+- **With that option the read step is told so too** (step 52; T49, T50,
+  E36). Its prompt says that the symbols describe "one snapshot of the
+  system: what is the case or is happening", and in specs about runs it
+  often described a symbol as a moment, "a call to ask_grower is being
+  made": 82 of 771 symbols in the runs of `eval26/`, in 35 of 48 runs. The
+  questions of step 6 are answered by the descriptions; asked whether an
+  earlier approved call means that, the model said no. One more paragraph
+  says that every symbol is a fact about the run as a whole. On held-out
+  `eval27/`: 0 of 723 symbols described as a moment, where 85 of 752;
+  chains of three rules found in 12 of 12 runs, where 3 (all 9 misses had
+  that one cause); the other conflicts and the changes that should give
+  none are as before. 11 of the 12 chains are then proven from the rules
+  alone: "an earlier call was approved" is translated with the symbol of
+  the call in it.
 - **An example is one case** (`--examples`). Scenarios that describe one
   request under different fixtures clash when read as rules. A conflict
   with examples counts as it is only when every example in it makes the
@@ -1021,14 +1036,28 @@ What the first two batches showed, before the vote:
 - **A gap is hard to read at this size**: it lists every other event as
   FALSE, 20 to 40 lines.
 
-### 4.9 What the specs of an agent system show (T36 to T48, E29 to E35)
+### 4.9 What the specs of an agent system show (T36 to T50, E29 to E36)
 
-One project of that kind, and seven sets of our own.
+One project of that kind, and eight sets of our own.
 
 - **Two of the four reasons why a change cannot be built are found**: the
   contradiction between two of its rules, and since step 46 the chain of
   three rules across two spec files (3.19). The third needs rules of three
   spec files, the fourth arithmetic over the steps of a run.
+- **Half of a report is not in the next one** (T51). Three formalizations of
+  the project, brought to the same questions, have 14, 9 and 14 conflicts
+  that are not doubtful over the four changes. The two reasons above are in
+  all three (the first in 16, 16 and 14 of 24 parts). Nothing else among
+  the rules of a change is found in more than 2 parts, in any of them.
+- **A rule can keep its real condition in what it demands** (T51): "WHEN any
+  call of the takedown tool is made THEN it never succeeds for a protected
+  page". An example in which a page is taken down makes it apply, so the
+  mark for examples is not given (3.18), although the example does not say
+  that its page is protected. 6 conflicts on one change in the run with
+  step 52, each in 1 of 23 parts; 3 and 1 in the two runs before. A
+  stricter test, that the example's own case cannot be with the other
+  rules obeyed, sets 2 of the 6 aside offline, and changes no planted
+  conflict in the saved runs of seven sets. Not built.
 - **The question of 3.19 is cut off in a project in parts**: of 5,004
   questions that the pairs of the four changes give, 2,008 were left out by
   the limit of 40 for a document. And a chain is found only across the spec
@@ -1040,11 +1069,6 @@ One project of that kind, and seven sets of our own.
   that the fact is true, and then answers "yes"; such statements are 61 of
   2,768 questions. None of the three adds a conflict there. Before step 48
   it was 5 of 35, and 6 artefact conflicts (T41).
-- **A symbol can be described as a moment in a spec about runs** (E35).
-  "A call to ask_astronomer is being made": the model then says that a
-  call that was approved earlier is not being made now, and the chain is
-  not found, in the 3 runs of one project of `eval26/`. The read step does
-  not know that a situation is a run.
 - **The question of 3.19 still says yes to a rule about two calls, now and
   then** (T48, E35): 6 of 540 askings on `eval26/`, once on the project.
   Each time most answers call it given by the condition, so the fact is
@@ -1148,6 +1172,7 @@ the prompts, so it can be scored again without a GPU.
 | E33 | `eval24/`, held-out: a rule that the read step returns once for each of its events is one rule (T45); the code before and after | 2 x 36 runs | runs that finish 25 of 36 before, 36 of 36 after; conflicts with a rule about two calls 8 and 12 of 12; examples that break a rule 6 and 11 of 12; changes that should give no conflict, with one, 0 either way (3.20) |
 | E34 | `eval25/`, held-out: the question about two outcomes says what does not count (T46, T47); the same runs asked with both prompts, and a full run | 2 x 36 runs | with doubtful conflicts set aside: contradictions said in other words 12 of 12 both times; changes that should give no conflict, with one, 5 of 24 before and 3 after (3.21) |
 | E35 | `eval26/`, held-out: the question whether a rule applies says which situations count, and a yes says what makes the statement true (T47, T48); asked three times in each form on the same runs | 48 runs, 2 x 3 askings | planted conflicts found in 58 of 72 askings with the old words, 60 with the new form; changes that should give no conflict, with one, 0 of 72 either way; steps with the same vote in three askings 22 and 39 of 46 (3.19) |
+| E36 | `eval27/`, held-out: with `--whole-run` the read step is told that a situation is a run (T49, T50); the code before and after | 2 x 48 runs | symbols described as a moment 85 of 752 before, 0 of 723 after; chains of three rules 3 and 12 of 12; examples that break a rule 12 of 12 both times; changes that should give no conflict, with one, 0 of 24 either way (3.18) |
 
 The trials (T1 to T26) were run on development data between these
 experiments. Among the last: T17 compared temperatures 0.3, 0.5 and 0.7 (3.1);
@@ -1180,7 +1205,11 @@ with the one that was kept (3.19). T45 looked at what the read step returns
 for a scenario about two calls (3.20). T46 read the wrong answers about two
 outcomes in the reports of that project, and T47 asked the question again
 on saved runs with its new prompt (3.21). T48 asked the question of 3.19
-three times in each of three forms on saved runs (3.19).
+three times in each of three forms on saved runs (3.19). T49 counted the
+symbols that are described as a moment in specs about runs, and T50 ran
+one set again with the read step told that a situation is a run (3.18).
+T51 ran the four changes of the real project from scratch with it, next to
+two earlier formalizations brought to the same questions (4.9).
 research_log.md
 has them in order, together with the bugs that
 changed results before they were fixed (L1 to L10) and the open threats to

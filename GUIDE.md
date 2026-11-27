@@ -63,7 +63,7 @@ is how OpenSpec projects work. That is part 5.
 
 To give an idea of the size: about 4,950 lines of Python now, half of them comments
 and prompts, one local model (Qwen3.8, 27B), and results measured on 297 versions
-of small specs and on 230 changes. The results are in part 6.
+of small specs and on 246 changes. The results are in part 6.
 
 ---
 
@@ -1092,6 +1092,30 @@ R6   "WHEN an express request is handled in a run THEN `request_signoff` is not 
 Without the option, all 12 such conflicts of the test were found and all 12
 were marked doubtful (6.2).
 
+The option also changes how the symbols are described. When the model lists
+them (stage 1), its prompt speaks of "one snapshot of the system: what is
+the case or is happening". For a spec about runs it then often wrote a
+moment:
+
+```
+without the option's paragraph   ask_grower_made: "A call to ask_grower is being made"
+with it                          ask_grower_made: "A call of ask_grower was made in the run"
+```
+
+1. Every later question is answered by these descriptions, not by the
+   words of the spec.
+2. Take the question of the chain below: a rule demands that an earlier
+   call of `ask_grower` was approved; is the statement `ask_grower_made`
+   then true? For "is being made" the model says no: "a past approved call
+   does not imply that a call is currently in progress". 0 to 2 of 8
+   answers say yes.
+3. So with `--whole-run` the prompt gets one more paragraph: the document
+   is about whole runs, and every symbol is a fact about the run as a
+   whole, which stays true once it has happened.
+4. For "was made in the run" 8 of 8 answers say yes. And most of the time
+   the question is not even needed: the rule is now translated with that
+   symbol in it, `(and ask_grower_made ask_grower_approved)`.
+
 **An example is one case** (`--examples PATTERN`). The second change adds
 three cases of one request:
 
@@ -1734,7 +1758,21 @@ the same 48 runs:
 Where the right step is asked, it now has 8 of 8 answers. 4 of the 12 runs
 with a chain find nothing, with either form: in three the model had
 described a symbol as a moment, "a call is being made", in a spec about
-runs (6.4), and in one a wrong assumed fact excludes the situation.
+runs, and in one a wrong assumed fact excludes the situation.
+
+That description turned out to be common: 82 of 771 symbols in those runs.
+The repair is the paragraph of 5.1, and it was tested on four more projects
+of the same form (`eval27`), every change run three times with the code
+before and after:
+
+| | Before | With the paragraph |
+|---|---|---|
+| symbols described as a moment | 85 of 752 | 0 of 723 |
+| a contradiction that is a chain of three rules: found | 3 of 12 | 12 of 12 |
+| an example that breaks a rule: found, and not doubtful | 12 of 12 | 12 of 12 |
+| changes that should give no conflict: runs with one | 0 of 24 | 0 of 24 |
+
+All 9 chains that were missed before had that one cause.
 
 **A real project of an agent system** (5.2):
 [TestingTheAgents](https://github.com/unibuc-cs/TestingTheAgents). It has 33 spec
@@ -1743,16 +1781,15 @@ Its authors say that three can be built and one cannot, for four reasons. It
 is a repository of its own; the commands that run speccheck on it are in
 README.md and commands.md. Each change is checked in 32 or 33 parts, which
 takes 30 to 60 minutes on two GPUs. This is what the reports of the last
-run say, each change against the 24 spec files of the application, with
-every question in its final form. In brackets are the same parts before
-the question about two outcomes was changed:
+run from scratch say, each change against the 24 spec files of the
+application:
 
 | Change | Conflicts, not doubtful | Among the rules of the change, with the parts that found each | With a rule of another spec file | Doubtful |
 |---|---|---|---|---|
-| cannot be built | 5 (9) | 2: in 16 and 1 of 24 parts | 3 (7) | 9 (19) |
-| can be built | 2 (3) | 2: in 2 and 1 of 24 parts | 0 (1) | 21 (32) |
-| can be built | 1 (3) | 0 | 1 (3) | 32 (54) |
-| can be built | 1 (3) | 0 | 1 (3) | 7 (19) |
+| cannot be built | 5 | 3: in 14, 1 and 1 of 24 parts | 2 | 17 |
+| can be built | 2 | 1: in 2 of 24 parts | 1 | 30 |
+| can be built | 6 | 6: each in 1 of 23 parts | 0 | 24 |
+| can be built | 1 | 0 | 1 | 17 |
 
 - The conflict found in 16 parts is the first of the authors' four reasons,
   two rules of the change that contradict each other. The report explains
@@ -1760,21 +1797,25 @@ the question about two outcomes was changed:
 - A second reason is in that report since the question about a chain
   (5.1). A run of the new workflow takes a page down in a plan; an existing
   rule says that what goes down in a plan was approved; the change says
-  that such a run asks nobody. It is one of the 3 conflicts with a rule of
-  another spec file, "if the assumed facts hold", and the fact says that an
-  approved request is a request that was made.
-- The 9 conflicts that rested on a wrong answer about two outcomes are
-  gone. What is left with a rule of another spec file, 5 over the four
-  changes: the missing approval; two that set a property of one call
-  against a property of another; one through a link; one that holds under
-  one reading of an ambiguous rule, which the report says.
+  that such a run asks nobody. It is one of the 2 conflicts with a rule of
+  another spec file.
+- This is the third time the project was formalized. The two runs before
+  it, with the same questions, have 6, 4, 3 and 1 conflicts, and 5, 2, 1
+  and 1: 14 and 9 in all, where this run has 14. Two findings are in all
+  three, the two reasons above. So half of what one report shows is not in
+  the next one.
+- The 6 conflicts of the third change are each in 1 of its 23 parts, and
+  each sets an example against a rule: an example in which a page is taken
+  down, and "no protected page is ever taken down". The example does not
+  say that its page is protected (6.4).
 - The number of conflicts does not tell the four changes apart. The number
-  of parts does: nothing else is found in more than 3.
+  of parts does: nothing else is found in more than 2, in any of the three
+  runs.
 - The 9 spec files of the project's test harness add more conflicts of that
   kind, which is what `--against` is for.
 - The other two reasons are not found. One needs rules of three spec files,
   and one is arithmetic over the steps of a run.
-- The doubtful conflicts, 7 to 32 for a change, are all marked for an
+- The doubtful conflicts, 17 to 30 for a change, are all marked for an
   example. They are in the report, after the others.
 
 ### 6.3 The goals
@@ -1786,7 +1827,7 @@ The project has five goals. This is where each one stands:
 | G1: a minimal working prototype of Kiro's formal analysis | done |
 | G2: it works on any spec, in any format | done for the prototype: 2 formats, 63 small specs, two long ones, and changes checked against existing specs, removals included (part 5). Specs about the runs of an agent have options of their own, and a project of 479 scenarios is checked in parts (5.1, 5.2) |
 | G3: code and documents a person can read | done for the current state |
-| G4: research for a paper, on the local model | well under way: 27 tests on specs the design had not seen, four of them on changes of a real project. Still one main model, one real OpenSpec project and one real project of an agent system |
+| G4: research for a paper, on the local model | well under way: 28 tests on specs the design had not seen, four of them on changes of a real project. Still one main model, one real OpenSpec project and one real project of an agent system |
 | G5: only the formal part | done: an LLM review of the text was built, measured, and switched off |
 
 ### 6.4 What does not work yet
@@ -1803,12 +1844,12 @@ The project has five goals. This is where each one stands:
 | on real specs, most conflicts that nobody planted are not contradictions | of 20 that we read, 8 are in a situation that cannot happen, 4 are other artefacts, and 7 set a general rule against its own exception (6.2). The question about two conditions marks one conflict in six to nine; the rest are reported as they are |
 | with a whole run as the situation, the question about two outcomes is asked of many more pairs | also of two rules about two unrelated happenings, and a wrong answer gives a conflict between the two. Since the question says what does not count, the 9 such conflicts on the real project are gone (6.2); on our own test 3 of 24 runs still have one |
 | the link step guesses how a system works too | "every batch is listed as turned" became the link "if the cellar is closed, `turn_batch` must have been called" (6.2) |
-| a symbol can be described as a moment in a spec about runs | "a call to ask_astronomer is being made": asked whether an earlier approved call means that, the model says no, and a chain of three rules is not found (3 of 12 runs on `eval26`, 6.2) |
 | the question about a chain still says yes to a rule about two calls, now and then | 6 of 540 askings on `eval26`. The model calls it given by the condition, so no conflict comes of it (point 6 in 5.1); the fact is still wrong |
 | the question about a chain is asked at most 40 times for a document | enough on our sets. On the four changes of the real project, 2,008 of 5,004 questions were left out (6.2). And a chain is found only across the spec files of one part |
 | on real specs the question about a chain still takes wrong steps | 3 of the 30 it said yes to on the real project, read after step 48 and not read again since. Two take one refusal for another ("the job is refused", and the statement that the approver refused). One is about a statement marked FALSE: the model says that the fact is true, and then answers "yes". None of the three adds a conflict there |
 | a rule that reacts to either of two events has no trigger | the model lists it once for each event, and the copies are kept as one rule (5.1). Where a situation is one moment, a conflict between it and a rule about another event is then not marked as two events at once (3.3). A label that comes back twice with two different texts still stops the run; that was not seen |
 | a right step can still give an artefact | "a call that is refused was made" is right. Its conflict on the real project has a call that succeeds in its situation, which the example excludes in words and the formulas do not: "refused" and "succeeds" are two symbols |
+| a rule can keep its real condition in what it demands, and an example then seems to break it | "WHEN any call of the takedown tool is made THEN it never succeeds for a protected page" applies to every takedown. An example in which a page is taken down makes it apply, and the conflict is not marked, although the example does not call its page protected: 6 conflicts on one change of the real project, each in 1 of 23 parts (6.2) |
 | two examples of one case with opposite outcomes are missed in 7 of 12 runs | "called once" and "never called" became a count and "the call did not succeed", which can hold together (6.2) |
 | an attribute of one call becomes an attribute of the run | "the token the call was made with": two rules about two different calls then clash |
 | the question about two conditions also doubts real conflicts | in the order spec of part 2, a run made today marks R1 against R5 as doubtful: the model holds that a canceled order cannot be a submitted one. The Kiro blog reports that conflict. Two flags of one command are called impossible too (6.2) |
@@ -1900,9 +1941,10 @@ The full list is in research.md, section 5.
 ### 6.6 What is next
 
 1. **The specs of an agent system**: what the real project still shows.
-   First the symbols: in a spec about runs they are still described as
-   moments ("a call is being made"), and a chain is then not found (6.4).
-   Then the link step, which still guesses how a system works. An attribute that belongs to one call. The limit of 40
+   First the examples: a rule that keeps its real condition in what it
+   demands, and an example that then seems to break it (6.4). Then the
+   link step, which still guesses how a system works, and a property of
+   one call that becomes a property of the whole run. An attribute that belongs to one call. The limit of 40
    questions for a document, which a project in parts reaches in nearly
    every part. And the two reasons that are not found: a conflict that
    needs rules of three spec files, and arithmetic over the steps of a run.
@@ -1972,14 +2014,14 @@ The folders:
 speccheck/          the tool (the 8 files above; refine.py is the review that is switched off)
 specs/              3 small specs the prompts were developed on, with their saved output,
                     and auth_change, the example of part 5
-tests/              133 tests that need no LLM
+tests/              136 tests that need no LLM
 experiments/
   sets/             the 11 evaluation sets, eval to eval10 and eval12 (297 spec versions), two long specs,
                     eval16 to eval18 (eighteen specs written like real ones), real1 to real3 (48 changes of a real project),
                     real4 and real5 (21 more real changes, each also with a planted conflict),
                     eval19 (six specs with conditions that exclude each other),
                     and for the change check eval11, eval13, eval14, eval15, mixed (one larger project),
-                    eval20 to eval26 (twenty-eight projects about an assistant that calls tools)
+                    eval20 to eval27 (thirty-two projects about an assistant that calls tools)
                     and change_dev (old specs as projects)
   results/          every experiment: the raw data (.json) and its tables (.md)
   examples/         saved runs that the documents quote

@@ -26,7 +26,7 @@ projects have them (5.10).
 | **G1** A minimal working prototype of Kiro's formal analysis: spec, formal check, answer in plain language | **Done.** Conflicts, gaps, ambiguities and scenarios, as in Kiro's formal part. Gaps are asked once for each event, and all 18 planted gaps of `eval8/` were found. Both Kiro blog examples found by the solver (`delete_property`: 3 of 3 in the last runs; a wrong voted fact can still hide it). Ambiguities: about half with one model; with the optional second reader 30 and 32 of 36 (held-out `eval4/`, `eval7/`), at up to one extra question per spec |
 | **G2** Data-driven: any spec, any format | **Done for the prototype.** 63 base specs in two formats (Kiro EARS, OpenSpec), no change to code or prompts; specs of 30 and of 100 requirements went as well as the small ones (E13, E14), and the read step has room for about 140. An OpenSpec *change* is checked against the specs that exist (`--change`, 5.10): on held-out `eval11/`, 36 of 36 planted conflicts and 36 of 36 planted gaps, and nothing else reported about a change (E17). A gap that a removal opens is reported as the change's, 18 of 18 on held-out `eval13/`, and a conflict the specs had before is never blamed on the change (E19). With `--incremental` a change is checked on a saved model of the specs, for a sixth to a seventh of the cost. It found 50 against 54 planted conflicts on held-out `eval14/` (E20) and, after one change to its read prompt, 72 against 72 on held-out `eval15/` (E21). The specs of an agent system, whose rules are about whole runs and stand next to examples, have two options (`--whole-run`, `--examples`), and a project too large for one document is checked in parts (steps 44 and 45; 5.2, 5.10): on held-out `eval20/` the conflicts between rules about two calls of one run went from 0 to 12 of 12, and the changes that should give nothing from 17 of 24 with a conflict to none (E29). On a real project of that kind, 33 spec files and 465 scenarios, the contradiction between two rules that makes one change impossible to build is found in 16 of 24 parts, and nothing else among the rules of its four changes in more than 2 (T38) |
 | **G3** Code and documents a person can read | **Done** for the current state. GUIDE.md and README.md were revised after a point-by-point review (2026-11-22): each mechanism is a short list of steps on one real example |
-| **G4** Research for a paper, on the local model | **Well under way.** 27 held-out tests (E5, E7 to E13, E15 to E21, E24 to E35). On the 10 before the questions about outcomes: 61 to 100% of planted conflicts found; with doubtful conflicts set aside, at most 1 false alarm in 18 clean runs, apart from a real conflict we wrote into an `eval9/` clean spec by mistake (2 runs, E15). With those questions (E18, conflicts said in other words): 34 of 36, and 3 of 18 clean runs with a conflict that was not planted. Planted gaps 18 of 18 in each of the three sets E13, E15, E16. On real specs (E23 to E28): what is planted is found in 46 of 52 runs with a copied condition and 10 of 16 with a condition of its own, but of 20 conflicts that nobody planted none is a contradiction (T32). On the specs of an agent system (E29, E30, T38): what the two options are for is found or set aside as planned. A contradiction that is a chain of three rules, and an example that breaks a rule, are found since step 46: 12 of 12 runs each on held-out `eval22/`, 2 and 0 without the new check (E31). The question behind both took a wrong step on real specs, where a rule applies in several cases; put as a statement to judge it does not: 6 of 12 runs with a wrong conflict before, none after, on held-out `eval23/` (E32). Of the four reasons why a change of the real project cannot be built, two are found (T40, T44). Still small: one main model, one real OpenSpec project, one real project of an agent system |
+| **G4** Research for a paper, on the local model | **Well under way.** 28 held-out tests (E5, E7 to E13, E15 to E21, E24 to E36). On the 10 before the questions about outcomes: 61 to 100% of planted conflicts found; with doubtful conflicts set aside, at most 1 false alarm in 18 clean runs, apart from a real conflict we wrote into an `eval9/` clean spec by mistake (2 runs, E15). With those questions (E18, conflicts said in other words): 34 of 36, and 3 of 18 clean runs with a conflict that was not planted. Planted gaps 18 of 18 in each of the three sets E13, E15, E16. On real specs (E23 to E28): what is planted is found in 46 of 52 runs with a copied condition and 10 of 16 with a condition of its own, but of 20 conflicts that nobody planted none is a contradiction (T32). On the specs of an agent system (E29, E30, T38): what the two options are for is found or set aside as planned. A contradiction that is a chain of three rules, and an example that breaks a rule, are found since step 46: 12 of 12 runs each on held-out `eval22/`, 2 and 0 without the new check (E31). The question behind both took a wrong step on real specs, where a rule applies in several cases; put as a statement to judge it does not: 6 of 12 runs with a wrong conflict before, none after, on held-out `eval23/` (E32). Of the four reasons why a change of the real project cannot be built, two are found, in each of three formalizations; the other conflicts of its reports, 14, 9 and 14 in all, are mostly other ones in each (T51). Still small: one main model, one real OpenSpec project, one real project of an agent system |
 | **G5** Only the formal part | **Done.** An LLM review of the text was built, measured, and switched off |
 
 In short: the pipeline works end to end, finds what Kiro's blog finds, and
@@ -91,8 +91,17 @@ this order. The first is new, from the real project of an agent system
    - **a symbol described as a moment in a spec about runs** ("a call is
      being made"): the model then says that a call that was approved
      earlier is not being made now, and a chain is not found: 3 of 12 runs
-     on `eval26/` (E35). The read step does not know that a situation is a
-     run. This is the next step, with `eval27/` first;
+     on `eval26/` (E35). Done in step 52 (2.9): with `--whole-run` the read
+     step is told that a situation is a run. On `eval27/` no symbol is
+     described as a moment, where 85 of 752, and the chains are found in 12
+     of 12 runs, where 3 (E36);
+   - **a rule that keeps its real condition in what it demands**, and an
+     example that then seems to break it (T51): "it never succeeds for a
+     protected page" applies to every takedown, and an example in which a
+     page is taken down loses its doubt. 6 conflicts on one change of the
+     real project, each in 1 of 23 parts. A stricter test for examples sets
+     2 of them aside offline and changes nothing planted. This is the next
+     step, with `eval28/` first;
    - **the link step guesses how a system works** as check 4 did ("if the
      cellar is closed, the turning tool must have been called"): 1 of 24
      runs on `eval25/` (E34);
@@ -143,8 +152,8 @@ this order. The first is new, from the real project of an agent system
 
    A larger invented project with a change that does everything at once is
    done (step 36).
-   All twenty-six sets, the three real batches, `real4/` and `real5/` have
-   been read (E35). A new design needs `eval27/`, written first, and a test
+   All twenty-seven sets, the three real batches, `real4/` and `real5/` have
+   been read (E36). A new design needs `eval28/`, written first, and a test
    on real changes needs another project: the 8 changes of `real5/` were
    the last of this one that fit, and the four changes of the project of an
    agent system have been read too.
@@ -786,6 +795,17 @@ on 22 of 56 conflicts that nobody planted in `real5/`, on 26 of 148 in
 `real4/`, and on none of the conflicts of our own sets (T35). No new set was
 written for it: it has no setting, and the runs were made before it existed.
 
+Decided on 2026-11-27: **in a spec about runs the read step is told that a
+situation is a run** (step 52, 2.9). Its prompt says that the symbols
+describe "one snapshot of the system: what is the case or is happening",
+and for a spec about runs it often described a symbol as a moment: "a call
+is being made", 82 of 771 symbols in the runs of one set (T49). The later
+questions are answered by the descriptions: a call that was approved
+earlier "is not currently in progress". With `--whole-run` the prompt now
+says that every symbol is a fact about the run as a whole. On held-out
+`eval27/`: 0 of 723 symbols described as a moment, where 85 of 752; chains
+of three rules found in 12 of 12 runs, where 3; nothing else changes (E36).
+
 Decided on 2026-11-27: **the question of step 46 says which situations
 count, and a yes says what makes the statement true** (step 51, 5.7). Asked
 twice on the same runs, that question gave a right step 8 of 8 answers once
@@ -1064,7 +1084,7 @@ The code, in the order to read it:
 |---|---|---|---|
 | `speccheck/llm.py` | 80 | One function: prompt + JSON schema in, N parsed answers out | the model server |
 | `speccheck/logic.py` | 260 | Symbols to Z3 variables; parses formulas; asks the solver, including the test "do these two rules mean the same?" | Z3 |
-| `speccheck/formalize.py` | 1,110 | Stage 1: text to `formal.json` (steps 1 to 5, then 6 and 7); `formalize_sets` for K symbol sets; with `base`, adds new rules to a formal model that exists | `llm`, `logic`, `probe` |
+| `speccheck/formalize.py` | 1,130 | Stage 1: text to `formal.json` (steps 1 to 5, then 6 and 7); `formalize_sets` for K symbol sets; with `base`, adds new rules to a formal model that exists | `llm`, `logic`, `probe` |
 | `speccheck/probe.py` | 1,060 | Stage 1, step 6: six checks by simple questions, three about one requirement and three about two (their outcomes, their conditions, and whether what one demands makes the other apply) | `llm`, `logic` |
 | `speccheck/checks.py` | 870 | Stage 2: `formal.json` to findings; which findings depend on a reading; scenarios; `combine` for K formal models | `logic` |
 | `speccheck/explain.py` | 420 | Stage 3: findings to plain words; the scenario judge; builds `report.md` | `llm` |
@@ -1077,8 +1097,8 @@ Around the package:
 
 | File | Job |
 |---|---|
-| `tests/` | 133 tests of everything that needs no LLM |
-| `experiments/make_eval.py` | writes the evaluation sets `eval` to `eval26`, `size`, `size2` and `mixed` into `experiments/sets/` (clean specs and planted defects) |
+| `tests/` | 136 tests of everything that needs no LLM |
+| `experiments/make_eval.py` | writes the evaluation sets `eval` to `eval27`, `size`, `size2` and `mixed` into `experiments/sets/` (clean specs and planted defects) |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs the pipeline on a set of specs and scores it against the planted defects; adds the second reader to saved runs; re-scores saved runs without a GPU |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the main model and the second model on the cluster (section 8) |
@@ -2178,6 +2198,14 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       and one change that adds, rewrites, removes and renames (no design
       change). E22: 9 of 9 planted conflicts and 9 of 9 planted gaps in 3
       runs, both ways, and nothing else about the change
+- [x] **Step 52 — in a spec about runs, a symbol is a fact about the
+      run**: `eval27/` first. With `--whole-run` the read prompt says that
+      a situation is a run and that every symbol is a fact about the run as
+      a whole (`READ_RUN`). Tried on `eval26/` from scratch (T50), then
+      held out on `eval27/` (E36), the code before and after: symbols
+      described as a moment 85 of 752 → 0 of 723; chains of three rules 3
+      → 12 of 12; examples that break a rule 12 of 12; changes that should
+      give no conflict, with one, 0 of 24 either way
 - [x] **Step 51 — which situations count in the question of step 46**:
       `eval26/` first. The prompt of check 6 says that the condition of the
       requirement is the case in the situations that count; a yes says

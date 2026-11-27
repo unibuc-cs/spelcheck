@@ -520,9 +520,57 @@ cannot be built, for four reasons.
   approved, must this be true? The model: no, "a past approved call does
   not imply that a call is currently in progress". So the chain of entry 27
   is not found.
-- **How large it is.** 3 of 12 runs with such a chain in the last test
-  (E35).
-- **What we did.** Nothing yet. This is the next step.
+- **How large it is.** Common: 82 of 771 names in the runs of one test
+  set, in 35 of 48 runs. And it decides the answer: with "has been made in
+  the run" the same question gets 8 of 8 "yes" (T49).
+- **Why.** The instruction for listing the names says that they "describe
+  one snapshot of the system: what is the case or is happening". For specs
+  about whole runs we had told the later questions that a situation is a
+  run, but not this first step.
+- **What we did.** For such specs the instruction now says that every name
+  is a fact about the run as a whole, one that stays true once it has
+  happened: "a letter was sent in the run", not "a letter is being sent".
+- **The result.** On 16 new examples: names described as a moment 0 of
+  723, where 85 of 752. Contradictions that need three rules found in 12 of
+  12 runs, where 3; all 9 misses had this one cause. Nothing else changed.
+  And 11 of the 12 are now proven by the solver directly, without the
+  extra question of entry 27 (E36).
+- **The lesson.** When an option changes what a situation is, every step
+  must be told, the first one above all: all later steps read what it
+  wrote.
+
+### 34. Two runs on the same specs give two different reports
+
+- **The problem.** The model does not pick the same names and formulas
+  twice. On a large project that changes a good part of the report.
+- **Example.** The real project was formalized three times. With the same
+  questions each time, its four reports show 14, 9 and 14 contradictions in
+  all. Only two findings are in all three: the two contracts on one
+  function, and the missing approval. They are the two real reasons.
+- **What we did.** A large project is checked in parts, and the rules of a
+  change are translated once for each part. A finding among them says in
+  how many parts it was found: "found in 14 of 24 parts". The real one has
+  16, 16 and 14 of 24 in the three runs; nothing else has more than 2.
+- **The lesson.** For a large spec, trust what comes back, not what shows
+  up once. The count of parts is the tool's way of saying so (T51).
+
+### 35. An example that seems to break a rule, and does not
+
+- **The problem.** A rule can be written so that it applies always, with
+  its real condition inside what it demands.
+- **Example.** "WHEN any call of the takedown tool is made THEN it never
+  succeeds for a protected page." An example of the change takes a page
+  down. The tool sees: the rule applies in the example's own case, so the
+  example describes the whole situation (entry 24), and the contradiction
+  is reported without a doubt. But the example never says that its page is
+  protected.
+- **How large it is.** 6 contradictions on one change of the real project
+  in the last run, each found in only 1 of 23 parts (3 and 1 in the two
+  runs before).
+- **What we did.** Nothing built yet. A stricter test was tried on saved
+  data: the example counts only if its own case cannot be true together
+  with the other rule. It sets 2 of the 6 aside and changes none of the
+  contradictions we planted in seven test sets. This is the next step.
 
 ---
 
