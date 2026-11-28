@@ -98,10 +98,10 @@ Where the project stands:
   says which situations count, 39 of 46 of its right steps get the same
   vote in three askings, where 22 did. And in these specs the model had
   often described a name as a moment ("a call is being made"); told that a
-  situation is a whole run, it no longer does, and on a seventh set a
+  situation is a whole run, it no longer does, and on an eighth set a
   contradiction that needs three rules is found in 12 of 12 runs, where 3.
   An example is set against a rule only where its own case breaks the
-  rule: on one more set, changes that should give no conflict have one in
+  rule: on a ninth set, changes that should give no conflict have one in
   1 of 36 runs, where 8
   ([Specs about the runs of an agent](#specs-about-the-runs-of-an-agent));
 - all of that is on specs we wrote. On 69 changes of a real project it does
@@ -120,10 +120,10 @@ Where the project stands:
   spec files, 465 scenarios and four open changes, one of which its authors
   say cannot be built, for four reasons. Each change is checked in 32 or 33
   parts. Two of the reasons are in its report: a contradiction between two
-  rules of the change, found in 16 of the 24 parts of the application's
-  specs, and an approval that an existing rule demands and the change
-  forbids, a chain of three rules. In the spec files of the other three
-  changes no conflict is found in more than 3 parts. The other two reasons
+  rules of the change, found in 14 to 16 of the 24 parts of the
+  application's specs, and an approval that an existing rule demands and
+  the change forbids, a chain of three rules. Nothing else among the rules
+  of a change is found in more than 2 parts. The other two reasons
   are not found. The four reports had 9, 3, 3 and 3 conflicts that are not
   doubtful, half of them from wrong answers of the model about what can be
   true together. Since that question says what does not count, and an
@@ -1566,13 +1566,13 @@ Some notes on these numbers:
 | The question whether a rule applies is asked 40 times for a document at most | on our sets that is enough. In a project in parts it is not: on the four changes of TestingTheAgents, 2,008 of 5,004 questions were left out. A chain of three rules is found only if its pair is among those asked about, and only across the spec files of one part |
 | On real specs the question whether a rule applies still takes wrong steps | 3 of the 30 it said yes to on TestingTheAgents, read after step 48 (T44) and not read again since. Two take one refusal for another: "the job is refused", and the statement that the approver refused. One is about a statement marked FALSE: the model says that the fact is true, and then answers "yes". None of the three adds a conflict there. None on our own sets |
 | A rule that reacts to either of two events has no trigger | "WHEN a call of `order_lenses` or `order_frame` is made THEN ...": the model lists it once for each event, and the copies are kept as one rule without a trigger. Where a situation is one moment, a conflict between it and a rule about another event is then not marked as two events at once. A label that comes back twice with two different texts still stops the run; that was not seen in 3,191 saved runs |
-| A step from one rule to another can be right and its conflict still an artefact | "a call that is refused was made" is right. The conflict it gave on the real project has a call that succeeds in its situation, which the example excludes in words and the formulas do not: "refused" and "succeeds" are two symbols |
+| A step from one rule to another can be right and its conflict still an artefact | "a call that is refused was made" is right. The conflict it gave on the real project has a call that succeeds in its situation, which the example excludes in words and the formulas do not: "refused" and "succeeds" are two symbols. Since an example counts only in its own case, that conflict is marked doubtful; between two rules that are not examples such a conflict has no mark |
 | A conflict can rest on one reading of an ambiguous rule | "WHEN any call of the takedown tool is made THEN it never succeeds for a protected page" became "it never succeeds" in 5 of 8 translations, and an example in which a page is taken down then breaks it. The rule is reported as ambiguous, and the conflict says that it is gone with the other reading; it is still a conflict in the report. 3 of the 12 conflicts on TestingTheAgents are of this kind, and the table of a project counts them |
 | A translation can be impossible to obey | where no symbol stands for what a rule demands, the model writes the demand as `false`: "WHEN a takedown succeeds THEN the page was live at the start of the run" became "a takedown never succeeds". Or one symbol stands for two objects, and "x12 is lent AND x30 is not lent" contradicts itself. Such a rule clashes with every rule that makes its condition true, and hides every conflict where its condition holds. 27 to 42 of about 3,250 rules in a formalization of TestingTheAgents, 11 of 7,049 on the real OpenSpec changes, 2 of 36,708 on our own sets. Leaving these rules out was tried on saved runs: 2 false conflicts go and 2 that were hidden appear, so it is not built |
 | An outcome of an example can get a symbol of its own | "`move_hive` succeeds once for h8" became `move_hive_succeeded_once_for_h8`, and a rule about `move_hive_succeeded` does not meet it. The planted conflict is then not found, or found only through the condition of a third rule and reported as doubtful: 2 of 12 runs on `eval28/` |
 | Two examples of one case with opposite outcomes are missed in 7 of 12 runs | "called once" and "never called" became a count and "the call did not succeed", which can hold together (E30) |
 | An attribute of one call becomes an attribute of the whole run | "the token the call was made with", "the agent that made it", "the file the function is in": two rules about two different calls then clash |
-| A project in parts is checked against one other spec file at a time | a conflict that needs rules of three spec files is not found; scenarios are not looked for; a part that the model cannot read is left out (4 of 131 on the real project, all named in the reports) |
+| A project in parts is checked against one other spec file at a time | a conflict that needs rules of three spec files is not found; scenarios are not looked for; a part that the model cannot read is left out (4 and 7 of 131 in two runs of the real project, all named in the reports) |
 | The cheaper way to check a change reads a new rule with little around it | by default the specs are formalized again for each change, so that old and new rules share their symbols. `--incremental` avoids that. Shown only the saved symbols, the LLM sometimes ties a new rule to a saved event that the rule does not name. That cost 4 of 54 planted conflicts on `eval14/`, and none of 72 on `eval15/`, where one such rule was ambiguous in 3 of 3 runs. Either way, a project is bounded by the read step's room, about 140 scenarios |
 
 ## Optional: an LLM review of the text (off by default)
