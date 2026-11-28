@@ -5727,6 +5727,40 @@ translation demands nothing does, and that one is read again (5.1).
 
 ---
 
+## T53 — Development: an example must be impossible with the other rules obeyed (2026-11-28)
+
+**Question.** Does the second test for examples (plan.md 2.10) lose a
+planted conflict, or change anything else, in the runs we have?
+
+**How.** No model call. `checks.analyze` has a switch for the experiments,
+`own_case`; the saved runs are scored with it off and on, doubtful
+conflicts set aside: the last file of each of the eight sets `eval20/` to
+`eval27/`, the runs of `eval27/` with the code before step 52 and those of
+`eval26/` from scratch (10 files, 409 runs of changes), and the three
+formalizations of TestingTheAgents (T51).
+
+**Result.**
+
+- **Our own sets: no run differs**, 0 of 409. The planted conflicts are
+  found in the same runs, and no change that should give no conflict gains
+  or loses one.
+- **TestingTheAgents**, conflicts that are not doubtful, all four changes:
+
+  | | First run | Second run | With step 52 |
+  |---|---|---|---|
+  | the test as it was | 14 | 9 | 14 |
+  | with the second test | 13 | 9 | 12 |
+
+  The 3 that are set aside are those of T52. The two contracts on one
+  function stay in 16, 16 and 14 of 24 parts, and the missing approval in
+  all three.
+
+**Decision.** The design is frozen: the second test, in
+`checks._mark_examples`. `eval28/` is run with the code as it was, since
+the change is in the logic part, and the same runs are scored both ways.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

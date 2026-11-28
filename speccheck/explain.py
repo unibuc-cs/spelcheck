@@ -187,7 +187,8 @@ def evidence(finding: dict, formal: dict) -> str:
             text += (f"\nBut {', '.join(examples)} "
                      + ("is an example, one concrete case, and what it describes" if len(examples) == 1
                         else "are examples, one concrete case each, and what each describes")
-                     + " does not make the other requirement(s) apply: this situation says more than "
+                     + " does not make the other requirement(s) apply, or can be the case with them obeyed: "
+                       "this situation says more than "
                      + ("it does" if len(examples) == 1 else "they do") + ". So the conflict may be a false alarm.")
         if finding.get("special_case"):
             general, special = finding["special_case"]["general"], finding["special_case"]["special"]

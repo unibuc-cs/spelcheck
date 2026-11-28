@@ -755,7 +755,7 @@ T49. With step 52, 11 of the 12 are proven from the rules alone: the
 translation of "an earlier call was approved" now uses the symbol of the
 call itself. Step 52 stays.
 
-### 2.10 Step 53: an example contradicts a rule only in its own case (plan; `eval28/` is written)
+### 2.10 Step 53: an example contradicts a rule only in its own case (built; `eval28/` is not read yet)
 
 A scenario that is an example describes one concrete case. Since step 45 a
 conflict with an example counts as it is only if the example's own case
@@ -806,6 +806,14 @@ of the 24 runs that have one, and the changes that should give no conflict
 have one in no more of their 36 runs. We hope for fewer of the second; if
 the test as it was gives none there, the set shows only that nothing is
 lost, and that is said.
+
+**The trial before the freeze** (T53). No model call: the saved runs are
+scored with the second test off and on (`own_case` in `checks.analyze`).
+In the 409 runs of changes of `eval20/` to `eval27/` no run differs. On the
+three formalizations of the real project the conflicts that are not
+doubtful go from 14, 9 and 14 to 13, 9 and 12; the 3 set aside are between
+an example and a rule in a situation that the example does not describe,
+and the two reasons of the authors that the tool finds stay as they are.
 
 Small things that are open:
 

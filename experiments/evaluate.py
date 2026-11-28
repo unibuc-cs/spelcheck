@@ -94,7 +94,8 @@ from speccheck.probe import applies, conditions, outcomes
 DEFAULT = {"sets": 1, "rule": "any", "facts": True, "max_group": 3,
            "questions": True, "link_checks": True, "doubtful": True, "settle": 0.5,
            "second": False, "repair": True, "outcomes": True, "conditions": True,
-           "whole_run": True, "examples": True, "renames": True, "every_example": True, "applies": True}
+           "whole_run": True, "examples": True, "renames": True, "every_example": True, "applies": True,
+           "own_case": True}
 
 CONFIGURATIONS = [
     ("default (1 symbol set)",               {}),
@@ -119,6 +120,8 @@ CONFIGURATIONS = [
     ("links that only rename not asked about, doubtful set aside", {"renames": False, "doubtful": False}),
     # Step 45: the mark for examples as it was in step 44.
     ("one example of a conflict is enough, doubtful set aside", {"every_example": False, "doubtful": False}),
+    # Step 53: the mark for examples as it was in step 45.
+    ("an example need not exclude the other rules, doubtful set aside", {"own_case": False, "doubtful": False}),
     # Step 46: without the facts of check 6 (in runs made with it, or to which it was added).
     ("without the questions whether a rule applies", {"applies": False}),
     ("without the questions whether a rule applies, doubtful set aside", {"applies": False, "doubtful": False}),
@@ -528,7 +531,7 @@ def findings_of(run: dict, config: dict) -> tuple[list[dict], list[dict]]:
     findings = combine([analyze(model, config["max_group"], questions=config["questions"],
                                 link_checks=config["link_checks"], settle=config["settle"],
                                 second=config["second"], readings=False,
-                                every_example=config["every_example"])
+                                every_example=config["every_example"], own_case=config["own_case"])
                         for model in models])
     return models, findings
 
@@ -661,6 +664,7 @@ CHANGE_CONFIGURATIONS_44 = ("a run read as one moment, doubtful set aside",
                             "examples read as rules, doubtful set aside",
                             "links that only rename not asked about, doubtful set aside",
                             "one example of a conflict is enough, doubtful set aside",
+                            "an example need not exclude the other rules, doubtful set aside",
                             "without the questions whether a rule applies",
                             "without the questions whether a rule applies, doubtful set aside")
 

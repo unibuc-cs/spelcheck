@@ -303,7 +303,8 @@ def test_two_examples_of_one_request_clash_only_in_a_situation_that_neither_desc
     (conflict,) = conflicts(analyze(marked))
     assert conflict["beyond_example"] == ["R9", "R10"] and is_doubtful(conflict)
     assert ("R9, R10 are examples, one concrete case each, and what each describes does not make the other "
-            "requirement(s) apply: this situation says more than they do.") in evidence(conflict, marked)
+            "requirement(s) apply, or can be the case with them obeyed: this situation says more than they do."
+            ) in evidence(conflict, marked)
     assert "doubtful: the situation says more than the example does" in render([conflict], [marked], "t")
 
 

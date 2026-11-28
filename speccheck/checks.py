@@ -54,7 +54,7 @@ def is_doubtful(finding: dict) -> bool:
 
 def analyze(formal: dict, max_group: int = 3, questions: bool = True,
             link_checks: bool = True, settle: float = SETTLE, second: bool = True,
-            readings: bool = True, every_example: bool = True) -> list[dict]:
+            readings: bool = True, every_example: bool = True, own_case: bool = True) -> list[dict]:
     """Run every check on one formal.json and return all findings.
 
     max_group    how many rules may be triggered together when hunting conflicts
@@ -67,6 +67,8 @@ def analyze(formal: dict, max_group: int = 3, questions: bool = True,
                  (see _try_other_readings)
     every_example  every example of a conflict must describe its situation,
                  not one of them (see _mark_examples)
+    own_case     an example describes the situation of a conflict only if its
+                 own case cannot be with the other rules obeyed (the same)
 
     The switches exist so that the experiments can score the same formal
     models with and without steps 6 and 7, and can skip `readings` where only
@@ -90,7 +92,7 @@ def analyze(formal: dict, max_group: int = 3, questions: bool = True,
     conflicts = find_conflicts(vocab, rules, facts, max_group, whole_run)
     _mark_special_cases(vocab, rules, conflicts)
     _mark_examples(vocab, rules, facts, conflicts, {rule["id"] for rule in formal["rules"] if rule.get("example")},
-                   every_example)
+                   every_example, own_case)
     # The rules that a change removes (change.after_model). They take no part
     # in any check; they only show which gap the change opened.
     lost = [vocab.rule(rule) for rule in formal.get("removed_rules", []) if rule.get("status") != "rejected"]
@@ -103,13 +105,15 @@ def analyze(formal: dict, max_group: int = 3, questions: bool = True,
 
 
 def _mark_examples(vocab: Vocabulary, rules: list[Rule], facts: dict, conflicts: list[dict],
-                   examples: set, every: bool = True) -> None:
+                   examples: set, every: bool = True, own_case: bool = True) -> None:
     """Mark the conflicts that need more than an example says ("beyond_example").
 
     examples  the ids of the rules that are examples ("example": true in the
               formal model, set from `speccheck --examples`)
     every     every example of a conflict must describe its situation. False:
               one is enough, as it was before step 45 (for the experiments)
+    own_case  the second test below. False: the first test alone, as it was
+              before step 53 (for the experiments)
 
     An example describes one concrete case, not a rule for all cases:
 
@@ -127,6 +131,21 @@ def _mark_examples(vocab: Vocabulary, rules: list[Rule], facts: dict, conflicts:
     says that they apply ("WHEN dana sends an express request THEN
     ship_parcel succeeds three times", against a rule about every successful
     ship_parcel).
+
+    That the other rules apply in the example's case is not enough:
+
+        R6   "WHEN any call of ship_parcel is made THEN it never succeeds for
+              a parcel that is on hold"
+        R11  "WHEN dana asks to ship parcel k9, which the depot cannot find
+              THEN ship_parcel is refused ..."
+
+    R11 makes R6 apply: the tool is called. But the two can be obeyed
+    together in R11's own case, where the call is refused. A conflict between
+    them is found in a run in which a ship_parcel succeeded: that is the
+    condition of a third rule, and nothing R11 says. So there is a second
+    test: the example's own case cannot be when the other rules of the
+    conflict are obeyed. If it can, the conflict needs more than the example
+    says.
 
     A conflict counts as it is only when every example among its rules
     describes its situation. That also holds for an example and a variant of
@@ -148,7 +167,9 @@ def _mark_examples(vocab: Vocabulary, rules: list[Rule], facts: dict, conflicts:
 
     def describes_situation(example: Rule, others: list[Rule]) -> bool:
         case = given + [example.antecedent, example.consequent]
-        return not vocab.impossible(case) and all(vocab.implies(case, other.antecedent) for other in others)
+        if vocab.impossible(case) or not all(vocab.implies(case, other.antecedent) for other in others):
+            return False
+        return not own_case or vocab.impossible(case + [other.formula for other in others])
 
     for finding in conflicts:
         chosen = [by_id[rule_id] for rule_id in finding["rules"]]
