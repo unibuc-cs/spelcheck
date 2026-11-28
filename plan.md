@@ -95,13 +95,22 @@ this order. The first is new, from the real project of an agent system
      step is told that a situation is a run. On `eval27/` no symbol is
      described as a moment, where 85 of 752, and the chains are found in 12
      of 12 runs, where 3 (E36);
-   - **a rule that keeps its real condition in what it demands**, and an
-     example that then seems to break it (T51): "it never succeeds for a
-     protected page" applies to every takedown, and an example in which a
-     page is taken down loses its doubt. 6 conflicts on one change of the
-     real project, each in 1 of 23 parts. A stricter test for examples sets
-     2 of them aside offline and changes nothing planted. This is the next
-     step, with `eval28/` first;
+   - **an example that is set against a rule in a situation the example
+     does not describe** (T51, T52): "the takedown is refused" against "a
+     takedown never succeeds for a protected page", in a run in which a
+     takedown succeeded. 6 conflicts on one change of the real project,
+     each in 1 of 23 parts; a stricter test for examples sets 2 of them
+     aside offline, and 1 in another formalization. This is step 53 (2.10),
+     with `eval28/` first;
+   - **a translation that can never be obeyed** (T52): where the symbols
+     have no word for what a rule demands, the model writes the demand as
+     `false`, and "only live pages are taken down" becomes "a takedown
+     never succeeds". 27 to 42 of about 3,250 rules in each formalization
+     of the real project, 1 of 36,276 on our own sets. Leaving such rules
+     out was tried offline and gives no fewer false conflicts (2 go, 2 that
+     the rule had hidden appear), so it is not built. Open: such a rule
+     lacks a symbol and could be read again, as a rule whose translation
+     demands nothing is (5.1);
    - **the link step guesses how a system works** as check 4 did ("if the
      cellar is closed, the turning tool must have been called"): 1 of 24
      runs on `eval25/` (E34);
@@ -153,7 +162,8 @@ this order. The first is new, from the real project of an agent system
    A larger invented project with a change that does everything at once is
    done (step 36).
    All twenty-seven sets, the three real batches, `real4/` and `real5/` have
-   been read (E36). A new design needs `eval28/`, written first, and a test
+   been read (E36). `eval28/` is written for step 53 (2.10) and not run
+   yet; a design after that needs `eval29/`, written first, and a test
    on real changes needs another project: the 8 changes of `real5/` were
    the last of this one that fit, and the four changes of the project of an
    agent system have been read too.
@@ -744,6 +754,58 @@ has one. With the code before, 9 chains were missed for the one reason of
 T49. With step 52, 11 of the 12 are proven from the rules alone: the
 translation of "an earlier call was approved" now uses the symbol of the
 call itself. Step 52 stays.
+
+### 2.10 Step 53: an example contradicts a rule only in its own case (plan; `eval28/` is written)
+
+A scenario that is an example describes one concrete case. Since step 45 a
+conflict with an example counts as it is only if the example's own case
+makes the other rules of the conflict apply (5.2). That is not enough. On
+the page retirement change of the real project (T52):
+
+```
+rule     "WHEN any call of the takedown tool is made THEN it never succeeds
+          for a protected page"
+example  "WHEN [an editor asks to take down a page that another page links
+          to] THEN the takedown is refused and the page stays up"
+check 6  where the example is obeyed, the takedown tool was called   (right)
+found    the rule and the example cannot both be obeyed in a run in which
+         a takedown succeeded
+```
+
+The example's case makes the rule apply, so the conflict was not marked.
+But the two can be obeyed together in the example's own case: the call is
+refused. The situation of the conflict, "a takedown succeeded", is the
+condition of a third rule, and the example says nothing of it.
+
+**The change.** In `checks._mark_examples`, an example describes the
+situation of a conflict only if both hold: its own case makes the other
+rules of the conflict apply (as before), and its own case cannot be when
+those rules are obeyed. Otherwise the conflict needs more than the example
+says, and it is marked as doubtful with that example, as before. No prompt
+changes, and no model call. One try.
+
+**What is not in it.** Two other causes of the same 6 conflicts stay
+(T52): a translation that drops a restriction of the demand ("for a page
+that is protected"), which the report already names as one reading of an
+ambiguous rule, and a demand written as `false`.
+
+**How it is tested.** `eval28/` (make_eval.py): four more projects about an
+assistant that calls tools, each with a rule of that form, a rule
+that demands a state from the start of the run, and a rule whose condition
+is that state. Five changes: the chain of `eval26/` and an example that
+says its item is held back and in which the call succeeds (both must be
+found); an example in which the call succeeds and nothing is said of held
+back, an example in which the call is refused for an item that is held
+back, and an example about two items with opposite outcomes (no conflict
+may be reported). The change is in the logic part, so the two versions are
+scored on the same runs: each change run three times, 60 runs.
+
+**The rule, set before the build.** Step 53 stays if on `eval28/`, with
+doubtful conflicts set aside: the planted conflicts are found in no fewer
+of the 24 runs that have one, and the changes that should give no conflict
+have one in no more of their 36 runs. We hope for fewer of the second; if
+the test as it was gives none there, the set shows only that nothing is
+lost, and that is said.
 
 Small things that are open:
 

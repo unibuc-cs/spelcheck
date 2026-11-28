@@ -5656,6 +5656,77 @@ new run. Next: the test for examples above, with `eval28/` first.
 
 ---
 
+## T52 — Development: what the six conflicts of the page retirement change are (2026-11-28)
+
+**Question.** T51 said of the 6 conflicts of the page retirement change that
+a rule keeps its real condition in what it demands, and that the example
+does not say that its page is protected. Is that what the formulas say?
+
+**How.** Each of the 6 was read in its part: the translation that the
+checks use for each rule, the votes, the assumed facts of the proof. No
+model call.
+
+**What they are.** T51 was not exact. There are three causes:
+
+| Conflicts | The rule | What its translation says |
+|---|---|---|
+| 3 | "WHEN any call of the takedown tool is made THEN it never succeeds for a protected page" | "it never succeeds": 5 of 8 translations drop the restriction. The rule is reported as ambiguous, and its other reading demands nothing |
+| 2 | "WHEN a takedown succeeds THEN the page was live at the start of the run" | the demand is `false`, in 7 of 7 translations: the part has no symbol for "was live at the start". The rule then says that a takedown never succeeds |
+| 1 | an example that is a variant of an existing case, "WHEN the request of that case runs while another page links to the page THEN ..." | the "while" part is dropped: it has the condition of the case it is a variant of, and the opposite outcome. Reported as ambiguous |
+
+- **4 of the 6 hold under one reading of an ambiguous rule**, and the report
+  says so of each. The table of T51 counted them like the others.
+- **In 2 of the first 3 the example does not describe the situation.** One
+  is an example in which the takedown is refused. Check 6 says, rightly,
+  that the tool was then called, so the rule applies in the example's case.
+  The two can be obeyed together there. The conflict is found in a run in
+  which a takedown succeeded, which is the condition of a third rule and
+  not in the translation of the example.
+- **A demand that is impossible is a fault of real specs.** Counted in every
+  saved run, as the rules that the checks use:
+
+  | | Rules | Demand impossible | Written as `false` |
+  |---|---|---|---|
+  | our own sets | 36,276 | 1 | 0 |
+  | the real OpenSpec changes (`real1/` to `real5/`) | 7,049 | 11 | 6 |
+  | TestingTheAgents, first run | 3,262 | 42 | 21 |
+  | TestingTheAgents, second run | 3,289 | 39 | 16 |
+  | TestingTheAgents, with step 52 | 3,236 | 27 | 16 |
+
+  The others are formulas that contradict themselves: one symbol for two
+  objects, "one page exists and another does not" as "the page exists and
+  the page does not exist". Such a rule is never reported by itself (a
+  situation that one rule alone forbids is no conflict, 5.2). It does two
+  things: it clashes with every rule that makes its condition true, and it
+  hides every conflict in a situation in which its condition holds. A rule
+  "IF true THEN false", seen once in the last run, silences its whole part.
+
+**Two changes of the logic part, tried offline** on the three formalizations
+of T51. Conflicts that are not doubtful, bulk takedown / expiry sweep /
+page retirement / batch republish:
+
+| | First run | Second run | With step 52 |
+|---|---|---|---|
+| as the code is | 6 / 4 / 3 / 1 | 5 / 2 / 1 / 1 | 5 / 2 / 6 / 1 |
+| an example must also be impossible with the other rules obeyed | 6 / 4 / 2 / 1 | the same | 5 / 2 / 4 / 1 |
+| a rule that can never be obeyed is not checked | 6 / 5 / 3 / 1 | the same | 5 / 2 / 5 / 1 |
+
+- **The stricter test for examples** sets 3 conflicts aside, 2 in one run
+  and 1 in another, and changes nothing else. All 3 are between an example
+  and a rule in a situation that the example does not describe.
+- **Leaving out the rules that can never be obeyed** removes the 2 conflicts
+  of the second cause and brings 2 others to light, which such a rule had
+  hidden: one in each of two runs. The two contracts on one function are
+  then found in 15 of 24 parts, where 14. No fewer false conflicts, so it
+  is not built. What it shows is that parts were silent for a wrong reason.
+
+**Decision.** Step 53 is the stricter test for examples (plan.md 2.10), held
+to a rule on `eval28/`, which is written first. The rules that can never be
+obeyed are an open point: such a rule lacks a symbol, as a rule whose
+translation demands nothing does, and that one is read again (5.1).
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

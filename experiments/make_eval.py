@@ -1,6 +1,6 @@
-"""make_eval.py: writes the evaluation sets eval/ to eval27/, size/, size2/ and mixed/. No LLM, no GPU.
+"""make_eval.py: writes the evaluation sets eval/ to eval28/, size/, size2/ and mixed/. No LLM, no GPU.
 
-    python -m experiments.make_eval eval27     (only the sets named; all if none)
+    python -m experiments.make_eval eval28     (only the sets named; all if none)
 
 change_dev/ is development data for the change check: the OpenSpec-format
 specs of eval9/ and eval10/ as projects with a change (see as_projects).
@@ -422,6 +422,25 @@ symbols as a moment, "a call to ask_astronomer is being made", in specs that
 are about whole runs, and a chain of three rules was then not found; before
 the read step is told that a situation is a run) has four more projects in
 the form of eval26/, with the same four changes.
+
+eval28/ (written 2026-11-28, after the runs on a real project of that kind,
+T51, in which a rule kept its real condition in what it demands, "it never
+succeeds for a page that is protected", and examples that say nothing of
+protection were set against it; before the test for an example is made
+stricter and before a translation that can never be obeyed is left out) has
+four more projects about an assistant that calls tools. Each has a rule of
+that shape, a rule that demands a state from the start of the run, and a
+rule whose condition is that state. Five changes:
+
+    chain    as in eval26/. It must be found
+    breaks   an example that says its item is held back and in which the
+             call succeeds for it. It must be found
+    apart    an example in which the call succeeds, and which does not say
+             that its item is held back. No conflict may be reported
+    refused  an example in which the call is refused for an item that is
+             held back. No conflict may be reported
+    pair     an example about two items, one of them held back, with
+             opposite outcomes. No conflict may be reported
 """
 
 import json
@@ -4992,10 +5011,186 @@ PROJECTS27 = {
          "near": ("add-return-runs", "Volumes are returned in runs of their own.")}),
 }
 
+def _project28(rules: str, records: str, purposes: tuple, gate: tuple, guard: tuple, state: tuple, told: tuple,
+               base: tuple, recorded: tuple, chain: tuple, breaks: tuple, apart: tuple, refused: tuple, pair: tuple,
+               names: dict) -> dict:
+    """One eval28 project: two spec files about the runs of an assistant, and five changes.
+
+    rules, records  the names of the two spec files; purposes: their purpose
+    gate            (requirement, sentence, scenario, text): a call needs an earlier approved call in the same run
+    guard           (requirement, sentence, scenario, text): the call never succeeds for an item that is held back
+                    at the start of the run. The real condition of the rule is in what it demands
+    state           (requirement, sentence, scenario, text): where the call succeeds, the item was in a state at
+                    the start of the run
+    told            (requirement, sentence, scenario, text): a rule whose condition is that an item is held back
+    base            (scenario, text): an example
+    recorded        one more rule about the call, in the second file
+    chain           (requirement, sentence, the rule that the approving call is never made in a kind of run,
+                    a rule about the gated call in such a run)
+    breaks          (requirement, sentence, an example that says its item is held back, in which the call succeeds)
+    apart           (requirement, sentence, an example in which the call succeeds, with no word about held back)
+    refused         (requirement, sentence, an example in which the call is refused for an item that is held back)
+    pair            (requirement, sentence, an example about two items, one held back, with opposite outcomes)
+    names           for each change: (folder name, why)
+    """
+    requirement = lambda name, sentence, *scenarios: (name, sentence, list(scenarios))
+    planted = lambda rule, change: {"conflicts": [[f"{rules}/{rule[0]}/{rule[2]}", f"{rules}/{change[0]}/{change[2][0]}"]]}
+    added = lambda change: {rules: {"ADDED": [requirement(change[0], change[1], *change[2:])]}}
+    return {
+        "specs": {
+            rules: (purposes[0], [requirement(gate[0], gate[1], (gate[2], gate[3])),
+                                  requirement(guard[0], guard[1], (guard[2], guard[3])),
+                                  requirement(state[0], state[1], (state[2], state[3])),
+                                  requirement(told[0], told[1], (told[2], told[3])),
+                                  requirement("Requests", "The assistant SHALL handle the requests below as described.", base)]),
+            records: (purposes[1], [requirement(recorded[0], recorded[1], (recorded[2], recorded[3]))]),
+        },
+        "changes": {
+            "chain": {"name": names["chain"][0], "why": names["chain"][1], "delta": added(chain),
+                      "expected": planted(gate, chain)},
+            "breaks": {"name": names["breaks"][0], "why": names["breaks"][1], "delta": added(breaks),
+                       "expected": planted(guard, breaks)},
+            "apart": {"name": names["apart"][0], "why": names["apart"][1], "delta": added(apart),
+                      "expected": {"nothing": True}},
+            "refused": {"name": names["refused"][0], "why": names["refused"][1], "delta": added(refused),
+                        "expected": {"nothing": True}},
+            "pair": {"name": names["pair"][0], "why": names["pair"][1], "delta": added(pair),
+                     "expected": {"nothing": True}},
+        },
+    }
+
+
+PROJECTS28 = {
+    "ferry": _project28(
+        "boarding", "boarding-records",
+        ("A terminal assistant handles the requests of a ferry terminal and calls the tools of the boarding system.",
+         "What the runs of the terminal assistant leave behind."),
+        ("Harbour master before a boarding", "A vehicle SHALL NOT be boarded in a planned run without the harbour master.",
+         "No boarding in a plan without the harbour master", "WHEN a call of `board_vehicle` succeeds in a run with a plan THEN an earlier call of `ask_harbour_master` in the run was approved"),
+        ("Flagged vehicles", "A vehicle that customs has flagged SHALL NOT be boarded.",
+         "No boarding of a flagged vehicle", "WHEN any call of `board_vehicle` is made THEN it never succeeds for a vehicle that is flagged by customs at the start of the run"),
+        ("Check-in", "Only a vehicle that was checked in SHALL be boarded.",
+         "A boarded vehicle was checked in", "WHEN any call of `board_vehicle` succeeds THEN the vehicle was checked in at the start of the run"),
+        ("Telling the driver", "The driver of a flagged vehicle SHALL be told.",
+         "A flagged vehicle is named", "WHEN a request names a vehicle that is flagged by customs at the start of the run THEN the answer says that the vehicle is flagged"),
+        ("Example: a vehicle is boarded", "WHEN lena asks to board vehicle v4 THEN `board_vehicle` is called once AND the answer gives the lane"),
+        ("Boarding records", "Every boarding SHALL be recorded.",
+         "Every boarding is recorded", "WHEN a call of `board_vehicle` succeeds THEN the run writes one boarding record that names the vehicle"),
+        ("Night sailings", "On a night sailing a vehicle SHALL be boarded without the harbour master.",
+         ("A night run asks nobody", "WHEN a call of `ask_harbour_master` is made THEN the run is not a night run"),
+         ("A night boarding names the deck", "WHEN a call of `board_vehicle` succeeds in a night run THEN the answer names the deck")),
+        ("Ambulances", "An ambulance SHALL be boarded at once.",
+         ("Example: a flagged ambulance", "WHEN lena sends an ambulance request for vehicle v9, which is flagged by customs at the start of the run THEN `board_vehicle` succeeds once for v9 AND the answer gives the lane")),
+        ("Motorcycles", "A motorcycle SHALL be boarded on the side lane.",
+         ("Example: a motorcycle", "WHEN lena sends a motorcycle request for vehicle v6 THEN `board_vehicle` succeeds once AND the answer gives the side lane")),
+        ("Flagged vehicles at the gate", "A flagged vehicle SHALL stay on the quay.",
+         ("Example: a flagged vehicle is turned away", "WHEN lena asks to board vehicle v9, which is flagged by customs at the start of the run THEN `board_vehicle` is refused AND the answer says that v9 is flagged")),
+        ("Two vehicles", "A request for two vehicles SHALL board those that may go.",
+         ("Example: two vehicles, one flagged", "WHEN lena asks to board vehicles v4 and v9 while v9 is flagged by customs at the start of the run THEN v4 is boarded AND v9 is not boarded AND the answer names v9 as not boarded")),
+        {"chain": ("add-night-sailings", "At night the harbour master is not on duty."),
+         "breaks": ("add-ambulances", "An ambulance cannot wait on the quay."),
+         "apart": ("add-motorcycles", "Motorcycles block the car lanes."),
+         "refused": ("add-flagged-at-the-gate", "Drivers ask why they are not boarded."),
+         "pair": ("add-two-vehicles", "Families travel with two cars.")}),
+    "museum": _project28(
+        "loans", "loans-records",
+        ("A loans assistant handles the requests of a museum and calls the tools of the collection system.",
+         "What the runs of the loans assistant leave behind."),
+        ("Curator before a loan", "An exhibit SHALL NOT be lent in a planned run without the curator.",
+         "No loan in a plan without the curator", "WHEN a call of `lend_exhibit` succeeds in a run with a plan THEN an earlier call of `ask_curator` in the run was approved"),
+        ("Exhibits under restoration", "An exhibit under restoration SHALL NOT be lent.",
+         "No loan of an exhibit under restoration", "WHEN any call of `lend_exhibit` is made THEN it never succeeds for an exhibit that is under restoration at the start of the run"),
+        ("Depot", "Only an exhibit from the depot SHALL be lent.",
+         "A lent exhibit was in the depot", "WHEN any call of `lend_exhibit` succeeds THEN the exhibit was in the depot at the start of the run"),
+        ("Telling the borrower", "A borrower who asks for an exhibit under restoration SHALL be told.",
+         "An exhibit under restoration is named", "WHEN a request names an exhibit that is under restoration at the start of the run THEN the answer says that the exhibit is under restoration"),
+        ("Example: an exhibit is lent", "WHEN omar asks to lend exhibit x12 THEN `lend_exhibit` is called once AND the answer gives the return date"),
+        ("Loan records", "Every loan SHALL be recorded.",
+         "Every loan is recorded", "WHEN a call of `lend_exhibit` succeeds THEN the run writes one loan record that names the exhibit"),
+        ("Touring shows", "For a touring show an exhibit SHALL be lent without the curator.",
+         ("A touring run asks nobody", "WHEN a call of `ask_curator` is made THEN the run is not a touring run"),
+         ("A touring loan names the crate", "WHEN a call of `lend_exhibit` succeeds in a touring run THEN the answer names the crate")),
+        ("School loans", "A school SHALL get its exhibit at once.",
+         ("Example: a school asks for an exhibit under restoration", "WHEN omar sends a school request for exhibit x30, which is under restoration at the start of the run THEN `lend_exhibit` succeeds once for x30 AND the answer gives the return date")),
+        ("Replicas", "A replica SHALL be lent for a month.",
+         ("Example: a replica", "WHEN omar sends a replica request for exhibit x17 THEN `lend_exhibit` succeeds once AND the answer gives a return date one month later")),
+        ("Restoration at the desk", "An exhibit under restoration SHALL stay in the workshop.",
+         ("Example: an exhibit under restoration is not lent", "WHEN omar asks to lend exhibit x30, which is under restoration at the start of the run THEN `lend_exhibit` is refused AND the answer says that x30 is under restoration")),
+        ("Two exhibits", "A request for two exhibits SHALL lend those that may go.",
+         ("Example: two exhibits, one under restoration", "WHEN omar asks to lend exhibits x12 and x30 while x30 is under restoration at the start of the run THEN x12 is lent AND x30 is not lent AND the answer names x30 as not lent")),
+        {"chain": ("add-touring-shows", "A touring show is agreed a year ahead."),
+         "breaks": ("add-school-loans", "A school plans its lessons around the exhibit."),
+         "apart": ("add-replicas", "Replicas are asked for more often."),
+         "refused": ("add-restoration-at-the-desk", "Borrowers ask why an exhibit is not lent."),
+         "pair": ("add-two-exhibits", "Shows borrow exhibits in pairs.")}),
+    "printshop": _project28(
+        "printing", "printing-records",
+        ("A counter assistant handles the requests of a print shop and calls the tools of the job system.",
+         "What the runs of the counter assistant leave behind."),
+        ("Shop manager before a print", "A job SHALL NOT be printed in a planned run without the shop manager.",
+         "No print in a plan without the shop manager", "WHEN a call of `print_job` succeeds in a run with a plan THEN an earlier call of `ask_shop_manager` in the run was approved"),
+        ("Jobs on hold", "A job on hold SHALL NOT be printed.",
+         "No print of a job on hold", "WHEN any call of `print_job` is made THEN it never succeeds for a job that is on hold at the start of the run"),
+        ("Proofs", "Only a job with a signed proof SHALL be printed.",
+         "A printed job had a signed proof", "WHEN any call of `print_job` succeeds THEN the proof of the job was signed at the start of the run"),
+        ("Telling the customer", "A customer who asks for a job on hold SHALL be told.",
+         "A job on hold is named", "WHEN a request names a job that is on hold at the start of the run THEN the answer says that the job is on hold"),
+        ("Example: a job is printed", "WHEN ines asks to print job j21 THEN `print_job` is called once AND the answer gives the pick-up time"),
+        ("Print records", "Every print SHALL be recorded.",
+         "Every print is recorded", "WHEN a call of `print_job` succeeds THEN the run writes one print record that names the job"),
+        ("Election weeks", "In an election week a job SHALL be printed without the shop manager.",
+         ("An election-week run asks nobody", "WHEN a call of `ask_shop_manager` is made THEN the run is not an election-week run"),
+         ("An election-week print names the press", "WHEN a call of `print_job` succeeds in an election-week run THEN the answer names the press")),
+        ("Funeral notices", "A funeral notice SHALL be printed at once.",
+         ("Example: a funeral notice on hold", "WHEN ines sends a funeral-notice request for job j40, which is on hold at the start of the run THEN `print_job` succeeds once for j40 AND the answer gives the pick-up time")),
+        ("Business cards", "Business cards SHALL be printed on the small press.",
+         ("Example: business cards", "WHEN ines sends a business-card request for job j33 THEN `print_job` succeeds once AND the answer names the small press")),
+        ("Hold at the counter", "A job on hold SHALL stay in the queue.",
+         ("Example: a job on hold is not printed", "WHEN ines asks to print job j40, which is on hold at the start of the run THEN `print_job` is refused AND the answer says that j40 is on hold")),
+        ("Two jobs", "A request for two jobs SHALL print those that may go.",
+         ("Example: two jobs, one on hold", "WHEN ines asks to print jobs j21 and j40 while j40 is on hold at the start of the run THEN j21 is printed AND j40 is not printed AND the answer names j40 as not printed")),
+        {"chain": ("add-election-weeks", "Before an election the shop manager is at the town hall."),
+         "breaks": ("add-funeral-notices", "A funeral notice is needed the same day."),
+         "apart": ("add-business-cards", "The large press is too slow for cards."),
+         "refused": ("add-hold-at-the-counter", "Customers ask why a job is not printed."),
+         "pair": ("add-two-jobs", "Customers bring a poster and a flyer together.")}),
+    "apiary": _project28(
+        "hives", "hives-records",
+        ("A yard assistant handles the requests of a beekeeping yard and calls the tools of the hive system.",
+         "What the runs of the yard assistant leave behind."),
+        ("Beekeeper before a move", "A hive SHALL NOT be moved in a planned run without the beekeeper.",
+         "No move in a plan without the beekeeper", "WHEN a call of `move_hive` succeeds in a run with a plan THEN an earlier call of `ask_beekeeper` in the run was approved"),
+        ("Quarantine", "A hive in quarantine SHALL NOT be moved.",
+         "No move of a hive in quarantine", "WHEN any call of `move_hive` is made THEN it never succeeds for a hive that is in quarantine at the start of the run"),
+        ("Closed hives", "Only a hive that was closed SHALL be moved.",
+         "A moved hive was closed", "WHEN any call of `move_hive` succeeds THEN the hive was closed at the start of the run"),
+        ("Telling the helper", "A helper who asks for a hive in quarantine SHALL be told.",
+         "A hive in quarantine is named", "WHEN a request names a hive that is in quarantine at the start of the run THEN the answer says that the hive is in quarantine"),
+        ("Example: a hive is moved", "WHEN tom asks to move hive h5 to the heather field THEN `move_hive` is called once AND the answer gives the new stand"),
+        ("Move records", "Every move SHALL be recorded.",
+         "Every move is recorded", "WHEN a call of `move_hive` succeeds THEN the run writes one move record that names the hive"),
+        ("Swarm days", "On a swarm day a hive SHALL be moved without the beekeeper.",
+         ("A swarm-day run asks nobody", "WHEN a call of `ask_beekeeper` is made THEN the run is not a swarm-day run"),
+         ("A swarm-day move names the stand", "WHEN a call of `move_hive` succeeds in a swarm-day run THEN the answer names the stand")),
+        ("Flooding", "A hive on wet ground SHALL be moved at once.",
+         ("Example: a flooded hive in quarantine", "WHEN tom sends a flood request for hive h8, which is in quarantine at the start of the run THEN `move_hive` succeeds once for h8 AND the answer gives the new stand")),
+        ("Nucleus hives", "A nucleus hive SHALL be moved to the nursery row.",
+         ("Example: a nucleus hive", "WHEN tom sends a nucleus request for hive h2 THEN `move_hive` succeeds once AND the answer names the nursery row")),
+        ("Quarantine in the yard", "A hive in quarantine SHALL stay on its stand.",
+         ("Example: a hive in quarantine is not moved", "WHEN tom asks to move hive h8, which is in quarantine at the start of the run THEN `move_hive` is refused AND the answer says that h8 is in quarantine")),
+        ("Two hives", "A request for two hives SHALL move those that may go.",
+         ("Example: two hives, one in quarantine", "WHEN tom asks to move hives h5 and h8 while h8 is in quarantine at the start of the run THEN h5 is moved AND h8 is not moved AND the answer names h8 as not moved")),
+        {"chain": ("add-swarm-days", "On a swarm day the beekeeper is up a tree."),
+         "breaks": ("add-flooding", "A hive that stands in water is lost in a day."),
+         "apart": ("add-nucleus-hives", "Young colonies need the sheltered row."),
+         "refused": ("add-quarantine-in-the-yard", "Helpers ask why a hive is not moved."),
+         "pair": ("add-two-hives", "Hives are moved two to a cart.")}),
+}
+
 PROJECT_SETS = {"eval11": PROJECTS11, "eval13": PROJECTS13, "eval14": PROJECTS14, "eval15": PROJECTS15,
                 "mixed": PROJECTS_MIXED, "eval20": PROJECTS20, "eval21": PROJECTS21, "eval22": PROJECTS22,
                 "eval23": PROJECTS23, "eval24": PROJECTS24, "eval25": PROJECTS25,
-                "eval26": PROJECTS26, "eval27": PROJECTS27,
+                "eval26": PROJECTS26, "eval27": PROJECTS27, "eval28": PROJECTS28,
                 "change_dev": as_projects({**SPECS9, **SPECS10})}
 
 
