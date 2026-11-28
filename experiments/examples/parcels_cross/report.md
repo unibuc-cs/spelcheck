@@ -36,7 +36,7 @@ The requirements state that when Dana asks to ship parcel k7 with a complete add
 - TRUE: ship_request_received (A request to ship a parcel is received)
 This depends on assumptions that are not stated in the requirements:
 - F8: What R4 and R7 demand cannot both be the case: A function cannot succeed three times if it is called only once.
-But R4, R7 are examples, one concrete case each, and what each describes does not make the other requirement(s) apply: this situation says more than they do. So the conflict may be a false alarm.
+But R4, R7 are examples, one concrete case each, and what each describes does not make the other requirement(s) apply, or can be the case with them obeyed: this situation says more than they do. So the conflict may be a false alarm.
 
 ## 3. Conflict (if the assumed facts hold, doubtful: the situation says more than the example does): Conflict between express shipment and state stability
 
@@ -52,7 +52,7 @@ The requirements state that when dana sends an express request for parcels k1, k
 - TRUE: requester_is_dana (The requester is dana)
 This depends on assumptions that are not stated in the requirements:
 - F9: What R7 and R9 demand cannot both be the case: A successful parcel shipment necessarily involves a change in the parcel's state.
-But R7 is an example, one concrete case, and what it describes does not make the other requirement(s) apply: this situation says more than it does. So the conflict may be a false alarm.
+But R7 is an example, one concrete case, and what it describes does not make the other requirement(s) apply, or can be the case with them obeyed: this situation says more than it does. So the conflict may be a false alarm.
 
 ## 4. Gap: Unspecified behavior for received express request
 

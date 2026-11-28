@@ -26,7 +26,7 @@ projects have them (5.10).
 | **G1** A minimal working prototype of Kiro's formal analysis: spec, formal check, answer in plain language | **Done.** Conflicts, gaps, ambiguities and scenarios, as in Kiro's formal part. Gaps are asked once for each event, and all 18 planted gaps of `eval8/` were found. Both Kiro blog examples found by the solver (`delete_property`: 3 of 3 in the last runs; a wrong voted fact can still hide it). Ambiguities: about half with one model; with the optional second reader 30 and 32 of 36 (held-out `eval4/`, `eval7/`), at up to one extra question per spec |
 | **G2** Data-driven: any spec, any format | **Done for the prototype.** 63 base specs in two formats (Kiro EARS, OpenSpec), no change to code or prompts; specs of 30 and of 100 requirements went as well as the small ones (E13, E14), and the read step has room for about 140. An OpenSpec *change* is checked against the specs that exist (`--change`, 5.10): on held-out `eval11/`, 36 of 36 planted conflicts and 36 of 36 planted gaps, and nothing else reported about a change (E17). A gap that a removal opens is reported as the change's, 18 of 18 on held-out `eval13/`, and a conflict the specs had before is never blamed on the change (E19). With `--incremental` a change is checked on a saved model of the specs, for a sixth to a seventh of the cost. It found 50 against 54 planted conflicts on held-out `eval14/` (E20) and, after one change to its read prompt, 72 against 72 on held-out `eval15/` (E21). The specs of an agent system, whose rules are about whole runs and stand next to examples, have two options (`--whole-run`, `--examples`), and a project too large for one document is checked in parts (steps 44 and 45; 5.2, 5.10): on held-out `eval20/` the conflicts between rules about two calls of one run went from 0 to 12 of 12, and the changes that should give nothing from 17 of 24 with a conflict to none (E29). On a real project of that kind, 33 spec files and 465 scenarios, the contradiction between two rules that makes one change impossible to build is found in 16 of 24 parts, and nothing else among the rules of its four changes in more than 2 (T38) |
 | **G3** Code and documents a person can read | **Done** for the current state. GUIDE.md and README.md were revised after a point-by-point review (2026-11-22): each mechanism is a short list of steps on one real example |
-| **G4** Research for a paper, on the local model | **Well under way.** 28 held-out tests (E5, E7 to E13, E15 to E21, E24 to E36). On the 10 before the questions about outcomes: 61 to 100% of planted conflicts found; with doubtful conflicts set aside, at most 1 false alarm in 18 clean runs, apart from a real conflict we wrote into an `eval9/` clean spec by mistake (2 runs, E15). With those questions (E18, conflicts said in other words): 34 of 36, and 3 of 18 clean runs with a conflict that was not planted. Planted gaps 18 of 18 in each of the three sets E13, E15, E16. On real specs (E23 to E28): what is planted is found in 46 of 52 runs with a copied condition and 10 of 16 with a condition of its own, but of 20 conflicts that nobody planted none is a contradiction (T32). On the specs of an agent system (E29, E30, T38): what the two options are for is found or set aside as planned. A contradiction that is a chain of three rules, and an example that breaks a rule, are found since step 46: 12 of 12 runs each on held-out `eval22/`, 2 and 0 without the new check (E31). The question behind both took a wrong step on real specs, where a rule applies in several cases; put as a statement to judge it does not: 6 of 12 runs with a wrong conflict before, none after, on held-out `eval23/` (E32). Of the four reasons why a change of the real project cannot be built, two are found, in each of three formalizations; the other conflicts of its reports, 14, 9 and 14 in all, are mostly other ones in each (T51). Still small: one main model, one real OpenSpec project, one real project of an agent system |
+| **G4** Research for a paper, on the local model | **Well under way.** 29 held-out tests (E5, E7 to E13, E15 to E21, E24 to E37). On the 10 before the questions about outcomes: 61 to 100% of planted conflicts found; with doubtful conflicts set aside, at most 1 false alarm in 18 clean runs, apart from a real conflict we wrote into an `eval9/` clean spec by mistake (2 runs, E15). With those questions (E18, conflicts said in other words): 34 of 36, and 3 of 18 clean runs with a conflict that was not planted. Planted gaps 18 of 18 in each of the three sets E13, E15, E16. On real specs (E23 to E28): what is planted is found in 46 of 52 runs with a copied condition and 10 of 16 with a condition of its own, but of 20 conflicts that nobody planted none is a contradiction (T32). On the specs of an agent system (E29, E30, T38): what the two options are for is found or set aside as planned. A contradiction that is a chain of three rules, and an example that breaks a rule, are found since step 46: 12 of 12 runs each on held-out `eval22/`, 2 and 0 without the new check (E31). The question behind both took a wrong step on real specs, where a rule applies in several cases; put as a statement to judge it does not: 6 of 12 runs with a wrong conflict before, none after, on held-out `eval23/` (E32). Of the four reasons why a change of the real project cannot be built, two are found, in each of three formalizations; the other conflicts of its reports, 13, 9 and 12 in all, are mostly other ones in each (T51, T54). Still small: one main model, one real OpenSpec project, one real project of an agent system |
 | **G5** Only the formal part | **Done.** An LLM review of the text was built, measured, and switched off |
 
 In short: the pipeline works end to end, finds what Kiro's blog finds, and
@@ -98,10 +98,16 @@ this order. The first is new, from the real project of an agent system
    - **an example that is set against a rule in a situation the example
      does not describe** (T51, T52): "the takedown is refused" against "a
      takedown never succeeds for a protected page", in a run in which a
-     takedown succeeded. 6 conflicts on one change of the real project,
-     each in 1 of 23 parts; a stricter test for examples sets 2 of them
-     aside offline, and 1 in another formalization. This is step 53 (2.10),
-     with `eval28/` first;
+     takedown succeeded. Done in step 53 (2.10): the example's own case
+     must be impossible with the other rules obeyed. On `eval28/` changes
+     that should give no conflict have one in 1 of 36 runs, where 8; one
+     planted conflict of 24 is lost (E37). On the real project 14, 9 and 14
+     conflicts become 13, 9 and 12 (T54);
+   - **an outcome of an example with a symbol of its own** (E37): "the call
+     succeeds once for h8" becomes `succeeded_once_for_h8`, and the rule
+     about `succeeded` does not meet it: 2 of 12 planted conflicts of that
+     kind on `eval28/`, one of which the test before step 53 had found by
+     the condition of a third rule;
    - **a translation that can never be obeyed** (T52): where the symbols
      have no word for what a rule demands, the model writes the demand as
      `false`, and "only live pages are taken down" becomes "a takedown
@@ -161,9 +167,8 @@ this order. The first is new, from the real project of an agent system
 
    A larger invented project with a change that does everything at once is
    done (step 36).
-   All twenty-seven sets, the three real batches, `real4/` and `real5/` have
-   been read (E36). `eval28/` is written for step 53 (2.10) and not run
-   yet; a design after that needs `eval29/`, written first, and a test
+   All twenty-eight sets, the three real batches, `real4/` and `real5/` have
+   been read (E37). A new design needs `eval29/`, written first, and a test
    on real changes needs another project: the 8 changes of `real5/` were
    the last of this one that fit, and the four changes of the project of an
    agent system have been read too.
@@ -755,7 +760,7 @@ T49. With step 52, 11 of the 12 are proven from the rules alone: the
 translation of "an earlier call was approved" now uses the symbol of the
 call itself. Step 52 stays.
 
-### 2.10 Step 53: an example contradicts a rule only in its own case (built; `eval28/` is not read yet)
+### 2.10 Step 53: an example contradicts a rule only in its own case (built; held-out result in E37)
 
 A scenario that is an example describes one concrete case. Since step 45 a
 conflict with an example counts as it is only if the example's own case
@@ -815,6 +820,18 @@ doubtful go from 14, 9 and 14 to 13, 9 and 12; the 3 set aside are between
 an example and a rule in a situation that the example does not describe,
 and the two reasons of the authors that the tool finds stay as they are.
 
+**The result** (E37, research_log.md). The rule is met in its second half
+and not in its first. On `eval28/`, changes that should give no conflict
+have one in 1 of 36 runs, where 8: all 6 runs with a conflict between an
+example in which the call succeeds and the rule about items that are held
+back are set aside, and 1 of 2 about two items. The planted conflicts are
+found in 20 of 24 runs, where 21: the chains in 12 of 12 both times, the
+examples that say their item is held back in 8 of 12, where 9. In the run
+that is lost the example's outcome has a symbol of its own, "succeeded once
+for h8", and the conflict had been found by the condition of a third rule;
+it is reported as doubtful now. Step 53 stays all the same, by the rule for
+such a case: the gains are larger than the loss. The loss is a limit (5.2).
+
 Small things that are open:
 
 - **Long documents** (E14). A spec of 100 requirements works: its read answer
@@ -864,6 +881,19 @@ changes. A rule that always applies is left out. On saved runs the remark is
 on 22 of 56 conflicts that nobody planted in `real5/`, on 26 of 148 in
 `real4/`, and on none of the conflicts of our own sets (T35). No new set was
 written for it: it has no setting, and the runs were made before it existed.
+
+Decided on 2026-11-28: **an example contradicts a rule only in its own
+case** (step 53, 2.10). A conflict with an example counted as it is when
+the example's case makes the other rules apply. On the real project that
+set an example in which a call is refused against "the call never
+succeeds", in a run in which a call succeeded: the condition of a third
+rule (T52). Now the example's own case must also be impossible with the
+other rules obeyed. On held-out `eval28/`: changes that should give no
+conflict, with one, 8 → 1 of 36 runs; planted conflicts found 21 → 20 of
+24, so the rule set before the build is not met in its first half, and the
+step is kept because the gains are larger (E37). The same day: leaving out
+the rules whose translation can never be obeyed was tried on saved runs
+and not built (T52).
 
 Decided on 2026-11-27: **in a spec about runs the read step is told that a
 situation is a run** (step 52, 2.9). Its prompt says that the symbols
@@ -1167,8 +1197,8 @@ Around the package:
 
 | File | Job |
 |---|---|
-| `tests/` | 136 tests of everything that needs no LLM |
-| `experiments/make_eval.py` | writes the evaluation sets `eval` to `eval27`, `size`, `size2` and `mixed` into `experiments/sets/` (clean specs and planted defects) |
+| `tests/` | 138 tests of everything that needs no LLM |
+| `experiments/make_eval.py` | writes the evaluation sets `eval` to `eval28`, `size`, `size2` and `mixed` into `experiments/sets/` (clean specs and planted defects) |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs the pipeline on a set of specs and scores it against the planted defects; adds the second reader to saved runs; re-scores saved runs without a GPU |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the main model and the second model on the cluster (section 8) |
@@ -1317,7 +1347,13 @@ taken         a new translation only if it is accepted; an added symbol only if 
     the case of e                 A_e and C_e and the assumed facts      satisfiable
     it makes the others apply     for every other rule r of the conflict:
                                   A_e and C_e and the facts and (not A_r)   unsatisfiable
+    it cannot be with them obeyed A_e and C_e and the facts and every
+                                  other rule (A_r => C_r)                   unsatisfiable
     ```
+  - the third line is step 53. An example in which a call is refused makes
+    "WHEN any call is made THEN it never succeeds for an item on hold"
+    apply, and can be obeyed with it; a conflict between the two in a run
+    in which a call succeeded needs the condition of a third rule
   - if that fails for one of its examples, the conflict is marked
     (`beyond_example`, with those examples): "doubtful: the situation says
     more than the example does". In step 44 one example that passed was
@@ -2268,6 +2304,15 @@ Legend: `[x]` done and verified, `[~]` in progress, `[ ]` not started.
       and one change that adds, rewrites, removes and renames (no design
       change). E22: 9 of 9 planted conflicts and 9 of 9 planted gaps in 3
       runs, both ways, and nothing else about the change
+- [x] **Step 53 — an example contradicts a rule only in its own case**:
+      `eval28/` first. In `checks._mark_examples` an example describes the
+      situation of a conflict only if its own case makes the other rules
+      apply and cannot be with them obeyed. Tried on saved runs (T53: no
+      run of 409 differs), then held out on `eval28/` (E37), the same runs
+      scored both ways: changes that should give no conflict, with one, 8
+      → 1 of 36; planted conflicts 21 → 20 of 24, so the first half of the
+      rule was not met. On the real project 14, 9 and 14 conflicts become
+      13, 9 and 12 (T54)
 - [x] **Step 52 — in a spec about runs, a symbol is a fact about the
       run**: `eval27/` first. With `--whole-run` the read prompt says that
       a situation is a run and that every symbol is a fact about the run as

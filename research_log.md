@@ -5761,6 +5761,113 @@ the change is in the logic part, and the same runs are scored both ways.
 
 ---
 
+## E37 — Held-out `eval28/`: an example contradicts a rule only in its own case (2026-11-28)
+
+**Question.** Does the second test for examples (T53, plan.md 2.10) meet the
+rule that was set before the build?
+
+**How.** `eval28/` was run once, with `--whole-run --examples "^Example:"`:
+20 changes, 3 runs each, 60 runs, all finished (27 minutes on two GPUs, 59
+requests for a change on average). The change is in the logic part, so the
+same runs are scored with the test as it was (`own_case` off) and with step
+53. Doubtful conflicts are set aside.
+
+| | The test as it was | Step 53 |
+|---|---|---|
+| a chain of three rules: found | 12 of 12 | 12 of 12 |
+| an example that says its item is held back, in which the call succeeds: found | 9 of 12 | 8 of 12 |
+| an example in which the call succeeds, with no word about held back: runs with a conflict | 6 of 12 | 0 of 12 |
+| an example in which the call is refused for an item that is held back: runs with a conflict | 0 of 12 | 0 of 12 |
+| an example about two items with opposite outcomes: runs with a conflict | 2 of 12 | 1 of 12 |
+| all planted conflicts: found | 21 of 24 | 20 of 24 |
+| all changes that should give no conflict: runs with one | 8 of 36 | 1 of 36 |
+
+- **What the second test sets aside** (7 runs). In the 6 runs of the third
+  row the conflict was between the example and the rule "it never succeeds
+  for a vehicle that is flagged", in a run in which the vehicle is flagged.
+  That is the condition of a third rule, "WHEN a request names a vehicle
+  that is flagged ...". The example does not say that its vehicle is
+  flagged, and its own case can be with the rule obeyed. The rule was
+  translated with its restriction in all 6: `called => not (succeeded and
+  flagged)`.
+- **The planted conflict that is lost** (1 run). The example says
+  "`move_hive` succeeds once for h8", and the model gave that a symbol of
+  its own, `move_hive_succeeded_once_for_h8`. The rule speaks of
+  `move_hive_succeeded`, and no fact links the two. So in the formulas the
+  example's own case can be with the rule obeyed. The conflict had been
+  found in a run in which "a `move_hive` succeeded" came from the condition
+  of a third rule. It is still in the report, now as doubtful.
+- **The 3 that are missed with either test.** One for the same reason, with
+  no third rule to supply the situation. In one the example got no agreed
+  translation. In one the conflict is found among three rules, with
+  another example whose translation took the wrong request.
+- **The false conflict that is left** (1 run). "h8 is in quarantine" became
+  "the hive is in quarantine", one symbol for any hive, and "h5 is moved"
+  was taken to mean that the call succeeded: the property of one item and
+  the outcome of the other meet (the limit about an attribute of one call).
+- **A demand that is impossible** (T52) came up once in 432 rules: "x12 is
+  lent AND x30 is not lent" as `exhibit_lent` and `(not exhibit_lent)`. The
+  examples about two items were written to see whether that fault of real
+  specs shows on ours.
+- Check 6 carries this set: without its facts the planted conflicts are
+  found in 12 of 24 runs.
+
+**The rule, set before the build** (plan.md 2.10). Its second half is met:
+changes that should give no conflict have one in 1 of 36 runs, where 8. Its
+first half is not: the planted conflicts are found in 20 of the 24 runs,
+where 21, one fewer.
+
+**Decision.** Step 53 stays, by the rule for such a case (2026-11-24: if the
+gains are larger than the losses, the new version is the default, and the
+loss is documented): 7 runs fewer with a conflict that nobody planted,
+against 1 planted conflict that is now reported as doubtful. The loss is a
+limit of its own: an outcome of an example that gets a symbol of its own.
+
+---
+
+## T54 — TestingTheAgents with step 53 (2026-11-28)
+
+**Question.** What do the reports of the four changes say with the second
+test for examples?
+
+**How.** No model call: the reports of the three formalizations of T51 were
+made again from their saved parts with the frozen code, against the
+application's specs, and tallied by `experiments/agents/tally.py`. That
+script has one more column since today: how many of the conflicts that are
+not doubtful hold under one reading of an ambiguous rule only. The report
+says that of each such conflict (5.9); the table had counted them like the
+others.
+
+The last formalization (from scratch with step 52):
+
+| Change | Conflicts, not doubtful | In the spec files of the change, with the parts that found each | With a rule of another spec file | Under one reading of an ambiguous rule | Doubtful |
+|---|---|---|---|---|---|
+| `add-instant-bulk-takedown-workflow`, cannot be built | 5 | 3: in 14, 1 and 1 of 24 parts | 2 | 0 | 17 |
+| `add-licence-expiry-sweep-workflow`, can be built | 2 | 1: in 2 of 24 parts | 1 | 0 | 30 |
+| `add-page-retirement-workflow`, can be built | 4 | 4: each in 1 of 23 parts | 0 | 2 | 26 |
+| `add-scheduled-batch-republish-workflow`, can be built | 1 | 0 | 1 | 1 | 17 |
+
+All three, conflicts that are not doubtful, bulk takedown / expiry sweep /
+page retirement / batch republish:
+
+| | First run | Second run | With step 52 |
+|---|---|---|---|
+| before step 53 | 6 / 4 / 3 / 1 = 14 | 5 / 2 / 1 / 1 = 9 | 5 / 2 / 6 / 1 = 14 |
+| with step 53 | 6 / 4 / 2 / 1 = 13 | 5 / 2 / 1 / 1 = 9 | 5 / 2 / 4 / 1 = 12 |
+| of them, under one reading of an ambiguous rule | 0 | 1 | 3 |
+
+- The two reasons of the authors that the tool finds are as before: the two
+  contracts on one function in 16, 16 and 14 of 24 parts, and the missing
+  approval in all three.
+- Of the 4 conflicts that the page retirement change still has in the last
+  run, 2 hold under one reading of an ambiguous rule, and 2 rest on the
+  rule whose demand was written as `false` (T52).
+
+**Decision.** The reports of README.md are those of the last formalization
+with step 53. Next, by T52: a rule whose translation can never be obeyed.
+
+---
+
 ## Lessons from bugs that changed results
 
 | | What happened | Fix | Why it matters for a paper |

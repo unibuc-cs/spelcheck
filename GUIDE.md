@@ -1140,7 +1140,14 @@ R10   "Example: the customer cancels"            WHEN the same request runs and 
    rules of the conflict apply? R9's case is a parcel in the warehouse.
    Nothing in it says that the customer cancels, so R10 does not apply in
    it.
-4. If one example of the conflict fails that test, the conflict is marked:
+4. Z3 is asked a second thing: can the example's case be with the other
+   rules obeyed? Take an example in which `ship_parcel` is refused, and a
+   rule "WHEN any call of `ship_parcel` is made THEN it never succeeds for
+   a parcel on hold". The example makes the rule apply, and the two can be
+   obeyed together. A conflict between them needs a run in which a call
+   succeeded, and the example does not describe one.
+5. If one example of the conflict fails one of the two tests, the conflict
+   is marked:
 
 > **2. Conflict (if the assumed facts hold, doubtful: the situation says more than the example does): Conflicting return rules**
 
@@ -1774,6 +1781,22 @@ before and after:
 
 All 9 chains that were missed before had that one cause.
 
+The second question about an example (5.2, step 4 of the list) was tested
+on four more projects (`eval28`), 60 runs, each scored without and with it:
+
+| | Without | With the second question |
+|---|---|---|
+| changes that should give no conflict: runs with one | 8 of 36 | 1 of 36 |
+| a contradiction that is a chain of three rules: found | 12 of 12 | 12 of 12 |
+| an example that says its item is held back, and the call succeeds: found | 9 of 12 | 8 of 12 |
+
+We had set a rule before the build: no fewer planted conflicts found, and
+no more false ones. The first half is not met, by one run. In that run the
+example's "succeeds once for h8" got a symbol of its own, and the conflict
+had been found only through the condition of a third rule; it is reported
+as doubtful now. We keep the change: seven false conflicts fewer, for one
+that is now doubtful.
+
 **A real project of an agent system** (5.2):
 [TestingTheAgents](https://github.com/unibuc-cs/TestingTheAgents). It has 33 spec
 files with 465 scenarios, and four open changes that each add a workflow.
@@ -1784,14 +1807,14 @@ takes 30 to 60 minutes on two GPUs. This is what the reports of the last
 run from scratch say, each change against the 24 spec files of the
 application:
 
-| Change | Conflicts, not doubtful | Among the rules of the change, with the parts that found each | With a rule of another spec file | Doubtful |
-|---|---|---|---|---|
-| cannot be built | 5 | 3: in 14, 1 and 1 of 24 parts | 2 | 17 |
-| can be built | 2 | 1: in 2 of 24 parts | 1 | 30 |
-| can be built | 6 | 6: each in 1 of 23 parts | 0 | 24 |
-| can be built | 1 | 0 | 1 | 17 |
+| Change | Conflicts, not doubtful | Among the rules of the change, with the parts that found each | With a rule of another spec file | Under one reading of an ambiguous rule | Doubtful |
+|---|---|---|---|---|---|
+| cannot be built | 5 | 3: in 14, 1 and 1 of 24 parts | 2 | 0 | 17 |
+| can be built | 2 | 1: in 2 of 24 parts | 1 | 0 | 30 |
+| can be built | 4 | 4: each in 1 of 23 parts | 0 | 2 | 26 |
+| can be built | 1 | 0 | 1 | 1 | 17 |
 
-- The conflict found in 16 parts is the first of the authors' four reasons,
+- The conflict found in 14 parts is the first of the authors' four reasons,
   two rules of the change that contradict each other. The report explains
   it correctly and says that the system cannot be built as written.
 - A second reason is in that report since the question about a chain
@@ -1800,14 +1823,16 @@ application:
   that such a run asks nobody. It is one of the 2 conflicts with a rule of
   another spec file.
 - This is the third time the project was formalized. The two runs before
-  it, with the same questions, have 6, 4, 3 and 1 conflicts, and 5, 2, 1
-  and 1: 14 and 9 in all, where this run has 14. Two findings are in all
+  it, with the same checks, have 6, 4, 2 and 1 conflicts, and 5, 2, 1 and
+  1: 13 and 9 in all, where this run has 12. Two findings are in all
   three, the two reasons above. So half of what one report shows is not in
   the next one.
-- The 6 conflicts of the third change are each in 1 of its 23 parts, and
-  each sets an example against a rule: an example in which a page is taken
-  down, and "no protected page is ever taken down". The example does not
-  say that its page is protected (6.4).
+- The third change had 6 conflicts, each in 1 of its 23 parts, and we read
+  them. 2 set an example against a rule in a situation that the example
+  does not describe; the second question about an example marks them now.
+  2 of the 4 that are left hold under one reading of an ambiguous rule,
+  and the report says so. The other 2 rest on a rule whose demand the
+  model wrote as `false` (6.4).
 - The number of conflicts does not tell the four changes apart. The number
   of parts does: nothing else is found in more than 2, in any of the three
   runs.
@@ -1827,7 +1852,7 @@ The project has five goals. This is where each one stands:
 | G1: a minimal working prototype of Kiro's formal analysis | done |
 | G2: it works on any spec, in any format | done for the prototype: 2 formats, 63 small specs, two long ones, and changes checked against existing specs, removals included (part 5). Specs about the runs of an agent have options of their own, and a project of 479 scenarios is checked in parts (5.1, 5.2) |
 | G3: code and documents a person can read | done for the current state |
-| G4: research for a paper, on the local model | well under way: 28 tests on specs the design had not seen, four of them on changes of a real project. Still one main model, one real OpenSpec project and one real project of an agent system |
+| G4: research for a paper, on the local model | well under way: 29 tests on specs the design had not seen, four of them on changes of a real project. Still one main model, one real OpenSpec project and one real project of an agent system |
 | G5: only the formal part | done: an LLM review of the text was built, measured, and switched off |
 
 ### 6.4 What does not work yet
@@ -1849,7 +1874,9 @@ The project has five goals. This is where each one stands:
 | on real specs the question about a chain still takes wrong steps | 3 of the 30 it said yes to on the real project, read after step 48 and not read again since. Two take one refusal for another ("the job is refused", and the statement that the approver refused). One is about a statement marked FALSE: the model says that the fact is true, and then answers "yes". None of the three adds a conflict there |
 | a rule that reacts to either of two events has no trigger | the model lists it once for each event, and the copies are kept as one rule (5.1). Where a situation is one moment, a conflict between it and a rule about another event is then not marked as two events at once (3.3). A label that comes back twice with two different texts still stops the run; that was not seen |
 | a right step can still give an artefact | "a call that is refused was made" is right. Its conflict on the real project has a call that succeeds in its situation, which the example excludes in words and the formulas do not: "refused" and "succeeds" are two symbols |
-| a rule can keep its real condition in what it demands, and an example then seems to break it | "WHEN any call of the takedown tool is made THEN it never succeeds for a protected page" applies to every takedown. An example in which a page is taken down makes it apply, and the conflict is not marked, although the example does not call its page protected: 6 conflicts on one change of the real project, each in 1 of 23 parts (6.2) |
+| a conflict can rest on one reading of an ambiguous rule | "it never succeeds for a protected page" became "it never succeeds" in 5 of 8 translations, and an example in which a page is taken down then breaks it. The rule is reported as ambiguous and the conflict says that it is gone with the other reading; it is still a conflict in the report. 3 of the 12 on the real project are of this kind (6.2) |
+| a translation can be impossible to obey | where no symbol stands for what a rule demands, the model writes the demand as `false`, and "only live pages are taken down" becomes "a takedown never succeeds". Such a rule clashes with every rule that makes its condition true, and hides every conflict where its condition holds: 27 to 42 of about 3,250 rules on the real project, 2 of 36,708 on our own sets. Leaving these rules out removes 2 false conflicts there and uncovers 2 others, so it is not built |
+| an outcome of an example can get a symbol of its own | "`move_hive` succeeds once for h8" became a symbol of its own, and a rule about every `move_hive` that succeeds does not meet it: 2 of 12 planted conflicts of that kind on `eval28` |
 | two examples of one case with opposite outcomes are missed in 7 of 12 runs | "called once" and "never called" became a count and "the call did not succeed", which can hold together (6.2) |
 | an attribute of one call becomes an attribute of the run | "the token the call was made with": two rules about two different calls then clash |
 | the question about two conditions also doubts real conflicts | in the order spec of part 2, a run made today marks R1 against R5 as doubtful: the model holds that a canceled order cannot be a submitted one. The Kiro blog reports that conflict. Two flags of one command are called impossible too (6.2) |
@@ -1941,8 +1968,9 @@ The full list is in research.md, section 5.
 ### 6.6 What is next
 
 1. **The specs of an agent system**: what the real project still shows.
-   First the examples: a rule that keeps its real condition in what it
-   demands, and an example that then seems to break it (6.4). Then the
+   First the rules whose translation can never be obeyed: such a rule
+   lacks a symbol, and could be read again, as a rule whose translation
+   demands nothing is (6.4). Then the
    link step, which still guesses how a system works, and a property of
    one call that becomes a property of the whole run. An attribute that belongs to one call. The limit of 40
    questions for a document, which a project in parts reaches in nearly
@@ -2014,14 +2042,14 @@ The folders:
 speccheck/          the tool (the 8 files above; refine.py is the review that is switched off)
 specs/              3 small specs the prompts were developed on, with their saved output,
                     and auth_change, the example of part 5
-tests/              136 tests that need no LLM
+tests/              138 tests that need no LLM
 experiments/
   sets/             the 11 evaluation sets, eval to eval10 and eval12 (297 spec versions), two long specs,
                     eval16 to eval18 (eighteen specs written like real ones), real1 to real3 (48 changes of a real project),
                     real4 and real5 (21 more real changes, each also with a planted conflict),
                     eval19 (six specs with conditions that exclude each other),
                     and for the change check eval11, eval13, eval14, eval15, mixed (one larger project),
-                    eval20 to eval27 (thirty-two projects about an assistant that calls tools)
+                    eval20 to eval28 (thirty-six projects about an assistant that calls tools)
                     and change_dev (old specs as projects)
   results/          every experiment: the raw data (.json) and its tables (.md)
   examples/         saved runs that the documents quote

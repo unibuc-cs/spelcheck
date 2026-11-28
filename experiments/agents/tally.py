@@ -15,6 +15,9 @@ not the number of conflicts. So for each change this prints one row:
                                        for each part, so this count says how far a
                                        conflict depends on the symbols
       with a rule of another spec file each is found in the part of that file
+      under one reading                those that are gone with the other reading
+                                       of an ambiguous rule; the report says so
+                                       of each (checks._try_other_readings)
     Doubtful                           conflicts with a mark (checks.is_doubtful)
     Ambiguous, not checked             rules of the change
 
@@ -47,9 +50,11 @@ def row(changes: Path, out: Path) -> str:
     counts = sorted((f.get("parts", "1/1") for f in inside), key=lambda count: -int(count.split("/")[0]))
     ambiguous = [f for f in findings if f["type"] == "ambiguity"]
     unchecked = sum(f.get("found_by") == "empty" for f in ambiguous)
+    one_reading = sum(bool(f.get("depends_on_reading")) for f in plain)
     return (f"| {name} | {parts.group(1) if parts else 1} | {len(plain)} | {len(inside)}"
             + (f" ({', '.join(counts)})" if counts else "")
-            + f" | {len(plain) - len(inside)} | {len(conflicts) - len(plain)} | {len(ambiguous) - unchecked} | {unchecked} |")
+            + f" | {len(plain) - len(inside)} | {one_reading} | {len(conflicts) - len(plain)}"
+            + f" | {len(ambiguous) - unchecked} | {unchecked} |")
 
 
 def main() -> None:
@@ -61,8 +66,9 @@ def main() -> None:
         folders += [given] if (given / "findings.json").exists() else sorted(
             folder for folder in given.iterdir() if (folder / "findings.json").exists())
     print("| Change | Parts | Conflicts, not doubtful | Among the rules of the change (parts that found each) "
-          "| With a rule of another spec file | Doubtful | Ambiguous rules | Rules not checked |")
-    print("|---|---|---|---|---|---|---|---|")
+          "| With a rule of another spec file | Under one reading of an ambiguous rule | Doubtful "
+          "| Ambiguous rules | Rules not checked |")
+    print("|---|---|---|---|---|---|---|---|---|")
     for folder in folders:
         print(row(changes, folder))
 

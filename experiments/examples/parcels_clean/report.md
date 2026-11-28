@@ -21,7 +21,7 @@ The requirements state that if Dana asks to ship parcel k7 and the address has n
 - TRUE: ship_request_received (Dana asks to ship a parcel)
 This depends on assumptions that are not stated in the requirements:
 - F7: What R5 and R8 demand cannot both be the case: A single run cannot be both a ship request and a return request.
-But R5, R8 are examples, one concrete case each, and what each describes does not make the other requirement(s) apply: this situation says more than they do. So the conflict may be a false alarm.
+But R5, R8 are examples, one concrete case each, and what each describes does not make the other requirement(s) apply, or can be the case with them obeyed: this situation says more than they do. So the conflict may be a false alarm.
 
 ## 2. Conflict (if the assumed facts hold, doubtful: the situation says more than the example does): Conflicting return rules
 
@@ -37,7 +37,7 @@ The requirements state that if a parcel is still in the warehouse, the return bo
 - TRUE: return_request_received (Dana asks to return a parcel)
 This depends on assumptions that are not stated in the requirements:
 - F8: What R9 and R10 demand cannot both be the case: The system cannot both not call book_return and have a book_return call count of 1.
-But R9, R10 are examples, one concrete case each, and what each describes does not make the other requirement(s) apply: this situation says more than they do. So the conflict may be a false alarm.
+But R9, R10 are examples, one concrete case each, and what each describes does not make the other requirement(s) apply, or can be the case with them obeyed: this situation says more than they do. So the conflict may be a false alarm.
 
 ## 3. Gap: Missing rule for returning other parcels
 

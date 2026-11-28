@@ -51,6 +51,7 @@ its entries. How each mechanism works is in [plan.md](plan.md), section 5.
   | `eval25/` | 12 changes on 4 more projects of that kind, each of one rule about a fourth happening (3.21) | 4 conflicts between two demands said in other words; 8 changes that only a guess about the system, or a mix-up of two things, sets against a rule | E34 |
   | `eval26/` | 16 changes on 4 more projects of that kind, with the changes of `eval22/` and `eval23/` together (3.19) | 8 conflicts: 4 that are a chain of three rules, 4 between an example and a rule; 8 changes that should give no conflict | E35 |
   | `eval27/` | 16 changes on 4 more projects in the form of `eval26/` (3.18) | 8 conflicts: 4 that are a chain of three rules, 4 between an example and a rule; 8 changes that should give no conflict | E36 |
+  | `eval28/` | 20 changes on 4 more projects of that kind, each with a rule whose demand holds its restriction ("it never succeeds for an item that is held back") and a rule whose condition is that state (3.18) | 8 conflicts: 4 that are a chain of three rules, 4 between a rule and an example that says its item is held back; 12 changes of one example that should give no conflict | E37 |
   | `size/` | 4 versions of one spec of 30 requirements | 2 conflicts, 1 gap | E13 |
   | `size2/` | 4 versions of one spec of 100 requirements | 2 conflicts, 1 gap | E14 (not held-out: no design was tuned on it) |
 
@@ -561,7 +562,7 @@ conflicts in our own sets has it. A rule that always applies is left out,
 so "never backorder" against "backorder when stock is missing" keeps its
 title.
 
-### 3.18 The specs of an agent system: a whole run, examples, twin names, a project in parts (T36 to T38, T49, T50, E29, E30, E36)
+### 3.18 The specs of an agent system: a whole run, examples, twin names, a project in parts (T36 to T38, T49 to T53, E29, E30, E36, E37)
 
 The specs that the tool is meant for say what a run of an agent that calls
 tools may contain. A trial on such a project, TestingTheAgents (33 spec
@@ -597,6 +598,14 @@ answers:
   add examples had a conflict in 6 of 12 runs before and in none after
   (`eval20/`); read as rules 11 of 12 such changes of `eval21/` have one,
   with the mark none (E30).
+- **And its own case must be impossible with the other rules obeyed** (step
+  53). An example in which a call is refused makes "the call never
+  succeeds for an item that is held back" apply, and the two can be obeyed
+  together; they were set against each other in a run in which a call
+  succeeded, the condition of a third rule (T52). On held-out `eval28/`
+  changes that should give no conflict have one in 1 of 36 runs, where 8.
+  One planted conflict of 24 is lost: the outcome of its example has a
+  symbol of its own, and nothing links it to the rule's (E37).
 - **A link that only renames is asked about with both symbols.** The link
   step restated "`shipping.max_batch_parcels` is 50" as a demand on
   `shipping.max_parcels`, and the test of a link, which does not show the
@@ -1036,28 +1045,36 @@ What the first two batches showed, before the vote:
 - **A gap is hard to read at this size**: it lists every other event as
   FALSE, 20 to 40 lines.
 
-### 4.9 What the specs of an agent system show (T36 to T50, E29 to E36)
+### 4.9 What the specs of an agent system show (T36 to T54, E29 to E37)
 
-One project of that kind, and eight sets of our own.
+One project of that kind, and nine sets of our own.
 
 - **Two of the four reasons why a change cannot be built are found**: the
   contradiction between two of its rules, and since step 46 the chain of
   three rules across two spec files (3.19). The third needs rules of three
   spec files, the fourth arithmetic over the steps of a run.
-- **Half of a report is not in the next one** (T51). Three formalizations of
-  the project, brought to the same questions, have 14, 9 and 14 conflicts
-  that are not doubtful over the four changes. The two reasons above are in
-  all three (the first in 16, 16 and 14 of 24 parts). Nothing else among
-  the rules of a change is found in more than 2 parts, in any of them.
-- **A rule can keep its real condition in what it demands** (T51): "WHEN any
-  call of the takedown tool is made THEN it never succeeds for a protected
-  page". An example in which a page is taken down makes it apply, so the
-  mark for examples is not given (3.18), although the example does not say
-  that its page is protected. 6 conflicts on one change in the run with
-  step 52, each in 1 of 23 parts; 3 and 1 in the two runs before. A
-  stricter test, that the example's own case cannot be with the other
-  rules obeyed, sets 2 of the 6 aside offline, and changes no planted
-  conflict in the saved runs of seven sets. Not built.
+- **Half of a report is not in the next one** (T51, T54). Three
+  formalizations of the project, brought to the same questions, have 13, 9
+  and 12 conflicts that are not doubtful over the four changes (14, 9 and
+  14 before step 53). The two reasons above are in all three (the first in
+  16, 16 and 14 of 24 parts). Nothing else among the rules of a change is
+  found in more than 2 parts, in any of them.
+- **Six conflicts of one change, each in 1 of 23 parts, have three causes**
+  (T52). In 3 the rule is "WHEN any call of the takedown tool is made THEN
+  it never succeeds for a protected page", and 5 of its 8 translations
+  drop "for a protected page"; the rule is reported as ambiguous. In 2 the
+  demand of a rule is written as `false`, because no symbol stands for it.
+  In 1 the condition of an example lost its "while" part. Step 53 sets 2
+  of the first 3 aside (3.18). 4 of the 6 hold under one reading of an
+  ambiguous rule, which the report says and the table now counts (T54).
+- **A translation that can never be obeyed is a fault of real specs** (T52):
+  27 to 42 of about 3,250 rules in each formalization of the project, 11
+  of 7,049 on the real OpenSpec changes, 1 of 36,276 on our own sets. Half
+  are written as `false`; the others contradict themselves, with one symbol
+  for two objects. Such a rule clashes with every rule that makes its
+  condition true, and hides every conflict where its condition holds.
+  Leaving these rules out gives no fewer false conflicts on the project (2
+  go, 2 that were hidden appear), so that is not built.
 - **The question of 3.19 is cut off in a project in parts**: of 5,004
   questions that the pairs of the four changes give, 2,008 were left out by
   the limit of 40 for a document. And a chain is found only across the spec
@@ -1173,6 +1190,7 @@ the prompts, so it can be scored again without a GPU.
 | E34 | `eval25/`, held-out: the question about two outcomes says what does not count (T46, T47); the same runs asked with both prompts, and a full run | 2 x 36 runs | with doubtful conflicts set aside: contradictions said in other words 12 of 12 both times; changes that should give no conflict, with one, 5 of 24 before and 3 after (3.21) |
 | E35 | `eval26/`, held-out: the question whether a rule applies says which situations count, and a yes says what makes the statement true (T47, T48); asked three times in each form on the same runs | 48 runs, 2 x 3 askings | planted conflicts found in 58 of 72 askings with the old words, 60 with the new form; changes that should give no conflict, with one, 0 of 72 either way; steps with the same vote in three askings 22 and 39 of 46 (3.19) |
 | E36 | `eval27/`, held-out: with `--whole-run` the read step is told that a situation is a run (T49, T50); the code before and after | 2 x 48 runs | symbols described as a moment 85 of 752 before, 0 of 723 after; chains of three rules 3 and 12 of 12; examples that break a rule 12 of 12 both times; changes that should give no conflict, with one, 0 of 24 either way (3.18) |
+| E37 | `eval28/`, held-out: an example describes the situation of a conflict only if its own case cannot be with the other rules obeyed (T52, T53); the same runs scored both ways | 60 runs | with doubtful conflicts set aside: changes that should give no conflict, with one, 8 of 36 before and 1 of 36 after; chains 12 of 12 both times; examples that say their item is held back 9 and 8 of 12, so the rule set before the build is not met in its first half (3.18) |
 
 The trials (T1 to T26) were run on development data between these
 experiments. Among the last: T17 compared temperatures 0.3, 0.5 and 0.7 (3.1);

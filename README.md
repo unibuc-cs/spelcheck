@@ -99,7 +99,10 @@ Where the project stands:
   vote in three askings, where 22 did. And in these specs the model had
   often described a name as a moment ("a call is being made"); told that a
   situation is a whole run, it no longer does, and on a seventh set a
-  contradiction that needs three rules is found in 12 of 12 runs, where 3
+  contradiction that needs three rules is found in 12 of 12 runs, where 3.
+  An example is set against a rule only where its own case breaks the
+  rule: on one more set, changes that should give no conflict have one in
+  1 of 36 runs, where 8
   ([Specs about the runs of an agent](#specs-about-the-runs-of-an-agent));
 - all of that is on specs we wrote. On 69 changes of a real project it does
   worse. What we planted in 21 of them is found: 46 of 52 conflicts with a
@@ -123,9 +126,10 @@ Where the project stands:
   changes no conflict is found in more than 3 parts. The other two reasons
   are not found. The four reports had 9, 3, 3 and 3 conflicts that are not
   doubtful, half of them from wrong answers of the model about what can be
-  true together. Since that question says what does not count, three
-  formalizations of the project give 14, 9 and 14 in all; only the two
-  reasons above come back in every one
+  true together. Since that question says what does not count, and an
+  example counts only in its own case, three formalizations of the project
+  give 13, 9 and 12 in all; only the two reasons above come back in every
+  one
   ([A real project of that kind](#a-real-project-of-that-kind-testingtheagents)).
 
 | Read next | For |
@@ -788,18 +792,24 @@ name of a scenario and in the lines below it; here the name of every example
 starts with "Example:". Then:
 
 1. Our code marks the rules of those scenarios as examples.
-2. For each example in a conflict, Z3 is asked whether its own case, its
-   condition and what it demands, makes the other rules of the conflict
-   apply. R9's case is a parcel in the warehouse; it does not say that the
-   customer cancels.
-3. If one example fails that test, the conflict is marked:
+2. For each example in a conflict, Z3 is asked two things about its own
+   case, its condition and what it demands. Does it make the other rules
+   of the conflict apply? R9's case is a parcel in the warehouse; it does
+   not say that the customer cancels. And can it be the case with those
+   rules obeyed? An example in which `ship_parcel` is refused makes a rule
+   "WHEN any call of `ship_parcel` is made THEN it never succeeds for a
+   parcel on hold" apply, and the two can be obeyed together; a conflict
+   between them needs a run in which a call succeeded, which the example
+   does not describe.
+3. If one example fails one of the two, the conflict is marked:
 
 > **2. Conflict (if the assumed facts hold, doubtful: the situation says more than the example does): Conflicting return rules**
 >
 > *Proven:* Requirements R9, R10 cannot all be obeyed in this situation: ...
 > But R9, R10 are examples, one concrete case each, and what each describes
-> does not make the other requirement(s) apply: this situation says more
-> than they do. So the conflict may be a false alarm.
+> does not make the other requirement(s) apply, or can be the case with
+> them obeyed: this situation says more than they do. So the conflict may
+> be a false alarm.
 
 A conflict stays as it is when every example in it passes: an example in
 which `ship_parcel` succeeds and nobody signs off, against R2; or two
@@ -1095,6 +1105,7 @@ Nothing in the code or in the prompts is about orders.
 | `experiments/sets/eval25` | four more, each with three rules about three happenings, and three changes of one rule: one that contradicts a rule in other words, one that only a guess about the system sets against a rule, and one about another thing | the test of the question about two outcomes, told what does not count |
 | `experiments/sets/eval26` | four more, each with the four changes of `eval22` and `eval23` together: two that need a step from one rule to another, two that must not get one | the test of the question whether a rule applies, asked three times in each of two forms |
 | `experiments/sets/eval27` | four more in the form of `eval26` | the test of the read step told that a situation is a run |
+| `experiments/sets/eval28` | four more, each with a rule that a call never succeeds for an item that is held back, and five changes: a chain, an example that says its item is held back, and three examples that should give no conflict | the test of the second question about an example's own case |
 
 ## How reliable is it
 
@@ -1469,16 +1480,33 @@ Some notes on these numbers:
     give no conflict, with one: 0 of 24 both times;
   - on `eval26/`, run again from scratch: chains 8 of 12 before, 12 of 12
     after (T50).
-- That project, TestingTheAgents, run from scratch with the final code by
-  the commands [above](#a-real-project-of-that-kind-testingtheagents), each
-  change against the 24 spec files of the application (T51):
+- An example was set against a rule in a situation that the example does
+  not describe (the second question of
+  [`--examples`](#specs-about-the-runs-of-an-agent)). Tested on four more
+  projects (`eval28/`), 60 runs, each scored with the test as it was and
+  with the second question (E37):
+  - changes that should give no conflict, with one: 8 of 36 runs before, 1
+    of 36 after. All 6 between a rule "it never succeeds for an item that
+    is held back" and an example in which the call succeeds, with no word
+    about held back, are set aside;
+  - planted conflicts found: 21 of 24 before, 20 after. The chains 12 of 12
+    both times; an example that says its item is held back, 9 of 12 before
+    and 8 after. **The rule we had set before the build asked for no fewer,
+    so it is not met, by one run.** We keep the change because it removes
+    seven false conflicts for one that it now calls doubtful. In that run
+    the example's "succeeds once for h8" has a symbol of its own, and the
+    conflict had been found only through the condition of a third rule.
+- That project, TestingTheAgents, run from scratch by the commands
+  [above](#a-real-project-of-that-kind-testingtheagents), each change
+  against the 24 spec files of the application, with the checks as they
+  are now (T51, T54):
 
-  | Change | Conflicts, not doubtful | In the spec files of the change, with the parts that found each | With a rule of another spec file | Doubtful |
-  |---|---|---|---|---|
-  | `add-instant-bulk-takedown-workflow`, cannot be built | 5 | 3: in 14, 1 and 1 of 24 parts | 2 | 17 |
-  | `add-licence-expiry-sweep-workflow`, can be built | 2 | 1: in 2 of 24 parts | 1 | 30 |
-  | `add-page-retirement-workflow`, can be built | 6 | 6: each in 1 of 23 parts | 0 | 24 |
-  | `add-scheduled-batch-republish-workflow`, can be built | 1 | 0 | 1 | 17 |
+  | Change | Conflicts, not doubtful | In the spec files of the change, with the parts that found each | With a rule of another spec file | Under one reading of an ambiguous rule | Doubtful |
+  |---|---|---|---|---|---|
+  | `add-instant-bulk-takedown-workflow`, cannot be built | 5 | 3: in 14, 1 and 1 of 24 parts | 2 | 0 | 17 |
+  | `add-licence-expiry-sweep-workflow`, can be built | 2 | 1: in 2 of 24 parts | 1 | 0 | 30 |
+  | `add-page-retirement-workflow`, can be built | 4 | 4: each in 1 of 23 parts | 0 | 2 | 26 |
+  | `add-scheduled-batch-republish-workflow`, can be built | 1 | 0 | 1 | 1 | 17 |
 
   - Two of the authors' four reasons are in the first report. The conflict
     found in 14 parts is the contradiction between two rules of the change.
@@ -1486,18 +1514,22 @@ Some notes on these numbers:
     the existing rule that nothing goes live or down in a plan without an
     approval, against the change's rule that such a run asks nobody.
   - **How much two runs differ.** This is the third formalization of the
-    project. The two before it, brought to the same questions, give 6, 4, 3
-    and 1 conflicts, and 5, 2, 1 and 1: 14 and 9 in all, where this one has
-    14. What comes back in all three is the two reasons above: the two
+    project. The two before it, brought to the same checks, give 6, 4, 2
+    and 1 conflicts, and 5, 2, 1 and 1: 13 and 9 in all, where this one has
+    12. What comes back in all three is the two reasons above: the two
     contracts in 16, 16 and 14 of 24 parts, and the missing approval.
     Nothing else among the rules of a change is found in more than 2 parts,
     in any of the three.
   - So the number of conflicts does not tell the changes apart; the number
-    of parts does. The 6 conflicts of the page retirement change are each
-    in 1 of its 23 parts, and each sets an example against a rule: an
-    example in which a page is taken down, and "no protected page is ever
-    taken down". The example does not say that its page is protected
-    ([Known limits](#known-limits)).
+    of parts does. The page retirement change had 6 conflicts, each in 1
+    of its 23 parts, and we read them (T52). 2 set an example against a
+    rule in a situation that the example does not describe, and the second
+    question now marks them. Of the 4 that are left, 2 hold under one
+    reading of an ambiguous rule, which the report says of each: in one,
+    "it never succeeds for a protected page" was translated without "for
+    a protected page" in 5 of 8 translations; in the other an example lost
+    the "while" part of its condition. The other 2 rest on a rule whose
+    demand the model wrote as `false` ([Known limits](#known-limits)).
   - The other conflicts with a rule of another spec file set a property of
     one call against a property of another call, or rest on an answer
     about how a system works. Against all 33 spec files, the 9 of the
@@ -1535,7 +1567,9 @@ Some notes on these numbers:
 | On real specs the question whether a rule applies still takes wrong steps | 3 of the 30 it said yes to on TestingTheAgents, read after step 48 (T44) and not read again since. Two take one refusal for another: "the job is refused", and the statement that the approver refused. One is about a statement marked FALSE: the model says that the fact is true, and then answers "yes". None of the three adds a conflict there. None on our own sets |
 | A rule that reacts to either of two events has no trigger | "WHEN a call of `order_lenses` or `order_frame` is made THEN ...": the model lists it once for each event, and the copies are kept as one rule without a trigger. Where a situation is one moment, a conflict between it and a rule about another event is then not marked as two events at once. A label that comes back twice with two different texts still stops the run; that was not seen in 3,191 saved runs |
 | A step from one rule to another can be right and its conflict still an artefact | "a call that is refused was made" is right. The conflict it gave on the real project has a call that succeeds in its situation, which the example excludes in words and the formulas do not: "refused" and "succeeds" are two symbols |
-| A rule can keep its real condition in what it demands, and an example then seems to break it | "WHEN any call of the takedown tool is made THEN it never succeeds for a protected page" applies to every takedown, and an example in which a page is taken down makes it apply. The conflict is then not marked as "more than the example says", although the example does not call its page protected. On the page retirement change of TestingTheAgents: 6 conflicts in one run, each in 1 of 23 parts, where 3 and 1 in two earlier runs |
+| A conflict can rest on one reading of an ambiguous rule | "WHEN any call of the takedown tool is made THEN it never succeeds for a protected page" became "it never succeeds" in 5 of 8 translations, and an example in which a page is taken down then breaks it. The rule is reported as ambiguous, and the conflict says that it is gone with the other reading; it is still a conflict in the report. 3 of the 12 conflicts on TestingTheAgents are of this kind, and the table of a project counts them |
+| A translation can be impossible to obey | where no symbol stands for what a rule demands, the model writes the demand as `false`: "WHEN a takedown succeeds THEN the page was live at the start of the run" became "a takedown never succeeds". Or one symbol stands for two objects, and "x12 is lent AND x30 is not lent" contradicts itself. Such a rule clashes with every rule that makes its condition true, and hides every conflict where its condition holds. 27 to 42 of about 3,250 rules in a formalization of TestingTheAgents, 11 of 7,049 on the real OpenSpec changes, 2 of 36,708 on our own sets. Leaving these rules out was tried on saved runs: 2 false conflicts go and 2 that were hidden appear, so it is not built |
+| An outcome of an example can get a symbol of its own | "`move_hive` succeeds once for h8" became `move_hive_succeeded_once_for_h8`, and a rule about `move_hive_succeeded` does not meet it. The planted conflict is then not found, or found only through the condition of a third rule and reported as doubtful: 2 of 12 runs on `eval28/` |
 | Two examples of one case with opposite outcomes are missed in 7 of 12 runs | "called once" and "never called" became a count and "the call did not succeed", which can hold together (E30) |
 | An attribute of one call becomes an attribute of the whole run | "the token the call was made with", "the agent that made it", "the file the function is in": two rules about two different calls then clash |
 | A project in parts is checked against one other spec file at a time | a conflict that needs rules of three spec files is not found; scenarios are not looked for; a part that the model cannot read is left out (4 of 131 on the real project, all named in the reports) |
@@ -1563,8 +1597,8 @@ research.md, section 5.
 | `speccheck/refine.py` | optional LLM review, off by default |
 | `experiments/slurm/serve.sbatch`, `experiments/slurm/serve_second.sbatch` | start the vLLM servers on the cluster: the main model, the second model |
 | `experiments/slurm/serve_direct.sh` | the same server for the main model, started directly on a machine with free GPUs, without the queue |
-| `tests/` | 136 tests of everything that needs no LLM |
-| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10`, `eval12`, `eval16` to `eval19`, `size` and `size2`; for the change check `eval11`, `eval13`, `eval14`, `eval15`, `eval20` to `eval27`, `mixed` and `change_dev`; and the script that writes them. `real1` to `real5` are not written by it (`experiments/real/`) |
+| `tests/` | 138 tests of everything that needs no LLM |
+| `experiments/sets/`, `experiments/make_eval.py` | the evaluation sets `eval` to `eval10`, `eval12`, `eval16` to `eval19`, `size` and `size2`; for the change check `eval11`, `eval13`, `eval14`, `eval15`, `eval20` to `eval28`, `mixed` and `change_dev`; and the script that writes them. `real1` to `real5` are not written by it (`experiments/real/`) |
 | `experiments/results/` | every experiment: the raw data (`.json`) and its tables (`.md`) |
 | `experiments/evaluate.py` | runs and scores the evaluation; re-scores saved runs without a GPU |
 | `experiments/real/` | the trial on a real OpenSpec project: each archived change next to the specs before it, from the git history; and the real changes with a conflict planted in them |

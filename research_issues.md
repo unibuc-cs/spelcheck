@@ -545,7 +545,7 @@ cannot be built, for four reasons.
   twice. On a large project that changes a good part of the report.
 - **Example.** The real project was formalized three times. With the same
   questions each time, its four reports show 14, 9 and 14 contradictions in
-  all. Only two findings are in all three: the two contracts on one
+  all (13, 9 and 12 since entry 35). Only two findings are in all three: the two contracts on one
   function, and the missing approval. They are the two real reasons.
 - **What we did.** A large project is checked in parts, and the rules of a
   change are translated once for each part. A finding among them says in
@@ -556,21 +556,74 @@ cannot be built, for four reasons.
 
 ### 35. An example that seems to break a rule, and does not
 
-- **The problem.** A rule can be written so that it applies always, with
-  its real condition inside what it demands.
-- **Example.** "WHEN any call of the takedown tool is made THEN it never
-  succeeds for a protected page." An example of the change takes a page
-  down. The tool sees: the rule applies in the example's own case, so the
-  example describes the whole situation (entry 24), and the contradiction
-  is reported without a doubt. But the example never says that its page is
-  protected.
-- **How large it is.** 6 contradictions on one change of the real project
-  in the last run, each found in only 1 of 23 parts (3 and 1 in the two
-  runs before).
-- **What we did.** Nothing built yet. A stricter test was tried on saved
-  data: the example counts only if its own case cannot be true together
-  with the other rule. It sets 2 of the 6 aside and changes none of the
-  contradictions we planted in seven test sets. This is the next step.
+- **The problem.** An example was set against a rule in a situation that
+  the example does not describe.
+- **Example.** A rule: "WHEN any call of the takedown tool is made THEN it
+  never succeeds for a protected page." An example: an editor asks to take
+  a page down, and the takedown is refused. The two agree. But the tool
+  reported a contradiction between them "in a run in which a takedown
+  succeeded". That run is not the example's: it comes from a third rule
+  that starts with "WHEN a takedown succeeds".
+- **Why the tool did it.** It asked one thing about an example: does its
+  case make the rule apply (entry 24)? Here it does, the takedown tool is
+  called. It did not ask whether the example's case breaks the rule.
+- **What we did.** A second question, answered by the solver alone: can
+  the example's own case be true with the rule obeyed? If yes, the
+  contradiction needs more than the example says and is marked doubtful.
+- **The result.** On 20 new test changes, 60 runs: changes that should give
+  no contradiction had one in 8 of 36 runs, now in 1. On the real project
+  the four reports go from 14 to 12 contradictions (E37, T54).
+- **The cost, said plainly.** We had set a rule before building: no planted
+  contradiction may be lost. One was, 20 of 24 found where 21. Its example
+  says "the call succeeds once for h8", and the model wrote that as a name
+  of its own, not as "the call succeeds"; the old test had found it only
+  by the luck of a third rule. We kept the change: seven false
+  contradictions fewer, for one that is now marked doubtful.
+- **A correction.** Our first account of these 6 contradictions blamed one
+  cause. Reading each one showed three; entries 36 and 37 are the other
+  two.
+
+### 36. The model writes "false" when it has no word for what a rule demands
+
+- **The problem.** A rule demands something that none of the names stands
+  for. The model does not say so. It writes the demand as "false".
+- **Example.** "WHEN a takedown succeeds THEN the page was live at the start
+  of the run." There was no name for "was live at the start", and 7 of 7
+  translations said: IF a takedown succeeded THEN false. To the solver
+  that reads "a takedown never succeeds", and every example in which a
+  page is taken down contradicts it. A second form: one name for two
+  things. "Page A exists and page B does not" became "the page exists and
+  the page does not exist".
+- **How large it is.** 27 to 42 of about 3,250 rules each time the real
+  project was formalized. 11 of 7,049 on another real project. 2 of 36,708
+  on the specs we wrote ourselves: our own test sets do not show it.
+- **What it does.** Two things. It clashes with every rule that makes its
+  condition true. And it hides contradictions: a situation that one rule
+  alone forbids is never reported as a contradiction, so nothing is
+  reported where such a rule applies. One rule "IF true THEN false"
+  silenced a whole part.
+- **What we tried.** Leaving such rules out of the check, on saved data. On
+  the real project 2 false contradictions go, and 2 others that had been
+  hidden appear; the real one is found in 15 of 24 parts, where 14. No
+  fewer false contradictions, so it is not built.
+- **Still open.** Such a rule lacks a name. A rule whose translation
+  demands nothing is read again for a missing name (entry 4); this kind
+  could be too.
+
+### 37. A finding that depends on how one unclear rule is read
+
+- **The problem.** When the translations of a rule disagree, the tool
+  reports the rule as unclear and goes on with the reading most of them
+  chose. A contradiction found with that reading may not exist with the
+  other one.
+- **Example.** "It never succeeds for a protected page": 5 of 8
+  translations dropped "for a protected page". With that reading an
+  example in which a page is taken down contradicts the rule. With the
+  other reading it does not.
+- **What we did.** The report already said so under each such finding. The
+  table that sums up a project did not: it counted them like the others.
+  It now has a column for them. On the real project: 3 of the 12
+  contradictions of the last run, none of them among the two real ones.
 
 ---
 
@@ -580,6 +633,8 @@ cannot be built, for four reasons.
 |---|---|
 | Two of the four reasons of the real project are not found | one needs rules of three spec files; one is arithmetic: the size of a batch against two budgets of steps |
 | A property of one call becomes a property of the whole run | "the token the call was made with": two rules about two different calls then contradict each other |
+| The model writes "false" for a demand it has no name for | entry 36 |
+| What an example says gets a name of its own | "the call succeeds once for h8" is not "the call succeeds" to the solver: entry 35 |
 | The questions are asked 40 times for a document at most | in a large project that leaves out most pairs |
 | There is no time in the logic | "then", "after" and "until" are not modelled |
 | "Delete" against "keep for N years" | entry 10 |
